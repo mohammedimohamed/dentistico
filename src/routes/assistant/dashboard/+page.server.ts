@@ -1,0 +1,183 @@
+import { redirect, fail } from '@sveltejs/kit';
+import {
+    getAllUpcomingAppointments,
+    getAllPatientsLimited,
+    getDoctors,
+    getPendingPayments,
+    createPatient,
+    createAppointment,
+    createPayment,
+    updateAppointment,
+    getPatientByIdLimited,
+    getPatientByPhoneOrEmail
+} from '$lib/server/db';
+import type { PageServerLoad, Actions } from './$types';
+
+export const load: PageServerLoad = async ({ locals }) => {
+    if (!locals.user || locals.user.role !== 'assistant') {
+        throw redirect(302, '/login');
+    }
+
+    const appointments = getAllUpcomingAppointments();
+    const patients = getAllPatientsLimited();
+    const doctors = getDoctors();
+    const pendingPayments = getPendingPayments();
+
+    return {
+        appointments,
+        patients,
+        doctors,
+        pendingPayments,
+        user: locals.user
+    };
+};
+
+export const actions: Actions = {
+    createPatient: async ({ request, locals }) => {
+        if (!locals.user || locals.user.role !== 'assistant') {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const fullName = formData.get('full_name') as string;
+        const phone = formData.get('phone') as string;
+        const dob = formData.get('date_of_birth') as string;
+        const email = formData.get('email') as string;
+        const isSecondary = formData.get('is_secondary') === 'on';
+        // Address fields allowed for assistant
+        const address = formData.get('address') as string;
+        const city = formData.get('city') as string;
+        const postalCode = formData.get('postal_code') as string;
+        const emergencyName = formData.get('emergency_contact_name') as string;
+        const emergencyPhone = formData.get('emergency_contact_phone') as string;
+
+        if (!fullName || !phone || !dob) {
+            return fail(400, { error: 'Name, phone, and date of birth are required' });
+        }
+
+        // Only check uniqueness if it's NOT a secondary contact
+        if (!isSecondary) {
+            const existingPatient = getPatientByPhoneOrEmail(phone, email);
+            if (existingPatient) {
+                return fail(400, { error: 'A patient with this phone or email already exists' });
+            }
+        }
+
+        try {
+            const patientId = createPatient({
+                full_name: fullName,
+                phone: isSecondary ? '' : phone,
+                email: isSecondary ? '' : email,
+                secondary_phone: isSecondary ? phone : null,
+                secondary_email: isSecondary ? email : null,
+                date_of_birth: dob,
+                address,
+                city,
+                postal_code: postalCode,
+                emergency_contact_name: emergencyName,
+                emergency_contact_phone: emergencyPhone,
+                created_by: locals.user.id
+            });
+            return { success: true, message: 'Patient created successfully', patientId };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to create patient' });
+        }
+    },
+
+    createAppointment: async ({ request, locals }) => {
+        if (!locals.user || locals.user.role !== 'assistant') {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const patientId = parseInt(formData.get('patient_id') as string);
+        const doctorId = parseInt(formData.get('doctor_id') as string);
+        const startTimeStr = formData.get('start_time') as string; // date + time
+        const duration = parseInt(formData.get('duration_minutes') as string);
+        const type = formData.get('appointment_type') as string;
+        const notes = formData.get('notes') as string;
+
+        if (!patientId || !doctorId || !startTimeStr || !duration) {
+            return fail(400, { error: 'Missing required fields' });
+        }
+
+        // Calculate end_time
+        const start = new Date(startTimeStr);
+        const end = new Date(start.getTime() + duration * 60000);
+        const endTimeStr = end.toISOString(); // Or keep consistent format, db assumes TEXT ISO usually
+
+        try {
+            createAppointment({
+                patient_id: patientId,
+                doctor_id: doctorId,
+                start_time: startTimeStr, // Ensure format is YYYY-MM-DD HH:MM:SS or ISO
+                end_time: endTimeStr,
+                duration_minutes: duration,
+                appointment_type: type,
+                status: 'scheduled',
+                notes
+            });
+            return { success: true, message: 'Appointment scheduled successfully' };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to create appointment' });
+        }
+    },
+
+    updateStatus: async ({ request, locals }) => {
+        if (!locals.user || locals.user.role !== 'assistant') {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const appointmentId = parseInt(formData.get('appointment_id') as string);
+        const status = formData.get('status') as string;
+
+        if (!['scheduled', 'confirmed', 'cancelled', 'no_show'].includes(status)) {
+            return fail(400, { error: 'Invalid status' });
+        }
+
+        try {
+            // We use updateAppointment which takes an object now
+            updateAppointment(appointmentId, { status, updated_at: new Date().toISOString() });
+            return { success: true, message: `Appointment ${status}` };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to update status' });
+        }
+    },
+
+    recordPayment: async ({ request, locals }) => {
+        if (!locals.user || locals.user.role !== 'assistant') {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+
+        const patientId = parseInt(formData.get('patient_id') as string);
+        const amount = parseFloat(formData.get('amount') as string);
+        const method = formData.get('payment_method') as string;
+        const date = formData.get('payment_date') as string;
+        const notes = formData.get('notes') as string;
+
+        if (!patientId || amount <= 0) {
+            return fail(400, { error: 'Invalid payment details' });
+        }
+
+        try {
+            createPayment({
+                patient_id: patientId,
+                amount,
+                payment_method: method,
+                payment_date: date || new Date().toISOString(),
+                notes,
+                recorded_by: locals.user.id
+            });
+            return { success: true, message: 'Payment recorded successfully' };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to record payment' });
+        }
+    }
+};
