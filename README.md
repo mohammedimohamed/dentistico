@@ -1,6 +1,6 @@
 # Dentistico - Dental Clinic Management System
 
-A comprehensive, full-stack dental clinic management application built with **SvelteKit 5**, **TypeScript**, **TailwindCSS**, and **SQLite**. This system provides role-based access control for doctors and assistants to manage patients, appointments, treatments, and financial records efficiently.
+A comprehensive, full-stack dental clinic management application built with **SvelteKit 5**, **TypeScript**, **TailwindCSS**, and **SQLite**. This system provides role-based access control for doctors and assistants to manage patients, appointments, treatments, and financial records efficiently. The application includes a public-facing website with online appointment booking capabilities for patients.
 
 ---
 
@@ -51,11 +51,13 @@ A comprehensive, full-stack dental clinic management application built with **Sv
   - Create new patient records with contact and emergency information
   - Support for secondary contacts (family members, guardians)
   - Duplicate detection for phone numbers and emails
+  - Support for patient relationships (linking family members to primary account holders)
 
 - **Appointment Scheduling**
   - Schedule appointments for patients with doctors
   - Set appointment duration, type, and notes
   - Update appointment status (scheduled, confirmed, cancelled, no-show)
+  - View all upcoming appointments across all doctors
 
 - **Payment Processing**
   - Record patient payments with multiple payment methods (cash, card, insurance, bank transfer, check)
@@ -66,6 +68,20 @@ A comprehensive, full-stack dental clinic management application built with **Sv
   - View patients with outstanding balances
   - Quick access to contact information for follow-up calls
   - Record payments directly from the follow-up dashboard
+
+### For Patients (Public Features)
+- **Online Appointment Booking**
+  - Public booking page accessible without login
+  - Book appointments for yourself or family members
+  - Select preferred doctor and appointment type
+  - Choose date and time for appointments
+  - Automatic patient record creation or linking to existing records
+  - Support for booking on behalf of family members (children, spouse, etc.)
+
+- **Public Website**
+  - Modern, responsive landing page
+  - Service information and clinic details
+  - Easy access to booking system
 
 ---
 
@@ -81,7 +97,8 @@ A comprehensive, full-stack dental clinic management application built with **Sv
 - **SvelteKit Server Routes** - API endpoints and form actions
 - **Better-SQLite3** - Fast, synchronous SQLite database
 - **bcrypt** - Password hashing and authentication
-- **Cookie-based Sessions** - Secure session management
+- **Cookie-based Sessions** - Secure session management with 24-hour expiration
+- **@sveltejs/adapter-node** - Node.js adapter for production deployment
 
 ### Development Tools
 - **Vite** - Fast build tool and dev server
@@ -96,18 +113,27 @@ A comprehensive, full-stack dental clinic management application built with **Sv
 dentistico/
 ├── src/
 │   ├── lib/
-│   │   └── server/
-│   │       └── db.ts              # Database initialization, schema, and helper functions
+│   │   ├── server/
+│   │   │   ├── db.ts              # Database initialization, schema, and helper functions
+│   │   │   └── auth.ts            # Session management and authentication helpers
+│   │   ├── types.ts               # TypeScript type definitions
+│   │   └── assets/                # Static assets (favicon, etc.)
 │   ├── routes/
 │   │   ├── +layout.svelte         # Root layout
-│   │   ├── +page.svelte           # Landing page
+│   │   ├── +page.svelte           # Public landing page
 │   │   ├── login/
 │   │   │   ├── +page.svelte       # Login UI
 │   │   │   └── +page.server.ts    # Login authentication logic
 │   │   ├── logout/
-│   │   │   └── +page.server.ts    # Logout logic
+│   │   │   └── +server.ts         # Logout API endpoint
+│   │   ├── book/
+│   │   │   ├── +page.svelte       # Public appointment booking page
+│   │   │   └── +page.server.ts    # Booking form handler
 │   │   ├── doctor/
-│   │   │   ├── dashboard/         # Doctor dashboard
+│   │   │   ├── +layout.svelte     # Doctor layout with navigation
+│   │   │   ├── dashboard/
+│   │   │   │   ├── +page.svelte   # Doctor dashboard
+│   │   │   │   └── +page.server.ts
 │   │   │   └── patients/
 │   │   │       ├── +page.svelte   # Patient list
 │   │   │       ├── +page.server.ts
@@ -118,13 +144,21 @@ dentistico/
 │   │       └── dashboard/         # Assistant dashboard with all features
 │   │           ├── +page.svelte
 │   │           └── +page.server.ts
-│   ├── hooks.server.ts            # Session management and authentication
+│   ├── hooks.server.ts            # Request hooks for session validation
 │   ├── app.html                   # HTML template
-│   └── app.css                    # Global styles
+│   ├── app.css                    # Global styles
+│   └── app.d.ts                   # TypeScript app declarations
+├── static/                        # Static assets (images, robots.txt)
+│   ├── hero.png
+│   ├── about-interior.png
+│   ├── service-*.png
+│   └── robots.txt
 ├── dental_clinic.db               # SQLite database (auto-generated)
 ├── package.json
 ├── tsconfig.json
 ├── tailwind.config.js
+├── postcss.config.js
+├── svelte.config.js
 ├── vite.config.ts
 └── README.md
 ```
@@ -157,6 +191,8 @@ dentistico/
 
 4. **Access the application**
    - Open your browser and navigate to `http://localhost:5173`
+   - Visit `/book` to test the public booking system
+   - Visit `/login` to access the staff portal
 
 ### First-Time Setup
 
@@ -178,17 +214,84 @@ The database will be automatically initialized on first run with seed data:
 
 ---
 
+## 💻 Usage
+
+### For Patients (Public Access)
+
+1. **Visit the Website**
+   - Navigate to the landing page at `/` to learn about services
+   - Click "Book Now" or visit `/book` to schedule an appointment
+
+2. **Book an Appointment**
+   - Choose whether booking for yourself or a family member
+   - Fill in contact information (patient will be created automatically if new)
+   - Select a doctor, appointment type, and preferred date/time
+   - Submit the booking request
+   - You'll receive a confirmation message (appointments are set to "scheduled" status)
+
+### For Doctors
+
+1. **Login**
+   - Visit `/login` and use doctor credentials
+   - You'll be redirected to `/doctor/dashboard`
+
+2. **View Today's Appointments**
+   - The dashboard shows all appointments scheduled for today
+   - View patient details, appointment type, and status
+
+3. **Manage Patients**
+   - Navigate to `/doctor/patients` to see all patients
+   - Click on a patient to view their full profile
+   - Edit patient information including medical history, allergies, and medications
+   - View treatment history and add new treatments
+   - Access financial information (billed, paid, balance)
+
+4. **Add Treatments**
+   - From a patient's detail page, add new treatments
+   - Specify treatment type, tooth number, diagnosis, cost, and notes
+   - Track treatment status (pending, in progress, completed)
+
+### For Assistants
+
+1. **Login**
+   - Visit `/login` and use assistant credentials
+   - You'll be redirected to `/assistant/dashboard`
+
+2. **Register New Patients**
+   - Use the "Register New Patient" form
+   - Enter contact information, date of birth, and emergency contacts
+   - System checks for duplicate phone numbers/emails
+
+3. **Schedule Appointments**
+   - Select a patient (or create new)
+   - Choose doctor, date/time, duration, and appointment type
+   - Add notes if needed
+   - View all upcoming appointments in the dashboard
+
+4. **Record Payments**
+   - Select a patient with outstanding balance
+   - Enter payment amount, method, and date
+   - Add notes if needed
+   - Payment is automatically linked to the patient's account
+
+5. **Payment Follow-Up**
+   - View the "Payment Follow-Up" section for patients with balances
+   - Quick access to contact information
+   - Record payments directly from the follow-up list
+
+---
+
 ## 💾 Database Schema
 
 ### Tables
 
 #### `users`
-Stores user accounts for doctors and assistants.
+Stores user accounts for doctors, assistants, and patients (for future patient portal).
 - `id` - Primary key
 - `username` - Unique username
 - `password_hash` - Bcrypt hashed password
 - `full_name` - User's full name
-- `role` - 'doctor' or 'assistant'
+- `role` - 'doctor', 'assistant', or 'patient'
 - `created_at` - Timestamp
 
 #### `patients`
@@ -198,17 +301,19 @@ Comprehensive patient information.
 - Address: `address`, `city`, `postal_code`
 - Emergency: `emergency_contact_name`, `emergency_contact_phone`
 - Insurance: `insurance_provider`, `insurance_number`
+- Relationship: `primary_contract_id` - Links to primary account holder (for family members), `relationship_to_primary` - Relationship type (child, spouse, etc.)
 - Medical: `allergies`, `current_medications`, `medical_conditions`, `blood_type`
 - Dental: `previous_dentist`, `last_visit_date`, `dental_notes`
-- Administrative: `registration_date`, `is_active`, `created_by`
+- Administrative: `registration_date`, `is_active`, `created_by`, `user_id` - Optional link to user account for patient portal access
 
 #### `appointments`
 Scheduled appointments between patients and doctors.
 - `id` - Primary key
-- `patient_id` - Foreign key to patients
+- `patient_id` - Foreign key to patients (the patient receiving treatment)
 - `doctor_id` - Foreign key to users
+- `booked_by_id` - Foreign key to patients (who made the booking, for family bookings)
 - `start_time`, `end_time`, `duration_minutes`
-- `appointment_type` - Type of appointment
+- `appointment_type` - Type of appointment (consultation, checkup, cleaning, cosmetic, emergency, etc.)
 - `status` - 'scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'
 - `notes` - Appointment notes
 - `created_at`, `updated_at`
@@ -284,8 +389,8 @@ Aggregated financial view for each patient.
 ## 🔌 API Routes & Actions
 
 ### Authentication
-- `POST /login?/login` - User login
-- `GET /logout` - User logout
+- `POST /login?/login` - User login (redirects to role-specific dashboard)
+- `GET /logout` - User logout (API endpoint)
 
 ### Doctor Routes
 - `GET /doctor/dashboard` - Doctor dashboard with today's appointments
@@ -301,6 +406,11 @@ Aggregated financial view for each patient.
 - `POST /assistant/dashboard?/updateStatus` - Update appointment status
 - `POST /assistant/dashboard?/recordPayment` - Record payment
 
+### Public Routes
+- `GET /` - Public landing page with clinic information
+- `GET /book` - Public appointment booking page
+- `POST /book` - Submit appointment booking request (creates patient if needed)
+
 ---
 
 ## 🔒 Security
@@ -308,17 +418,21 @@ Aggregated financial view for each patient.
 ### Authentication
 - Passwords are hashed using **bcrypt** with a salt factor of 10
 - Session-based authentication using secure HTTP-only cookies
-- Session expiration after 7 days of inactivity
+- Session expiration after 24 hours
+- Sessions stored in database with automatic cleanup on expiration
 
 ### Authorization
 - Server-side role checking on all protected routes
-- Middleware (`hooks.server.ts`) validates sessions on every request
+- Request hooks (`hooks.server.ts`) validate sessions on every request
 - Unauthorized access attempts redirect to login page
+- Public routes (`/`, `/book`) are accessible without authentication
 
 ### Data Protection
-- Role-based data filtering (assistants see limited patient data)
+- Role-based data filtering (assistants see limited patient data, no access to medical information)
 - SQL injection prevention through prepared statements
 - Foreign key constraints maintain data integrity
+- Patient relationship tracking for family bookings
+- Automatic duplicate detection for phone numbers and emails
 
 ---
 
@@ -345,11 +459,20 @@ npm run check:watch
 
 ### Database Management
 
-The database is automatically initialized on first run. To reset the database:
+The database is automatically initialized on first run. The system includes automatic migration logic that:
+
+- Creates all tables and views if they don't exist
+- Adds new columns to existing tables (e.g., `secondary_phone`, `secondary_email`, `primary_contract_id`, `booked_by_id`)
+- Handles schema updates gracefully without data loss
+- Recreates the `patient_balance` view if needed
+
+**To reset the database:**
 
 1. Stop the development server
 2. Delete `dental_clinic.db`
 3. Restart the server (database will be recreated with seed data)
+
+**Note:** The migration system is designed for development. For production deployments, consider implementing a more robust migration strategy.
 
 ### Adding New Features
 
@@ -397,11 +520,36 @@ The database is automatically initialized on first run. To reset the database:
 
 ---
 
+## 🚢 Deployment
+
+The application uses `@sveltejs/adapter-node` for Node.js deployment.
+
+### Production Build
+
+```bash
+# Build the application
+npm run build
+
+# The build output will be in the `build/` directory
+# Start the production server
+node build/index.js
+```
+
+### Environment Variables
+
+For production, ensure:
+- `NODE_ENV=production` is set
+- HTTPS is enabled for secure cookie handling
+- Database file (`dental_clinic.db`) has proper read/write permissions
+
+---
+
 ## 📝 Future Enhancements
 
 - [ ] Multi-clinic support
 - [ ] Email/SMS appointment reminders
-- [ ] Online appointment booking for patients
+- [x] Online appointment booking for patients (✅ Implemented)
+- [ ] Patient portal with login access
 - [ ] Treatment plan templates
 - [ ] Insurance claim management
 - [ ] Reporting and analytics dashboard
@@ -409,6 +557,8 @@ The database is automatically initialized on first run. To reset the database:
 - [ ] Dental chart visualization
 - [ ] Inventory management for supplies
 - [ ] Staff scheduling
+- [ ] Appointment confirmation emails
+- [ ] Calendar integration
 
 ---
 
