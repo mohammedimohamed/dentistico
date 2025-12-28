@@ -14,7 +14,7 @@ export const actions = {
             return fail(400, { missing: true });
         }
 
-        const user = getUserByUsername(username);
+        const user = getUserByUsername(username) as any;
 
         if (!user || !bcrypt.compareSync(password, user.password_hash)) {
             return fail(400, { incorrect: true });
@@ -25,8 +25,11 @@ export const actions = {
 
         if (user.role === 'doctor') {
             throw redirect(303, '/doctor/dashboard');
-        } else {
+        } else if (user.role === 'assistant') {
             throw redirect(303, '/assistant/dashboard');
+        } else {
+            // Patient redirect - for now we just go to home or a placeholder
+            throw redirect(303, '/');
         }
     }
 } satisfies Actions;

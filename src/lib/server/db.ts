@@ -28,14 +28,14 @@ export function init_db() {
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             full_name TEXT NOT NULL,
-            role TEXT NOT NULL CHECK(role IN ('doctor', 'assistant')),
+            role TEXT NOT NULL CHECK(role IN ('doctor', 'assistant', 'patient')),
             created_at TEXT DEFAULT (datetime('now'))
         );
 
         CREATE TABLE IF NOT EXISTS patients (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             full_name TEXT NOT NULL,
-            phone TEXT, -- Changed to nullable for children/secondary contacts
+            phone TEXT, 
             email TEXT,
             secondary_phone TEXT,
             secondary_email TEXT,
@@ -47,6 +47,10 @@ export function init_db() {
             emergency_contact_phone TEXT,
             insurance_provider TEXT,
             insurance_number TEXT,
+            
+            -- Relationship tracking
+            primary_contract_id INTEGER, -- Refers back to patients(id) if this is a secondary person
+            relationship_to_primary TEXT, -- e.g., 'child', 'spouse', 'other'
             
             -- Medical Information
             allergies TEXT,
@@ -63,13 +67,17 @@ export function init_db() {
             registration_date TEXT DEFAULT (datetime('now')),
             is_active INTEGER DEFAULT 1,
             created_by INTEGER,
-            FOREIGN KEY (created_by) REFERENCES users(id)
+            user_id INTEGER, -- Linked authentication account
+            FOREIGN KEY (created_by) REFERENCES users(id),
+            FOREIGN KEY (primary_contract_id) REFERENCES patients(id),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
         );
 
         CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             patient_id INTEGER NOT NULL,
             doctor_id INTEGER NOT NULL,
+            booked_by_id INTEGER, -- The patient ID who actually made the booking
             start_time TEXT NOT NULL,
             end_time TEXT NOT NULL,
             duration_minutes INTEGER DEFAULT 30,
@@ -79,7 +87,8 @@ export function init_db() {
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-            FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (booked_by_id) REFERENCES patients(id)
         );
 
         CREATE TABLE IF NOT EXISTS treatments (
@@ -231,6 +240,36 @@ export function init_db() {
     } catch (e) {
         console.error('Migration failed:', e);
     }
+    // Migration for Patient Relationships & Portal Users
+    try {
+        const patientCols = db.prepare("PRAGMA table_info(patients)").all() as any[];
+        if (!patientCols.find(c => c.name === 'primary_contract_id')) {
+            db.exec('ALTER TABLE patients ADD COLUMN primary_contract_id INTEGER REFERENCES patients(id)');
+            console.log('Added primary_contract_id column to patients');
+        }
+        if (!patientCols.find(c => c.name === 'relationship_to_primary')) {
+            db.exec('ALTER TABLE patients ADD COLUMN relationship_to_primary TEXT');
+            console.log('Added relationship_to_primary column to patients');
+        }
+        if (!patientCols.find(c => c.name === 'user_id')) {
+            db.exec('ALTER TABLE patients ADD COLUMN user_id INTEGER REFERENCES users(id)');
+            console.log('Added user_id column to patients');
+        }
+
+        const apptCols = db.prepare("PRAGMA table_info(appointments)").all() as any[];
+        if (!apptCols.find(c => c.name === 'booked_by_id')) {
+            db.exec('ALTER TABLE appointments ADD COLUMN booked_by_id INTEGER REFERENCES patients(id)');
+            console.log('Added booked_by_id column to appointments');
+        }
+
+        const userCols = db.prepare("PRAGMA table_info(users)").all() as any[];
+        const roleCol = userCols.find(c => c.name === 'role');
+        // If we can't easily check the CHECK constraint, we trust the manual fix or assume role is TEXT
+        // But we can at least try to ensure 'patient' role exists if we were to recreate it.
+        // For now, these migrations cover the missing columns which caused the crash.
+    } catch (e) {
+        console.error('Relationship migration failed:', e);
+    }
 
     // Migration for payments table to fix broken FOREIGN KEY to treatments_old
     try {
@@ -354,6 +393,17 @@ export function getUserByUsername(username: string) {
     return db.prepare('SELECT * FROM users WHERE username = ?').get(username);
 }
 
+export function createUser(userData: any) {
+    const keys = Object.keys(userData);
+    const columns = keys.join(', ');
+    const placeholders = keys.map(() => '?').join(', ');
+    const values = Object.values(userData);
+
+    const stmt = db.prepare(`INSERT INTO users (${columns}) VALUES (${placeholders})`);
+    const info = stmt.run(...values);
+    return info.lastInsertRowid;
+}
+
 export function getUserById(id: number) {
     return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
 }
@@ -414,6 +464,10 @@ export function getPatientByPhoneOrEmail(phone: string, email?: string) {
         return db.prepare('SELECT * FROM patients WHERE (phone = ? AND phone != \'\') OR (email = ? AND email != \'\')').get(phone, email);
     }
     return db.prepare('SELECT * FROM patients WHERE phone = ? AND phone != \'\'').get(phone);
+}
+
+export function getSecondaryPatient(primaryId: number, fullName: string, dob: string) {
+    return db.prepare('SELECT * FROM patients WHERE primary_contract_id = ? AND full_name = ? AND date_of_birth = ?').get(primaryId, fullName, dob);
 }
 
 
@@ -480,10 +534,13 @@ export function getAllUpcomingAppointments() {
             a.id, a.start_time, a.end_time, a.duration_minutes, 
             a.status, a.appointment_type,
             p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone,
-            u.full_name as doctor_name
+            u.full_name as doctor_name,
+            b.full_name as booked_by_name,
+            p.relationship_to_primary
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         JOIN users u ON a.doctor_id = u.id
+        LEFT JOIN patients b ON a.booked_by_id = b.id
         WHERE date(a.start_time) >= date('now')
         ORDER BY a.start_time ASC
         LIMIT 50

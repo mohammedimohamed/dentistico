@@ -12,6 +12,9 @@ export interface Patient {
     phone: string | null;
     email: string | null;
     date_of_birth: string | null;
+    primary_contract_id: number | null;
+    relationship_to_primary: string | null;
+    user_id: number | null;
 }
 
 export interface Appointment {

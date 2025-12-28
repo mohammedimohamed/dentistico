@@ -78,10 +78,24 @@
                             <div class="px-4 py-4 sm:px-6">
                                 <div class="flex items-center justify-between">
                                     <div class="flex flex-col">
-                                        <p class="text-sm font-bold text-indigo-600">
-                                            {new Date(appt.start_time).toLocaleString()}
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-sm font-bold text-indigo-600">
+                                                {new Date(appt.start_time).toLocaleString()}
+                                            </p>
+                                            {#if appt.notes?.includes('Online booking')}
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800">
+                                                    Online Request
+                                                </span>
+                                            {/if}
+                                        </div>
+                                        <p class="text-sm font-medium text-gray-900">
+                                            {appt.patient_name}
+                                            {#if appt.booked_by_name && appt.booked_by_name !== appt.patient_name}
+                                                <span class="text-xs text-gray-400 font-normal">
+                                                    (Requested by {appt.booked_by_name} - {appt.relationship_to_primary})
+                                                </span>
+                                            {/if}
                                         </p>
-                                        <p class="text-sm font-medium text-gray-900">{appt.patient_name}</p>
                                         <p class="text-sm text-gray-500">{appt.appointment_type} with Dr. {appt.doctor_name}</p>
                                     </div>
                                     <div class="flex items-center gap-2">

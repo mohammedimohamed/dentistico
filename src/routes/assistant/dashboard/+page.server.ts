@@ -9,7 +9,12 @@ import {
     createPayment,
     updateAppointment,
     getPatientByIdLimited,
-    getPatientByPhoneOrEmail
+    getPatientByIdFull,
+    getPatientByPhoneOrEmail,
+    updatePatient,
+    getAppointmentById,
+    getUserByUsername,
+    createUser
 } from '$lib/server/db';
 import type { PageServerLoad, Actions } from './$types';
 
@@ -139,8 +144,45 @@ export const actions: Actions = {
         }
 
         try {
-            // We use updateAppointment which takes an object now
+            // Update status
             updateAppointment(appointmentId, { status, updated_at: new Date().toISOString() });
+
+            // If confirmed, handle user creation
+            if (status === 'confirmed') {
+                const appt = getAppointmentById(appointmentId) as any;
+                if (appt) {
+                    // Logic: We want to create a user account for the responsible party
+                    // If booked_by_id exists and is different from patient_id, create it for the requester
+                    // Otherwise create it for the patient.
+                    const accountHolderId = appt.booked_by_id || appt.patient_id;
+                    const person = getPatientByIdFull(accountHolderId) as any;
+
+                    if (person && person.email && !person.user_id) {
+                        const existingUser = getUserByUsername(person.email);
+                        if (!existingUser) {
+                            import('bcrypt').then(async (bcrypt) => {
+                                try {
+                                    const passwordHash = await bcrypt.hash('welcome123', 10);
+                                    const userId = createUser({
+                                        username: person.email,
+                                        password_hash: passwordHash,
+                                        full_name: person.full_name,
+                                        role: 'patient'
+                                    });
+                                    updatePatient(person.id, { user_id: Number(userId) });
+                                    console.log(`Created portal account for ${person.full_name} (${person.email})`);
+                                } catch (err) {
+                                    console.error('Error creating user:', err);
+                                }
+                            });
+                        } else {
+                            // If user exists but patient record isn't linked, link it
+                            updatePatient(person.id, { user_id: (existingUser as any).id });
+                        }
+                    }
+                }
+            }
+
             return { success: true, message: `Appointment ${status}` };
         } catch (e) {
             console.error(e);
