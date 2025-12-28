@@ -44,7 +44,7 @@
             <div class="flex items-center gap-4">
                 <span class="text-gray-500 text-sm">Welcome, {data.user.full_name}</span>
                 <span class="text-gray-300">|</span>
-                <form action="/logout" method="POST">
+                <form action="/logout" method="POST" use:enhance>
                     <button type="submit" class="text-sm text-red-600 hover:text-red-800 font-medium">Logout</button>
                 </form>
             </div>

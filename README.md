@@ -17,6 +17,7 @@ A comprehensive, full-stack dental clinic management application built with **Sv
 - [Security](#security)
 - [Development](#development)
 - [Troubleshooting](#troubleshooting)
+- [Deployment](#-deployment)
 - [License](#license)
 
 ---
@@ -160,6 +161,9 @@ dentistico/
 ├── postcss.config.js
 ├── svelte.config.js
 ├── vite.config.ts
+├── dockerfile                 # Multi-stage Docker build configuration
+├── .dockerignore              # Files excluded from Docker build context
+├── start.js                   # Production startup script
 └── README.md
 ```
 
@@ -501,6 +505,51 @@ The database is automatically initialized on first run. The system includes auto
 **Problem**: Cannot log in with default credentials
 - **Solution**: Ensure the database was seeded correctly. Check the console for seed logs.
 
+**Problem**: "Cross-site POST form submissions are forbidden" error in production
+- **Solution**: Set the `ORIGIN` environment variable to match your application's URL:
+  ```bash
+  # Example for localhost:3000
+  ORIGIN=http://localhost:3000 node build/index.js
+  
+  # Example for production domain
+  ORIGIN=https://yourdomain.com node build/index.js
+  
+  # In Docker
+  docker run -e ORIGIN=https://yourdomain.com ...
+  ```
+  This is required for SvelteKit's CSRF protection to work correctly in production.
+
+### Docker Issues
+
+**Problem**: Container fails to start or crashes immediately
+- **Solution**: Check logs with `docker logs dentistico`. Common issues:
+  - Missing `ORIGIN` environment variable
+  - Port already in use (change port mapping: `-p 3001:3000`)
+  - Database permissions (ensure volume is writable)
+
+**Problem**: Database not persisting between container restarts
+- **Solution**: Use a Docker volume to persist the database:
+  ```bash
+  docker run -v dentistico-data:/app ...
+  ```
+  Or use a bind mount:
+  ```bash
+  docker run -v $(pwd)/data:/app ...
+  ```
+  The database file (`dental_clinic.db`) is created in `/app`, so mount the entire `/app` directory for persistence.
+
+**Problem**: "Cannot find module" errors in Docker
+- **Solution**: Ensure the Dockerfile copies all necessary files:
+  - `build/` directory
+  - `node_modules/` (production dependencies)
+  - `package.json`
+  - Rebuild the image: `docker build -t dentistico:latest .`
+
+**Problem**: Build fails with "better-sqlite3" compilation errors
+- **Solution**: The Dockerfile includes Python3, make, and g++ for native module compilation. If issues persist:
+  - Ensure you're using the multi-stage build (builder stage compiles dependencies)
+  - Check that `npm ci` completes successfully in the builder stage
+
 ### Balance Calculation Issues
 
 **Problem**: Patient balances show incorrect amounts
@@ -522,25 +571,236 @@ The database is automatically initialized on first run. The system includes auto
 
 ## 🚢 Deployment
 
-The application uses `@sveltejs/adapter-node` for Node.js deployment.
+The application uses `@sveltejs/adapter-node` for Node.js deployment and includes Docker support for containerized deployments.
 
-### Production Build
+### Docker Deployment (Recommended)
+
+The project includes a multi-stage Dockerfile for optimized production builds.
+
+#### Dockerfile Overview
+
+The `Dockerfile` uses a **multi-stage build** pattern to create an optimized production image:
+
+**Stage 1: Builder**
+- Uses `node:22-alpine` as base image
+- Installs all dependencies (including devDependencies) with `npm ci`
+- Copies source code and builds the application with `npm run build`
+- Removes devDependencies with `npm prune --production` to reduce size
+- Outputs: built application in `/app/build` and production `node_modules`
+
+**Stage 2: Runner**
+- Uses fresh `node:22-alpine` base image (smaller final image)
+- Installs runtime dependencies: `python3`, `make`, `g++` (required for `better-sqlite3` native bindings)
+- Sets production environment variables (`NODE_ENV`, `PORT`, `ORIGIN`)
+- Creates `/app/data` directory for database persistence
+- Copies only necessary files from builder stage:
+  - `build/` directory (compiled application)
+  - `node_modules/` (production dependencies only)
+  - `package.json`
+  - `start.js` (startup helper script)
+- Exposes port 3000
+- Runs the application with `node build/index.js`
+
+**Benefits of Multi-stage Build:**
+- Smaller final image (excludes build tools and dev dependencies)
+- Faster builds (better layer caching)
+- Security (fewer packages in production image)
+- Clean separation between build and runtime environments
+
+#### Building the Docker Image
+
+```bash
+# Build the Docker image
+docker build -t dentistico:latest .
+
+# Or with a specific tag
+docker build -t dentistico:v1.0.0 .
+```
+
+#### Running with Docker
+
+**Basic run (localhost):**
+```bash
+docker run -d \
+  --name dentistico \
+  -p 3000:3000 \
+  -e ORIGIN=http://localhost:3000 \
+  -v dentistico-data:/app \
+  dentistico:latest
+```
+
+**Production run with custom domain:**
+```bash
+docker run -d \
+  --name dentistico \
+  -p 3000:3000 \
+  -e ORIGIN=https://yourdomain.com \
+  -e NODE_ENV=production \
+  -e PORT=3000 \
+  -v dentistico-data:/app \
+  --restart unless-stopped \
+  dentistico:latest
+```
+
+**With custom database location (bind mount):**
+```bash
+# Create data directory on host
+mkdir -p ./data
+
+# Run with bind mount (database will be created in /app/dental_clinic.db)
+docker run -d \
+  --name dentistico \
+  -p 3000:3000 \
+  -e ORIGIN=http://localhost:3000 \
+  -v $(pwd)/data:/app/data \
+  dentistico:latest
+```
+
+**Note:** The database file (`dental_clinic.db`) is created in the working directory (`/app`). For data persistence:
+- Use named volumes: `-v dentistico-data:/app` (recommended)
+- Use bind mounts: `-v $(pwd)/data:/app` (for local development)
+- The database will persist between container restarts when using volumes
+
+#### Docker Compose (Alternative)
+
+Create a `docker-compose.yml` file:
+
+```yaml
+version: '3.8'
+
+services:
+  dentistico:
+    build: .
+    container_name: dentistico
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - ORIGIN=http://localhost:3000  # Change to your domain
+    volumes:
+      - dentistico-data:/app
+    restart: unless-stopped
+
+volumes:
+  dentistico-data:
+```
+
+Then run:
+```bash
+docker-compose up -d
+```
+
+#### Docker Commands
+
+```bash
+# View running container
+docker ps
+
+# View logs
+docker logs dentistico
+
+# Follow logs
+docker logs -f dentistico
+
+# Stop container
+docker stop dentistico
+
+# Start container
+docker start dentistico
+
+# Remove container
+docker rm dentistico
+
+# Remove image
+docker rmi dentistico:latest
+```
+
+### Manual Production Build
 
 ```bash
 # Build the application
 npm run build
 
-# The build output will be in the `build/` directory
-# Start the production server
-node build/index.js
+# Start the production server (recommended - handles ORIGIN automatically)
+npm start
+
+# OR manually start with ORIGIN set:
+# Windows (PowerShell):
+$env:ORIGIN = "http://localhost:3000"; node build/index.js
+
+# Windows (CMD):
+set ORIGIN=http://localhost:3000 && node build/index.js
+
+# Linux/Mac:
+ORIGIN=http://localhost:3000 node build/index.js
 ```
+
+**Note:** The `npm start` command uses a helper script that automatically sets a default ORIGIN if not provided. For production, always explicitly set ORIGIN to your actual domain.
 
 ### Environment Variables
 
 For production, ensure:
 - `NODE_ENV=production` is set
-- HTTPS is enabled for secure cookie handling
+- **`ORIGIN`** - **REQUIRED**: Set this to your application's full URL (e.g., `http://localhost:3000` or `https://yourdomain.com`)
+  - **Docker:** `-e ORIGIN=https://yourdomain.com`
+  - **Windows (PowerShell):** `$env:ORIGIN = "http://localhost:3000"; node build/index.js`
+  - **Windows (CMD):** `set ORIGIN=http://localhost:3000 && node build/index.js`
+  - **Linux/Mac:** `ORIGIN=http://localhost:3000 node build/index.js`
+- `PORT` - Optional, defaults to 3000
+- HTTPS is enabled for secure cookie handling (recommended for production)
 - Database file (`dental_clinic.db`) has proper read/write permissions
+
+**Important:** The `ORIGIN` environment variable is required to prevent "Cross-site POST form submissions are forbidden" errors. This tells SvelteKit the correct origin for CSRF protection.
+
+### Dockerfile Structure
+
+The Dockerfile is located in the project root. Here's what it does:
+
+```dockerfile
+# Stage 1: Builder
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci                    # Install all dependencies
+COPY . .
+RUN npm run build             # Build the application
+RUN npm prune --production    # Remove dev dependencies
+
+# Stage 2: Runner
+FROM node:22-alpine AS runner
+WORKDIR /app
+RUN apk add --no-cache python3 make g++  # SQLite build dependencies
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV ORIGIN=http://localhost:3000
+RUN mkdir -p /app/data
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/start.js ./start.js
+EXPOSE 3000
+CMD ["node", "build/index.js"]
+```
+
+### Docker Image Details
+
+- **Base Image:** Node.js 22 Alpine (lightweight Linux distribution, ~50MB base)
+- **Multi-stage Build:** Optimized for smaller final image size (~200-300MB vs ~1GB+ with dev tools)
+- **Database:** SQLite database stored in `/app` directory (use volumes for persistence)
+- **Port:** Exposes port 3000 (configurable via `PORT` environment variable)
+- **Runtime Dependencies:** Includes Python3, make, and g++ for `better-sqlite3` native bindings
+- **Build Optimization:** Uses `.dockerignore` to exclude unnecessary files from the build context
+- **Default Environment:** Sets `ORIGIN=http://localhost:3000` (override with `-e ORIGIN=...` when running)
+
+### Docker Build Optimization
+
+The project includes a `.dockerignore` file to reduce build context size and speed up builds. It excludes:
+- `node_modules` (installed fresh in container)
+- Development files and IDE configurations
+- Git history and documentation
+- Local database files
+- Build artifacts (rebuilt in container)
 
 ---
 

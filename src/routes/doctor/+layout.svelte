@@ -1,5 +1,6 @@
 <script lang="ts">
     import { page } from '$app/state';
+    import { enhance } from '$app/forms';
     import type { Snippet } from 'svelte';
     
     let { children }: { children: Snippet } = $props();
@@ -31,7 +32,7 @@
                     </div>
                 </div>
                 <div class="hidden sm:ml-6 sm:flex sm:items-center">
-                    <form action="/logout" method="POST">
+                    <form action="/logout" method="POST" use:enhance>
                         <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800">
                             Logout
                         </button>

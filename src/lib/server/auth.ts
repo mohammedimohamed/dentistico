@@ -30,11 +30,15 @@ export function deleteSession(sessionId: string) {
 }
 
 export function setSessionCookie(cookies: Cookies, sessionId: string) {
+    // Determine if we should use secure cookies (HTTPS only)
+    // In production with HTTPS, use secure. In development/localhost, allow HTTP.
+    const isSecure = process.env.NODE_ENV === 'production' && process.env.ORIGIN?.startsWith('https');
+    
     cookies.set('session_id', sessionId, {
         path: '/',
         httpOnly: true,
-        secure: true, // Typically requires HTTPS, but for local dev with Node adapter sometimes needs checking. SvelteKit 'secure' defaults to request protocol usually, but true enforces it. 
-        sameSite: 'strict',
+        secure: isSecure, // Only use secure cookies in production with HTTPS
+        sameSite: 'lax', // Changed from 'strict' to 'lax' for better compatibility
         maxAge: SESSION_DURATION_MS / 1000
     });
 }
