@@ -1,0 +1,574 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-01-27",
+    "description": "Complete configuration for Dentistico landing page. Modify this file to update all content, images, styles, and classes without touching the code."
+  },
+  "theme": {
+    "colors": {
+      "primary": {
+        "main": "teal-600",
+        "light": "teal-700",
+        "lighter": "teal-100",
+        "dark": "teal-800",
+        "value": "#0d9488"
+      },
+      "secondary": {
+        "main": "amber-500",
+        "value": "#f59e0b"
+      },
+      "text": {
+        "primary": "slate-900",
+        "secondary": "slate-600",
+        "muted": "slate-500",
+        "light": "slate-400",
+        "values": {
+          "primary": "#0f172a",
+          "secondary": "#475569",
+          "muted": "#64748b",
+          "light": "#94a3b8"
+        }
+      },
+      "background": {
+        "light": "white",
+        "dark": "slate-900",
+        "muted": "slate-50",
+        "values": {
+          "light": "#ffffff",
+          "dark": "#0f172a",
+          "muted": "#f8fafc"
+        }
+      }
+    },
+    "spacing": {
+      "container": {
+        "maxWidth": "max-w-7xl",
+        "padding": "px-6",
+        "center": "mx-auto"
+      },
+      "section": {
+        "paddingY": "py-24",
+        "heroPaddingTop": {
+          "mobile": "pt-32",
+          "desktop": "lg:pt-48"
+        },
+        "heroPaddingBottom": {
+          "mobile": "pb-20",
+          "desktop": "lg:pb-32"
+        }
+      }
+    },
+    "typography": {
+      "fontFamily": "sans-serif",
+      "headings": {
+        "h1": {
+          "mobile": "text-5xl",
+          "desktop": "lg:text-7xl",
+          "weight": "font-bold",
+          "lineHeight": "leading-[1.1]"
+        },
+        "h2": {
+          "size": "text-4xl",
+          "weight": "font-bold"
+        },
+        "h3": {
+          "size": "text-xl",
+          "weight": "font-bold"
+        },
+        "h4": {
+          "size": "text-base",
+          "weight": "font-bold"
+        }
+      },
+      "body": {
+        "large": "text-lg",
+        "base": "text-sm",
+        "small": "text-xs"
+      }
+    },
+    "animations": {
+      "revealUp": {
+        "class": "reveal-up",
+        "delayClass": "delay-200",
+        "threshold": 0.1
+      },
+      "transitions": {
+        "default": "transition-all",
+        "colors": "transition-colors",
+        "transform": "transition-transform",
+        "duration": {
+          "fast": "duration-300",
+          "medium": "duration-500"
+        }
+      }
+    }
+  },
+  "navigation": {
+    "id": "main-nav",
+    "classes": {
+      "container": "fixed top-0 w-full z-50 transition-all duration-300",
+      "scrolled": "glass-nav py-3",
+      "default": "bg-transparent py-6"
+    },
+    "scrollThreshold": 20,
+    "logo": {
+      "text": "Dentistico",
+      "classes": "text-2xl font-bold tracking-tight text-teal-700",
+      "href": "/",
+      "alt": "Dentistico Logo"
+    },
+    "menu": {
+      "classes": {
+        "container": "hidden md:flex items-center gap-8 text-sm font-medium text-slate-600",
+        "item": "hover:text-teal-600 transition-colors"
+      },
+      "items": [
+        {
+          "label": "Home",
+          "href": "#home",
+          "classes": "hover:text-teal-600 transition-colors"
+        },
+        {
+          "label": "Services",
+          "href": "#services",
+          "classes": "hover:text-teal-600 transition-colors"
+        },
+        {
+          "label": "About",
+          "href": "#about",
+          "classes": "hover:text-teal-600 transition-colors"
+        },
+        {
+          "label": "Contact",
+          "href": "#contact",
+          "classes": "hover:text-teal-600 transition-colors"
+        }
+      ]
+    },
+    "actions": {
+      "classes": {
+        "container": "flex items-center gap-4"
+      },
+      "buttons": [
+        {
+          "type": "link",
+          "label": "Login",
+          "href": "/login",
+          "classes": "text-sm font-medium text-teal-700 hover:text-teal-800"
+        },
+        {
+          "type": "link",
+          "label": "Book Now",
+          "href": "/book",
+          "classes": "bg-teal-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-teal-700 transition-all shadow-md hover:shadow-lg"
+        }
+      ]
+    }
+  },
+  "hero": {
+    "id": "home",
+    "classes": {
+      "section": "relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden hero-gradient",
+      "container": "max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center",
+      "content": "reveal-up",
+      "image": "relative reveal-up delay-200"
+    },
+    "badge": {
+      "text": "Professional Dental Care",
+      "classes": "inline-block px-4 py-1.5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold uppercase tracking-wider mb-6"
+    },
+    "heading": {
+      "text": "Your Smile is Our {highlight}Greatest Passion{/highlight}",
+      "highlight": {
+        "text": "Greatest Passion",
+        "classes": "text-teal-600"
+      },
+      "classes": "text-5xl lg:text-7xl font-bold text-slate-900 leading-[1.1] mb-8"
+    },
+    "description": {
+      "text": "Experience state-of-the-art dentistry in a warm, welcoming environment. We combine technology with compassion for your perfect smile.",
+      "classes": "text-lg text-slate-600 mb-10 leading-relaxed max-w-lg"
+    },
+    "actions": {
+      "classes": {
+        "container": "flex flex-wrap gap-4"
+      },
+      "buttons": [
+        {
+          "type": "primary",
+          "label": "Experience Dentistico",
+          "href": "/book",
+          "classes": "bg-teal-600 text-white px-8 py-4 rounded-full font-bold hover:bg-teal-700 transition-all shadow-xl hover:scale-105"
+        }
+      ],
+      "socialProof": {
+        "enabled": true,
+        "classes": {
+          "container": "flex items-center gap-3 px-6",
+          "avatars": "flex -space-x-2",
+          "avatar": "w-10 h-10 rounded-full border-2 border-white bg-slate-200 overflow-hidden",
+          "text": "text-sm font-medium text-slate-600"
+        },
+        "avatars": [
+          {
+            "src": "https://i.pravatar.cc/100?u=1",
+            "alt": "user"
+          },
+          {
+            "src": "https://i.pravatar.cc/100?u=2",
+            "alt": "user"
+          }
+        ],
+        "text": "Loved by 2k+ Patients"
+      }
+    },
+    "image": {
+      "src": "/hero.png",
+      "alt": "Modern Clinic",
+      "classes": {
+        "container": "relative rounded-3xl overflow-hidden shadow-2xl skew-y-1",
+        "image": "w-full h-auto"
+      },
+      "decorativeElements": [
+        {
+          "position": "bottom-left",
+          "classes": "absolute -bottom-6 -left-6 w-32 h-32 bg-teal-500/10 rounded-full blur-3xl"
+        },
+        {
+          "position": "top-right",
+          "classes": "absolute -top-6 -right-6 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl"
+        }
+      ]
+    }
+  },
+  "services": {
+    "id": "services",
+    "classes": {
+      "section": "py-24 bg-white",
+      "container": "max-w-7xl mx-auto px-6",
+      "header": "text-center mb-16 reveal-up",
+      "grid": "grid md:grid-cols-3 gap-8"
+    },
+    "header": {
+      "title": {
+        "text": "Our Specialized Services",
+        "classes": "text-4xl font-bold text-slate-900 mb-4"
+      },
+      "divider": {
+        "enabled": true,
+        "classes": "w-20 h-1.5 bg-teal-500 mx-auto rounded-full mb-6"
+      },
+      "description": {
+        "text": "We offer a wide range of dental treatments tailored to your unique needs, from routine checkups to specialized procedures.",
+        "classes": "text-slate-600 max-w-2xl mx-auto"
+      }
+    },
+    "items": [
+      {
+        "id": "general-dentistry",
+        "title": "General Dentistry",
+        "description": "Comprehensive exams, cleanings, and preventative care for all ages.",
+        "image": {
+          "src": "/service-general.png",
+          "alt": "General Dentistry"
+        },
+        "link": {
+          "href": "#services",
+          "text": "Learn More",
+          "icon": "→",
+          "classes": "text-teal-600 font-bold text-sm inline-flex items-center gap-2 group-hover:gap-3 transition-all"
+        },
+        "classes": {
+          "card": "group p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:bg-white hover:border-teal-200 transition-all duration-300 hover:shadow-xl reveal-up",
+          "imageContainer": "w-full h-48 rounded-2xl overflow-hidden mb-6",
+          "image": "w-full h-full object-cover group-hover:scale-110 transition-transform duration-500",
+          "title": "text-xl font-bold text-slate-900 mb-3",
+          "description": "text-slate-600 text-sm leading-relaxed mb-6"
+        },
+        "animationDelay": 0
+      },
+      {
+        "id": "cosmetic-dentistry",
+        "title": "Cosmetic Dentistry",
+        "description": "Veneers, whitening, and smile makeovers to boost your confidence.",
+        "image": {
+          "src": "/service-cosmetic.png",
+          "alt": "Cosmetic Dentistry"
+        },
+        "link": {
+          "href": "#services",
+          "text": "Learn More",
+          "icon": "→",
+          "classes": "text-teal-600 font-bold text-sm inline-flex items-center gap-2 group-hover:gap-3 transition-all"
+        },
+        "classes": {
+          "card": "group p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:bg-white hover:border-teal-200 transition-all duration-300 hover:shadow-xl reveal-up",
+          "imageContainer": "w-full h-48 rounded-2xl overflow-hidden mb-6",
+          "image": "w-full h-full object-cover group-hover:scale-110 transition-transform duration-500",
+          "title": "text-xl font-bold text-slate-900 mb-3",
+          "description": "text-slate-600 text-sm leading-relaxed mb-6"
+        },
+        "animationDelay": 100
+      },
+      {
+        "id": "orthodontics",
+        "title": "Orthodontics",
+        "description": "Modern solutions like Invisalign and traditional braces for a perfect smile.",
+        "image": {
+          "src": "/service-ortho.png",
+          "alt": "Orthodontics"
+        },
+        "link": {
+          "href": "#services",
+          "text": "Learn More",
+          "icon": "→",
+          "classes": "text-teal-600 font-bold text-sm inline-flex items-center gap-2 group-hover:gap-3 transition-all"
+        },
+        "classes": {
+          "card": "group p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:bg-white hover:border-teal-200 transition-all duration-300 hover:shadow-xl reveal-up",
+          "imageContainer": "w-full h-48 rounded-2xl overflow-hidden mb-6",
+          "image": "w-full h-full object-cover group-hover:scale-110 transition-transform duration-500",
+          "title": "text-xl font-bold text-slate-900 mb-3",
+          "description": "text-slate-600 text-sm leading-relaxed mb-6"
+        },
+        "animationDelay": 200
+      }
+    ]
+  },
+  "about": {
+    "id": "about",
+    "classes": {
+      "section": "py-24 bg-slate-50 overflow-hidden",
+      "container": "max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center",
+      "images": "grid grid-cols-2 gap-4 reveal-up",
+      "content": "reveal-up"
+    },
+    "images": {
+      "layout": "grid",
+      "gridCols": 2,
+      "items": [
+        {
+          "type": "image",
+          "src": "/about-interior.png",
+          "alt": "Clinic Interior",
+          "classes": "rounded-2xl overflow-hidden shadow-lg h-60",
+          "imageClasses": "w-full h-full object-cover"
+        },
+        {
+          "type": "stat",
+          "value": "15+",
+          "label": "Years Experience",
+          "classes": {
+            "container": "rounded-2xl overflow-hidden shadow-lg h-40 bg-teal-600 flex items-center justify-center text-white text-center p-6",
+            "value": "text-3xl font-bold mb-1",
+            "label": "text-xs uppercase font-bold tracking-widest opacity-80"
+          }
+        },
+        {
+          "type": "stat",
+          "value": "99%",
+          "label": "Happy Patients",
+          "classes": {
+            "container": "rounded-2xl overflow-hidden shadow-lg h-40 bg-slate-900 flex items-center justify-center text-white text-center p-6",
+            "value": "text-3xl font-bold mb-1",
+            "label": "text-xs uppercase font-bold tracking-widest opacity-80"
+          },
+          "offset": {
+            "classes": "pt-12"
+          }
+        },
+        {
+          "type": "image",
+          "src": "/service-general.png",
+          "alt": "Patient care",
+          "classes": "rounded-2xl overflow-hidden shadow-lg h-60",
+          "imageClasses": "w-full h-full object-cover"
+        }
+      ]
+    },
+    "content": {
+      "title": {
+        "text": "Why Choose Dentistico?",
+        "classes": "text-4xl font-bold text-slate-900 mb-6 leading-tight"
+      },
+      "description": {
+        "text": "We believe that dental care should be an experience you look forward to. Our team of experts is dedicated to providing pain-free, efficient, and aesthetic results for every patient.",
+        "classes": "text-lg text-slate-600 mb-8 leading-relaxed"
+      },
+      "features": {
+        "classes": {
+          "container": "space-y-6"
+        },
+        "items": [
+          {
+            "icon": "✨",
+            "title": "Advanced Technology",
+            "description": "We use the latest 3D imaging and laser technology for precision.",
+            "classes": {
+              "container": "flex gap-4",
+              "icon": "w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center text-teal-600 shrink-0",
+              "iconText": "text-xl",
+              "content": "",
+              "title": "font-bold text-slate-900 mb-1",
+              "description": "text-sm text-slate-500"
+            }
+          },
+          {
+            "icon": "🤝",
+            "title": "Personalized Care",
+            "description": "Every treatment plan is customized to your specific goals and budget.",
+            "classes": {
+              "container": "flex gap-4",
+              "icon": "w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center text-teal-600 shrink-0",
+              "iconText": "text-xl",
+              "content": "",
+              "title": "font-bold text-slate-900 mb-1",
+              "description": "text-sm text-slate-500"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "footer": {
+    "id": "contact",
+    "classes": {
+      "section": "bg-slate-900 text-slate-400 py-20",
+      "container": "max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12",
+      "copyright": "max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-slate-800 text-center text-xs"
+    },
+    "brand": {
+      "name": "Dentistico",
+      "classes": {
+        "name": "text-2xl font-bold text-white mb-6"
+      },
+      "description": {
+        "text": "Redefining dentistry with technology and heart. Your perfect smile starts here.",
+        "classes": "text-sm leading-relaxed mb-6"
+      },
+      "socialMedia": {
+        "enabled": true,
+        "classes": {
+          "container": "flex gap-4",
+          "icon": "w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center hover:bg-teal-600 transition-colors cursor-pointer"
+        },
+        "items": [
+          {
+            "platform": "Facebook",
+            "icon": "f",
+            "href": "#",
+            "classes": "w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center hover:bg-teal-600 transition-colors cursor-pointer"
+          },
+          {
+            "platform": "Instagram",
+            "icon": "i",
+            "href": "#",
+            "classes": "w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center hover:bg-teal-600 transition-colors cursor-pointer"
+          }
+        ]
+      }
+    },
+    "quickLinks": {
+      "title": "Quick Links",
+      "classes": {
+        "title": "text-white font-bold mb-6",
+        "list": "space-y-4 text-sm",
+        "item": "hover:text-teal-400 transition-colors"
+      },
+      "items": [
+        {
+          "label": "Home",
+          "href": "#home",
+          "classes": "hover:text-teal-400 transition-colors"
+        },
+        {
+          "label": "Services",
+          "href": "#services",
+          "classes": "hover:text-teal-400 transition-colors"
+        },
+        {
+          "label": "About",
+          "href": "#about",
+          "classes": "hover:text-teal-400 transition-colors"
+        },
+        {
+          "label": "Patient Login",
+          "href": "/login",
+          "classes": "hover:text-teal-400 transition-colors"
+        }
+      ]
+    },
+    "contact": {
+      "title": "Contact Us",
+      "classes": {
+        "title": "text-white font-bold mb-6",
+        "list": "space-y-4 text-sm",
+        "item": "flex items-start gap-3"
+      },
+      "items": [
+        {
+          "type": "address",
+          "icon": "📍",
+          "text": "123 Dental Street, Medical District, NY 10001",
+          "classes": "flex items-start gap-3"
+        },
+        {
+          "type": "phone",
+          "icon": "📞",
+          "text": "+1 (555) 000-1234",
+          "href": "tel:+15550001234",
+          "classes": "flex items-start gap-3"
+        },
+        {
+          "type": "email",
+          "icon": "✉️",
+          "text": "hello@dentistico.com",
+          "href": "mailto:hello@dentistico.com",
+          "classes": "flex items-start gap-3"
+        }
+      ]
+    },
+    "newsletter": {
+      "enabled": true,
+      "title": "Newsletter",
+      "description": {
+        "text": "Get dental health tips and updates.",
+        "classes": "text-sm mb-6"
+      },
+      "classes": {
+        "title": "text-white font-bold mb-6",
+        "form": "flex",
+        "input": "bg-slate-800 border-none rounded-l-lg px-4 py-2 text-sm w-full focus:ring-1 focus:ring-teal-500 outline-none",
+        "button": "bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-r-lg text-sm font-bold transition-colors"
+      },
+      "input": {
+        "type": "email",
+        "placeholder": "Email",
+        "name": "email"
+      },
+      "button": {
+        "text": "→",
+        "type": "submit"
+      }
+    },
+    "copyright": {
+      "text": "© 2025 Dentistico Clinic. All rights reserved.",
+      "classes": "max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-slate-800 text-center text-xs"
+    }
+  },
+  "scripts": {
+    "scrollAnimation": {
+      "enabled": true,
+      "threshold": 0.1,
+      "class": "reveal-up",
+      "activeClass": "active"
+    },
+    "navScroll": {
+      "enabled": true,
+      "threshold": 20,
+      "scrolledClass": "glass-nav py-3",
+      "defaultClass": "bg-transparent py-6"
+    }
+  }
+}
+
