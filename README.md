@@ -16,6 +16,7 @@ A comprehensive, full-stack dental clinic management application built with **Sv
 - [API Routes & Actions](#api-routes--actions)
 - [Security](#security)
 - [Development](#development)
+- [Landing Page Content Management](#-landing-page-content-management)
 - [Troubleshooting](#troubleshooting)
 - [Deployment](#-deployment)
 - [License](#license)
@@ -83,6 +84,10 @@ A comprehensive, full-stack dental clinic management application built with **Sv
   - Modern, responsive landing page
   - Service information and clinic details
   - Easy access to booking system
+  - **Content Management System (CMS)** - Fully customizable landing page via JSON configuration
+    - Update all text, images, and styles without code changes
+    - Centralized theme and branding configuration
+    - Easy content updates for non-technical users
 
 ---
 
@@ -117,6 +122,8 @@ dentistico/
 │   │   ├── server/
 │   │   │   ├── db.ts              # Database initialization, schema, and helper functions
 │   │   │   └── auth.ts            # Session management and authentication helpers
+│   │   ├── config/
+│   │   │   └── landing-page.json  # Landing page content management (CMS) configuration
 │   │   ├── types.ts               # TypeScript type definitions
 │   │   └── assets/                # Static assets (favicon, etc.)
 │   ├── routes/
@@ -164,6 +171,7 @@ dentistico/
 ├── dockerfile                 # Multi-stage Docker build configuration
 ├── .dockerignore              # Files excluded from Docker build context
 ├── start.js                   # Production startup script
+├── LANDING_PAGE_CONFIG.md     # Detailed guide for landing page customization
 └── README.md
 ```
 
@@ -484,6 +492,751 @@ The database is automatically initialized on first run. The system includes auto
 2. **New Routes**: Create folders in `src/routes/` with `+page.svelte` and `+page.server.ts`
 3. **New Actions**: Add form actions to `+page.server.ts` files
 4. **New Helper Functions**: Add to `src/lib/server/db.ts`
+
+---
+
+## 🎨 Landing Page Content Management
+
+Dentistico includes an **advanced content management system (CMS)** that allows you to customize the entire public landing page without modifying any code. All content, images, styles, and even CSS classes are externalized into a single JSON configuration file, making it easy for non-technical users to update the website.
+
+### Overview
+
+The landing page is fully driven by the `src/lib/config/landing-page.json` configuration file. This file contains:
+- **All text content** (headings, descriptions, labels, etc.)
+- **Image paths and alt text**
+- **TailwindCSS classes** for styling
+- **Navigation structure** (menu items, links)
+- **Theme configuration** (colors, spacing, typography)
+- **Interactive elements** (buttons, forms, social proof)
+- **Animation settings** (delays, effects)
+
+**Key Benefits:**
+- ✅ **No code changes required** - Update content by editing JSON only
+- ✅ **Version control friendly** - Track content changes in Git
+- ✅ **Non-technical user friendly** - Simple JSON structure
+- ✅ **Consistent styling** - All classes centralized
+- ✅ **Easy A/B testing** - Swap config files to test variations
+- ✅ **Multi-language ready** - Structure supports multiple language files
+
+### Configuration File Location
+
+```
+src/lib/config/landing-page.json
+```
+
+### Quick Start
+
+#### Changing Text Content
+
+1. Open `src/lib/config/landing-page.json` in any text editor
+2. Navigate to the section you want to modify (e.g., `hero.heading.text`)
+3. Update the text value
+4. Save the file
+5. Refresh your browser - changes appear immediately
+
+**Example:**
+```json
+{
+  "hero": {
+    "heading": {
+      "text": "Your Smile is Our {highlight}Greatest Passion{/highlight}"
+    }
+  }
+}
+```
+
+Change to:
+```json
+{
+  "hero": {
+    "heading": {
+      "text": "Welcome to {highlight}Dentistico{/highlight} - Your Dental Home"
+    }
+  }
+}
+```
+
+#### Changing Images
+
+1. Place your new image in the `static/` directory
+2. Update the image path in the config file
+3. Save and refresh
+
+**Example:**
+```json
+{
+  "hero": {
+    "image": {
+      "src": "/hero.png",
+      "alt": "Modern Clinic"
+    }
+  }
+}
+```
+
+Change to:
+```json
+{
+  "hero": {
+    "image": {
+      "src": "/new-hero-image.jpg",
+      "alt": "Our Beautiful Clinic"
+    }
+  }
+}
+```
+
+#### Changing Colors and Styles
+
+All styling uses TailwindCSS utility classes. Update the `classes` objects throughout the config:
+
+**Example - Changing Primary Color:**
+```json
+{
+  "theme": {
+    "colors": {
+      "primary": {
+        "main": "teal-600",
+        "value": "#0d9488"
+      }
+    }
+  },
+  "hero": {
+    "heading": {
+      "highlight": {
+        "classes": "text-teal-600"  // Change to "text-blue-600" for blue
+      }
+    }
+  }
+}
+```
+
+### Configuration Structure
+
+The JSON file is organized into logical sections:
+
+#### 1. Metadata
+```json
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-01-27",
+    "description": "Complete configuration for Dentistico landing page"
+  }
+}
+```
+
+#### 2. Theme Configuration
+Centralized theme settings for colors, spacing, and typography:
+
+```json
+{
+  "theme": {
+    "colors": {
+      "primary": { "main": "teal-600", "value": "#0d9488" },
+      "secondary": { "main": "amber-500", "value": "#f59e0b" },
+      "text": {
+        "primary": "slate-900",
+        "secondary": "slate-600"
+      }
+    },
+    "spacing": {
+      "container": {
+        "maxWidth": "max-w-7xl",
+        "padding": "px-6",
+        "center": "mx-auto"
+      },
+      "section": {
+        "paddingY": "py-24",
+        "heroPaddingTop": {
+          "mobile": "pt-32",
+          "desktop": "lg:pt-48"
+        }
+      }
+    }
+  }
+}
+```
+
+**What you can customize:**
+- Color palette (primary, secondary, text, background)
+- Container widths and padding
+- Section spacing (mobile and desktop)
+- Typography sizes and weights
+
+#### 3. Navigation Section
+Header/navbar configuration:
+
+```json
+{
+  "navigation": {
+    "logo": {
+      "text": "Dentistico",
+      "classes": "text-2xl font-bold text-slate-900"
+    },
+    "menu": {
+      "items": [
+        {
+          "label": "Home",
+          "href": "#home",
+          "classes": "text-slate-600 hover:text-teal-600 transition-colors"
+        },
+        {
+          "label": "Services",
+          "href": "#services",
+          "classes": "text-slate-600 hover:text-teal-600 transition-colors"
+        }
+      ]
+    },
+    "actions": {
+      "buttons": [
+        {
+          "label": "Book Now",
+          "href": "/book",
+          "classes": "bg-teal-600 text-white px-6 py-2 rounded-full hover:bg-teal-700"
+        }
+      ]
+    }
+  }
+}
+```
+
+**What you can customize:**
+- Logo text
+- Menu items (add, remove, reorder)
+- Button labels and links
+- All CSS classes for styling
+
+#### 4. Hero Section
+Main landing section with headline and call-to-action:
+
+```json
+{
+  "hero": {
+    "badge": {
+      "text": "Professional Dental Care",
+      "classes": "inline-block px-4 py-1.5 rounded-full bg-teal-100 text-teal-700"
+    },
+    "heading": {
+      "text": "Your Smile is Our {highlight}Greatest Passion{/highlight}",
+      "highlight": {
+        "text": "Greatest Passion",
+        "classes": "text-teal-600"
+      },
+      "classes": "text-5xl lg:text-7xl font-bold text-slate-900"
+    },
+    "description": {
+      "text": "Experience state-of-the-art dentistry...",
+      "classes": "text-lg text-slate-600 mb-10"
+    },
+    "actions": {
+      "buttons": [
+        {
+          "label": "Book Appointment",
+          "href": "/book",
+          "classes": "bg-teal-600 text-white px-8 py-4 rounded-full"
+        }
+      ],
+      "socialProof": {
+        "enabled": true,
+        "text": "Loved by 2k+ Patients",
+        "avatars": [
+          { "src": "https://i.pravatar.cc/100?u=1", "alt": "user" }
+        ]
+      }
+    },
+    "image": {
+      "src": "/hero.png",
+      "alt": "Modern Clinic",
+      "decorativeElements": [
+        {
+          "classes": "absolute -bottom-6 -left-6 w-32 h-32 bg-teal-500/10 rounded-full blur-3xl"
+        }
+      ]
+    }
+  }
+}
+```
+
+**Special Features:**
+- **Highlighted Text**: Use `{highlight}text{/highlight}` syntax to highlight portions of headings
+- **Social Proof**: Enable/disable customer testimonials with avatars
+- **Decorative Elements**: Add background blobs and shapes
+
+#### 5. Services Section
+Service cards grid:
+
+```json
+{
+  "services": {
+    "header": {
+      "title": {
+        "text": "Our Specialized Services",
+        "classes": "text-4xl font-bold text-slate-900 mb-4"
+      },
+      "description": {
+        "text": "We offer comprehensive dental care...",
+        "classes": "text-slate-600 text-lg"
+      }
+    },
+    "items": [
+      {
+        "id": "general-dentistry",
+        "title": "General Dentistry",
+        "description": "Comprehensive exams and cleanings...",
+        "image": {
+          "src": "/service-general.png",
+          "alt": "General Dentistry"
+        },
+        "link": {
+          "href": "#services",
+          "text": "Learn More",
+          "icon": "→"
+        },
+        "classes": {
+          "card": "group p-8 rounded-3xl bg-slate-50 border border-slate-100",
+          "imageContainer": "w-full h-48 rounded-2xl overflow-hidden mb-6",
+          "title": "text-xl font-bold text-slate-900 mb-3",
+          "description": "text-slate-600 text-sm leading-relaxed mb-6"
+        },
+        "animationDelay": 0
+      }
+    ]
+  }
+}
+```
+
+**What you can customize:**
+- Section title and description
+- Add/remove/reorder service items
+- Service titles, descriptions, images
+- Link destinations and text
+- Animation delays (staggered effects)
+- All styling classes
+
+**Adding New Services:**
+1. Copy an existing service item
+2. Update `id`, `title`, `description`, and `image.src`
+3. Adjust `animationDelay` (increments of 100ms for staggered effect)
+4. Save and refresh
+
+#### 6. About Section
+About section with images, stats, and features:
+
+```json
+{
+  "about": {
+    "images": {
+      "items": [
+        {
+          "type": "image",
+          "src": "/about-interior.png",
+          "alt": "Clinic Interior",
+          "classes": "rounded-2xl shadow-xl",
+          "imageClasses": "w-full h-auto"
+        },
+        {
+          "type": "stat",
+          "value": "15+",
+          "label": "Years Experience",
+          "classes": {
+            "container": "bg-teal-600 text-white p-8 rounded-2xl",
+            "value": "text-4xl font-bold mb-2",
+            "label": "text-sm uppercase tracking-wider"
+          }
+        }
+      ]
+    },
+    "content": {
+      "title": {
+        "text": "Why Choose Dentistico?",
+        "classes": "text-4xl font-bold text-slate-900 mb-6"
+      },
+      "description": {
+        "text": "We believe in combining technology with compassion...",
+        "classes": "text-slate-600 text-lg mb-8"
+      },
+      "features": {
+        "items": [
+          {
+            "icon": "✨",
+            "title": "Advanced Technology",
+            "description": "State-of-the-art equipment...",
+            "classes": {
+              "container": "flex gap-4 mb-6",
+              "icon": "w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center",
+              "title": "font-bold text-slate-900 mb-1",
+              "description": "text-sm text-slate-500"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+**What you can customize:**
+- Images (add/remove/reorder)
+- Statistics (values and labels)
+- Feature items (icons, titles, descriptions)
+- Layout and styling
+
+#### 7. Footer Section
+Footer with links, contact info, and newsletter:
+
+```json
+{
+  "footer": {
+    "brand": {
+      "name": "Dentistico",
+      "description": {
+        "text": "Redefining dentistry with technology and heart."
+      },
+      "socialMedia": {
+        "enabled": true,
+        "items": [
+          {
+            "platform": "Facebook",
+            "icon": "f",
+            "href": "#",
+            "classes": "w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center"
+          }
+        ]
+      }
+    },
+    "quickLinks": {
+      "title": "Quick Links",
+      "items": [
+        { "label": "Home", "href": "#home" },
+        { "label": "Services", "href": "#services" }
+      ]
+    },
+    "contact": {
+      "title": "Contact",
+      "items": [
+        {
+          "icon": "📍",
+          "text": "123 Main St, City",
+          "href": null
+        }
+      ]
+    },
+    "newsletter": {
+      "enabled": true,
+      "title": "Newsletter",
+      "description": {
+        "text": "Subscribe for dental tips and updates"
+      },
+      "input": {
+        "type": "email",
+        "placeholder": "Enter your email",
+        "name": "email"
+      },
+      "button": {
+        "type": "submit",
+        "text": "Subscribe"
+      }
+    },
+    "copyright": {
+      "text": "© 2025 Dentistico Clinic. All rights reserved."
+    }
+  }
+}
+```
+
+**What you can customize:**
+- Brand name and description
+- Social media links (enable/disable, add platforms)
+- Quick links menu
+- Contact information
+- Newsletter settings (enable/disable, customize form)
+- Copyright text
+
+#### 8. Scripts Configuration
+JavaScript behavior settings:
+
+```json
+{
+  "scripts": {
+    "navScroll": {
+      "enabled": true,
+      "threshold": 20
+    },
+    "scrollAnimation": {
+      "enabled": true,
+      "class": "reveal-up",
+      "activeClass": "active",
+      "threshold": 0.1
+    }
+  }
+}
+```
+
+**What you can customize:**
+- Navigation scroll behavior
+- Scroll animation settings
+- Animation classes and thresholds
+
+### Advanced Features
+
+#### Highlighted Text in Headings
+
+Use special syntax to highlight portions of text:
+
+```json
+{
+  "heading": {
+    "text": "Your Smile is Our {highlight}Greatest Passion{/highlight}",
+    "highlight": {
+      "text": "Greatest Passion",
+      "classes": "text-teal-600"
+    }
+  }
+}
+```
+
+The `{highlight}...{/highlight}` syntax is automatically parsed and styled with the highlight classes.
+
+#### Staggered Animations
+
+Service cards can have staggered animation delays:
+
+```json
+{
+  "items": [
+    { "animationDelay": 0 },    // First card
+    { "animationDelay": 100 },   // Second card (100ms delay)
+    { "animationDelay": 200 },   // Third card (200ms delay)
+    { "animationDelay": 300 }    // Fourth card (300ms delay)
+  ]
+}
+```
+
+This creates a cascading reveal effect.
+
+#### Decorative Elements
+
+Add background decorative shapes:
+
+```json
+{
+  "decorativeElements": [
+    {
+      "classes": "absolute -bottom-6 -left-6 w-32 h-32 bg-teal-500/10 rounded-full blur-3xl"
+    },
+    {
+      "classes": "absolute -top-6 -right-6 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl"
+    }
+  ]
+}
+```
+
+Use TailwindCSS classes to position, size, color, and blur these elements.
+
+#### Conditional Rendering
+
+Some elements can be enabled/disabled:
+
+```json
+{
+  "socialProof": {
+    "enabled": true,  // Set to false to hide
+    "text": "Loved by 2k+ Patients"
+  },
+  "newsletter": {
+    "enabled": true,  // Set to false to hide newsletter section
+    "title": "Newsletter"
+  }
+}
+```
+
+### Best Practices
+
+1. **Backup Before Changes**
+   - Always backup `landing-page.json` before making significant changes
+   - Use version control (Git) to track changes
+
+2. **Validate JSON Syntax**
+   - Use a JSON validator (jsonlint.com) before saving
+   - Check for missing commas, quotes, or brackets
+   - Ensure all strings are properly quoted
+
+3. **Test Incrementally**
+   - Make small changes and test frequently
+   - Refresh browser after each change
+   - Check both desktop and mobile views
+
+4. **Image Optimization**
+   - Optimize images before adding to `static/` directory
+   - Use appropriate formats (WebP for photos, PNG for graphics)
+   - Keep file sizes reasonable (< 500KB per image)
+
+5. **Consistent Naming**
+   - Use descriptive IDs for service items
+   - Follow consistent naming conventions
+   - Document any custom classes you add
+
+6. **TailwindCSS Classes**
+   - Familiarize yourself with TailwindCSS utility classes
+   - Use responsive prefixes (`lg:`, `md:`, `sm:`) for mobile-first design
+   - Test hover states and transitions
+
+7. **Content Structure**
+   - Keep text concise and scannable
+   - Use proper heading hierarchy
+   - Maintain consistent tone and voice
+
+### Common Customization Examples
+
+#### Example 1: Changing Primary Brand Color
+
+1. Update theme colors:
+```json
+{
+  "theme": {
+    "colors": {
+      "primary": {
+        "main": "blue-600",  // Changed from teal-600
+        "value": "#2563eb"
+      }
+    }
+  }
+}
+```
+
+2. Update all color references throughout the file:
+   - Search for `teal-600` and replace with `blue-600`
+   - Search for `teal-700` and replace with `blue-700`
+   - Search for `teal-100` and replace with `blue-100`
+   - Update hex values in decorative elements
+
+#### Example 2: Adding a New Service
+
+1. Find the `services.items` array
+2. Add a new service object:
+```json
+{
+  "id": "orthodontics",
+  "title": "Orthodontics",
+  "description": "Straighten your smile with modern braces and aligners.",
+  "image": {
+    "src": "/service-orthodontics.png",
+    "alt": "Orthodontics"
+  },
+  "link": {
+    "href": "#services",
+    "text": "Learn More",
+    "icon": "→",
+    "classes": "text-teal-600 font-bold text-sm inline-flex items-center gap-2"
+  },
+  "classes": {
+    "card": "group p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:bg-white hover:border-teal-200 transition-all duration-300 hover:shadow-xl reveal-up",
+    "imageContainer": "w-full h-48 rounded-2xl overflow-hidden mb-6",
+    "image": "w-full h-full object-cover group-hover:scale-110 transition-transform duration-500",
+    "title": "text-xl font-bold text-slate-900 mb-3",
+    "description": "text-slate-600 text-sm leading-relaxed mb-6"
+  },
+  "animationDelay": 400
+}
+```
+
+3. Add the corresponding image to `static/service-orthodontics.png`
+
+#### Example 3: Updating Contact Information
+
+1. Navigate to `footer.contact.items`
+2. Update the contact items:
+```json
+{
+  "contact": {
+    "items": [
+      {
+        "icon": "📍",
+        "text": "456 New Street, Your City, ST 12345",
+        "href": null
+      },
+      {
+        "icon": "📞",
+        "text": "(555) 123-4567",
+        "href": "tel:+15551234567"
+      },
+      {
+        "icon": "✉️",
+        "text": "info@dentistico.com",
+        "href": "mailto:info@dentistico.com"
+      }
+    ]
+  }
+}
+```
+
+### Troubleshooting
+
+#### JSON Syntax Errors
+
+**Problem**: Page doesn't load, console shows JSON parse error
+
+**Solution**:
+- Use a JSON validator (jsonlint.com)
+- Check for:
+  - Missing commas between objects
+  - Unclosed brackets or braces
+  - Unquoted strings
+  - Trailing commas
+
+#### Images Not Displaying
+
+**Problem**: Images show as broken or don't appear
+
+**Solution**:
+- Verify image path starts with `/` (e.g., `/hero.png`)
+- Check that image exists in `static/` directory
+- Ensure file extension matches (`.png`, `.jpg`, `.webp`)
+- Check file permissions
+
+#### Styles Not Applying
+
+**Problem**: CSS classes not working as expected
+
+**Solution**:
+- Verify TailwindCSS classes are valid
+- Check for typos in class names
+- Ensure classes are space-separated in strings
+- Check browser console for CSS errors
+- Verify TailwindCSS is properly configured
+
+#### Changes Not Reflecting
+
+**Problem**: Changes saved but not visible in browser
+
+**Solution**:
+- Hard refresh browser (Ctrl+Shift+R or Cmd+Shift+R)
+- Clear browser cache
+- Restart development server
+- Check browser console for errors
+- Verify file was saved correctly
+
+### File Reference
+
+For a complete reference of all available configuration options, see:
+- `LANDING_PAGE_CONFIG.md` - Detailed configuration guide
+- `src/lib/config/landing-page.json` - Complete example with all options
+
+### Technical Implementation
+
+The landing page component (`src/routes/+page.svelte`) dynamically loads and renders content from the JSON file using Svelte 5's reactive primitives:
+
+- **`$derived`** - Computes reactive values from config
+- **`{#each}`** - Iterates over arrays (services, menu items, etc.)
+- **`{#if}`** - Conditionally renders elements based on `enabled` flags
+- **Dynamic class binding** - Applies TailwindCSS classes from config
+
+The component is fully decoupled from content, making it easy to:
+- Swap configuration files for A/B testing
+- Support multiple languages (by loading different config files)
+- Generate configs programmatically
+- Version control content separately from code
 
 ---
 
