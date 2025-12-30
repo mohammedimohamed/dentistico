@@ -79,6 +79,10 @@
                                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{data.patient.full_name}</dd>
                             </div>
                             <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt class="text-sm font-medium text-gray-500">Gender</dt>
+                                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{data.patient.gender || 'N/A'}</dd>
+                            </div>
+                            <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                                 <dt class="text-sm font-medium text-gray-500">Phone</dt>
                                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                                     {#if data.patient.phone}
@@ -122,8 +126,25 @@
                             <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                                 <dt class="text-sm font-medium text-gray-500">Emergency Contact</dt>
                                 <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                                    {data.patient.emergency_contact_name || 'N/A'} <br>
+                                    {data.patient.emergency_contact_name || 'N/A'}
+                                    {#if data.patient.emergency_contact_relationship}
+                                        <span class="text-gray-500"> ({data.patient.emergency_contact_relationship})</span>
+                                    {/if}
+                                    <br>
                                     <span class="text-gray-500">{data.patient.emergency_contact_phone || ''}</span>
+                                </dd>
+                            </div>
+                            <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt class="text-sm font-medium text-gray-500">Insurance</dt>
+                                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                    {#if data.patient.insurance_provider}
+                                        {data.patient.insurance_provider}
+                                        {#if data.patient.insurance_number}
+                                            <span class="text-gray-500"> - {data.patient.insurance_number}</span>
+                                        {/if}
+                                    {:else}
+                                        <span class="text-gray-400">N/A</span>
+                                    {/if}
                                 </dd>
                             </div>
                         </dl>
@@ -193,28 +214,73 @@
                     <p class="mt-1 max-w-2xl text-sm text-gray-500">Medical background and health status.</p>
                 </div>
                 <div class="border-t border-gray-200 px-4 py-5 sm:p-6 space-y-6">
-                    <div>
-                        <h4 class="text-sm font-medium text-gray-500">Blood Type</h4>
-                        <p class="mt-1 text-lg text-gray-900">{data.patient.blood_type || 'Unknown'}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Blood Type</h4>
+                            <p class="mt-1 text-lg text-gray-900">{data.patient.blood_type || 'Unknown'}</p>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Gender</h4>
+                            <p class="mt-1 text-lg text-gray-900">{data.patient.gender || 'Not specified'}</p>
+                        </div>
+                        {#if data.patient.pregnancy_status === 1}
+                            <div class="md:col-span-2">
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                                    <p class="text-sm font-medium text-yellow-800">⚠️ Pregnancy Status: Active</p>
+                                </div>
+                            </div>
+                        {/if}
                     </div>
                     <div>
                         <h4 class="text-sm font-medium text-gray-500">Allergies</h4>
-                        <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200">
+                        <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
                             {data.patient.allergies || 'None reported'}
                         </div>
                     </div>
                     <div>
                         <h4 class="text-sm font-medium text-gray-500">Current Medications</h4>
-                        <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200">
+                        <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
                             {data.patient.current_medications || 'None reported'}
                         </div>
                     </div>
                     <div>
                         <h4 class="text-sm font-medium text-gray-500">Medical Conditions</h4>
-                        <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200">
+                        <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
                             {data.patient.medical_conditions || 'None reported'}
                         </div>
                     </div>
+                    {#if data.patient.surgical_history}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Surgical History</h4>
+                            <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
+                                {data.patient.surgical_history}
+                            </div>
+                        </div>
+                    {/if}
+                    {#if data.patient.family_medical_history}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Family Medical History</h4>
+                            <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
+                                {data.patient.family_medical_history}
+                            </div>
+                        </div>
+                    {/if}
+                    {#if data.patient.oral_habits}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Oral Habits</h4>
+                            <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
+                                {data.patient.oral_habits}
+                            </div>
+                        </div>
+                    {/if}
+                    {#if data.patient.substance_use}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Substance Use</h4>
+                            <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
+                                {data.patient.substance_use}
+                            </div>
+                        </div>
+                    {/if}
                 </div>
             </div>
         {/if}
@@ -224,11 +290,22 @@
             <div class="space-y-6">
                 <div class="bg-white shadow sm:rounded-lg">
                     <div class="px-4 py-5 sm:px-6">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900">Dental Notes</h3>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Dental Information</h3>
                     </div>
-                    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
-                        <div class="prose max-w-none text-gray-900 whitespace-pre-line">
-                            {data.patient.dental_notes || 'No general notes.'}
+                    <div class="border-t border-gray-200 px-4 py-5 sm:p-6 space-y-4">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Previous Dentist</h4>
+                            <p class="mt-1 text-gray-900">{data.patient.previous_dentist || 'Not specified'}</p>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Last Visit Date</h4>
+                            <p class="mt-1 text-gray-900">{data.patient.last_visit_date || 'Not recorded'}</p>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Dental Notes</h4>
+                            <div class="mt-1 prose max-w-none text-gray-900 whitespace-pre-line p-3 bg-gray-50 rounded-md border border-gray-200">
+                                {data.patient.dental_notes || 'No general notes.'}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -382,28 +459,49 @@
             <div class="fixed inset-0 bg-gray-500/75" aria-hidden="true" onclick={() => isEditModalOpen = false}></div>
             <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4">
-                    <div class="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl">
+                    <div class="relative w-full max-w-4xl transform overflow-hidden rounded-lg bg-white shadow-xl">
                         <form method="POST" action="?/updatePatient" use:enhance={() => {
                             return async ({ result }) => {
                                 if (result.type === 'success') isEditModalOpen = false;
                             };
                         }}>
-                            <div class="bg-white px-4 py-5 sm:p-6">
+                            <div class="bg-white px-4 py-5 sm:p-6 max-h-[85vh] overflow-y-auto">
                                 <h3 class="text-lg font-semibold mb-4">Edit Patient Profile</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <!-- Personal -->
+                                    <!-- Personal Information -->
+                                    <div class="col-span-2 border-b pb-3">
+                                        <p class="font-semibold text-gray-900 mb-3">Personal Information</p>
+                                    </div>
                                     <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                                        <label class="block text-sm font-medium text-gray-700">Full Name *</label>
                                         <input type="text" name="full_name" value={data.patient.full_name} required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
                                     </div>
                                     <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                                        <label class="block text-sm font-medium text-gray-700">Date of Birth *</label>
                                         <input type="date" name="date_of_birth" value={data.patient.date_of_birth} required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
                                     </div>
-                                    <!-- Contact -->
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-sm font-medium text-gray-700">Gender</label>
+                                        <select name="gender" value={data.patient.gender || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                            <option value="">Select...</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                            <option value="Prefer not to say">Prefer not to say</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-sm font-medium text-gray-700">Blood Type</label>
+                                        <input type="text" name="blood_type" value={data.patient.blood_type || ''} placeholder="e.g., A+, O-" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                    </div>
+
+                                    <!-- Contact Information -->
+                                    <div class="col-span-2 border-t pt-4 mt-2 border-b pb-3">
+                                        <p class="font-semibold text-gray-900 mb-3">Contact Information</p>
+                                    </div>
                                     <div class="col-span-2 md:col-span-1">
                                         <label class="block text-sm font-medium text-gray-700">Phone</label>
-                                        <input type="tel" name="phone" value={data.patient.phone} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                        <input type="tel" name="phone" value={data.patient.phone || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
                                     </div>
                                     <div class="col-span-2 md:col-span-1">
                                         <label class="block text-sm font-medium text-gray-700">Email</label>
@@ -430,25 +528,90 @@
                                         <input type="text" name="postal_code" value={data.patient.postal_code || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
                                     </div>
 
-                                    <!-- Medical -->
-                                    <div class="col-span-2 border-t pt-4 mt-2">
-                                        <p class="font-medium text-gray-900 mb-2">Medical Data</p>
+                                    <!-- Emergency Contact -->
+                                    <div class="col-span-2 border-t pt-4 mt-2 border-b pb-3">
+                                        <p class="font-semibold text-gray-900 mb-3">Emergency Contact</p>
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-sm font-medium text-gray-700">Emergency Contact Name</label>
+                                        <input type="text" name="emergency_contact_name" value={data.patient.emergency_contact_name || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-sm font-medium text-gray-700">Emergency Contact Phone</label>
+                                        <input type="tel" name="emergency_contact_phone" value={data.patient.emergency_contact_phone || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-sm font-medium text-gray-700">Relationship</label>
+                                        <input type="text" name="emergency_contact_relationship" value={data.patient.emergency_contact_relationship || ''} placeholder="e.g., Spouse, Parent" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                    </div>
+
+                                    <!-- Insurance -->
+                                    <div class="col-span-2 border-t pt-4 mt-2 border-b pb-3">
+                                        <p class="font-semibold text-gray-900 mb-3">Insurance</p>
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-sm font-medium text-gray-700">Insurance Provider</label>
+                                        <input type="text" name="insurance_provider" value={data.patient.insurance_provider || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-sm font-medium text-gray-700">Insurance Number</label>
+                                        <input type="text" name="insurance_number" value={data.patient.insurance_number || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                    </div>
+
+                                    <!-- Medical Information -->
+                                    <div class="col-span-2 border-t pt-4 mt-2 border-b pb-3">
+                                        <p class="font-semibold text-gray-900 mb-3">Medical Information</p>
                                     </div>
                                     <div class="col-span-2">
                                         <label class="block text-sm font-medium text-gray-700">Allergies</label>
-                                        <input type="text" name="allergies" value={data.patient.allergies || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Medical Conditions</label>
-                                        <input type="text" name="medical_conditions" value={data.patient.medical_conditions || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                        <textarea name="allergies" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.allergies || ''}</textarea>
                                     </div>
                                     <div class="col-span-2">
                                         <label class="block text-sm font-medium text-gray-700">Current Medications</label>
-                                        <input type="text" name="current_medications" value={data.patient.current_medications || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                        <textarea name="current_medications" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.current_medications || ''}</textarea>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700">Medical Conditions</label>
+                                        <textarea name="medical_conditions" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.medical_conditions || ''}</textarea>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700">Surgical History</label>
+                                        <textarea name="surgical_history" rows="2" placeholder="e.g., Heart surgery 2020" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.surgical_history || ''}</textarea>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700">Family Medical History</label>
+                                        <textarea name="family_medical_history" rows="2" placeholder="Genetic dental-relevant information" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.family_medical_history || ''}</textarea>
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="flex items-center gap-2">
+                                            <input type="checkbox" name="pregnancy_status" value="1" checked={data.patient.pregnancy_status === 1 || false} class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                            <span class="text-sm font-medium text-gray-700">Pregnancy Status</span>
+                                        </label>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700">Oral Habits</label>
+                                        <textarea name="oral_habits" rows="2" placeholder="e.g., Smoking: Yes, 1 pack/day; Bruxism: Yes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.oral_habits || ''}</textarea>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700">Substance Use</label>
+                                        <textarea name="substance_use" rows="2" placeholder="e.g., Alcohol: Moderate; Drugs: None" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.substance_use || ''}</textarea>
+                                    </div>
+
+                                    <!-- Dental Information -->
+                                    <div class="col-span-2 border-t pt-4 mt-2 border-b pb-3">
+                                        <p class="font-semibold text-gray-900 mb-3">Dental Information</p>
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-sm font-medium text-gray-700">Previous Dentist</label>
+                                        <input type="text" name="previous_dentist" value={data.patient.previous_dentist || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-sm font-medium text-gray-700">Last Visit Date</label>
+                                        <input type="date" name="last_visit_date" value={data.patient.last_visit_date || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
                                     </div>
                                     <div class="col-span-2">
                                         <label class="block text-sm font-medium text-gray-700">Dental Notes</label>
-                                        <textarea name="dental_notes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.dental_notes || ''}</textarea>
+                                        <textarea name="dental_notes" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.dental_notes || ''}</textarea>
                                     </div>
                                 </div>
                             </div>

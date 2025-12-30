@@ -35,16 +35,18 @@ export function init_db() {
         CREATE TABLE IF NOT EXISTS patients (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             full_name TEXT NOT NULL,
+            date_of_birth TEXT,
+            gender TEXT,  
             phone TEXT, 
             email TEXT,
             secondary_phone TEXT,
             secondary_email TEXT,
-            date_of_birth TEXT NOT NULL,
             address TEXT,
             city TEXT,
             postal_code TEXT,
             emergency_contact_name TEXT,
             emergency_contact_phone TEXT,
+            emergency_contact_relationship TEXT,  -- e.g., 'Spouse', 'Parent'
             insurance_provider TEXT,
             insurance_number TEXT,
             
@@ -56,7 +58,12 @@ export function init_db() {
             allergies TEXT,
             current_medications TEXT,
             medical_conditions TEXT,
+            surgical_history TEXT,  -- e.g., 'Heart surgery 2020'
+            family_medical_history TEXT,  -- Genetic dental-relevant info
+            pregnancy_status INTEGER DEFAULT 0,  -- BOOLEAN: 0 or 1
             blood_type TEXT,
+            oral_habits TEXT,  -- e.g., 'Smoking: Yes, 1 pack/day; Bruxism: Yes'
+            substance_use TEXT,  -- e.g., 'Alcohol: Moderate; Drugs: None'
             
             -- Dental History
             previous_dentist TEXT,
@@ -68,9 +75,20 @@ export function init_db() {
             is_active INTEGER DEFAULT 1,
             created_by INTEGER,
             user_id INTEGER, -- Linked authentication account
+            last_updated TEXT DEFAULT (datetime('now')),  -- Track history updates
             FOREIGN KEY (created_by) REFERENCES users(id),
             FOREIGN KEY (primary_contract_id) REFERENCES patients(id),
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS patient_history_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            update_date TEXT DEFAULT (datetime('now')),
+            updated_by INTEGER,  -- User who updated
+            changes TEXT,  -- JSON string of diffs
+            FOREIGN KEY (patient_id) REFERENCES patients(id),
+            FOREIGN KEY (updated_by) REFERENCES users(id)
         );
 
         CREATE TABLE IF NOT EXISTS appointments (
@@ -271,6 +289,49 @@ export function init_db() {
         console.error('Relationship migration failed:', e);
     }
 
+    // Migration for new patient fields
+    try {
+        const patientCols = db.prepare("PRAGMA table_info(patients)").all() as any[];
+        const colNames = patientCols.map(c => c.name);
+
+        const newFields = [
+            { name: 'gender', sql: 'ALTER TABLE patients ADD COLUMN gender TEXT' },
+            { name: 'emergency_contact_relationship', sql: 'ALTER TABLE patients ADD COLUMN emergency_contact_relationship TEXT' },
+            { name: 'surgical_history', sql: 'ALTER TABLE patients ADD COLUMN surgical_history TEXT' },
+            { name: 'family_medical_history', sql: 'ALTER TABLE patients ADD COLUMN family_medical_history TEXT' },
+            { name: 'pregnancy_status', sql: 'ALTER TABLE patients ADD COLUMN pregnancy_status INTEGER DEFAULT 0' },
+            { name: 'oral_habits', sql: 'ALTER TABLE patients ADD COLUMN oral_habits TEXT' },
+            { name: 'substance_use', sql: 'ALTER TABLE patients ADD COLUMN substance_use TEXT' },
+            { name: 'last_updated', sql: 'ALTER TABLE patients ADD COLUMN last_updated TEXT DEFAULT (datetime(\'now\'))' }
+        ];
+
+        for (const field of newFields) {
+            if (!colNames.includes(field.name)) {
+                db.exec(field.sql);
+                console.log(`Added ${field.name} column to patients table`);
+            }
+        }
+
+        // Create patient_history_logs table if it doesn't exist
+        const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='patient_history_logs'").get();
+        if (!tables) {
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS patient_history_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    patient_id INTEGER NOT NULL,
+                    update_date TEXT DEFAULT (datetime('now')),
+                    updated_by INTEGER,
+                    changes TEXT,
+                    FOREIGN KEY (patient_id) REFERENCES patients(id),
+                    FOREIGN KEY (updated_by) REFERENCES users(id)
+                )
+            `);
+            console.log('Created patient_history_logs table');
+        }
+    } catch (e) {
+        console.error('Migration for new patient fields failed:', e);
+    }
+
     // Migration for payments table to fix broken FOREIGN KEY to treatments_old
     try {
         const paymentsTableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='payments'").get() as any;
@@ -437,13 +498,39 @@ export function createPatient(patientData: any) {
     return info.lastInsertRowid;
 }
 
-export function updatePatient(id: number, patientData: any) {
+export function updatePatient(id: number, patientData: any, updatedBy?: number) {
+    // Get old patient data for history
+    const oldPatient = getPatientByIdFull(id);
+    
     const keys = Object.keys(patientData);
     const setClause = keys.map(key => `${key} = ?`).join(', ');
     const values = [...Object.values(patientData), id];
 
-    const stmt = db.prepare(`UPDATE patients SET ${setClause} WHERE id = ?`);
-    return stmt.run(...values);
+    // Add last_updated timestamp
+    const updateStmt = db.prepare(`UPDATE patients SET ${setClause}, last_updated = datetime('now') WHERE id = ?`);
+    const result = updateStmt.run(...values);
+
+    // Log changes to history if updatedBy is provided
+    if (updatedBy && oldPatient) {
+        const changes: Record<string, { old: any; new: any }> = {};
+        for (const key of keys) {
+            const oldValue = oldPatient[key as keyof typeof oldPatient];
+            const newValue = patientData[key];
+            if (oldValue !== newValue) {
+                changes[key] = { old: oldValue, new: newValue };
+            }
+        }
+        
+        if (Object.keys(changes).length > 0) {
+            const logStmt = db.prepare(`
+                INSERT INTO patient_history_logs (patient_id, updated_by, changes)
+                VALUES (?, ?, ?)
+            `);
+            logStmt.run(id, updatedBy, JSON.stringify(changes));
+        }
+    }
+
+    return result;
 }
 
 // Limited access for Assistants
@@ -468,6 +555,16 @@ export function getPatientByPhoneOrEmail(phone: string, email?: string) {
 
 export function getSecondaryPatient(primaryId: number, fullName: string, dob: string) {
     return db.prepare('SELECT * FROM patients WHERE primary_contract_id = ? AND full_name = ? AND date_of_birth = ?').get(primaryId, fullName, dob);
+}
+
+export function getPatientHistoryLogs(patientId: number) {
+    return db.prepare(`
+        SELECT h.*, u.full_name as updated_by_name
+        FROM patient_history_logs h
+        LEFT JOIN users u ON h.updated_by = u.id
+        WHERE h.patient_id = ?
+        ORDER BY h.update_date DESC
+    `).all(patientId);
 }
 
 

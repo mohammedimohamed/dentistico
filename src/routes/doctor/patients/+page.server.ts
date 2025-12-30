@@ -40,13 +40,26 @@ export const actions: Actions = {
         }
 
         try {
-            const patientId = createPatient({
+            const patientData: any = {
                 full_name: fullName,
-                phone,
-                email,
+                phone: phone || null,
+                email: email || null,
                 date_of_birth: dob,
+                gender: formData.get('gender') as string || null,
+                secondary_phone: formData.get('secondary_phone') as string || null,
+                secondary_email: formData.get('secondary_email') as string || null,
+                address: formData.get('address') as string || null,
+                city: formData.get('city') as string || null,
+                postal_code: formData.get('postal_code') as string || null,
+                emergency_contact_name: formData.get('emergency_contact_name') as string || null,
+                emergency_contact_phone: formData.get('emergency_contact_phone') as string || null,
+                emergency_contact_relationship: formData.get('emergency_contact_relationship') as string || null,
+                insurance_provider: formData.get('insurance_provider') as string || null,
+                insurance_number: formData.get('insurance_number') as string || null,
                 created_by: locals.user.id
-            });
+            };
+
+            const patientId = createPatient(patientData);
             return { success: true, patientId };
         } catch (e) {
             console.error(e);

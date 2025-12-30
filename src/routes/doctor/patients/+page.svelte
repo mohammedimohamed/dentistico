@@ -97,7 +97,7 @@
 
             <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                    <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                    <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
                         <form method="POST" action="?/createPatient" use:enhance={() => {
                             return async ({ result }) => {
                                 if (result.type === 'success') {
@@ -106,24 +106,108 @@
                                 }
                             };
                         }}>
-                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 max-h-[80vh] overflow-y-auto">
                                 <h3 class="text-lg font-semibold leading-6 text-gray-900 mb-4" id="modal-title">Add New Patient</h3>
                                 <div class="space-y-4">
-                                    <div>
-                                        <label for="full_name" class="block text-sm font-medium text-gray-700">Full Name *</label>
-                                        <input type="text" name="full_name" id="full_name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                    <!-- Personal Information -->
+                                    <div class="border-b pb-3">
+                                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Personal Information</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label for="full_name" class="block text-sm font-medium text-gray-700">Full Name *</label>
+                                                <input type="text" name="full_name" id="full_name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                            <div>
+                                                <label for="date_of_birth" class="block text-sm font-medium text-gray-700">Date of Birth *</label>
+                                                <input type="date" name="date_of_birth" id="date_of_birth" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                            <div>
+                                                <label for="gender" class="block text-sm font-medium text-gray-700">Gender</label>
+                                                <select name="gender" id="gender" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                                    <option value="">Select...</option>
+                                                    <option value="Male">Male</option>
+                                                    <option value="Female">Female</option>
+                                                    <option value="Other">Other</option>
+                                                    <option value="Prefer not to say">Prefer not to say</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label for="date_of_birth" class="block text-sm font-medium text-gray-700">Date of Birth *</label>
-                                        <input type="date" name="date_of_birth" id="date_of_birth" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+
+                                    <!-- Contact Information -->
+                                    <div class="border-b pb-3">
+                                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Contact Information</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
+                                                <input type="tel" name="phone" id="phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                            <div>
+                                                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                                                <input type="email" name="email" id="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                            <div>
+                                                <label for="secondary_phone" class="block text-sm font-medium text-gray-700">Secondary Phone</label>
+                                                <input type="tel" name="secondary_phone" id="secondary_phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                            <div>
+                                                <label for="secondary_email" class="block text-sm font-medium text-gray-700">Secondary Email</label>
+                                                <input type="email" name="secondary_email" id="secondary_email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
-                                        <input type="tel" name="phone" id="phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+
+                                    <!-- Address -->
+                                    <div class="border-b pb-3">
+                                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Address</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div class="md:col-span-2">
+                                                <label for="address" class="block text-sm font-medium text-gray-700">Street Address</label>
+                                                <input type="text" name="address" id="address" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                            <div>
+                                                <label for="city" class="block text-sm font-medium text-gray-700">City</label>
+                                                <input type="text" name="city" id="city" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                            <div>
+                                                <label for="postal_code" class="block text-sm font-medium text-gray-700">Postal Code</label>
+                                                <input type="text" name="postal_code" id="postal_code" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                                        <input type="email" name="email" id="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+
+                                    <!-- Emergency Contact -->
+                                    <div class="border-b pb-3">
+                                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Emergency Contact</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label for="emergency_contact_name" class="block text-sm font-medium text-gray-700">Name</label>
+                                                <input type="text" name="emergency_contact_name" id="emergency_contact_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                            <div>
+                                                <label for="emergency_contact_phone" class="block text-sm font-medium text-gray-700">Phone</label>
+                                                <input type="tel" name="emergency_contact_phone" id="emergency_contact_phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                            <div>
+                                                <label for="emergency_contact_relationship" class="block text-sm font-medium text-gray-700">Relationship</label>
+                                                <input type="text" name="emergency_contact_relationship" id="emergency_contact_relationship" placeholder="e.g., Spouse, Parent" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Insurance -->
+                                    <div class="border-b pb-3">
+                                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Insurance</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label for="insurance_provider" class="block text-sm font-medium text-gray-700">Provider</label>
+                                                <input type="text" name="insurance_provider" id="insurance_provider" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                            <div>
+                                                <label for="insurance_number" class="block text-sm font-medium text-gray-700">Policy Number</label>
+                                                <input type="text" name="insurance_number" id="insurance_number" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

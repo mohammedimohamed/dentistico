@@ -50,21 +50,35 @@ export const actions: Actions = {
         const patientId = parseInt(params.id);
         const formData = await request.formData();
 
-        const updatedData = {
+        const pregnancyStatus = formData.get('pregnancy_status');
+        const updatedData: any = {
             full_name: formData.get('full_name'),
-            phone: formData.get('phone'),
-            email: formData.get('email'),
+            phone: formData.get('phone') || null,
+            email: formData.get('email') || null,
             date_of_birth: formData.get('date_of_birth'),
-            address: formData.get('address'),
-            city: formData.get('city'),
-            postal_code: formData.get('postal_code'),
-            secondary_phone: formData.get('secondary_phone'),
-            secondary_email: formData.get('secondary_email'),
-            allergies: formData.get('allergies'),
-            current_medications: formData.get('current_medications'),
-            medical_conditions: formData.get('medical_conditions'),
-            blood_type: formData.get('blood_type'),
-            dental_notes: formData.get('dental_notes')
+            gender: formData.get('gender') || null,
+            address: formData.get('address') || null,
+            city: formData.get('city') || null,
+            postal_code: formData.get('postal_code') || null,
+            secondary_phone: formData.get('secondary_phone') || null,
+            secondary_email: formData.get('secondary_email') || null,
+            emergency_contact_name: formData.get('emergency_contact_name') || null,
+            emergency_contact_phone: formData.get('emergency_contact_phone') || null,
+            emergency_contact_relationship: formData.get('emergency_contact_relationship') || null,
+            insurance_provider: formData.get('insurance_provider') || null,
+            insurance_number: formData.get('insurance_number') || null,
+            allergies: formData.get('allergies') || null,
+            current_medications: formData.get('current_medications') || null,
+            medical_conditions: formData.get('medical_conditions') || null,
+            surgical_history: formData.get('surgical_history') || null,
+            family_medical_history: formData.get('family_medical_history') || null,
+            pregnancy_status: pregnancyStatus ? 1 : 0,
+            blood_type: formData.get('blood_type') || null,
+            oral_habits: formData.get('oral_habits') || null,
+            substance_use: formData.get('substance_use') || null,
+            previous_dentist: formData.get('previous_dentist') || null,
+            last_visit_date: formData.get('last_visit_date') || null,
+            dental_notes: formData.get('dental_notes') || null
         };
 
         if (!updatedData.full_name) {
@@ -72,7 +86,7 @@ export const actions: Actions = {
         }
 
         try {
-            updatePatient(patientId, updatedData);
+            updatePatient(patientId, updatedData, locals.user.id);
             return { success: true, message: 'Patient updated successfully' };
         } catch (e) {
             console.error(e);
