@@ -26,67 +26,129 @@ A comprehensive, full-stack dental clinic management application built with **Sv
 ## ✨ Features
 
 ### For Doctors
+
 - **Patient Management**
+
   - View comprehensive patient profiles with personal, medical, and dental information
+
   - Edit patient records including allergies, medications, and medical conditions
+
   - Track patient history and dental notes
+
   - Support for primary and secondary contact information
 
+
+
 - **Treatment Management**
+
   - Add new treatments with detailed information (type, tooth number, diagnosis, cost)
+
   - View complete treatment history for each patient
+
   - Track treatment status (pending, in progress, completed)
+
   - Support for various treatment types (consultation, cleaning, filling, root canal, extraction, crown, whitening, x-ray)
 
+
+
 - **Appointment Management**
+
   - View today's appointments with patient details
+
   - Access upcoming appointments
+
   - Track appointment status and types
 
+
+
 - **Financial Overview**
+
   - View patient financial summaries (total billed, total paid, balance due)
+
   - Access payment history with detailed records
+
   - Track outstanding balances across all patients
 
+
+
 ### For Assistants
+
 - **Patient Registration**
+
   - Create new patient records with contact and emergency information
+
   - Support for secondary contacts (family members, guardians)
+
   - Duplicate detection for phone numbers and emails
+
   - Support for patient relationships (linking family members to primary account holders)
 
+
+
 - **Appointment Scheduling**
+
   - Schedule appointments for patients with doctors
+
   - Set appointment duration, type, and notes
+
   - Update appointment status (scheduled, confirmed, cancelled, no-show)
+
   - View all upcoming appointments across all doctors
 
+
+
 - **Payment Processing**
+
   - Record patient payments with multiple payment methods (cash, card, insurance, bank transfer, check)
+
   - Add payment notes and dates
+
   - Track payment history
 
+
+
 - **Payment Follow-Up**
+
   - View patients with outstanding balances
+
   - Quick access to contact information for follow-up calls
+
   - Record payments directly from the follow-up dashboard
 
+
+
 ### For Patients (Public Features)
+
 - **Online Appointment Booking**
+
   - Public booking page accessible without login
+
   - Book appointments for yourself or family members
+
   - Select preferred doctor and appointment type
+
   - Choose date and time for appointments
+
   - Automatic patient record creation or linking to existing records
+
   - Support for booking on behalf of family members (children, spouse, etc.)
 
+
+
 - **Public Website**
+
   - Modern, responsive landing page
+
   - Service information and clinic details
+
   - Easy access to booking system
+
   - **Content Management System (CMS)** - Fully customizable landing page via JSON configuration
+
     - Update all text, images, and styles without code changes
+
     - Centralized theme and branding configuration
+
     - Easy content updates for non-technical users
 
 ---
