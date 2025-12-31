@@ -61,13 +61,29 @@ A comprehensive, full-stack dental clinic management application built with **Sv
 
 
 
-- **Financial Overview**
+  - Track outstanding balances based on finalized invoices
+  - Dedicated print routes for prescriptions and invoices
 
-  - View patient financial summaries (total billed, total paid, balance due)
 
-  - Access payment history with detailed records
+- **Prescription Management**
+  - Build prescriptions from a searchable medication library
+  - Customize dosage, duration, and instructions for each medication
+  - Add custom clinical notes to prescriptions
+  - Print professional, formatted prescriptions directly for the patient
 
-  - Track outstanding balances across all patients
+
+- **Invoicing System**
+  - Generate official invoices from selected treatments
+  - Itemized document with treatment descriptions and tooth numbers
+  - Track invoice status (unpaid, paid, cancelled)
+  - Generate professional, print-ready invoices
+
+
+- **Inventory Management**
+  - Monitor clinic stock levels in real-time
+  - Receive automated "Low Stock" visual alerts based on customizable thresholds
+  - Record stock movements (in/out) with detailed reasons
+  - Manage a list of preferred suppliers
 
 
 
@@ -97,13 +113,18 @@ A comprehensive, full-stack dental clinic management application built with **Sv
 
 
 
-- **Payment Processing**
+- **Financial Operations**
+  - Generate patient invoices from treatment records
+  - Record patient payments linked directly to specific invoices
+  - Support for multiple payment methods (cash, card, insurance, bank transfer, check)
+  - View payment and invoice history
+  - Professional printing of invoices for patients
 
-  - Record patient payments with multiple payment methods (cash, card, insurance, bank transfer, check)
 
-  - Add payment notes and dates
-
-  - Track payment history
+- **Logistics & Inventory**
+  - View real-time inventory dashboard
+  - Record and track stock movements (Réapprovisionnement/Sortie)
+  - Monitor stock alerts to prevent shortages
 
 
 
@@ -191,6 +212,12 @@ dentistico/
 │   ├── routes/
 │   │   ├── +layout.svelte         # Root layout
 │   │   ├── +page.svelte           # Public landing page
+│   │   ├── inventory/             # Shared Inventory Management
+│   │   │   ├── +page.svelte
+│   │   │   └── +page.server.ts
+│   │   ├── print/                 # Professional Print Routes
+│   │   │   ├── prescription/[id]/ # Print-ready prescriptions
+│   │   │   └── invoice/[id]/      # Print-ready invoices
 │   │   ├── login/
 │   │   │   ├── +page.svelte       # Login UI
 │   │   │   └── +page.server.ts    # Login authentication logic
@@ -419,7 +446,27 @@ Payment records for patients.
 - `payment_method` - 'cash', 'card', 'insurance', 'bank_transfer', 'check'
 - `payment_date` - Date of payment
 - `notes` - Payment notes
-- `recorded_by` - Foreign key to users (who recorded the payment)
+- `recorded_by` - Foreign key to users
+- `invoice_id` - Foreign key to invoices (links payment to a specific bill)
+
+#### `medications`
+Staff library of common medications.
+- `id`, `name`, `default_dosage`, `instructions`
+
+#### `prescriptions` & `prescription_items`
+Medical prescriptions issued to patients.
+- `patient_id`, `doctor_id`, `prescription_date`, `notes`
+- Items: `medication_name`, `dosage`, `duration`, `instructions`
+
+#### `invoices` & `invoice_items`
+Financial billing documents.
+- `invoice_number`, `patient_id`, `invoice_date`, `status`, `total_amount`
+- Items: `treatment_id`, `description`, `amount`
+
+#### `inventory_items` & `stock_moves`
+Clinic supply management.
+- `name`, `sku`, `category`, `current_quantity`, `min_threshold`, `unit`
+- Moves: `item_id`, `type` (IN/OUT), `quantity`, `user_id`, `reason`
 
 #### `sessions`
 User session management.
@@ -433,7 +480,7 @@ User session management.
 Aggregated financial view for each patient.
 - `patient_id` - Patient ID
 - `full_name` - Patient name
-- `total_billed` - Sum of all treatment costs
+- `total_billed` - Sum of all **finalized invoices**
 - `total_paid` - Sum of all payments
 - `balance_due` - Outstanding balance (total_billed - total_paid)
 
@@ -454,9 +501,10 @@ Aggregated financial view for each patient.
 - **Limited Access** to patient information (no access to allergies, medications, medical conditions)
 - Can create new patient records
 - Can schedule and manage appointments
-- Can record payments
+- Can generate invoices and record payments
+- Can manage clinic inventory and stock levels
 - Can view payment follow-up dashboard
-- **Cannot** add treatments or view full medical history
+- **Cannot** add treatments or issue medical prescriptions
 
 ---
 
@@ -472,6 +520,11 @@ Aggregated financial view for each patient.
 - `GET /doctor/patients/[id]` - Patient detail page
 - `POST /doctor/patients/[id]?/updatePatient` - Update patient information
 - `POST /doctor/patients/[id]?/addTreatment` - Add new treatment
+- `POST /doctor/patients/[id]?/createPrescription` - Issue new prescription
+- `POST /doctor/patients/[id]?/createInvoice` - Finalize invoice
+- `GET /doctor/settings/medications` - Manage medication library
+- `GET /print/prescription/[id]` - Print-friendly prescription
+- `GET /print/invoice/[id]` - Print-friendly invoice
 
 ### Assistant Routes
 - `GET /assistant/dashboard` - Assistant dashboard
@@ -479,6 +532,7 @@ Aggregated financial view for each patient.
 - `POST /assistant/dashboard?/createAppointment` - Schedule appointment
 - `POST /assistant/dashboard?/updateStatus` - Update appointment status
 - `POST /assistant/dashboard?/recordPayment` - Record payment
+- `GET /inventory` - Manage clinic supplies (Shared with doctor)
 
 ### Public Routes
 - `GET /` - Public landing page with clinic information
