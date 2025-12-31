@@ -14,8 +14,16 @@
         { id: 'medical', label: 'Medical History' },
         { id: 'dental', label: 'Dental Records' },
         { id: 'appointments', label: 'Appointments' },
+        { id: 'prescriptions', label: 'Ordonnances' },
         { id: 'financial', label: 'Financial' }
     ];
+
+    import PrescriptionBuilder from '$lib/components/PrescriptionBuilder.svelte';
+    let showPrescriptionBuilder = $state(false);
+    let selectedTreatmentsForInvoice = $state<number[]>([]);
+    let isInvoiceModalOpen = $state(false);
+    let isPaymentModalOpen = $state(false);
+    let selectedInvoice = $state<any>(null);
 
     function calculateAge(dob: string) {
         if (!dob) return 'N/A';
@@ -391,16 +399,88 @@
                 </ul>
             </div>
         {/if}
+    
+        <!-- PRESCRIPTIONS TAB -->
+        {#if activeTab === 'prescriptions'}
+            <div class="space-y-6">
+                <div class="flex justify-between items-center px-4 sm:px-0">
+                    <h2 class="text-xl font-bold text-gray-900">Historique des Ordonnances</h2>
+                    <button 
+                        onclick={() => showPrescriptionBuilder = !showPrescriptionBuilder}
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white {showPrescriptionBuilder ? 'bg-gray-600 hover:bg-gray-700' : 'bg-indigo-600 hover:bg-indigo-700'}"
+                    >
+                        {showPrescriptionBuilder ? 'Annuler' : '+ Nouvelle Ordonnance'}
+                    </button>
+                </div>
+
+                {#if showPrescriptionBuilder}
+                    <PrescriptionBuilder 
+                        medications={data.medications} 
+                        patientId={data.patient.id} 
+                        doctorId={data.user.id} 
+                        onPrescriptionCreated={() => showPrescriptionBuilder = false}
+                    />
+                {/if}
+
+                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médecin</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médicaments</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {#each data.prescriptions as prescription}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {new Date(prescription.prescription_date).toLocaleDateString()}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {prescription.doctor_name}
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">
+                                        <!-- Note: Items are not pre-loaded in the list query by default in the current helper 
+                                             but we could fetch them or just show a count if we wanted. 
+                                             Actually, let's keep it simple. -->
+                                        Ordonnance médicale
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <a href="/print/prescription/{prescription.id}" target="_blank" class="text-indigo-600 hover:text-indigo-900">Imprimer</a>
+                                    </td>
+                                </tr>
+                            {:else}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-10 text-center text-gray-500">
+                                        Aucune ordonnance pour ce patient.
+                                    </td>
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {/if}
 
         <!-- FINANCIAL TAB -->
         {#if activeTab === 'financial'}
             <div class="space-y-6">
                 <!-- Summary Card -->
                 <div class="bg-white shadow rounded-lg p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Financial Summary</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Financial Summary</h3>
+                        <button 
+                            onclick={() => isInvoiceModalOpen = true}
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+                        >
+                            Générer Facture
+                        </button>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-sm text-gray-500">Total Billed</p>
+                            <p class="text-sm text-gray-500">Total Billed (Invoiced)</p>
                             <p class="text-2xl font-bold text-gray-900">€{data.balance.total_billed.toFixed(2)}</p>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
@@ -416,10 +496,62 @@
                     </div>
                 </div>
 
+                <!-- Invoices Table -->
+                <div class="bg-white shadow sm:rounded-lg">
+                    <div class="px-4 py-5 sm:px-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Factures</h3>
+                    </div>
+                    <div class="border-t border-gray-200 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Facture</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {#each data.invoices as invoice}
+                                    <tr>
+                                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{invoice.invoice_number}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-500">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 font-bold">€{invoice.total_amount.toFixed(2)}</td>
+                                        <td class="px-6 py-4 text-sm">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                {invoice.status === 'paid' ? 'bg-green-100 text-green-800' : 
+                                                 invoice.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
+                                                {invoice.status}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right text-sm font-medium">
+                                            <a href="/print/invoice/{invoice.id}" target="_blank" class="text-indigo-600 hover:text-indigo-900 mr-4">Imprimer</a>
+                                            {#if invoice.status !== 'paid'}
+                                                <button 
+                                                    onclick={() => {
+                                                        selectedInvoice = invoice;
+                                                        isPaymentModalOpen = true;
+                                                    }}
+                                                    class="text-green-600 hover:text-green-900"
+                                                >
+                                                    Payer
+                                                </button>
+                                            {/if}
+                                        </td>
+                                    </tr>
+                                {:else}
+                                    <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Aucune facture émise.</td></tr>
+                                {/each}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Payments Table -->
                 <div class="bg-white shadow sm:rounded-lg">
                     <div class="px-4 py-5 sm:px-6">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900">Payment History</h3>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Encaissements Directs</h3>
                     </div>
                     <div class="border-t border-gray-200 overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -452,6 +584,89 @@
         {/if}
 
     </main>
+
+    <!-- Invoice Modal -->
+    {#if isInvoiceModalOpen}
+        <div class="relative z-10" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-gray-500/75" aria-hidden="true" onclick={() => isInvoiceModalOpen = false}></div>
+            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <div class="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl">
+                        <form method="POST" action="?/createInvoice" use:enhance={() => {
+                            return async ({ result }) => {
+                                if (result.type === 'success') {
+                                    isInvoiceModalOpen = false;
+                                    selectedTreatmentsForInvoice = [];
+                                }
+                            };
+                        }}>
+                             <div class="bg-white px-4 py-5 sm:p-6">
+                                <h3 class="text-lg font-semibold mb-4">Générer une Facture</h3>
+                                <p class="text-sm text-gray-500 mb-4">Sélectionnez les soins à inclure dans cette facture.</p>
+
+                                <div class="max-h-60 overflow-y-auto border rounded-md">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"></th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Soin</th>
+                                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Montant</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200">
+                                            {#each data.treatments as treatment}
+                                                <tr class="hover:bg-gray-50">
+                                                    <td class="px-4 py-2">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={selectedTreatmentsForInvoice.includes(treatment.id)}
+                                                            onchange={(e) => {
+                                                                if (e.currentTarget.checked) {
+                                                                    selectedTreatmentsForInvoice.push(treatment.id);
+                                                                } else {
+                                                                    selectedTreatmentsForInvoice = selectedTreatmentsForInvoice.filter(id => id !== treatment.id);
+                                                                }
+                                                            }}
+                                                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                        />
+                                                    </td>
+                                                    <td class="px-4 py-2 text-sm text-gray-900">
+                                                        <div class="font-medium">{treatment.treatment_type}</div>
+                                                        <div class="text-xs text-gray-500">{treatment.treatment_date}</div>
+                                                    </td>
+                                                    <td class="px-4 py-2 text-sm text-gray-900 text-right font-bold">€{treatment.cost.toFixed(2)}</td>
+                                                </tr>
+                                            {/each}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <input type="hidden" name="items" value={JSON.stringify(
+                                    data.treatments
+                                        .filter(t => selectedTreatmentsForInvoice.includes(t.id))
+                                        .map(t => ({ treatment_id: t.id, description: t.treatment_type, amount: t.cost }))
+                                )} />
+
+                                <div class="mt-4 pt-4 border-t flex justify-between items-center text-lg font-bold">
+                                    <span>Total Sélectionné</span>
+                                    <span class="text-indigo-600">
+                                        €{data.treatments
+                                            .filter(t => selectedTreatmentsForInvoice.includes(t.id))
+                                            .reduce((sum, t) => sum + t.cost, 0)
+                                            .toFixed(2)}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                                <button type="submit" disabled={selectedTreatmentsForInvoice.length === 0} class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto disabled:opacity-50">Confirmer la Facture</button>
+                                <button type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto" onclick={() => isInvoiceModalOpen = false}>Annuler</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
 
     <!-- Edit Profile Modal -->
     {#if isEditModalOpen}
@@ -715,6 +930,63 @@
                              <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
                                 <button type="submit" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto">Add Treatment</button>
                                 <button type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto" onclick={() => isTreatmentModalOpen = false}>Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
+    <!-- Payment Modal -->
+    {#if isPaymentModalOpen && selectedInvoice}
+        <div class="relative z-10" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-gray-500/75" aria-hidden="true" onclick={() => isPaymentModalOpen = false}></div>
+            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <div class="relative w-full max-md transform overflow-hidden rounded-lg bg-white shadow-xl">
+                        <form method="POST" action="?/recordPayment" use:enhance={() => {
+                            return async ({ result }) => {
+                                if (result.type === 'success') isPaymentModalOpen = false;
+                            };
+                        }}>
+                             <div class="bg-white px-4 py-5 sm:p-6">
+                                <h3 class="text-lg font-semibold mb-4">Enregistrer un Paiement</h3>
+                                <p class="text-sm text-gray-500 mb-4">Facture: {selectedInvoice.invoice_number}</p>
+                                
+                                <input type="hidden" name="invoice_id" value={selectedInvoice.id} />
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Montant à payer</label>
+                                        <div class="mt-1 relative rounded-md shadow-sm">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span class="text-gray-500 sm:text-sm">€</span>
+                                            </div>
+                                            <input 
+                                                type="number" 
+                                                step="0.01" 
+                                                name="amount" 
+                                                value={selectedInvoice.total_amount} 
+                                                required 
+                                                class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md py-2 border"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Moyen de paiement</label>
+                                        <select name="payment_method" class="mt-1 block w-full border p-2 rounded-md">
+                                            <option value="cash">Espèces</option>
+                                            <option value="card">Carte Bancaire</option>
+                                            <option value="check">Chèque</option>
+                                            <option value="bank_transfer">Virement</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                                <button type="submit" class="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 sm:ml-3 sm:w-auto">Confirmer le Paiement</button>
+                                <button type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto" onclick={() => isPaymentModalOpen = false}>Annuler</button>
                             </div>
                         </form>
                     </div>

@@ -7,7 +7,12 @@ import {
     updatePatient,
     createTreatment,
     getAppointmentById,
-    getPatientAppointments
+    getPatientAppointments,
+    getAllMedications,
+    getPrescriptionsByPatient,
+    createPrescription,
+    createInvoice,
+    markInvoiceAsPaid
 } from '$lib/server/db';
 import type { PageServerLoad, Actions } from './$types';
 
@@ -30,6 +35,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     const payments = getPaymentsByPatient(patientId);
     const balance = getPatientBalance(patientId);
     const appointments = getPatientAppointments(patientId);
+    const medications = getAllMedications();
+    const prescriptions = getPrescriptionsByPatient(patientId);
+    const invoices = (await import('$lib/server/db')).getInvoicesByPatient(patientId);
 
     return {
         patient,
@@ -37,6 +45,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         payments,
         balance,
         appointments,
+        medications,
+        prescriptions,
+        invoices,
         user: locals.user
     };
 };
@@ -127,6 +138,83 @@ export const actions: Actions = {
         } catch (e) {
             console.error(e);
             return fail(500, { error: 'Failed to add treatment' });
+        }
+    },
+
+    createPrescription: async ({ request, params, locals }) => {
+        if (!locals.user || locals.user.role !== 'doctor') {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const patientId = parseInt(params.id);
+        const formData = await request.formData();
+        const itemsJson = formData.get('items') as string;
+        const notes = formData.get('notes') as string;
+
+        if (!itemsJson) {
+            return fail(400, { error: 'No items in prescription' });
+        }
+
+        try {
+            const items = JSON.parse(itemsJson);
+            if (items.length === 0) {
+                return fail(400, { error: 'Prescription must have at least one item' });
+            }
+
+            createPrescription(patientId, locals.user.id, items, notes);
+            return { success: true, message: 'Prescription created successfully' };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to create prescription' });
+        }
+    },
+
+    createInvoice: async ({ request, params, locals }) => {
+        if (!locals.user || locals.user.role !== 'doctor') {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const patientId = parseInt(params.id);
+        const formData = await request.formData();
+        const itemsJson = formData.get('items') as string;
+
+        if (!itemsJson) {
+            return fail(400, { error: 'No items selected for invoice' });
+        }
+
+        try {
+            const items = JSON.parse(itemsJson);
+            createInvoice(patientId, items);
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to create invoice' });
+        }
+    },
+
+    recordPayment: async ({ request, locals }) => {
+        if (!locals.user) {
+            return fail(401, { error: 'Unauthorized' });
+        }
+        const formData = await request.formData();
+        const invoiceId = parseInt(formData.get('invoice_id') as string);
+        const amount = parseFloat(formData.get('amount') as string);
+        const paymentMethod = formData.get('payment_method') as string;
+
+        if (!invoiceId || isNaN(amount)) {
+            return fail(400, { error: 'Invalid payment data' });
+        }
+
+        try {
+            markInvoiceAsPaid(invoiceId, {
+                amount,
+                payment_method: paymentMethod,
+                recorded_by: locals.user.id
+            });
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to record payment' });
         }
     }
 };

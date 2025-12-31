@@ -152,14 +152,99 @@ export function init_db() {
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
 
+        -- New Tables for Prescription, Invoicing and Inventory
+        CREATE TABLE IF NOT EXISTS medications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            default_dosage TEXT,
+            instructions TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS prescriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            doctor_id INTEGER NOT NULL,
+            prescription_date TEXT DEFAULT (datetime('now')),
+            notes TEXT,
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+            FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS prescription_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            prescription_id INTEGER NOT NULL,
+            medication_id INTEGER,
+            medication_name TEXT NOT NULL,
+            dosage TEXT NOT NULL,
+            duration TEXT,
+            instructions TEXT,
+            FOREIGN KEY (prescription_id) REFERENCES prescriptions(id) ON DELETE CASCADE,
+            FOREIGN KEY (medication_id) REFERENCES medications(id) ON DELETE SET NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS invoices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            invoice_number TEXT UNIQUE NOT NULL,
+            patient_id INTEGER NOT NULL,
+            invoice_date TEXT DEFAULT (datetime('now')),
+            status TEXT DEFAULT 'unpaid' CHECK(status IN ('unpaid', 'paid', 'cancelled')),
+            total_amount REAL DEFAULT 0.0,
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS invoice_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            invoice_id INTEGER NOT NULL,
+            treatment_id INTEGER,
+            description TEXT NOT NULL,
+            amount REAL NOT NULL,
+            FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+            FOREIGN KEY (treatment_id) REFERENCES treatments(id) ON DELETE SET NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS suppliers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            contact_name TEXT,
+            phone TEXT,
+            email TEXT,
+            address TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS inventory_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            sku TEXT UNIQUE,
+            category TEXT,
+            current_quantity INTEGER DEFAULT 0,
+            min_threshold INTEGER DEFAULT 5,
+            unit TEXT,
+            last_updated TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS stock_moves (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id INTEGER NOT NULL,
+            type TEXT CHECK(type IN ('IN', 'OUT')) NOT NULL,
+            quantity INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            reason TEXT,
+            move_date TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (item_id) REFERENCES inventory_items(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+
         DROP VIEW IF EXISTS patient_balance;
         CREATE VIEW patient_balance AS
         SELECT 
             p.id as patient_id,
             p.full_name,
-            COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id), 0) as total_billed,
+            -- Update balance to use invoices for billing
+            COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) as total_billed,
             COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as total_paid,
-            COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id), 0) - 
+            COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) - 
             COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
         FROM patients p;
     `);
@@ -332,51 +417,15 @@ export function init_db() {
         console.error('Migration for new patient fields failed:', e);
     }
 
-    // Migration for payments table to fix broken FOREIGN KEY to treatments_old
+    // Migration for payments failed to include invoice_id
     try {
-        const paymentsTableInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='payments'").get() as any;
-        if (paymentsTableInfo && paymentsTableInfo.sql.includes('treatments_old')) {
-            console.log('Fixing payments table foreign key reference...');
-            db.transaction(() => {
-                db.exec('DROP VIEW IF EXISTS patient_balance');
-                db.exec('ALTER TABLE payments RENAME TO payments_old');
-                db.exec(`
-                    CREATE TABLE payments (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        patient_id INTEGER NOT NULL,
-                        treatment_id INTEGER,
-                        appointment_id INTEGER,
-                        amount REAL NOT NULL,
-                        payment_method TEXT CHECK(payment_method IN ('cash', 'card', 'insurance', 'bank_transfer', 'check')),
-                        payment_date TEXT DEFAULT (datetime('now')),
-                        notes TEXT,
-                        recorded_by INTEGER NOT NULL,
-                        FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-                        FOREIGN KEY (treatment_id) REFERENCES treatments(id) ON DELETE SET NULL,
-                        FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE SET NULL,
-                        FOREIGN KEY (recorded_by) REFERENCES users(id)
-                    );
-                `);
-                db.exec('INSERT INTO payments SELECT * FROM payments_old');
-                db.exec('DROP TABLE payments_old');
-
-                // Recreate view
-                db.exec(`
-                    CREATE VIEW patient_balance AS
-                    SELECT 
-                        p.id as patient_id,
-                        p.full_name,
-                        COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id), 0) as total_billed,
-                        COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as total_paid,
-                        COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id), 0) - 
-                        COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
-                    FROM patients p;
-                `);
-            })();
-            console.log('Payments table reference fixed.');
+        const paymentsCols = db.prepare("PRAGMA table_info(payments)").all() as any[];
+        if (!paymentsCols.find(c => c.name === 'invoice_id')) {
+            db.exec('ALTER TABLE payments ADD COLUMN invoice_id INTEGER REFERENCES invoices(id) ON DELETE SET NULL');
+            console.log('Added invoice_id column to payments');
         }
     } catch (e) {
-        console.error('Migration for payments failed:', e);
+        console.error('Migration for invoice_id on payments failed:', e);
     }
 }
 
@@ -440,6 +489,37 @@ function seed_db() {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         insertTreatment.run(bobAppt.id, p2.id, doctor.id, today, '26', 'root_canal', 'Root canal therapy on tooth 26', 450.00, 'in_progress');
+    }
+
+    // Seed Medications
+    const medications = [
+        ['Paracétamol', '500mg', '1 comprimé toutes les 6 heures'],
+        ['Amoxicilline', '1g', '1 comprimé matin et soir'],
+        ['Ibuprofène', '400mg', '1 comprimé en cas de douleur'],
+        ['Chlorhexidine', '0.12%', 'Bain de bouche pur, 2 fois par jour'],
+        ['Augmentin', '1g/125mg', '1 sachet 3 fois par jour'],
+        ['Prednisolone', '20mg', '3 comprimés le matin pendant 4 jours'],
+        ['Codeine', '30mg', '1 comprimé toutes les 6 heures si douleur forte'],
+        ['Azithromycine', '250mg', '2 comprimés le premier jour, 1 les jours suivants'],
+        ['Doliprane', '1000mg', '1 comprimé toutes les 6 heures'],
+        ['Spifen', '400mg', '1 comprimé en cas de forte inflammation']
+    ];
+    const insertMed = db.prepare('INSERT INTO medications (name, default_dosage, instructions) VALUES (?, ?, ?)');
+    for (const m of medications) {
+        insertMed.run(...m);
+    }
+
+    // Seed Inventory Items
+    const inventory = [
+        ['Gants (Taille M)', 'BOX-G-M', 'Consommables', 50, 10, 'Boîte de 100'],
+        ['Masques Chirurgicaux', 'MSK-CHIR', 'Consommables', 100, 20, 'Unité'],
+        ['Articaine (Anesthésiant)', 'ANES-ART', 'Produits', 40, 5, 'Cartouche 1.8ml'],
+        ['Composites A2', 'COMP-A2', 'Restaurations', 15, 3, 'Seringue'],
+        ['Lames de scalpel #15', 'SCAL-15', 'Chirurgie', 30, 5, 'Unité']
+    ];
+    const insertInv = db.prepare('INSERT INTO inventory_items (name, sku, category, current_quantity, min_threshold, unit) VALUES (?, ?, ?, ?, ?, ?)');
+    for (const i of inventory) {
+        insertInv.run(...i);
     }
 
     console.log('Extended database seeded successfully.');
@@ -745,6 +825,209 @@ export function getPendingPayments() {
         WHERE pb.balance_due > 0
         ORDER BY pb.balance_due DESC
     `).all();
+}
+
+// --- Medications ---
+export function getAllMedications() {
+    return db.prepare('SELECT * FROM medications ORDER BY name ASC').all();
+}
+
+export function createMedication(medData: any) {
+    const keys = Object.keys(medData);
+    const columns = keys.join(', ');
+    const placeholders = keys.map(() => '?').join(', ');
+    const stmt = db.prepare(`INSERT INTO medications (${columns}) VALUES (${placeholders})`);
+    return stmt.run(...Object.values(medData)).lastInsertRowid;
+}
+
+export function deleteMedication(id: number) {
+    return db.prepare('DELETE FROM medications WHERE id = ?').run(id);
+}
+
+// --- Prescriptions ---
+export function createPrescription(patientId: number, doctorId: number, items: any[], notes?: string) {
+    const txn = db.transaction(() => {
+        const prescriptionId = db.prepare(`
+            INSERT INTO prescriptions (patient_id, doctor_id, notes) 
+            VALUES (?, ?, ?)
+        `).run(patientId, doctorId, notes || null).lastInsertRowid;
+
+        const insertItem = db.prepare(`
+            INSERT INTO prescription_items (prescription_id, medication_id, medication_name, dosage, duration, instructions)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `);
+
+        for (const item of items) {
+            insertItem.run(
+                prescriptionId, 
+                item.medication_id || null, 
+                item.medication_name, 
+                item.dosage, 
+                item.duration || null,
+                item.instructions || null
+            );
+        }
+        return prescriptionId;
+    });
+    return txn();
+}
+
+export function getPrescriptionsByPatient(patientId: number) {
+    return db.prepare(`
+        SELECT p.*, u.full_name as doctor_name 
+        FROM prescriptions p
+        JOIN users u ON p.doctor_id = u.id
+        WHERE p.patient_id = ?
+        ORDER BY p.prescription_date DESC
+    `).all(patientId);
+}
+
+export function getPrescriptionById(id: number) {
+    const prescription = db.prepare(`
+        SELECT p.*, u.full_name as doctor_name, pat.full_name as patient_name, pat.address as patient_address
+        FROM prescriptions p
+        JOIN users u ON p.doctor_id = u.id
+        JOIN patients pat ON p.patient_id = pat.id
+        WHERE p.id = ?
+    `).get(id) as any;
+
+    if (prescription) {
+        prescription.items = db.prepare('SELECT * FROM prescription_items WHERE prescription_id = ?').all(id);
+    }
+    return prescription;
+}
+
+// --- Invoices ---
+export function getNextInvoiceNumber() {
+    const year = new Date().getFullYear();
+    const lastInvoice = db.prepare("SELECT invoice_number FROM invoices WHERE invoice_number LIKE ? ORDER BY id DESC LIMIT 1").get(`FAC-${year}-%`) as { invoice_number: string };
+    
+    let nextNum = 1;
+    if (lastInvoice) {
+        const parts = lastInvoice.invoice_number.split('-');
+        nextNum = parseInt(parts[2]) + 1;
+    }
+    
+    return `FAC-${year}-${nextNum.toString().padStart(4, '0')}`;
+}
+
+export function createInvoice(patientId: number, items: any[]) {
+    const txn = db.transaction(() => {
+        const invoiceNumber = getNextInvoiceNumber();
+        const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+
+        const invoiceId = db.prepare(`
+            INSERT INTO invoices (invoice_number, patient_id, total_amount)
+            VALUES (?, ?, ?)
+        `).run(invoiceNumber, patientId, totalAmount).lastInsertRowid as number;
+
+        const insertItem = db.prepare(`
+            INSERT INTO invoice_items (invoice_id, treatment_id, description, amount)
+            VALUES (?, ?, ?, ?)
+        `);
+
+        for (const item of items) {
+            insertItem.run(invoiceId, item.treatment_id || null, item.description, item.amount);
+            
+            // If treatment is linked, we could potentially mark it as invoiced
+            // but for now we follow the schema
+        }
+        return invoiceId;
+    });
+    return txn();
+}
+
+export function getInvoicesByPatient(patientId: number) {
+    return db.prepare('SELECT * FROM invoices WHERE patient_id = ? ORDER BY invoice_date DESC').all(patientId);
+}
+
+export function getInvoiceById(id: number) {
+    const invoice = db.prepare(`
+        SELECT i.*, p.full_name as patient_name, p.address as patient_address, p.city as patient_city
+        FROM invoices i
+        JOIN patients p ON i.patient_id = p.id
+        WHERE i.id = ?
+    `).get(id) as any;
+
+    if (invoice) {
+        invoice.items = db.prepare('SELECT * FROM invoice_items WHERE invoice_id = ?').all(id);
+    }
+    return invoice;
+}
+
+export function markInvoiceAsPaid(invoiceId: number, paymentData: { amount: number; payment_method: string; recorded_by: number }) {
+    const txn = db.transaction(() => {
+        const invoice = db.prepare('SELECT patient_id FROM invoices WHERE id = ?').get(invoiceId) as { patient_id: number };
+        
+        // Update invoice status
+        db.prepare("UPDATE invoices SET status = 'paid' WHERE id = ?").run(invoiceId);
+        
+        // Create payment
+        db.prepare(`
+            INSERT INTO payments (patient_id, invoice_id, amount, payment_method, recorded_by)
+            VALUES (?, ?, ?, ?, ?)
+        `).run(invoice.patient_id, invoiceId, paymentData.amount, paymentData.payment_method, paymentData.recorded_by);
+    });
+    txn();
+}
+
+// --- Inventory ---
+export function getAllInventoryItems() {
+    return db.prepare('SELECT * FROM inventory_items ORDER BY name ASC').all();
+}
+
+export function getInventoryItemById(id: number) {
+    return db.prepare('SELECT * FROM inventory_items WHERE id = ?').get(id);
+}
+
+export function recordStockMove(moveData: { item_id: number; type: 'IN' | 'OUT'; quantity: number; user_id: number; reason?: string }) {
+    const txn = db.transaction(() => {
+        db.prepare(`
+            INSERT INTO stock_moves (item_id, type, quantity, user_id, reason)
+            VALUES (?, ?, ?, ?, ?)
+        `).run(moveData.item_id, moveData.type, moveData.quantity, moveData.user_id, moveData.reason || null);
+
+        const adjustment = moveData.type === 'IN' ? moveData.quantity : -moveData.quantity;
+        db.prepare(`
+            UPDATE inventory_items 
+            SET current_quantity = current_quantity + ?, last_updated = datetime('now')
+            WHERE id = ?
+        `).run(adjustment, moveData.item_id);
+    });
+    txn();
+}
+
+export function getStockMoves(itemId?: number) {
+    if (itemId) {
+        return db.prepare(`
+            SELECT m.*, u.full_name as user_name, i.name as item_name
+            FROM stock_moves m
+            JOIN users u ON m.user_id = u.id
+            JOIN inventory_items i ON m.item_id = i.id
+            WHERE m.item_id = ?
+            ORDER BY m.move_date DESC
+        `).all(itemId);
+    }
+    return db.prepare(`
+        SELECT m.*, u.full_name as user_name, i.name as item_name
+        FROM stock_moves m
+        JOIN users u ON m.user_id = u.id
+        JOIN inventory_items i ON m.item_id = i.id
+        ORDER BY m.move_date DESC
+        LIMIT 100
+    `).all();
+}
+
+// --- Suppliers ---
+export function getAllSuppliers() {
+    return db.prepare('SELECT * FROM suppliers ORDER BY name ASC').all();
+}
+
+export function createSupplier(supplierData: any) {
+    const keys = Object.keys(supplierData);
+    const columns = keys.join(', ');
+    const placeholders = keys.map(() => '?').join(', ');
+    return db.prepare(`INSERT INTO suppliers (${columns}) VALUES (${placeholders})`).run(...Object.values(supplierData)).lastInsertRowid;
 }
 
 // Export db instance

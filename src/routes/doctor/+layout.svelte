@@ -7,7 +7,9 @@
     
     const navItems = [
         { label: 'Dashboard', href: '/doctor/dashboard' },
-        { label: 'Patients', href: '/doctor/patients' }
+        { label: 'Patients', href: '/doctor/patients' },
+        { label: 'Stock', href: '/inventory' },
+        { label: 'Settings', href: '/doctor/settings/medications' }
     ];
 </script>
 

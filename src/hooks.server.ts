@@ -20,18 +20,18 @@ export const handle: Handle = async ({ event, resolve }) => {
     const path = event.url.pathname;
 
     // Protected routes
-    if (path.startsWith('/doctor') || path.startsWith('/assistant')) {
+    // Protected routes
+    if (path.startsWith('/doctor') || path.startsWith('/assistant') || path.startsWith('/print') || path.startsWith('/inventory')) {
         if (!event.locals.user) {
             throw redirect(303, '/login');
         }
 
         if (path.startsWith('/doctor') && event.locals.user.role !== 'doctor') {
-            // Redirect to their own dashboard if possible, or error
-            throw redirect(303, '/assistant/dashboard'); // Fallback assume assistant
+            throw redirect(303, '/assistant/dashboard');
         }
 
         if (path.startsWith('/assistant') && event.locals.user.role !== 'assistant') {
-            throw redirect(303, '/doctor/dashboard'); // Fallback assume doctor
+            throw redirect(303, '/doctor/dashboard');
         }
     }
 

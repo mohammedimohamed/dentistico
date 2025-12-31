@@ -41,7 +41,14 @@
     <header class="bg-white shadow">
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
             <h1 class="text-3xl font-bold text-gray-900">Assistant Dashboard</h1>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-6">
+                <a href="/inventory" class="text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-4 py-2 rounded-lg transition-colors border border-indigo-100 flex items-center gap-2">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    Stock & Matériel
+                </a>
+                <div class="flex items-center gap-4">
                 <span class="text-gray-500 text-sm">Welcome, {data.user.full_name}</span>
                 <span class="text-gray-300">|</span>
                 <form action="/logout" method="POST" use:enhance>
