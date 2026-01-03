@@ -664,22 +664,6 @@
 
     <!-- Invoice Modal -->
     {#if isInvoiceModalOpen}
-        <div class="relative z-10" role="dialog" aria-modal="true">
-            <div class="fixed inset-0 bg-gray-500/75" aria-hidden="true" onclick={() => isInvoiceModalOpen = false}></div>
-            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
-                <div class="flex min-h-full items-center justify-center p-4">
-                    <div class="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl">
-                        <form method="POST" action="?/createInvoice" use:enhance={() => {
-                            return async ({ result, update }) => {
-                                if (result.type === 'success') {
-                                    isInvoiceModalOpen = false;
-                                    selectedTreatmentsForInvoice = [];
-                                }
-                                await update();
-                            };
-                        }}>
-    <!-- Invoice Modal -->
-    {#if isInvoiceModalOpen}
         <div class="relative z-50" role="dialog" aria-modal="true">
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick={() => isInvoiceModalOpen = false}></div>
             <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
