@@ -13,8 +13,9 @@ if (!process.env.ORIGIN) {
     console.warn(`   Linux/Mac: ORIGIN=${origin} node build/index.js\n`);
 }
 
-// Set ORIGIN if not already set
+// Set environment variables if not already set
 process.env.ORIGIN = origin;
+process.env.PORT = port.toString();
 
 console.log(`🚀 Starting Dentistico server...`);
 console.log(`   ORIGIN: ${origin}`);
