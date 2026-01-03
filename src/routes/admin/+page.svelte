@@ -26,9 +26,12 @@
         <p class="text-gray-600 max-w-2xl mx-auto">
             From here you can manage staff accounts, adjust global settings, and monitor system-wide inventory.
         </p>
-        <div class="mt-6">
+        <div class="mt-6 flex justify-center gap-4">
             <a href="/admin/users" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
                 Go to User Management
+            </a>
+            <a href="/admin/settings" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50">
+                System Settings
             </a>
         </div>
     </div>

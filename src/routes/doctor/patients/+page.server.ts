@@ -3,7 +3,7 @@ import { getAllPatientsFull, searchPatientsByName, createPatient, getUserById } 
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
-    if (!locals.user || locals.user.role !== 'doctor') {
+    if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
         throw redirect(302, '/login');
     }
 
@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 export const actions: Actions = {
     createPatient: async ({ request, locals }) => {
-        if (!locals.user || locals.user.role !== 'doctor') {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
 

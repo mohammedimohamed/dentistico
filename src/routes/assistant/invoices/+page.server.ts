@@ -3,7 +3,7 @@ import { getAllInvoices } from '$lib/server/db';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
-    if (!locals.user || (locals.user.role !== 'assistant' && locals.user.role !== 'doctor')) {
+    if (!locals.user || !['assistant', 'doctor', 'admin'].includes(locals.user.role)) {
         throw redirect(302, '/login');
     }
 

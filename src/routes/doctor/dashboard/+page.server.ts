@@ -3,7 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { getDoctorAppointmentsToday, getDoctorUpcomingAppointments, updateAppointment, getAppointmentById } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals }) => {
-    if (!locals.user || locals.user.role !== 'doctor') {
+    if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
         throw redirect(303, '/login');
     }
 
@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions = {
     updateAppointment: async ({ request, locals }) => {
-        if (!locals.user || locals.user.role !== 'doctor') {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { message: 'Unauthorized' });
         }
 
@@ -50,7 +50,7 @@ export const actions = {
         return { success: true };
     },
     rescheduleAppointment: async ({ request, locals }) => {
-        if (!locals.user || locals.user.role !== 'doctor') {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { message: 'Unauthorized' });
         }
 

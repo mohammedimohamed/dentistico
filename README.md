@@ -21,8 +21,9 @@
 ### ⚙️ Admin System Control
 The ultimate oversight for clinical directors and owners.
 - **User Management**: Create and manage accounts for assistants and doctors; reset forgotten passwords.
+- **Portal Oversight (God Mode)**: Direct access to Doctor and Assistant dashboards to monitor clinical activity and administrative queues.
 - **Website Configuration**: Real-time control over landing page content, services, and branding via the JSON CMS.
-- **Global Settings**: Configure clinic hours, booking intervals, and regional currency settings.
+- **Global Settings UI**: Manage system-wide parameters like currency, symbols, and clinic hours via a dedicated settings dashboard.
 - **System Metrics**: Overview of total patient registrations and user activity.
 
 ### 👩‍💼 Clinic Assistant Portal (Management & Ops)
@@ -61,12 +62,17 @@ Designed for focus, speed, and clinical accuracy.
 ## 💱 Global Configuration
 
 ### Currency & Symbols
-Easily change the system-wide currency by editing `src/lib/config/app.config.ts`:
-```typescript
-export const APP_CONFIG = {
-    currency: 'USD',
-    currencySymbol: '$'
-};
+Easily change the system-wide currency via the **Admin Dashboard**:
+1. Login as **Administrator**.
+2. Navigate to **System Settings**.
+3. Update Currency Code and Symbol.
+
+*Alternatively, manually edit `src/lib/config/app.config.json`:*
+```json
+{
+    "currency": "USD",
+    "currencySymbol": "$"
+}
 ```
 All financial views, invoices, and reports will update instantly across the entire application.
 
@@ -99,7 +105,7 @@ dentistico/
 │   │   ├── doctor/                # Clinical Portals
 │   │   ├── assistant/             # Administrative Portals
 │   │   └── book/                  # Public Booking Engine
-├── testing.md                     # MASTER QA: 55+ Manual Testing Scenarios
+├── testing.md                     # MASTER QA: 60+ Manual Testing Scenarios
 └── dental_clinic.db               # SQLite database
 ```
 
@@ -147,11 +153,12 @@ ORIGIN=http://yourdomain.com node build/index.js
 ---
 
 ## 📊 Quality Assurance
-We maintain a comprehensive **Manual Testing Suite** in `testing.md`. It contains **55+ real-world scenarios** covering:
+We maintain a comprehensive **Manual Testing Suite** in `testing.md`. It contains **60+ real-world scenarios** covering:
 - ✅ Online Booking Conflicts
 - ✅ Simultaneous Room Assignments
 - ✅ Pediatric vs Adult Chart Auto-detection
 - ✅ Patient Archival & Restoration
+- ✅ Administrator Oversight & God Mode Access
 
 ---
 

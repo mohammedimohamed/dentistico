@@ -19,7 +19,7 @@ import {
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-    if (!locals.user || locals.user.role !== 'assistant') {
+    if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
         throw redirect(302, '/login');
     }
 
@@ -39,7 +39,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions: Actions = {
     createPatient: async ({ request, locals }) => {
-        if (!locals.user || locals.user.role !== 'assistant') {
+        if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
 
@@ -91,7 +91,7 @@ export const actions: Actions = {
     },
 
     createAppointment: async ({ request, locals }) => {
-        if (!locals.user || locals.user.role !== 'assistant') {
+        if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
 
@@ -131,7 +131,7 @@ export const actions: Actions = {
     },
 
     updateStatus: async ({ request, locals }) => {
-        if (!locals.user || locals.user.role !== 'assistant') {
+        if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
 
@@ -191,7 +191,7 @@ export const actions: Actions = {
     },
 
     recordPayment: async ({ request, locals }) => {
-        if (!locals.user || locals.user.role !== 'assistant') {
+        if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
 
@@ -223,7 +223,7 @@ export const actions: Actions = {
         }
     },
     rescheduleAppointment: async ({ request, locals }) => {
-        if (!locals.user || locals.user.role !== 'assistant') {
+        if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
 

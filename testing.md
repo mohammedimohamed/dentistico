@@ -691,7 +691,56 @@ _________________________________________________________________
 **Issues Found:**
 _________________________________________________________________
 
-### Scenario 52: Testing the Sidebar Navigation
+### Scenario 52: Admin Oversight (Doctor Dashboard)
+**User Story:** Marc (Admin) wants to verify Dr. Ahmed's patient load for today without logging out.
+**Steps:**
+1. Login as Admin.
+2. Click "Doctor Dashboard" link or navigate to `/doctor/dashboard`.
+**Expected Results:**
+- Admin can see Dr. Ahmed's full schedule and patient details.
+- Sidebar reflects the "Admin" status even while viewing the Doctor's data.
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 53: Admin Oversight (Assistant Dashboard)
+**User Story:** Marc (Admin) wants to check if any web bookings are pending confirmation.
+**Steps:**
+1. Login as Admin.
+2. Navigate to `/assistant/dashboard`.
+**Expected Results:**
+- Admin sees the assistant's unified schedule and confirmation queue.
+- Admin can perform assistant actions like "Confirm Booking".
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 54: System-wide Currency Update
+**User Story:** Inflation causes the clinic to switch from local currency to USD.
+**Steps:**
+1. Go to Admin -> "System Settings".
+2. Change Code: **USD**, Symbol: **$**.
+3. Save.
+4. Navigate to a patient's financial history.
+**Expected Results:**
+- All billed amounts and payment history now show the **$** symbol.
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 55: Testing Admin Sidebar Integrity
+**User Story:** Marc wants to jump from User Management to Inventory instantly.
+**Steps:**
+1. While in /admin/users, click "Inventory" in the sidebar.
+2. While in /inventory, click "System Settings" in the sidebar.
+**Expected Results:**
+- Sidebar remains consistent with Admin links (Dashboard, Users, Settings, Inventory).
+- No 404 errors or redirection to assistant portals.
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 56: Testing the Sidebar Navigation
 **User Story:** Emma (New Assistant) is exploring the app.
 **Steps:**
 1. Click on every link in the sidebar (Dashboard, Patients, Inventory, Invoices, Admin).
@@ -758,6 +807,40 @@ _________________________________________________________________
 **Expected Results:**
 - Every single location showing money uses the "$" symbol.
 - No "€" remains anywhere in the app.
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 58: Admin Database Metrics
+**User Story:** Marc (Admin) checks the system health on the main dashboard.
+**Steps:**
+1. Go to the Admin Dashboard (`/admin`).
+2. Check the "Total Patients" or "System Status" cards.
+**Expected Results:**
+- Metrics are correctly displayed and updated.
+- System status shows "Online".
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 59: Multi-Doctor Conflict Detection (Admin View)
+**User Story:** Admin verifies that the system prevents two doctors from taking the same room.
+**Steps:**
+1. Go to `/assistant/dashboard` (as Admin).
+2. Attempt to book two different doctors in the same room at the same time.
+**Expected Results:**
+- System throws a validation error "Room busy".
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 60: Admin Access to Archived Patients
+**User Story:** Admin needs to audit archived records.
+**Steps:**
+1. Navigate to /doctor/patients/archived.
+**Expected Results:**
+- Admin can see the list of archived patients.
+- Admin can view details of an archived patient.
 **Test Result:** [ ] Pass [ ] Fail
 **Issues Found:**
 _________________________________________________________________

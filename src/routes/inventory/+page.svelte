@@ -18,7 +18,18 @@
         { label: 'Invoices', href: '/assistant/invoices', icon: '📄' }
     ];
 
-    const navItems = $derived(data.user.role === 'doctor' ? doctorNav : assistantNav);
+    const adminNav = [
+        { label: 'Admin Dashboard', href: '/admin', icon: '📊' },
+        { label: 'User Management', href: '/admin/users', icon: '👥' },
+        { label: 'System Settings', href: '/admin/settings', icon: '⚙️' },
+        { label: 'Inventory', href: '/inventory', icon: '📦' }
+    ];
+
+    const navItems = $derived(
+        data.user.role === 'doctor' ? doctorNav : 
+        data.user.role === 'admin' ? adminNav : 
+        assistantNav
+    );
 
     let isMoveModalOpen = $state(false);
     let moveType = $state('in');
@@ -42,7 +53,9 @@
         <header class="bg-white shadow-sm border-b border-gray-200 py-4 px-8 flex justify-between items-center">
             <h1 class="text-xl font-bold text-gray-900">Inventory & Stock House</h1>
             <div class="flex items-center gap-4">
-                <span class="text-sm text-gray-500 italic uppercase tracking-widest font-bold text-[10px]">Portal: {data.user.role}</span>
+                <span class="text-sm text-gray-500 italic uppercase tracking-widest font-bold text-[10px] px-2 py-1 rounded {data.user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100'}">
+                    Portal: {data.user.role}
+                </span>
             </div>
         </header>
 

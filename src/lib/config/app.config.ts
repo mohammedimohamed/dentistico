@@ -1,4 +1,3 @@
-export const APP_CONFIG = {
-    currency: 'DZD',
-    currencySymbol: 'دج'
-};
+import config from './app.config.json';
+
+export const APP_CONFIG = config;

@@ -3,7 +3,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-    if (!locals.user || !['doctor', 'assistant'].includes(locals.user.role)) {
+    if (!locals.user || !['doctor', 'assistant', 'admin'].includes(locals.user.role)) {
         throw redirect(302, '/login');
     }
 

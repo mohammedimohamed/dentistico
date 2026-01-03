@@ -19,7 +19,7 @@ import {
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
-    if (!locals.user || locals.user.role !== 'doctor') {
+    if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
         throw redirect(302, '/login');
     }
 
@@ -56,7 +56,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 
 export const actions: Actions = {
     updatePatient: async ({ request, params, locals }) => {
-        if (!locals.user || locals.user.role !== 'doctor') {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
 
@@ -108,7 +108,7 @@ export const actions: Actions = {
     },
 
     addTreatment: async ({ request, params, locals }) => {
-        if (!locals.user || locals.user.role !== 'doctor') {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
 
@@ -144,7 +144,7 @@ export const actions: Actions = {
     },
 
     createPrescription: async ({ request, params, locals }) => {
-        if (!locals.user || locals.user.role !== 'doctor') {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
 
@@ -172,7 +172,7 @@ export const actions: Actions = {
     },
 
     createInvoice: async ({ request, params, locals }) => {
-        if (!locals.user || locals.user.role !== 'doctor') {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
 
@@ -221,7 +221,7 @@ export const actions: Actions = {
     },
 
     archivePatient: async ({ params, locals }) => {
-        if (!locals.user || locals.user.role !== 'doctor') {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
         const patientId = parseInt(params.id);
@@ -234,7 +234,7 @@ export const actions: Actions = {
     },
 
     unarchivePatient: async ({ params, locals }) => {
-        if (!locals.user || locals.user.role !== 'doctor') {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
         const patientId = parseInt(params.id);
@@ -247,7 +247,7 @@ export const actions: Actions = {
     },
 
     updateDentalChart: async ({ request, params, locals }) => {
-        if (!locals.user || locals.user.role !== 'doctor') {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
 
