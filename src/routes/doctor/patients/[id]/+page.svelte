@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { PageData } from './$types';
     import { enhance } from '$app/forms';
+    import { APP_CONFIG } from '$lib/config/app.config';
 
     let { data }: { data: PageData } = $props();
     let activeTab = $state('overview');
@@ -19,11 +20,30 @@
     ];
 
     import PrescriptionBuilder from '$lib/components/PrescriptionBuilder.svelte';
+    import ToothSelector from '$lib/components/ToothSelector.svelte';
+    import DentalChart from '$lib/components/DentalChart.svelte';
     let showPrescriptionBuilder = $state(false);
     let selectedTreatmentsForInvoice = $state<number[]>([]);
     let isInvoiceModalOpen = $state(false);
     let isPaymentModalOpen = $state(false);
     let selectedInvoice = $state<any>(null);
+
+    let isToothModalOpen = $state(false);
+    let selectedTooth = $state<string | null>(null);
+    let toothForm = $state({
+        treatments: '',
+        color: '#ffffff',
+        notes: ''
+    });
+
+    let selectedTeeth = $state<string[]>([]);
+    function toggleTooth(tooth: string) {
+        if (selectedTeeth.includes(tooth)) {
+            selectedTeeth = selectedTeeth.filter(t => t !== tooth);
+        } else {
+            selectedTeeth = [...selectedTeeth, tooth];
+        }
+    }
 
     function calculateAge(dob: string) {
         if (!dob) return 'N/A';
@@ -31,6 +51,20 @@
         const ageDifMs = Date.now() - birthDate.getTime();
         const ageDate = new Date(ageDifMs);
         return Math.abs(ageDate.getUTCFullYear() - 1970);
+    }
+
+    const age = $derived(calculateAge(data.patient.date_of_birth));
+    const isChild = $derived(typeof age === 'number' && age < 18);
+
+    function openToothModal(toothNum: string) {
+        selectedTooth = toothNum;
+        const currentData = JSON.parse(data.patient.teeth_treatments || '{}')[`tooth_${toothNum}`] || {};
+        toothForm = {
+            treatments: (currentData.treatments || []).join(', '),
+            color: currentData.color || '#ffffff',
+            notes: currentData.notes || ''
+        };
+        isToothModalOpen = true;
     }
 </script>
 
@@ -42,8 +76,18 @@
                 <div class="flex items-center gap-2">
                     <a href="/doctor/patients" class="text-sm text-indigo-600 hover:text-indigo-800">&larr; Back to List</a>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-900 mt-2">{data.patient.full_name}</h1>
-                <p class="text-gray-500">Patient ID: #{data.patient.id} • DOB: {data.patient.date_of_birth} ({calculateAge(data.patient.date_of_birth)} yrs)</p>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-3xl font-bold text-gray-900 mt-2">{data.patient.full_name}</h1>
+                    {#if data.patient.is_archived}
+                        <span class="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300">
+                            Archived
+                        </span>
+                    {/if}
+                    <span class="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {isChild ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
+                        {isChild ? 'Child' : 'Adult'}
+                    </span>
+                </div>
+                <p class="text-gray-500">Patient ID: #{data.patient.id} • DOB: {data.patient.date_of_birth} ({age} yrs)</p>
             </div>
             <div class="flex gap-3">
                 <button onclick={() => isTreatmentModalOpen = true} class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 font-medium">
@@ -52,6 +96,25 @@
                 <button onclick={() => isEditModalOpen = true} class="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 font-medium">
                     Edit Profile
                 </button>
+                {#if data.patient.is_archived}
+                    <form method="POST" action="?/unarchivePatient" use:enhance>
+                        <button type="submit" class="bg-green-50 text-green-700 border border-green-200 px-4 py-2 rounded-md hover:bg-green-100 font-medium">
+                            Unarchive Patient
+                        </button>
+                    </form>
+                {:else}
+                    <form method="POST" action="?/archivePatient" use:enhance={() => {
+                        return async ({ result }) => {
+                            if (result.type === 'failure') {
+                                alert(result.data?.error || 'Failed to archive patient');
+                            }
+                        };
+                    }}>
+                        <button type="submit" class="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded-md hover:bg-red-100 font-medium" onclick={(e) => !confirm('Archive this patient? They must have 0 balance and no future appointments.') && e.preventDefault()}>
+                            Archive Patient
+                        </button>
+                    </form>
+                {/if}
             </div>
         </div>
         
@@ -199,12 +262,12 @@
                             <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                                 <div class="sm:col-span-1">
                                     <dt class="text-sm font-medium text-gray-500">Total Billed</dt>
-                                    <dd class="mt-1 text-2xl font-semibold text-gray-900">€{data.balance.total_billed.toFixed(2)}</dd>
+                                    <dd class="mt-1 text-2xl font-semibold text-gray-900">{APP_CONFIG.currencySymbol}{data.balance.total_billed.toFixed(2)}</dd>
                                 </div>
                                 <div class="sm:col-span-1">
                                     <dt class="text-sm font-medium text-gray-500">Balance Due</dt>
                                     <dd class="mt-1 text-2xl font-semibold {data.balance.balance_due > 0 ? 'text-red-600' : 'text-green-600'}">
-                                        €{data.balance.balance_due.toFixed(2)}
+                                        {APP_CONFIG.currencySymbol}{data.balance.balance_due.toFixed(2)}
                                     </dd>
                                 </div>
                             </dl>
@@ -318,6 +381,53 @@
                     </div>
                 </div>
 
+                <!-- Dental Records Tab -->
+                {#if activeTab === 'dental'}
+                    <div class="space-y-6">
+                        <div class="bg-white shadow rounded-lg p-6">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">Interactive Odontogram</h3>
+                            <DentalChart 
+                                teethData={JSON.parse(data.patient.teeth_treatments || '{}')} 
+                                isPediatric={isChild}
+                                onToothClick={openToothModal}
+                            />
+                        </div>
+
+                        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                            <div class="px-4 py-5 sm:px-6">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900">Treatment History</h3>
+                            </div>
+                            <div class="border-t border-gray-200">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tooth</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Treatment</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        {#each data.treatments as treatment}
+                                            <tr>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{treatment.treatment_date}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{treatment.tooth_number || '-'}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{treatment.treatment_type}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{APP_CONFIG.currencySymbol}{treatment.cost.toFixed(2)}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {treatment.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                                        {treatment.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        {/each}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {/if}
                 <div class="bg-white shadow sm:rounded-lg">
                     <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
                         <h3 class="text-lg leading-6 font-medium text-gray-900">Treatment History</h3>
@@ -341,7 +451,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{treatment.tooth_number || '-'}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">{treatment.treatment_type.replace('_', ' ')}</td>
                                         <td class="px-6 py-4 text-sm text-gray-500 max-w-xs">{treatment.description}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">€{treatment.cost.toFixed(2)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{APP_CONFIG.currencySymbol}{treatment.cost.toFixed(2)}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                                 {treatment.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
@@ -481,16 +591,16 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <p class="text-sm text-gray-500">Total Billed (Invoiced)</p>
-                            <p class="text-2xl font-bold text-gray-900">€{data.balance.total_billed.toFixed(2)}</p>
+                            <p class="text-2xl font-bold text-gray-900">{APP_CONFIG.currencySymbol}{data.balance.total_billed.toFixed(2)}</p>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <p class="text-sm text-gray-500">Total Paid</p>
-                            <p class="text-2xl font-bold text-green-600">€{data.balance.total_paid.toFixed(2)}</p>
+                            <p class="text-2xl font-bold text-green-600">{APP_CONFIG.currencySymbol}{data.balance.total_paid.toFixed(2)}</p>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <p class="text-sm text-gray-500">Outstanding Balance</p>
                             <p class="text-2xl font-bold {data.balance.balance_due > 0 ? 'text-red-600' : 'text-gray-900'}">
-                                €{data.balance.balance_due.toFixed(2)}
+                                {APP_CONFIG.currencySymbol}{data.balance.balance_due.toFixed(2)}
                             </p>
                         </div>
                     </div>
@@ -517,7 +627,7 @@
                                     <tr>
                                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{invoice.invoice_number}</td>
                                         <td class="px-6 py-4 text-sm text-gray-500">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
-                                        <td class="px-6 py-4 text-sm text-gray-900 font-bold">€{invoice.total_amount.toFixed(2)}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 font-bold">{APP_CONFIG.currencySymbol}{invoice.total_amount.toFixed(2)}</td>
                                         <td class="px-6 py-4 text-sm">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                                 {invoice.status === 'paid' ? 'bg-green-100 text-green-800' : 
@@ -568,7 +678,7 @@
                                 {#each data.payments as payment}
                                     <tr>
                                         <td class="px-6 py-4 text-sm text-gray-900">{payment.payment_date}</td>
-                                        <td class="px-6 py-4 text-sm font-medium text-green-600">+€{payment.amount.toFixed(2)}</td>
+                                        <td class="px-6 py-4 text-sm font-medium text-green-600">+{APP_CONFIG.currencySymbol}{payment.amount.toFixed(2)}</td>
                                         <td class="px-6 py-4 text-sm text-gray-500 capitalize">{payment.payment_method}</td>
                                         <td class="px-6 py-4 text-sm text-gray-500">{payment.recorded_by_name}</td>
                                         <td class="px-6 py-4 text-sm text-gray-500">{payment.notes || '-'}</td>
@@ -634,7 +744,7 @@
                                                         <div class="font-medium">{treatment.treatment_type}</div>
                                                         <div class="text-xs text-gray-500">{treatment.treatment_date}</div>
                                                     </td>
-                                                    <td class="px-4 py-2 text-sm text-gray-900 text-right font-bold">€{treatment.cost.toFixed(2)}</td>
+                                                    <td class="px-4 py-2 text-sm text-gray-900 text-right font-bold">{APP_CONFIG.currencySymbol}{treatment.cost.toFixed(2)}</td>
                                                 </tr>
                                             {/each}
                                         </tbody>
@@ -650,7 +760,7 @@
                                 <div class="mt-4 pt-4 border-t flex justify-between items-center text-lg font-bold">
                                     <span>Total Sélectionné</span>
                                     <span class="text-indigo-600">
-                                        €{data.treatments
+                                        {APP_CONFIG.currencySymbol}{data.treatments
                                             .filter(t => selectedTreatmentsForInvoice.includes(t.id))
                                             .reduce((sum, t) => sum + t.cost, 0)
                                             .toFixed(2)}
@@ -898,15 +1008,19 @@
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700">Tooth #</label>
-                                            <input type="text" name="tooth_number" placeholder="e.g. 16" class="mt-1 block w-full border p-2 rounded-md">
+                                            <input type="text" name="tooth_number" value={selectedTeeth.join(', ')} placeholder="Select from below or type..." class="mt-1 block w-full border p-2 rounded-md">
                                         </div>
+                                    </div>
+                                    <div class="py-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Visual Tooth Selector</label>
+                                        <ToothSelector selectedTeeth={selectedTeeth} onToggle={toggleTooth} />
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">Description</label>
                                         <input type="text" name="description" placeholder="Short description" class="mt-1 block w-full border p-2 rounded-md">
                                     </div>
                                     <div>
-                                         <label class="block text-sm font-medium text-gray-700">Cost (€)</label>
+                                         <label class="block text-sm font-medium text-gray-700">Cost ({APP_CONFIG.currencySymbol})</label>
                                          <input type="number" step="0.01" name="cost" required placeholder="0.00" class="mt-1 block w-full border p-2 rounded-md">
                                     </div>
                                     <div>
@@ -960,7 +1074,7 @@
                                         <label class="block text-sm font-medium text-gray-700">Montant à payer</label>
                                         <div class="mt-1 relative rounded-md shadow-sm">
                                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <span class="text-gray-500 sm:text-sm">€</span>
+                                                <span class="text-gray-500 sm:text-sm">{APP_CONFIG.currencySymbol}</span>
                                             </div>
                                             <input 
                                                 type="number" 
@@ -994,4 +1108,55 @@
             </div>
         </div>
     {/if}
+    <!-- Tooth Update Modal -->
+    {#if isToothModalOpen && selectedTooth}
+        <div class="relative z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick={() => isToothModalOpen = false}></div>
+            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                    <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:max-w-md sm:w-full">
+                        <form method="POST" action="?/updateDentalChart" use:enhance={() => {
+                            return async ({ result }) => {
+                                if (result.type === 'success') isToothModalOpen = false;
+                            };
+                        }}>
+                            <input type="hidden" name="tooth_number" value={selectedTooth} />
+                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                <h3 class="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Edit Tooth #{selectedTooth}</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Treatments (comma separated)</label>
+                                        <input type="text" name="treatments" value={toothForm.treatments} class="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm" placeholder="e.g., Filling, Crown" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Display Color</label>
+                                        <div class="flex gap-2 mt-2">
+                                            {#each ['#ffffff', '#ef4444', '#3b82f6', '#10b981', '#f59e0b'] as c}
+                                                <button 
+                                                    type="button"
+                                                    onclick={() => toothForm.color = c}
+                                                    class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 {toothForm.color === c ? 'border-gray-900 scale-110' : 'border-gray-200'}"
+                                                    style="background-color: {c}"
+                                                ></button>
+                                            {/each}
+                                        </div>
+                                        <input type="hidden" name="color" value={toothForm.color} />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Odontogram Notes</label>
+                                        <textarea name="notes" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm" placeholder="Internal notes for this tooth...">{toothForm.notes}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                                <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm">Save Tooth Status</button>
+                                <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick={() => isToothModalOpen = false}>Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
 </div>
+

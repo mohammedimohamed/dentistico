@@ -12,7 +12,9 @@ import {
     getPrescriptionsByPatient,
     createPrescription,
     createInvoice,
-    markInvoiceAsPaid
+    markInvoiceAsPaid,
+    archivePatient,
+    unarchivePatient
 } from '$lib/server/db';
 import type { PageServerLoad, Actions } from './$types';
 
@@ -215,6 +217,64 @@ export const actions: Actions = {
         } catch (e) {
             console.error(e);
             return fail(500, { error: 'Failed to record payment' });
+        }
+    },
+
+    archivePatient: async ({ params, locals }) => {
+        if (!locals.user || locals.user.role !== 'doctor') {
+            return fail(403, { error: 'Unauthorized' });
+        }
+        const patientId = parseInt(params.id);
+        try {
+            archivePatient(patientId);
+            return { success: true, message: 'Patient archived' };
+        } catch (e: any) {
+            return fail(400, { error: e.message || 'Failed to archive patient' });
+        }
+    },
+
+    unarchivePatient: async ({ params, locals }) => {
+        if (!locals.user || locals.user.role !== 'doctor') {
+            return fail(403, { error: 'Unauthorized' });
+        }
+        const patientId = parseInt(params.id);
+        try {
+            unarchivePatient(patientId);
+            return { success: true, message: 'Patient unarchived' };
+        } catch (e: any) {
+            return fail(400, { error: e.message || 'Failed to unarchive patient' });
+        }
+    },
+
+    updateDentalChart: async ({ request, params, locals }) => {
+        if (!locals.user || locals.user.role !== 'doctor') {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const patientId = parseInt(params.id);
+        const formData = await request.formData();
+        const toothNumber = formData.get('tooth_number') as string;
+        const treatmentsStr = formData.get('treatments') as string;
+        const color = formData.get('color') as string;
+        const notes = formData.get('notes') as string;
+
+        const patient = getPatientByIdFull(patientId);
+        if (!patient) return fail(404, { error: 'Patient not found' });
+
+        const currentChart = JSON.parse(patient.teeth_treatments || '{}');
+
+        currentChart[`tooth_${toothNumber}`] = {
+            treatments: treatmentsStr ? treatmentsStr.split(',').map(t => t.trim()) : [],
+            color: color || '#ffffff',
+            notes: notes || ''
+        };
+
+        try {
+            updatePatient(patientId, { teeth_treatments: JSON.stringify(currentChart) }, locals.user.id);
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to update dental chart' });
         }
     }
 };

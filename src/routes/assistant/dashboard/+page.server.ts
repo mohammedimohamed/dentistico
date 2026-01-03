@@ -221,5 +221,36 @@ export const actions: Actions = {
             console.error(e);
             return fail(500, { error: 'Failed to record payment' });
         }
+    },
+    rescheduleAppointment: async ({ request, locals }) => {
+        if (!locals.user || locals.user.role !== 'assistant') {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const data = await request.formData();
+        const id = Number(data.get('id'));
+        const startTime = data.get('start_time') as string;
+        const endTime = data.get('end_time') as string;
+
+        if (!id || !startTime || !endTime) {
+            return fail(400, { error: 'Missing fields' });
+        }
+
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        const duration = Math.round((end.getTime() - start.getTime()) / 60000);
+
+        try {
+            updateAppointment(id, {
+                start_time: startTime,
+                end_time: endTime,
+                duration_minutes: duration,
+                updated_at: new Date().toISOString()
+            });
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to reschedule appointment' });
+        }
     }
 };

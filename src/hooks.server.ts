@@ -21,8 +21,17 @@ export const handle: Handle = async ({ event, resolve }) => {
 
     // Protected routes
     // Protected routes
-    if (path.startsWith('/doctor') || path.startsWith('/assistant') || path.startsWith('/print') || path.startsWith('/inventory')) {
+    if (path.startsWith('/doctor') || path.startsWith('/assistant') || path.startsWith('/print') || path.startsWith('/inventory') || path.startsWith('/admin')) {
         if (!event.locals.user) {
+            throw redirect(303, '/login');
+        }
+
+        // Admin can access everything
+        if (event.locals.user.role === 'admin') {
+            return resolve(event);
+        }
+
+        if (path.startsWith('/admin') && event.locals.user.role !== 'admin') {
             throw redirect(303, '/login');
         }
 
@@ -38,6 +47,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     if (path === '/login' && event.locals.user) {
         if (event.locals.user.role === 'doctor') throw redirect(303, '/doctor/dashboard');
         if (event.locals.user.role === 'assistant') throw redirect(303, '/assistant/dashboard');
+        if (event.locals.user.role === 'admin') throw redirect(303, '/admin');
     }
 
     return resolve(event);

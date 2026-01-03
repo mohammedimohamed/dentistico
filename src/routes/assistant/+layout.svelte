@@ -6,10 +6,9 @@
     let { children, data }: { children: Snippet, data: any } = $props();
     
     const navItems = [
-        { label: 'Dashboard', href: '/doctor/dashboard', icon: '📊' },
-        { label: 'Patients', href: '/doctor/patients', icon: '👥' },
-        { label: 'Stock', href: '/inventory', icon: '📦' },
-        { label: 'Medications', href: '/doctor/settings/medications', icon: '💊' }
+        { label: 'Schedule', href: '/assistant/dashboard', icon: '📅' },
+        { label: 'Inventory', href: '/inventory', icon: '📦' },
+        { label: 'Invoices', href: '/assistant/invoices', icon: '📄' }
     ];
 </script>
 
@@ -17,16 +16,16 @@
     <Sidebar 
         items={navItems} 
         title="Dentistico" 
-        userName={data?.user?.full_name || 'Doctor'} 
+        userName={data?.user?.full_name || 'Assistant'} 
     />
 
     <div class="flex-1 flex flex-col overflow-hidden">
         <header class="bg-white shadow-sm border-b border-gray-200 py-4 px-8 flex justify-between items-center">
             <h1 class="text-xl font-bold text-gray-900">
-                {navItems.find(i => page.url.pathname.startsWith(i.href))?.label || 'Doctor Portal'}
+                {navItems.find(i => page.url.pathname === i.href)?.label || 'Assistant Portal'}
             </h1>
             <div class="flex items-center gap-4">
-                <span class="text-sm text-gray-500 italic">Dentist Mode</span>
+                <span class="text-sm text-gray-500 italic">Clinic Assistant Mode</span>
             </div>
         </header>
 

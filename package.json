@@ -30,6 +30,10 @@
 		"vite": "^7.2.6"
 	},
 	"dependencies": {
+		"@fullcalendar/core": "^6.1.20",
+		"@fullcalendar/daygrid": "^6.1.20",
+		"@fullcalendar/interaction": "^6.1.20",
+		"@fullcalendar/timegrid": "^6.1.20",
 		"bcrypt": "^6.0.0",
 		"better-sqlite3": "^12.5.0",
 		"cookie": "^1.1.1"

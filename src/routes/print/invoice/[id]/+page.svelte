@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { APP_CONFIG } from '$lib/config/app.config';
     let { data } = $props();
 </script>
 
@@ -53,7 +54,7 @@
                 <tr>
                     <td class="px-6 py-4 text-sm text-gray-900 font-medium">{item.description}</td>
                     <td class="px-6 py-4 text-center text-sm text-gray-500">{item.tooth_number || '-'}</td>
-                    <td class="px-6 py-4 text-right text-sm font-bold">€{item.amount.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-right text-sm font-bold">{APP_CONFIG.currencySymbol}{item.amount.toFixed(2)}</td>
                 </tr>
             {/each}
         </tbody>
@@ -64,30 +65,30 @@
         <div class="w-64 space-y-3">
             <div class="flex justify-between text-sm text-gray-600">
                 <span>Total HT</span>
-                <span>€{data.invoice.total_amount.toFixed(2)}</span>
+                <span>{APP_CONFIG.currencySymbol}{data.invoice.total_amount.toFixed(2)}</span>
             </div>
             <div class="flex justify-between text-sm text-gray-600">
                 <span>TVA (0%)</span>
-                <span>€0.00</span>
+                <span>{APP_CONFIG.currencySymbol}0.00</span>
             </div>
             <div class="flex justify-between text-xl font-bold text-gray-900 pt-3 border-t">
                 <span>TOTAL TTC</span>
-                <span>€{data.invoice.total_amount.toFixed(2)}</span>
+                <span>{APP_CONFIG.currencySymbol}{data.invoice.total_amount.toFixed(2)}</span>
             </div>
             
             {#if data.invoice.status === 'paid'}
                 <div class="flex justify-between text-sm font-bold text-green-600 italic">
                     <span>Montant Payé</span>
-                    <span>€{data.invoice.total_amount.toFixed(2)}</span>
+                    <span>{APP_CONFIG.currencySymbol}{data.invoice.total_amount.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between text-sm font-bold text-gray-900 border-t-2 border-double border-gray-900 pt-2">
                     <span>Reste à Charge</span>
-                    <span>€0.00</span>
+                    <span>{APP_CONFIG.currencySymbol}0.00</span>
                 </div>
             {:else}
                 <div class="flex justify-between text-sm font-bold text-red-600">
                     <span>Reste à Charge</span>
-                    <span>€{data.invoice.total_amount.toFixed(2)}</span>
+                    <span>{APP_CONFIG.currencySymbol}{data.invoice.total_amount.toFixed(2)}</span>
                 </div>
             {/if}
         </div>

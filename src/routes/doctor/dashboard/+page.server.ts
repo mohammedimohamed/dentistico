@@ -48,5 +48,32 @@ export const actions = {
         updateAppointment(id, { notes, status, updated_at: new Date().toISOString() });
 
         return { success: true };
+    },
+    rescheduleAppointment: async ({ request, locals }) => {
+        if (!locals.user || locals.user.role !== 'doctor') {
+            return fail(403, { message: 'Unauthorized' });
+        }
+
+        const data = await request.formData();
+        const id = Number(data.get('id'));
+        const startTime = data.get('start_time') as string;
+        const endTime = data.get('end_time') as string;
+
+        if (!id || !startTime || !endTime) {
+            return fail(400, { message: 'Missing fields' });
+        }
+
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        const duration = Math.round((end.getTime() - start.getTime()) / 60000);
+
+        updateAppointment(id, {
+            start_time: startTime,
+            end_time: endTime,
+            duration_minutes: duration,
+            updated_at: new Date().toISOString()
+        });
+
+        return { success: true };
     }
 } satisfies Actions;

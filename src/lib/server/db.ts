@@ -28,7 +28,7 @@ export function init_db() {
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             full_name TEXT NOT NULL,
-            role TEXT NOT NULL CHECK(role IN ('doctor', 'assistant', 'patient')),
+            role TEXT NOT NULL CHECK(role IN ('doctor', 'assistant', 'patient', 'admin')),
             created_at TEXT DEFAULT (datetime('now'))
         );
 
@@ -70,12 +70,13 @@ export function init_db() {
             last_visit_date TEXT,
             dental_notes TEXT,
             
-            -- Administrative
             registration_date TEXT DEFAULT (datetime('now')),
             is_active INTEGER DEFAULT 1,
+            is_archived INTEGER DEFAULT 0,
             created_by INTEGER,
             user_id INTEGER, -- Linked authentication account
             last_updated TEXT DEFAULT (datetime('now')),  -- Track history updates
+            teeth_treatments TEXT DEFAULT '{}', -- JSON stored as string for dental chart
             FOREIGN KEY (created_by) REFERENCES users(id),
             FOREIGN KEY (primary_contract_id) REFERENCES patients(id),
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -100,7 +101,7 @@ export function init_db() {
             end_time TEXT NOT NULL,
             duration_minutes INTEGER DEFAULT 30,
             appointment_type TEXT DEFAULT 'consultation',
-            status TEXT DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show')),
+            status TEXT DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show', 'in_progress')),
             notes TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now')),
@@ -427,6 +428,17 @@ export function init_db() {
     } catch (e) {
         console.error('Migration for invoice_id on payments failed:', e);
     }
+
+    // Migration for is_archived on patients
+    try {
+        const patientCols = db.prepare("PRAGMA table_info(patients)").all() as any[];
+        if (!patientCols.find(c => c.name === 'is_archived')) {
+            db.exec('ALTER TABLE patients ADD COLUMN is_archived INTEGER DEFAULT 0');
+            console.log('Added is_archived column to patients');
+        }
+    } catch (e) {
+        console.error('Migration for is_archived on patients failed:', e);
+    }
 }
 
 function seed_db() {
@@ -438,6 +450,9 @@ function seed_db() {
 
     const assistantHash = bcrypt.hashSync('assistant123', 10);
     insertUser.run('assistant1', assistantHash, 'Marie Martin', 'assistant');
+
+    const adminHash = bcrypt.hashSync('admin123', 10);
+    insertUser.run('admin', adminHash, 'System Administrator', 'admin');
 
     const doctor = db.prepare("SELECT id FROM users WHERE role = 'doctor' LIMIT 1").get() as { id: number };
     const assistant = db.prepare("SELECT id FROM users WHERE role = 'assistant' LIMIT 1").get() as { id: number };
@@ -556,7 +571,11 @@ export function getDoctors() {
 // --- Patients ---
 // Full access for Doctors
 export function getAllPatientsFull() {
-    return db.prepare('SELECT * FROM patients ORDER BY full_name ASC').all();
+    return db.prepare('SELECT * FROM patients WHERE is_archived = 0 ORDER BY full_name ASC').all();
+}
+
+export function getArchivedPatientsFull() {
+    return db.prepare('SELECT * FROM patients WHERE is_archived = 1 ORDER BY full_name ASC').all();
 }
 
 export function getPatientByIdFull(id: number) {
@@ -564,7 +583,7 @@ export function getPatientByIdFull(id: number) {
 }
 
 export function searchPatientsByName(searchTerm: string) {
-    return db.prepare('SELECT * FROM patients WHERE full_name LIKE ? ORDER BY full_name ASC').all(`%${searchTerm}%`);
+    return db.prepare('SELECT * FROM patients WHERE full_name LIKE ? AND is_archived = 0 ORDER BY full_name ASC').all(`%${searchTerm}%`);
 }
 
 export function createPatient(patientData: any) {
@@ -581,7 +600,7 @@ export function createPatient(patientData: any) {
 export function updatePatient(id: number, patientData: any, updatedBy?: number) {
     // Get old patient data for history
     const oldPatient = getPatientByIdFull(id);
-    
+
     const keys = Object.keys(patientData);
     const setClause = keys.map(key => `${key} = ?`).join(', ');
     const values = [...Object.values(patientData), id];
@@ -600,7 +619,7 @@ export function updatePatient(id: number, patientData: any, updatedBy?: number) 
                 changes[key] = { old: oldValue, new: newValue };
             }
         }
-        
+
         if (Object.keys(changes).length > 0) {
             const logStmt = db.prepare(`
                 INSERT INTO patient_history_logs (patient_id, updated_by, changes)
@@ -613,9 +632,37 @@ export function updatePatient(id: number, patientData: any, updatedBy?: number) 
     return result;
 }
 
+export function archivePatient(id: number) {
+    // Validation: check balance and future appointments
+    const balance = getPatientBalance(id) as { balance_due: number } | undefined;
+    if (balance && balance.balance_due > 0) {
+        throw new Error('Cannot archive patient with outstanding balance.');
+    }
+
+    const futureAppts = db.prepare(`
+        SELECT count(*) as count 
+        FROM appointments 
+        WHERE patient_id = ? AND date(start_time) >= date('now') AND status NOT IN ('cancelled', 'completed')
+    `).get(id) as { count: number };
+
+    if (futureAppts.count > 0) {
+        throw new Error('Cannot archive patient with upcoming appointments.');
+    }
+
+    return db.prepare('UPDATE patients SET is_archived = 1 WHERE id = ?').run(id);
+}
+
+export function unarchivePatient(id: number) {
+    return db.prepare('UPDATE patients SET is_archived = 0 WHERE id = ?').run(id);
+}
+
 // Limited access for Assistants
 export function getAllPatientsLimited() {
-    return db.prepare('SELECT id, full_name, phone, email, secondary_phone, secondary_email, date_of_birth FROM patients ORDER BY full_name ASC').all();
+    return db.prepare('SELECT id, full_name, phone, email, secondary_phone, secondary_email, date_of_birth FROM patients WHERE is_archived = 0 ORDER BY full_name ASC').all();
+}
+
+export function getArchivedPatientsLimited() {
+    return db.prepare('SELECT id, full_name, phone, email, secondary_phone, secondary_email, date_of_birth FROM patients WHERE is_archived = 1 ORDER BY full_name ASC').all();
 }
 
 export function getPatientByIdLimited(id: number) {
@@ -859,10 +906,10 @@ export function createPrescription(patientId: number, doctorId: number, items: a
 
         for (const item of items) {
             insertItem.run(
-                prescriptionId, 
-                item.medication_id || null, 
-                item.medication_name, 
-                item.dosage, 
+                prescriptionId,
+                item.medication_id || null,
+                item.medication_name,
+                item.dosage,
                 item.duration || null,
                 item.instructions || null
             );
@@ -901,13 +948,13 @@ export function getPrescriptionById(id: number) {
 export function getNextInvoiceNumber() {
     const year = new Date().getFullYear();
     const lastInvoice = db.prepare("SELECT invoice_number FROM invoices WHERE invoice_number LIKE ? ORDER BY id DESC LIMIT 1").get(`FAC-${year}-%`) as { invoice_number: string };
-    
+
     let nextNum = 1;
     if (lastInvoice) {
         const parts = lastInvoice.invoice_number.split('-');
         nextNum = parseInt(parts[2]) + 1;
     }
-    
+
     return `FAC-${year}-${nextNum.toString().padStart(4, '0')}`;
 }
 
@@ -928,7 +975,7 @@ export function createInvoice(patientId: number, items: any[]) {
 
         for (const item of items) {
             insertItem.run(invoiceId, item.treatment_id || null, item.description, item.amount);
-            
+
             // If treatment is linked, we could potentially mark it as invoiced
             // but for now we follow the schema
         }
@@ -939,6 +986,35 @@ export function createInvoice(patientId: number, items: any[]) {
 
 export function getInvoicesByPatient(patientId: number) {
     return db.prepare('SELECT * FROM invoices WHERE patient_id = ? ORDER BY invoice_date DESC').all(patientId);
+}
+
+export function getAllInvoices(filters?: { search?: string; startDate?: string; endDate?: string }) {
+    let sql = `
+        SELECT i.*, p.full_name as patient_name
+        FROM invoices i
+        JOIN patients p ON i.patient_id = p.id
+        WHERE 1=1
+    `;
+    const params = [];
+
+    if (filters?.search) {
+        sql += ` AND (p.full_name LIKE ? OR i.invoice_number LIKE ?)`;
+        params.push(`%${filters.search}%`, `%${filters.search}%`);
+    }
+
+    if (filters?.startDate) {
+        sql += ` AND date(i.invoice_date) >= date(?)`;
+        params.push(filters.startDate);
+    }
+
+    if (filters?.endDate) {
+        sql += ` AND date(i.invoice_date) <= date(?)`;
+        params.push(filters.endDate);
+    }
+
+    sql += ` ORDER BY i.invoice_date DESC`;
+
+    return db.prepare(sql).all(...params);
 }
 
 export function getInvoiceById(id: number) {
@@ -958,10 +1034,10 @@ export function getInvoiceById(id: number) {
 export function markInvoiceAsPaid(invoiceId: number, paymentData: { amount: number; payment_method: string; recorded_by: number }) {
     const txn = db.transaction(() => {
         const invoice = db.prepare('SELECT patient_id FROM invoices WHERE id = ?').get(invoiceId) as { patient_id: number };
-        
+
         // Update invoice status
         db.prepare("UPDATE invoices SET status = 'paid' WHERE id = ?").run(invoiceId);
-        
+
         // Create payment
         db.prepare(`
             INSERT INTO payments (patient_id, invoice_id, amount, payment_method, recorded_by)

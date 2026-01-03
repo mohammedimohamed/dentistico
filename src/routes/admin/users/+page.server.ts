@@ -1,0 +1,55 @@
+import { fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
+import db from '$lib/server/db';
+import bcrypt from 'bcrypt';
+
+export const load: PageServerLoad = async () => {
+    const users = db.prepare(`
+        SELECT id, username, full_name, role, created_at 
+        FROM users 
+        ORDER BY created_at DESC
+    `).all();
+
+    return {
+        users
+    };
+};
+
+export const actions: Actions = {
+    createUser: async ({ request }) => {
+        const data = await request.formData();
+        const username = data.get('username') as string;
+        const password = data.get('password') as string;
+        const fullName = data.get('full_name') as string;
+        const role = data.get('role') as string;
+
+        if (!username || !password || !fullName || !role) {
+            return fail(400, { error: 'Missing required fields' });
+        }
+
+        try {
+            const passwordHash = await bcrypt.hash(password, 10);
+            db.prepare(`
+                INSERT INTO users (username, password_hash, full_name, role)
+                VALUES (?, ?, ?, ?)
+            `).run(username, passwordHash, fullName, role);
+            return { success: true };
+        } catch (e: any) {
+            if (e.message.includes('UNIQUE constraint failed')) {
+                return fail(400, { error: 'Username already exists' });
+            }
+            return fail(500, { error: 'Failed to create user' });
+        }
+    },
+    deleteUser: async ({ request, locals }) => {
+        const data = await request.formData();
+        const id = Number(data.get('id'));
+
+        if (locals.user && id === locals.user.id) {
+            return fail(400, { error: 'You cannot delete yourself' });
+        }
+
+        db.prepare('DELETE FROM users WHERE id = ?').run(id);
+        return { success: true };
+    }
+};

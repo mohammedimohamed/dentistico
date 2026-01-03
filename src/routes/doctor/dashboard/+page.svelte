@@ -1,8 +1,11 @@
 <script lang="ts">
     import type { PageData } from './$types';
     import { enhance } from '$app/forms';
+    import Calendar from '$lib/components/Calendar.svelte';
 
     let { data }: { data: PageData } = $props();
+    
+    let viewMode = $state('list'); // 'list' or 'calendar'
     
     // UI State
     let selectedAppointment: any = $state(null);
@@ -44,6 +47,41 @@
     );
 
     const activeList = $derived(activeTab === 'today' ? filteredToday : filteredUpcoming);
+
+    // Map appointments to FC events
+    const allAppointments = [...data.appointments, ...data.upcomingAppointments];
+    // deduplicate by id
+    const uniqueAppts = Array.from(new Map(allAppointments.map(a => [a.id, a])).values());
+
+    const calendarEvents = $derived(uniqueAppts.map((a: any) => ({
+        id: a.id,
+        title: `${a.patient_name} - ${a.appointment_type?.replace('_', ' ') || 'Consult'}`,
+        start: a.start_time,
+        end: a.end_time || new Date(new Date(a.start_time).getTime() + (a.duration_minutes || 30) * 60000).toISOString(),
+        extendedProps: a,
+        backgroundColor: a.status === 'confirmed' ? '#10b981' : a.status === 'scheduled' ? '#3b82f6' : '#9ca3af'
+    })));
+
+    function handleEventClick(info: any) {
+        openModal(info.event.extendedProps);
+    }
+
+    async function handleEventChange(info: any) {
+        const formData = new FormData();
+        formData.append('id', info.event.id);
+        formData.append('start_time', info.event.start.toISOString());
+        formData.append('end_time', info.event.end.toISOString());
+
+        const response = await fetch('?/rescheduleAppointment', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            alert('Failed to reschedule appointment');
+            info.revert();
+        }
+    }
 </script>
 
 <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -53,8 +91,8 @@
             <p class="text-sm text-gray-500">You have {data.appointments.length} appointments today.</p>
         </div>
         
-        <div class="w-full md:w-64">
-            <div class="relative">
+        <div class="flex items-center gap-4 w-full md:w-auto">
+            <div class="relative flex-1 md:w-64">
                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">🔍</span>
                 <input 
                     type="text" 
@@ -62,6 +100,21 @@
                     placeholder="Search patients..." 
                     class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
+            </div>
+
+            <div class="flex items-center bg-gray-100 p-1 rounded-lg">
+                <button 
+                    onclick={() => viewMode = 'list'}
+                    class="px-3 py-1.5 text-xs font-bold rounded-md transition-all {viewMode === 'list' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}"
+                >
+                    List
+                </button>
+                <button 
+                    onclick={() => viewMode = 'calendar'}
+                    class="px-3 py-1.5 text-xs font-bold rounded-md transition-all {viewMode === 'calendar' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}"
+                >
+                    Calendar
+                </button>
             </div>
         </div>
     </div>
@@ -85,53 +138,63 @@
     </div>
 
     <div class="mt-6">
-        {#if activeList.length === 0}
-            <div class="bg-white overflow-hidden shadow rounded-lg p-12 text-center text-gray-500 border-2 border-dashed border-gray-200">
-                {searchQuery ? 'No appointments match your search.' : `No appointments scheduled for ${activeTab}.`}
-            </div>
-        {:else}
-            <div class="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul role="list" class="divide-y divide-gray-200">
-                    {#each activeList as appt}
-                        <li>
-                            <button onclick={() => openModal(appt)} class="block hover:bg-gray-50 w-full text-left focus:outline-none transition-colors">
-                                <div class="px-4 py-5 sm:px-6">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex flex-col">
-                                            <p class="text-sm font-bold text-indigo-600">
-                                                {new Date(appt.start_time).toLocaleDateString()} @ {new Date(appt.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                                <span class="text-gray-400 font-normal ml-2">({appt.duration_minutes} min)</span>
-                                            </p>
-                                            <p class="mt-1 text-lg font-bold text-gray-900">{appt.patient_name}</p>
-                                        </div>
-                                        <div class="flex flex-col items-end gap-2">
-                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {getStatusColor(appt.status)} shadow-sm">
-                                                {appt.status.toUpperCase()}
-                                            </span>
-                                            <span class="text-xs text-gray-400 italic">Click to view/edit</span>
-                                        </div>
-                                    </div>
-                                    <div class="mt-4 sm:flex sm:justify-between items-center bg-gray-50 p-2 rounded">
-                                        <div class="flex flex-wrap gap-x-6 gap-y-2">
-                                            <p class="flex items-center text-sm text-gray-600">
-                                                <span class="mr-2">📅</span> DOB: {appt.patient_dob || 'N/A'}
-                                            </p>
-                                            <p class="flex items-center text-sm text-gray-600">
-                                                <span class="mr-2">📞</span> {appt.patient_phone || appt.secondary_phone || 'N/A'}
-                                            </p>
-                                            {#if appt.appointment_type}
-                                                <p class="flex items-center text-sm text-gray-600">
-                                                    <span class="mr-2">🦷</span> {appt.appointment_type.replace('_', ' ')}
+        {#if viewMode === 'list'}
+            {#if activeList.length === 0}
+                <div class="bg-white overflow-hidden shadow rounded-lg p-12 text-center text-gray-500 border-2 border-dashed border-gray-200">
+                    {searchQuery ? 'No appointments match your search.' : `No appointments scheduled for ${activeTab}.`}
+                </div>
+            {:else}
+                <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                    <ul role="list" class="divide-y divide-gray-200">
+                        {#each activeList as appt}
+                            <li>
+                                <button onclick={() => openModal(appt)} class="block hover:bg-gray-50 w-full text-left focus:outline-none transition-colors">
+                                    <div class="px-4 py-5 sm:px-6">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex flex-col">
+                                                <p class="text-sm font-bold text-indigo-600">
+                                                    {new Date(appt.start_time).toLocaleDateString()} @ {new Date(appt.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                    <span class="text-gray-400 font-normal ml-2">({appt.duration_minutes} min)</span>
                                                 </p>
-                                            {/if}
+                                                <p class="mt-1 text-lg font-bold text-gray-900">{appt.patient_name}</p>
+                                            </div>
+                                            <div class="flex flex-col items-end gap-2">
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {getStatusColor(appt.status)} shadow-sm">
+                                                    {appt.status.toUpperCase()}
+                                                </span>
+                                                <span class="text-xs text-gray-400 italic">Click to view/edit</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 sm:flex sm:justify-between items-center bg-gray-50 p-2 rounded">
+                                            <div class="flex flex-wrap gap-x-6 gap-y-2">
+                                                <p class="flex items-center text-sm text-gray-600">
+                                                    <span class="mr-2">📅</span> DOB: {appt.patient_dob || 'N/A'}
+                                                </p>
+                                                <p class="flex items-center text-sm text-gray-600">
+                                                    <span class="mr-2">📞</span> {appt.patient_phone || appt.secondary_phone || 'N/A'}
+                                                </p>
+                                                {#if appt.appointment_type}
+                                                    <p class="flex items-center text-sm text-gray-600">
+                                                        <span class="mr-2">🦷</span> {appt.appointment_type.replace('_', ' ')}
+                                                    </p>
+                                                {/if}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </button>
-                        </li>
-                    {/each}
-                </ul>
-            </div>
+                                </button>
+                            </li>
+                        {/each}
+                    </ul>
+                </div>
+            {/if}
+        {:else}
+            <Calendar 
+                events={calendarEvents} 
+                onEventClick={handleEventClick} 
+                onEventDrop={handleEventChange}
+                onEventResize={handleEventChange}
+                editable={true}
+            />
         {/if}
     </div>
 </div>

@@ -19,9 +19,14 @@
 <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
     <div class="px-4 py-4 sm:px-0 flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Patient Directory</h1>
-        <button onclick={() => isCreateModalOpen = true} class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 font-bold shadow-lg transition-all flex items-center gap-2">
-            <span>➕</span> New Patient
-        </button>
+        <div class="flex gap-4">
+            <a href="/doctor/patients/archived" class="text-sm text-gray-500 hover:text-indigo-600 self-center font-medium">
+                View Archived
+            </a>
+            <button onclick={() => isCreateModalOpen = true} class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 font-bold shadow-lg transition-all flex items-center gap-2">
+                <span>➕</span> New Patient
+            </button>
+        </div>
     </div>
         <!-- Search -->
         <div class="mb-6 px-4 sm:px-0">
