@@ -140,7 +140,7 @@ The system initializes with the following demo accounts:
 The multi-stage Docker build produces an image under 200MB.
 ```bash
 docker build -t dentistico .
-docker run -d -p 3000:3000 -v dentistico_data:/app/data dentistico
+docker run -d -p 10000:10000 -v dentistico_data:/app/data dentistico
 ```
 
 ### Manual Node.js

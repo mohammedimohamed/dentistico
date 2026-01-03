@@ -22,7 +22,7 @@
     
     # Set environment to production
     ENV NODE_ENV=production
-    ENV PORT=3000
+    ENV PORT=10000
     
     # Create a directory for the persistent database
     RUN mkdir -p /app/data
@@ -33,13 +33,13 @@
     COPY --from=builder /app/package.json ./package.json
     
     # Expose the port
-    EXPOSE 3000
+    EXPOSE 10000
     
     # Copy startup script (optional, for better ORIGIN handling)
     COPY --from=builder /app/start.js ./start.js
     
     # Set default ORIGIN (override with -e ORIGIN=... when running)
-    ENV ORIGIN=http://localhost:3000
+    ENV ORIGIN=http://localhost:10000
     
     # Start the application
     CMD ["node", "build/index.js"]

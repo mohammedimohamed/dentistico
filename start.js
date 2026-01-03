@@ -1,7 +1,7 @@
 // Simple startup script that checks for ORIGIN and provides helpful error messages
 import { spawn } from 'child_process';
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000;
 const origin = process.env.ORIGIN || `http://localhost:${port}`;
 
 if (!process.env.ORIGIN) {
