@@ -3,6 +3,7 @@
     import { enhance } from '$app/forms';
     import { APP_CONFIG } from '$lib/config/app.config';
     import Calendar from '$lib/components/Calendar.svelte';
+    import { t } from 'svelte-i18n';
 
     let { data }: { data: PageData } = $props();
     let activeTab = $state('schedule');
@@ -24,9 +25,9 @@
     });
 
     const tabs = [
-        { id: 'schedule', label: 'Appointments', icon: '📅' },
-        { id: 'patients', label: 'Patients', icon: '👥' },
-        { id: 'payments', label: 'Financials', icon: '💰' }
+        { id: 'schedule', label: $t('assistant.dashboard.tabs.schedule.label'), icon: $t('assistant.dashboard.tabs.schedule.icon') },
+        { id: 'patients', label: $t('assistant.dashboard.tabs.patients.label'), icon: $t('assistant.dashboard.tabs.patients.icon') },
+        { id: 'payments', label: $t('assistant.dashboard.tabs.payments.label'), icon: $t('assistant.dashboard.tabs.payments.icon') }
     ];
 
     function openPaymentModal(patient: any) {
@@ -111,25 +112,25 @@
     {#if activeTab === 'schedule'}
         <div class="bg-white shadow rounded-xl overflow-hidden">
             <div class="px-6 py-5 flex justify-between items-center border-b border-gray-100 bg-gray-50/50">
-                <h3 class="text-lg font-bold text-gray-900">Upcoming Appointments</h3>
+                <h3 class="text-lg font-bold text-gray-900">{$t('assistant.dashboard.tabs.schedule.header')}</h3>
                 <div class="flex items-center gap-4">
                     <div class="flex items-center bg-gray-200 p-1 rounded-lg">
-                        <button 
+                        <button
                             onclick={() => viewMode = 'list'}
                             class="px-3 py-1.5 text-xs font-bold rounded-md transition-all {viewMode === 'list' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}"
                         >
-                            List
+                            {$t('assistant.dashboard.buttons.list')}
                         </button>
-                        <button 
+                        <button
                             onclick={() => viewMode = 'calendar'}
                             class="px-3 py-1.5 text-xs font-bold rounded-md transition-all {viewMode === 'calendar' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}"
                         >
-                            Calendar
+                            {$t('assistant.dashboard.buttons.calendar')}
                         </button>
                     </div>
                     <button onclick={() => openBookingModal()} class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-bold shadow-lg transition-all flex items-center gap-2">
                         <span class="text-xl">+</span>
-                        Book New
+                        {$t('assistant.dashboard.buttons.bookNew')}
                     </button>
                 </div>
             </div>
@@ -150,13 +151,13 @@
                                             </span>
                                         </div>
                                         <p class="text-base font-bold text-gray-900">{appt.patient_name}</p>
-                                        <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">{appt.appointment_type} • Dr. {appt.doctor_name}</p>
+                                        <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">{$t(`assistant.dashboard.appointment.type.${appt.appointment_type}`)} • {$t('assistant.dashboard.time.dr')} {appt.doctor_name}</p>
                                     </div>
                                     <div class="flex items-center gap-4">
                                         <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest
-                                            {appt.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
+                                            {appt.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                                              appt.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}">
-                                            {appt.status}
+                                            {$t(`assistant.dashboard.appointment.status.${appt.status}`)}
                                         </span>
                                         <div class="flex gap-2">
                                             {#if appt.status === 'scheduled'}
@@ -172,7 +173,7 @@
                                 </div>
                             </li>
                         {:else}
-                            <li class="px-4 py-12 text-center text-gray-500 italic">No upcoming appointments scheduled.</li>
+                            <li class="px-4 py-12 text-center text-gray-500 italic">{$t('assistant.dashboard.tabs.schedule.empty')}</li>
                         {/each}
                     </ul>
                 {:else}
@@ -193,22 +194,22 @@
     {#if activeTab === 'patients'}
         <div class="bg-white shadow rounded-xl overflow-hidden">
             <div class="px-6 py-5 flex justify-between items-center border-b border-gray-100 bg-gray-50/50">
-                <h3 class="text-lg font-bold text-gray-900">Patient Management</h3>
+                <h3 class="text-lg font-bold text-gray-900">{$t('assistant.dashboard.tabs.patients.header')}</h3>
                 <button onclick={() => isPatientModalOpen = true} class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-bold shadow-lg transition-all">
-                    Add Patient
+                    {$t('assistant.dashboard.tabs.patients.addButton')}
                 </button>
             </div>
             <div class="p-6">
                 <div class="relative mb-6">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">🔍</span>
-                    <input type="text" bind:value={searchPatientQuery} placeholder="Search patients..." class="w-full pl-10 border-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="text" bind:value={searchPatientQuery} placeholder={$t('assistant.dashboard.tabs.patients.searchPlaceholder')} class="w-full pl-10 border-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-[500px] overflow-y-auto pr-2">
                     {#each getFilteredPatients() as patient}
                         <div class="p-4 border border-gray-100 rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all group bg-white">
                             <p class="font-bold text-gray-900 group-hover:text-indigo-600 flex justify-between">
                                 {patient.full_name}
-                                <span class="text-[10px] text-gray-300">#{patient.id}</span>
+                                <span class="text-[10px] text-gray-300">#{$t('assistant.dashboard.tabs.patients.patientId')}{patient.id}</span>
                             </p>
                             <div class="mt-3 space-y-1">
                                 <p class="text-sm text-gray-600 flex items-center gap-2">
@@ -218,11 +219,11 @@
                                     <span class="opacity-50">🎂</span> {patient.date_of_birth}
                                 </p>
                             </div>
-                            <button 
-                                onclick={() => openBookingModal(null, new Date().toISOString().split('T')[0] + 'T09:00')} 
+                            <button
+                                onclick={() => openBookingModal(null, new Date().toISOString().split('T')[0] + 'T09:00')}
                                 class="mt-4 w-full py-2 bg-gray-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition-colors"
                             >
-                                Schedule Visit
+                                {$t('assistant.dashboard.tabs.patients.scheduleVisit')}
                             </button>
                         </div>
                     {/each}
@@ -235,16 +236,16 @@
     {#if activeTab === 'payments'}
         <div class="bg-white shadow rounded-xl overflow-hidden">
             <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
-                <h3 class="text-lg font-bold text-gray-900">Financial Follow-Up</h3>
-                <p class="text-xs text-gray-500 font-medium">Outstanding balances to collect</p>
+                <h3 class="text-lg font-bold text-gray-900">{$t('assistant.dashboard.tabs.payments.header')}</h3>
+                <p class="text-xs text-gray-500 font-medium">{$t('assistant.dashboard.tabs.payments.description')}</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-100">
                     <thead class="bg-gray-50/50">
                         <tr>
-                            <th class="px-6 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Patient</th>
-                            <th class="px-6 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Balance Due</th>
-                            <th class="px-6 py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Action</th>
+                            <th class="px-6 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('common.patient')}</th>
+                            <th class="px-6 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('assistant.dashboard.tabs.payments.balanceDue')}</th>
+                            <th class="px-6 py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('common.actions')}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
@@ -259,13 +260,13 @@
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <button onclick={() => openPaymentModal(p)} class="text-xs font-bold bg-indigo-50 text-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-all">
-                                        Collect Payment
+                                        {$t('assistant.dashboard.tabs.payments.collectPayment')}
                                     </button>
                                 </td>
                             </tr>
                         {:else}
                             <tr>
-                                <td colspan="3" class="px-6 py-12 text-center text-gray-400 italic">No outstanding payments found.</td>
+                                <td colspan="3" class="px-6 py-12 text-center text-gray-400 italic">{$t('assistant.dashboard.tabs.payments.empty')}</td>
                             </tr>
                         {/each}
                     </tbody>
@@ -301,7 +302,7 @@
                         <div class="bg-white px-6 pt-6 pb-6">
                             <h3 class="text-xl font-black text-gray-900 mb-6 border-b pb-4 flex items-center gap-2">
                                 <span class="w-2 h-8 bg-indigo-600 rounded-full"></span>
-                                {selectedAppointment?.id ? 'Edit Appointment' : 'New Appointment'}
+                                {selectedAppointment?.id ? $t('assistant.dashboard.appointment.modals.edit') : $t('assistant.dashboard.appointment.modals.new')}
                             </h3>
                             
                             {#if errorMessage}
@@ -312,9 +313,9 @@
 
                             <div class="space-y-5">
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Patient</label>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.appointment.fields.patient')}</label>
                                     <select name="patient_id" required class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500" value={selectedAppointment?.patient_id || ''}>
-                                        <option value="">Select a patient...</option>
+                                        <option value="">{$t('assistant.dashboard.appointment.selectOptions.selectPatient')}</option>
                                         {#each data.patients as patient}
                                             <option value={patient.id}>{patient.full_name}</option>
                                         {/each}
@@ -323,64 +324,64 @@
 
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Doctor</label>
+                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.appointment.fields.doctor')}</label>
                                         <select name="doctor_id" required class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" value={selectedAppointment?.doctor_id || ''}>
                                             {#each data.doctors as doctor}
-                                                <option value={doctor.id}>Dr. {doctor.full_name}</option>
+                                                <option value={doctor.id}>{$t('assistant.dashboard.time.dr')} {doctor.full_name}</option>
                                             {/each}
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Type</label>
+                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.appointment.fields.type')}</label>
                                         <select name="appointment_type" required class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" value={selectedAppointment?.appointment_type || 'consultation'}>
-                                            <option value="consultation">Consultation</option>
-                                            <option value="checkup">Checkup</option>
-                                            <option value="cleaning">Cleaning</option>
-                                            <option value="emergency">Emergency</option>
+                                            <option value="consultation">{$t('assistant.dashboard.appointment.type.consultation')}</option>
+                                            <option value="checkup">{$t('assistant.dashboard.appointment.type.checkup')}</option>
+                                            <option value="cleaning">{$t('assistant.dashboard.appointment.type.cleaning')}</option>
+                                            <option value="emergency">{$t('assistant.dashboard.appointment.type.emergency')}</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Start Time</label>
+                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.appointment.fields.startTime')}</label>
                                         <input type="datetime-local" name="start_time" required class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" value={selectedAppointment?.start_time ? new Date(selectedAppointment.start_time).toISOString().slice(0, 16) : ''}>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Duration</label>
+                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.appointment.fields.duration')}</label>
                                         <select name="duration_minutes" class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" value={selectedAppointment?.duration_minutes || '30'}>
-                                            <option value="15">15 min</option>
-                                            <option value="30">30 min</option>
-                                            <option value="45">45 min</option>
-                                            <option value="60">60 min</option>
+                                            <option value="15">15 {$t('common.minutes_short')}</option>
+                                            <option value="30">30 {$t('common.minutes_short')}</option>
+                                            <option value="45">45 {$t('common.minutes_short')}</option>
+                                            <option value="60">60 {$t('common.minutes_short')}</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 {#if selectedAppointment?.id}
                                     <div>
-                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status</label>
+                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.appointment.fields.status')}</label>
                                         <select name="status" class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" value={selectedAppointment.status}>
-                                            <option value="scheduled">Scheduled</option>
-                                            <option value="confirmed">Confirmed</option>
-                                            <option value="cancelled">Cancelled</option>
-                                            <option value="no_show">No Show</option>
-                                            <option value="completed">Completed</option>
+                                            <option value="scheduled">{$t('assistant.dashboard.appointment.status.scheduled')}</option>
+                                            <option value="confirmed">{$t('assistant.dashboard.appointment.status.confirmed')}</option>
+                                            <option value="cancelled">{$t('assistant.dashboard.appointment.status.cancelled')}</option>
+                                            <option value="no_show">{$t('assistant.dashboard.appointment.status.no_show')}</option>
+                                            <option value="completed">{$t('assistant.dashboard.appointment.status.completed')}</option>
                                         </select>
                                     </div>
                                 {/if}
 
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Notes</label>
-                                    <textarea name="notes" rows="2" class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" placeholder="Additional notes...">{selectedAppointment?.notes || ''}</textarea>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.appointment.fields.notes')}</label>
+                                    <textarea name="notes" rows="2" class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" placeholder={$t('assistant.dashboard.appointment.fields.additionalNotes')}>{selectedAppointment?.notes || ''}</textarea>
                                 </div>
                             </div>
                         </div>
                         <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
                             <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">
-                                {selectedAppointment?.id ? 'Save Changes' : 'Schedule'}
+                                {selectedAppointment?.id ? $t('assistant.dashboard.appointment.modals.save') : $t('assistant.dashboard.appointment.modals.schedule')}
                             </button>
-                            <button type="button" class="px-6 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-100 hover:bg-gray-100 transition-all" onclick={closeModal}>Cancel</button>
+                            <button type="button" class="px-6 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-100 hover:bg-gray-100 transition-all" onclick={closeModal}>{$t('common.cancel')}</button>
                         </div>
                     </form>
                 </div>
@@ -410,35 +411,35 @@
                         <div class="p-6">
                             <h3 class="text-xl font-black text-gray-900 mb-6 border-b pb-4 flex items-center gap-2">
                                 <span class="w-2 h-8 bg-indigo-600 rounded-full"></span>
-                                New Patient Registration
+                                {$t('assistant.dashboard.patient.modals.new')}
                             </h3>
                             {#if errorMessage}
                                 <div class="mb-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm">{errorMessage}</div>
                             {/if}
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Full Name</label>
-                                    <input name="full_name" required class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" placeholder="e.g. Jean Dupont">
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.patient.fields.fullName')}</label>
+                                    <input name="full_name" required class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" placeholder={$t('assistant.dashboard.patient.fields.namePlaceholder')}>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Phone</label>
-                                    <input name="phone" required class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" placeholder="0XXXXXXXXX">
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.patient.fields.phone')}</label>
+                                    <input name="phone" required class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" placeholder={$t('assistant.dashboard.patient.fields.phonePlaceholder')}>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">DOB</label>
+                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.patient.fields.dob')}</label>
                                         <input type="date" name="date_of_birth" required class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium">
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Email</label>
-                                        <input name="email" class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" placeholder="Optional">
+                                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.patient.fields.email')}</label>
+                                        <input name="email" class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium" placeholder={$t('assistant.dashboard.patient.fields.emailPlaceholder')}>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
-                            <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl shadow-lg">Register Patient</button>
-                            <button type="button" class="px-6 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-100" onclick={() => isPatientModalOpen = false}>Cancel</button>
+                            <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl shadow-lg">{$t('assistant.dashboard.patient.modals.register')}</button>
+                            <button type="button" class="px-6 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-100" onclick={() => isPatientModalOpen = false}>{$t('common.cancel')}</button>
                         </div>
                     </form>
                 </div>
@@ -469,12 +470,12 @@
                         <div class="p-6">
                             <h3 class="text-xl font-black text-gray-900 mb-2 flex items-center gap-2">
                                 <span class="w-2 h-8 bg-indigo-600 rounded-full"></span>
-                                Record Payment
+                                {$t('assistant.dashboard.payment.modal.title')}
                             </h3>
                             <p class="text-gray-400 text-xs font-bold uppercase mb-6 tracking-widest">{selectedPaymentPatient.full_name}</p>
                             
                             <div class="bg-red-50 p-4 rounded-2xl border border-red-100 mb-6 flex justify-between items-center">
-                                <span class="text-xs font-bold text-red-600 uppercase tracking-widest">Total Due</span>
+                                <span class="text-xs font-bold text-red-600 uppercase tracking-widest">{$t('assistant.dashboard.payment.modal.totalDue')}</span>
                                 <span class="text-xl font-black text-red-600">{APP_CONFIG.currencySymbol}{selectedPaymentPatient.balance_due.toFixed(2)}</span>
                             </div>
 
@@ -484,23 +485,23 @@
 
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Amount to pay</label>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.payment.fields.amount')}</label>
                                     <input type="number" step="0.01" name="amount" required class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-lg font-black text-indigo-600" value={selectedPaymentPatient.balance_due}>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Payment Method</label>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{$t('assistant.dashboard.payment.fields.paymentMethod')}</label>
                                     <select name="payment_method" class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-bold">
-                                        <option value="cash">Cash 💵</option>
-                                        <option value="card">Card 💳</option>
-                                        <option value="insurance">Insurance 🏥</option>
-                                        <option value="bank_transfer">Bank Transfer 🏦</option>
+                                        <option value="cash">{$t('assistant.dashboard.payment.methods.cash')}</option>
+                                        <option value="card">{$t('assistant.dashboard.payment.methods.card')}</option>
+                                        <option value="insurance">{$t('assistant.dashboard.payment.methods.insurance')}</option>
+                                        <option value="bank_transfer">{$t('assistant.dashboard.payment.methods.bank_transfer')}</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
                         <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
-                            <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-700 transition-all">Confirm Collection</button>
-                            <button type="button" class="px-6 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-100" onclick={() => isPaymentModalOpen = false}>Cancel</button>
+                            <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-700 transition-all">{$t('assistant.dashboard.payment.modal.confirm')}</button>
+                            <button type="button" class="px-6 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-100" onclick={() => isPaymentModalOpen = false}>{$t('common.cancel')}</button>
                         </div>
                     </form>
                 </div>

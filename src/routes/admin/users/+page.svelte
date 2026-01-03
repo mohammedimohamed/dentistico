@@ -1,6 +1,7 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
     import type { PageData } from './$types';
+    import { t } from 'svelte-i18n';
 
     let { data }: { data: PageData } = $props();
     let isCreateModalOpen = $state(false);
@@ -20,14 +21,14 @@
 <div class="space-y-6">
     <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">User Management</h1>
-            <p class="text-sm text-gray-500">Manage clinic staff and administrative access.</p>
+            <h1 class="text-2xl font-bold text-gray-900">{$t('admin.users.title')}</h1>
+            <p class="text-sm text-gray-500">{$t('admin.users.description')}</p>
         </div>
-        <button 
+        <button
             onclick={() => isCreateModalOpen = true}
             class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 font-medium shadow-sm transition-all"
         >
-            + Create New User
+            + {$t('admin.users.createButton')}
         </button>
     </div>
 
@@ -41,11 +42,11 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username/Email</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{$t('admin.users.table.name')}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{$t('admin.users.table.username')}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{$t('admin.users.table.role')}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{$t('admin.users.table.created')}</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{$t('admin.users.table.actions')}</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -62,7 +63,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <form method="POST" action="?/deleteUser" use:enhance class="inline">
                                 <input type="hidden" name="id" value={user.id} />
-                                <button type="submit" class="text-red-600 hover:text-red-900 ml-4" onclick={(e) => !confirm('Are you sure?') && e.preventDefault()}>Delete</button>
+                                <button type="submit" class="text-red-600 hover:text-red-900 ml-4" onclick={(e) => !confirm($t('admin.users.confirmDelete')) && e.preventDefault()}>{$t('common.delete')}</button>
                             </form>
                         </td>
                     </tr>
@@ -98,7 +99,7 @@
                 }}>
                     <div class="bg-white px-6 pt-6 pb-4">
                         <div class="flex items-center justify-between border-b pb-3 mb-5">
-                            <h3 class="text-xl font-bold text-gray-900">Create System User</h3>
+                            <h3 class="text-xl font-bold text-gray-900">{$t('admin.users.modal.title')}</h3>
                             <button type="button" onclick={() => isCreateModalOpen = false} class="text-gray-400 hover:text-gray-500">
                                 <span class="sr-only">Close</span>
                                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -109,23 +110,23 @@
                         
                         <div class="space-y-4">
                             <div>
-                                <label for="full_name" class="block text-sm font-semibold text-gray-700">Full Name</label>
-                                <input id="full_name" type="text" name="full_name" required placeholder="John Doe" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                                <label for="full_name" class="block text-sm font-semibold text-gray-700">{$t('admin.users.modal.fullName')}</label>
+                                <input id="full_name" type="text" name="full_name" required placeholder={$t('admin.users.modal.fullNamePlaceholder')} class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
                             </div>
                             <div>
-                                <label for="username" class="block text-sm font-semibold text-gray-700">Username / Email</label>
-                                <input id="username" type="text" name="username" required placeholder="john@example.com" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                                <label for="username" class="block text-sm font-semibold text-gray-700">{$t('admin.users.modal.username')}</label>
+                                <input id="username" type="text" name="username" required placeholder={$t('admin.users.modal.usernamePlaceholder')} class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
                             </div>
                             <div>
-                                <label for="password" class="block text-sm font-semibold text-gray-700">Initial Password</label>
-                                <input id="password" type="password" name="password" required placeholder="••••••••" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                                <label for="password" class="block text-sm font-semibold text-gray-700">{$t('admin.users.modal.password')}</label>
+                                <input id="password" type="password" name="password" required placeholder={$t('admin.users.modal.passwordPlaceholder')} class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
                             </div>
                             <div>
-                                <label for="role" class="block text-sm font-semibold text-gray-700">Account Role</label>
+                                <label for="role" class="block text-sm font-semibold text-gray-700">{$t('admin.users.modal.role')}</label>
                                 <select id="role" name="role" required class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2.5 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
-                                    <option value="doctor">Doctor (Clinical Access)</option>
-                                    <option value="assistant" selected>Assistant (Administrative Access)</option>
-                                    <option value="admin">Admin (System Access)</option>
+                                    <option value="doctor">{$t('admin.users.modal.roles.doctor')}</option>
+                                    <option value="assistant" selected>{$t('admin.users.modal.roles.assistant')}</option>
+                                    <option value="admin">{$t('admin.users.modal.roles.admin')}</option>
                                 </select>
                             </div>
                         </div>
@@ -133,10 +134,10 @@
                     
                     <div class="bg-gray-50 px-6 py-4 flex flex-row-reverse gap-3">
                         <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent shadow-sm px-5 py-2.5 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            Create Account
+                            {$t('admin.users.modal.createButton')}
                         </button>
                         <button type="button" class="inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-5 py-2.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" onclick={() => isCreateModalOpen = false}>
-                            Cancel
+                            {$t('common.cancel')}
                         </button>
                     </div>
                 </form>

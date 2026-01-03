@@ -14,9 +14,9 @@
     ];
 
     const assistantNav = [
-        { label: 'common.dashboard', href: '/assistant/dashboard', icon: '📅' },
+        { label: 'assistant.nav.items.schedule', href: '/assistant/dashboard', icon: '📅' },
         { label: 'common.inventory', href: '/inventory', icon: '📦' },
-        { label: 'common.invoices', href: '/assistant/invoices', icon: '📄' }
+        { label: 'assistant.nav.items.invoices', href: '/assistant/invoices', icon: '📄' }
     ];
 
     const adminNav = [

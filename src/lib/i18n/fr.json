@@ -259,5 +259,254 @@
             "instructions_label": "Instructions par défaut",
             "instructions_placeholder": "ex: 1 comprimé matin et soir"
         }
+    },
+    "assistant": {
+        "nav": {
+            "title": "Dentistico",
+            "userRole": "Mode Assistant Clinique",
+            "items": {
+                "schedule": "Planning",
+                "inventory": "Stock",
+                "invoices": "Factures"
+            }
+        },
+        "dashboard": {
+            "tabs": {
+                "schedule": {
+                    "label": "Planning",
+                    "icon": "📅",
+                    "header": "Rendez-vous à venir",
+                    "empty": "Aucun rendez-vous programmé."
+                },
+                "patients": {
+                    "label": "Patients",
+                    "icon": "👥",
+                    "header": "Gestion des Patients",
+                    "addButton": "Ajouter Patient",
+                    "searchPlaceholder": "Rechercher patients...",
+                    "scheduleVisit": "Programmer Visite",
+                    "patientId": "ID"
+                },
+                "payments": {
+                    "label": "Finances",
+                    "icon": "💰",
+                    "header": "Suivi Financier",
+                    "description": "Soldes à encaisser",
+                    "empty": "Aucun paiement en attente trouvé.",
+                    "collectPayment": "Encaisser Paiement",
+                    "balanceDue": "Solde Dû"
+                }
+            },
+            "buttons": {
+                "bookNew": "Nouveau Rendez-vous",
+                "list": "Liste",
+                "calendar": "Calendrier"
+            },
+            "appointment": {
+                "status": {
+                    "scheduled": "Programmé",
+                    "confirmed": "Confirmé",
+                    "cancelled": "Annulé",
+                    "no_show": "Absent",
+                    "completed": "Terminé"
+                },
+                "type": {
+                    "consultation": "Consultation",
+                    "checkup": "Contrôle",
+                    "cleaning": "Nettoyage",
+                    "emergency": "Urgence"
+                },
+                "modals": {
+                    "new": "Nouveau Rendez-vous",
+                    "edit": "Modifier Rendez-vous",
+                    "save": "Sauvegarder Modifications",
+                    "schedule": "Programmer",
+                    "cancel": "Annuler"
+                },
+                "fields": {
+                    "patient": "Patient",
+                    "doctor": "Médecin",
+                    "type": "Type",
+                    "startTime": "Heure Début",
+                    "duration": "Durée",
+                    "status": "Statut",
+                    "notes": "Notes",
+                    "additionalNotes": "Notes supplémentaires..."
+                },
+                "selectOptions": {
+                    "selectPatient": "Sélectionner patient...",
+                    "selectDoctor": "Sélectionner médecin..."
+                }
+            },
+            "patient": {
+                "modals": {
+                    "new": "Enregistrement Nouveau Patient",
+                    "register": "Enregistrer Patient",
+                    "cancel": "Annuler"
+                },
+                "fields": {
+                    "fullName": "Nom Complet",
+                    "phone": "Téléphone",
+                    "dob": "Date de Naissance",
+                    "email": "Email",
+                    "namePlaceholder": "ex: Jean Dupont",
+                    "phonePlaceholder": "06XXXXXXXX",
+                    "emailPlaceholder": "Optionnel"
+                }
+            },
+            "payment": {
+                "modal": {
+                    "title": "Enregistrer Paiement",
+                    "totalDue": "Total Dû",
+                    "confirm": "Confirmer Encaissement"
+                },
+                "fields": {
+                    "amount": "Montant à payer",
+                    "paymentMethod": "Mode de Paiement"
+                },
+                "methods": {
+                    "cash": "Espèces 💵",
+                    "card": "Carte 💳",
+                    "insurance": "Assurance 🏥",
+                    "bank_transfer": "Virement 🏦"
+                }
+            },
+            "actions": {
+                "confirm": "Confirmer",
+                "edit": "Modifier",
+                "reset": "Réinitialiser"
+            },
+            "time": {
+                "dr": "Dr.",
+                "at": "à"
+            },
+            "errors": {
+                "general": "Erreur survenue",
+                "registration": "Échec enregistrement"
+            }
+        },
+        "invoices": {
+            "title": "Historique de Facturation",
+            "description": "Examiner et exporter les factures clients",
+            "export": {
+                "button": "Exporter CSV",
+                "filename": "export_factures"
+            },
+            "filters": {
+                "searchLabel": "Rechercher Patient ou N° Facture",
+                "searchPlaceholder": "Ex: Alice Smith ou FAC-2024-0001",
+                "fromDate": "Du",
+                "toDate": "Au",
+                "apply": "Appliquer Filtres",
+                "reset": "Réinitialiser Filtres"
+            },
+            "table": {
+                "headers": {
+                    "number": "Numéro",
+                    "patient": "Patient",
+                    "date": "Date",
+                    "amount": "Montant",
+                    "status": "Statut",
+                    "actions": "Actions"
+                },
+                "status": {
+                    "paid": "Payé",
+                    "pending": "En attente"
+                },
+                "actions": {
+                    "print": "Imprimer"
+                },
+                "empty": "Aucune facture trouvée correspondant à votre sélection."
+            }
+        }
+    },
+    "login": {
+        "subtitle": "Connectez-vous à votre compte",
+        "username": "Nom d'utilisateur",
+        "password": "Mot de passe",
+        "signIn": "Se connecter",
+        "errors": {
+            "missing": "Veuillez remplir tous les champs.",
+            "incorrect": "Nom d'utilisateur ou mot de passe incorrect."
+        }
+    },
+    "admin": {
+        "nav": {
+            "dashboard": "Tableau de Bord Admin",
+            "users": "Gestion des Utilisateurs",
+            "settings": "Paramètres Système",
+            "inventory": "Stock (Complet)",
+            "logout": "Déconnexion Admin"
+        },
+        "dashboard": {
+            "title": "Tableau de Bord Admin",
+            "stats": {
+                "totalUsers": "Utilisateurs Totaux",
+                "systemStatus": "Statut Système",
+                "dbVersion": "Version BD",
+                "online": "En Ligne"
+            },
+            "welcome": {
+                "title": "Bienvenue au Centre de Commande",
+                "description": "D'ici, vous pouvez gérer les comptes du personnel, ajuster les paramètres globaux, et surveiller l'inventaire système complet.",
+                "userManagement": "Aller à la Gestion des Utilisateurs",
+                "systemSettings": "Paramètres Système"
+            }
+        },
+        "settings": {
+            "title": "Paramètres Système",
+            "description": "Configurer les paramètres globaux de l'application comme la devise et les détails de la clinique.",
+            "financial": {
+                "title": "Configuration Financière",
+                "description": "Ces paramètres affectent la façon dont les prix et paiements sont affichés dans tout le système.",
+                "currencyCode": "Code Devise",
+                "currencyPlaceholder": "ex: USD",
+                "currencyHelp": "Code devise standard à 3 lettres (DZD, USD, EUR, etc.)",
+                "currencySymbol": "Symbole Devise",
+                "symbolPlaceholder": "ex: $",
+                "symbolHelp": "Le symbole affiché à côté des montants ($, €, دج, etc.)"
+            },
+            "saveButton": "Sauvegarder Configuration",
+            "success": "Paramètres sauvegardés avec succès !",
+            "advanced": {
+                "title": "Configuration Avancée (Futur)",
+                "description": "Les paramètres suivants sont actuellement gérés via le CMS (Configuration Page d'Accueil) et seront intégrés dans ce tableau de bord dans les futures mises à jour :",
+                "clinicName": "Nom Clinique",
+                "bookingInterval": "Intervalle Réservation",
+                "bookingValue": "30 Minutes",
+                "workHours": "Heures Travail",
+                "workHoursValue": "08:00 - 18:00"
+            }
+        },
+        "users": {
+            "title": "Gestion des Utilisateurs",
+            "description": "Gérer le personnel clinique et l'accès administratif.",
+            "createButton": "Créer Nouvel Utilisateur",
+            "confirmDelete": "Êtes-vous sûr ?",
+            "table": {
+                "name": "Nom",
+                "username": "Nom d'Utilisateur/Email",
+                "role": "Rôle",
+                "created": "Créé",
+                "actions": "Actions"
+            },
+            "modal": {
+                "title": "Créer Utilisateur Système",
+                "fullName": "Nom Complet",
+                "fullNamePlaceholder": "Jean Dupont",
+                "username": "Nom d'Utilisateur / Email",
+                "usernamePlaceholder": "jean@example.com",
+                "password": "Mot de Passe Initial",
+                "passwordPlaceholder": "••••••••",
+                "role": "Rôle du Compte",
+                "roles": {
+                    "doctor": "Médecin (Accès Clinique)",
+                    "assistant": "Assistant (Accès Administratif)",
+                    "admin": "Admin (Accès Système)"
+                },
+                "createButton": "Créer Compte",
+                "cancel": "Annuler"
+            }
+        }
     }
 }

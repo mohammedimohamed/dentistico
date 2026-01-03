@@ -2,13 +2,14 @@
     import { page } from '$app/state';
     import type { Snippet } from 'svelte';
     import Sidebar from '$lib/components/Sidebar.svelte';
-    
+    import { t } from 'svelte-i18n';
+
     let { children, data }: { children: Snippet, data: any } = $props();
-    
+
     const navItems = [
-        { label: 'Schedule', href: '/assistant/dashboard', icon: '📅' },
-        { label: 'Inventory', href: '/inventory', icon: '📦' },
-        { label: 'Invoices', href: '/assistant/invoices', icon: '📄' }
+        { label: $t('assistant.nav.items.schedule'), href: '/assistant/dashboard', icon: $t('assistant.nav.items.schedule') === 'Planning' ? '📅' : '📅' },
+        { label: $t('assistant.nav.items.inventory'), href: '/inventory', icon: $t('assistant.nav.items.inventory') === 'Stock' ? '📦' : '📦' },
+        { label: $t('assistant.nav.items.invoices'), href: '/assistant/invoices', icon: $t('assistant.nav.items.invoices') === 'Factures' ? '📄' : '📄' }
     ];
 </script>
 
@@ -25,7 +26,7 @@
                 {navItems.find(i => page.url.pathname === i.href)?.label || 'Assistant Portal'}
             </h1>
             <div class="flex items-center gap-4">
-                <span class="text-sm text-gray-500 italic">Clinic Assistant Mode</span>
+                <span class="text-sm text-gray-500 italic">{$t('assistant.nav.userRole')}</span>
             </div>
         </header>
 

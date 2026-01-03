@@ -2,14 +2,15 @@
     import { page } from '$app/state';
     import { enhance } from '$app/forms';
     import type { Snippet } from 'svelte';
-    
+    import { t } from 'svelte-i18n';
+
     let { children }: { children: Snippet } = $props();
-    
+
     const navItems = [
-        { label: 'Admin Dashboard', href: '/admin', icon: '📊' },
-        { label: 'User Management', href: '/admin/users', icon: '👥' },
-        { label: 'System Settings', href: '/admin/settings', icon: '⚙️' },
-        { label: 'Inventory (Full)', href: '/inventory', icon: '📦' }
+        { label: $t('admin.nav.dashboard'), href: '/admin', icon: '📊' },
+        { label: $t('admin.nav.users'), href: '/admin/users', icon: '👥' },
+        { label: $t('admin.nav.settings'), href: '/admin/settings', icon: '⚙️' },
+        { label: $t('admin.nav.inventory'), href: '/inventory', icon: '📦' }
     ];
 
     let isMobileMenuOpen = $state(false);
@@ -44,7 +45,7 @@
                             <div class="flex items-center">
                                 <div class="ml-3">
                                     <p class="text-sm font-medium text-red-600 group-hover:text-red-800">
-                                        Logout Admin
+                                        {$t('admin.nav.logout')}
                                     </p>
                                 </div>
                             </div>
