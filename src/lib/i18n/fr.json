@@ -241,7 +241,7 @@
         "prescription_empty_prompt": "Ajoutez des médicaments pour commencer l'ordonnance."
     },
     "medications": {
-        "title": "Bibliothèque de Médicaments",
+        "title": "Biblio Médicaments",
         "subtitle": "Gérez vos médicaments favoris et posologies par défaut.",
         "add_button": "Ajouter un médicament",
         "empty_state": "Aucun médicament enregistré. Commencez par en ajouter un.",

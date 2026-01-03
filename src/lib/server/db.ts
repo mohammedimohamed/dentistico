@@ -791,7 +791,7 @@ export function getAllUpcomingAppointments() {
     return db.prepare(`
         SELECT 
             a.id, a.start_time, a.end_time, a.duration_minutes, 
-            a.status, a.appointment_type,
+            a.status, a.appointment_type, a.doctor_id, a.notes,
             p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone,
             u.full_name as doctor_name,
             b.full_name as booked_by_name,
@@ -824,7 +824,50 @@ export function getPatientAppointments(patientId: number) {
     `).all(patientId);
 }
 
+// Check if doctor has conflicting appointments
+export function checkDoctorConflict(doctorId: number, startTime: string, endTime: string, excludeAppointmentId?: number) {
+    let query = `
+        SELECT COUNT(*) as count
+        FROM appointments
+        WHERE doctor_id = ?
+          AND status NOT IN ('cancelled', 'no_show')
+          AND (
+              -- New appointment starts during existing appointment
+              (? >= start_time AND ? < end_time)
+              OR
+              -- New appointment ends during existing appointment
+              (? > start_time AND ? <= end_time)
+              OR
+              -- New appointment completely overlaps existing appointment
+              (? <= start_time AND ? >= end_time)
+          )
+    `;
+
+    const params: any[] = [doctorId, startTime, startTime, endTime, endTime, startTime, endTime];
+
+    if (excludeAppointmentId) {
+        query += ' AND id != ?';
+        params.push(excludeAppointmentId);
+    }
+
+    const result = db.prepare(query).get(...params) as { count: number };
+    return result.count > 0;
+}
+
 export function createAppointment(appointmentData: any) {
+    // Check for conflicts before creating
+    if (appointmentData.doctor_id && appointmentData.start_time && appointmentData.end_time) {
+        const hasConflict = checkDoctorConflict(
+            appointmentData.doctor_id,
+            appointmentData.start_time,
+            appointmentData.end_time
+        );
+
+        if (hasConflict) {
+            throw new Error('Doctor already has an appointment at this time');
+        }
+    }
+
     const keys = Object.keys(appointmentData);
     const columns = keys.join(', ');
     const placeholders = keys.map(() => '?').join(', ');
@@ -836,6 +879,23 @@ export function createAppointment(appointmentData: any) {
 }
 
 export function updateAppointment(id: number, appointmentData: any) {
+    // Check for conflicts before updating if time or doctor is being changed
+    if (appointmentData.doctor_id || appointmentData.start_time || appointmentData.end_time) {
+        const currentAppt = getAppointmentById(id) as any;
+
+        if (currentAppt) {
+            const doctorId = appointmentData.doctor_id || currentAppt.doctor_id;
+            const startTime = appointmentData.start_time || currentAppt.start_time;
+            const endTime = appointmentData.end_time || currentAppt.end_time;
+
+            const hasConflict = checkDoctorConflict(doctorId, startTime, endTime, id);
+
+            if (hasConflict) {
+                throw new Error('Doctor already has an appointment at this time');
+            }
+        }
+    }
+
     const keys = Object.keys(appointmentData);
     const setClause = keys.map(key => `${key} = ?`).join(', ');
     const values = [...Object.values(appointmentData), id];

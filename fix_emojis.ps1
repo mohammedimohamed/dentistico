@@ -1,0 +1,13 @@
+$p = 'd:\source\svelt\dentistico\src\routes\doctor\patients\[id]\+page.svelte'
+$c = [System.IO.File]::ReadAllText($p, [System.Text.Encoding]::UTF8)
+$c = $c.Replace('âš ï¸ ', '⚠️')
+$c = $c.Replace('âœ“', '✓')
+$c = $c.Replace('ðŸ¤°', '🤰')
+$c = $c.Replace('ðŸ ¥', '🏥')
+$c = $c.Replace('ðŸ“ ', '📄')
+$c = $c.Replace('ðŸ“„', '📄')
+$c = $c.Replace('ðŸ“…', '📅')
+$c = $c.Replace('ðŸ’Š', '💊')
+$c = $c.Replace('ðŸ’°', '💰')
+$c = $c.Replace('ðŸ–¨ï¸ ', '🖨️')
+[System.IO.File]::WriteAllText($p, $c, [System.Text.Encoding]::UTF8)

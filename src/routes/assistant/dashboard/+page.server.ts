@@ -124,8 +124,14 @@ export const actions: Actions = {
                 notes
             });
             return { success: true, message: 'Appointment scheduled successfully' };
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
+
+            // Check if it's a conflict error
+            if (e.message && e.message.includes('already has an appointment')) {
+                return fail(400, { error: 'This doctor is not available at the selected time. Please choose a different time slot.' });
+            }
+
             return fail(500, { error: 'Failed to create appointment' });
         }
     },
@@ -251,6 +257,54 @@ export const actions: Actions = {
         } catch (e) {
             console.error(e);
             return fail(500, { error: 'Failed to reschedule appointment' });
+        }
+    },
+
+    updateAppointment: async ({ request, locals }) => {
+        if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const id = Number(formData.get('id'));
+        const patientId = Number(formData.get('patient_id'));
+        const doctorId = Number(formData.get('doctor_id'));
+        const appointmentType = formData.get('appointment_type') as string;
+        const startTimeStr = formData.get('start_time') as string;
+        const duration = Number(formData.get('duration_minutes'));
+        const status = formData.get('status') as string;
+        const notes = formData.get('notes') as string;
+
+        if (!id || !patientId || !doctorId || !startTimeStr || !duration || !status) {
+            return fail(400, { error: 'Missing required fields' });
+        }
+
+        const start = new Date(startTimeStr);
+        const end = new Date(start.getTime() + duration * 60000);
+        const endTimeStr = end.toISOString();
+
+        try {
+            updateAppointment(id, {
+                patient_id: patientId,
+                doctor_id: doctorId,
+                start_time: startTimeStr,
+                end_time: endTimeStr,
+                duration_minutes: duration,
+                appointment_type: appointmentType,
+                status,
+                notes,
+                updated_at: new Date().toISOString()
+            });
+            return { success: true, message: 'Appointment updated successfully' };
+        } catch (e: any) {
+            console.error(e);
+
+            // Check if it's a conflict error
+            if (e.message && e.message.includes('already has an appointment')) {
+                return fail(400, { error: 'This doctor is not available at the selected time. Please choose a different time slot.' });
+            }
+
+            return fail(500, { error: 'Failed to update appointment' });
         }
     }
 };

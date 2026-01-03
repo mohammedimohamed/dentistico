@@ -92,6 +92,12 @@ export const actions: Actions = {
             return { success: true };
         } catch (e: any) {
             console.error('Booking error:', e);
+
+            // Check if it's a conflict error
+            if (e.message && e.message.includes('already has an appointment')) {
+                return fail(400, { error: 'This doctor is not available at the selected time. Please choose a different time slot.' });
+            }
+
             return fail(500, { error: e.message || 'Failed to process booking' });
         }
     }
