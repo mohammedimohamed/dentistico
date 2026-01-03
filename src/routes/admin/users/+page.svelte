@@ -73,48 +73,71 @@
 </div>
 
 {#if isCreateModalOpen}
-    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick={() => isCreateModalOpen = false}></div>
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div class="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+    <div class="fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <!-- Overlay -->
+            <button 
+                type="button"
+                class="fixed inset-0 bg-gray-600 bg-opacity-50 transition-opacity w-full h-full cursor-default" 
+                aria-hidden="true" 
+                onclick={() => isCreateModalOpen = false}
+            ></button>
+
+            <!-- Modal Content -->
+            <div class="relative bg-white rounded-xl shadow-2xl transform transition-all sm:max-w-lg sm:w-full overflow-hidden z-[70]">
                 <form method="POST" action="?/createUser" use:enhance={() => {
-                    return async ({ result }) => {
+                    return async ({ result, update }) => {
                         if (result.type === 'success') {
                             isCreateModalOpen = false;
+                            errorMessage = '';
                         } else if (result.type === 'failure') {
-                            errorMessage = result.data?.error || 'An error occurred';
+                            errorMessage = (result.data as any)?.error || 'An error occurred';
                         }
+                        await update();
                     };
                 }}>
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Create System User</h3>
+                    <div class="bg-white px-6 pt-6 pb-4">
+                        <div class="flex items-center justify-between border-b pb-3 mb-5">
+                            <h3 class="text-xl font-bold text-gray-900">Create System User</h3>
+                            <button type="button" onclick={() => isCreateModalOpen = false} class="text-gray-400 hover:text-gray-500">
+                                <span class="sr-only">Close</span>
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                                <input type="text" name="full_name" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+                                <label for="full_name" class="block text-sm font-semibold text-gray-700">Full Name</label>
+                                <input id="full_name" type="text" name="full_name" required placeholder="John Doe" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Username / Email</label>
-                                <input type="text" name="username" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+                                <label for="username" class="block text-sm font-semibold text-gray-700">Username / Email</label>
+                                <input id="username" type="text" name="username" required placeholder="john@example.com" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Password</label>
-                                <input type="password" name="password" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+                                <label for="password" class="block text-sm font-semibold text-gray-700">Initial Password</label>
+                                <input id="password" type="password" name="password" required placeholder="••••••••" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Role</label>
-                                <select name="role" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                                    <option value="doctor">Doctor</option>
-                                    <option value="assistant" selected>Assistant</option>
-                                    <option value="admin">Admin</option>
+                                <label for="role" class="block text-sm font-semibold text-gray-700">Account Role</label>
+                                <select id="role" name="role" required class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2.5 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                                    <option value="doctor">Doctor (Clinical Access)</option>
+                                    <option value="assistant" selected>Assistant (Administrative Access)</option>
+                                    <option value="admin">Admin (System Access)</option>
                                 </select>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm">Create User</button>
-                        <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick={() => isCreateModalOpen = false}>Cancel</button>
+                    
+                    <div class="bg-gray-50 px-6 py-4 flex flex-row-reverse gap-3">
+                        <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent shadow-sm px-5 py-2.5 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Create Account
+                        </button>
+                        <button type="button" class="inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-5 py-2.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" onclick={() => isCreateModalOpen = false}>
+                            Cancel
+                        </button>
                     </div>
                 </form>
             </div>

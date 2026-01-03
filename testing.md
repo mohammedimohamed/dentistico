@@ -799,7 +799,51 @@ _________________________________________________________________
 **Issues Found:**
 _________________________________________________________________
 
-### Scenario 57: Currency Configuration Consistency
+---
+
+## 🌍 Profile: Internationalization & Localization
+
+### Scenario 57: Switching System Language (French to Arabic)
+**User Story:** A new doctor joins who prefers working in Arabic.
+**Steps:**
+1. Log in to the portal.
+2. Locate the language switcher (usually in the header or sidebar).
+3. Change the language to **Arabic**.
+**Expected Results:**
+- The entire interface (Sidebar, Dashboard, Patients list) translates to Arabic.
+- The layout RTL (Right-to-Left) is correctly applied (sidebar moves to the right, text aligns right).
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 58: Managing the Medication Library
+**User Story:** Dr. Ahmed wants to add a common antibiotic to the clinic's shared library.
+**Steps:**
+1. Go to **Settings** -> **Medications**.
+2. Click **Add Medication**.
+3. Name: **Augmentin**, Dosage: **1g**, Instructions: **1 tablet every 12 hours**.
+4. Save and verify it appears in the list.
+5. Delete an old medication from the list.
+**Expected Results:**
+- New medication appears instantly with correct details.
+- Deletion removes the item from the table.
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 59: Multi-language Medication Interface
+**User Story:** An assistant needs to manage medications while the system is set to Arabic.
+**Steps:**
+1. Switch system language to **Arabic**.
+2. Navigate to **Doctor** -> **Medications** (Settings).
+3. Verify the table headers and modal fields are correctly translated.
+**Expected Results:**
+- "Augmentin" (data) remains "Augmentin", but "Dosage", "Instructions", and "Name" labels are in Arabic.
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 60: Currency Configuration Consistency
 **User Story:** Maria switches the currency to "$" and checks every financial view.
 **Steps:**
 1. Admin changes currency to "$".
@@ -811,7 +855,7 @@ _________________________________________________________________
 **Issues Found:**
 _________________________________________________________________
 
-### Scenario 58: Admin Database Metrics
+### Scenario 61: Admin Database Metrics
 **User Story:** Marc (Admin) checks the system health on the main dashboard.
 **Steps:**
 1. Go to the Admin Dashboard (`/admin`).
@@ -823,7 +867,7 @@ _________________________________________________________________
 **Issues Found:**
 _________________________________________________________________
 
-### Scenario 59: Multi-Doctor Conflict Detection (Admin View)
+### Scenario 62: Multi-Doctor Conflict Detection (Admin View)
 **User Story:** Admin verifies that the system prevents two doctors from taking the same room.
 **Steps:**
 1. Go to `/assistant/dashboard` (as Admin).
@@ -834,7 +878,7 @@ _________________________________________________________________
 **Issues Found:**
 _________________________________________________________________
 
-### Scenario 60: Admin Access to Archived Patients
+### Scenario 63: Admin Access to Archived Patients
 **User Story:** Admin needs to audit archived records.
 **Steps:**
 1. Navigate to /doctor/patients/archived.
@@ -871,6 +915,8 @@ _________________________________________________________________
 | Payment Recording | [ ] | |
 | Calendar Drag & Drop | [ ] | |
 | Mobile Responsiveness | [ ] | |
+| Internationalization (FR/AR) | [ ] | |
+| Medication Library | [ ] | |
 
 ---
 

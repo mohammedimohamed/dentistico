@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
-const db = new Database('dental_clinic.db', { verbose: console.log });
+export const db = new Database('dental_clinic.db', { verbose: console.log });
 
 export function init_db() {
     // Drop tables if they exist to ensure schema is updated (Development only)
@@ -222,7 +222,11 @@ export function init_db() {
             current_quantity INTEGER DEFAULT 0,
             min_threshold INTEGER DEFAULT 5,
             unit TEXT,
-            last_updated TEXT DEFAULT (datetime('now'))
+            unit_cost REAL DEFAULT 0.0,
+            expiry_date TEXT,
+            supplier_id INTEGER,
+            last_updated TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
         );
 
         CREATE TABLE IF NOT EXISTS stock_moves (
@@ -439,6 +443,24 @@ export function init_db() {
     } catch (e) {
         console.error('Migration for is_archived on patients failed:', e);
     }
+
+    // Migration for inventory fields
+    try {
+        const invCols = db.prepare("PRAGMA table_info(inventory_items)").all() as any[];
+        const colNames = invCols.map(c => c.name);
+
+        if (!colNames.includes('unit_cost')) {
+            db.exec('ALTER TABLE inventory_items ADD COLUMN unit_cost REAL DEFAULT 0.0');
+        }
+        if (!colNames.includes('expiry_date')) {
+            db.exec('ALTER TABLE inventory_items ADD COLUMN expiry_date TEXT');
+        }
+        if (!colNames.includes('supplier_id')) {
+            db.exec('ALTER TABLE inventory_items ADD COLUMN supplier_id INTEGER REFERENCES suppliers(id)');
+        }
+    } catch (e) {
+        console.error('Migration for inventory fields failed:', e);
+    }
 }
 
 function seed_db() {
@@ -524,15 +546,28 @@ function seed_db() {
         insertMed.run(...m);
     }
 
+    // Seed Suppliers
+    const suppliers = [
+        ['DentaLogistics', 'John Doe', '555-9988', 'contact@dentalog.com', '12 Industrial Way, Paris'],
+        ['MediSupply', 'Jane Smith', '555-7722', 'sales@medisupply.com', '45 Biotech Blvd, Lyon']
+    ];
+    const insertSupplier = db.prepare('INSERT INTO suppliers (name, contact_name, phone, email, address) VALUES (?, ?, ?, ?, ?)');
+    for (const s of suppliers) {
+        insertSupplier.run(...s);
+    }
+
+    const s1 = db.prepare("SELECT id FROM suppliers WHERE name = 'DentaLogistics'").get() as { id: number };
+    const s2 = db.prepare("SELECT id FROM suppliers WHERE name = 'MediSupply'").get() as { id: number };
+
     // Seed Inventory Items
     const inventory = [
-        ['Gants (Taille M)', 'BOX-G-M', 'Consommables', 50, 10, 'Boîte de 100'],
-        ['Masques Chirurgicaux', 'MSK-CHIR', 'Consommables', 100, 20, 'Unité'],
-        ['Articaine (Anesthésiant)', 'ANES-ART', 'Produits', 40, 5, 'Cartouche 1.8ml'],
-        ['Composites A2', 'COMP-A2', 'Restaurations', 15, 3, 'Seringue'],
-        ['Lames de scalpel #15', 'SCAL-15', 'Chirurgie', 30, 5, 'Unité']
+        ['Gants (Taille M)', 'BOX-G-M', 'Consommables', 50, 10, 'Boîte de 100', 12.50, '2026-12-31', s1.id],
+        ['Masques Chirurgicaux', 'MSK-CHIR', 'Consommables', 100, 20, 'Unité', 0.45, '2027-06-30', s1.id],
+        ['Articaine (Anesthésiant)', 'ANES-ART', 'Produits', 40, 5, 'Cartouche 1.8ml', 2.10, '2025-05-15', s2.id],
+        ['Composites A2', 'COMP-A2', 'Restaurations', 15, 3, 'Seringue', 45.00, '2026-08-20', s2.id],
+        ['Lames de scalpel #15', 'SCAL-15', 'Chirurgie', 4, 5, 'Unité', 1.20, '2028-01-01', s1.id]
     ];
-    const insertInv = db.prepare('INSERT INTO inventory_items (name, sku, category, current_quantity, min_threshold, unit) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertInv = db.prepare('INSERT INTO inventory_items (name, sku, category, current_quantity, min_threshold, unit, unit_cost, expiry_date, supplier_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     for (const i of inventory) {
         insertInv.run(...i);
     }

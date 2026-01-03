@@ -47,11 +47,19 @@ Designed for focus, speed, and clinical accuracy.
     - **FDI Numbering**: International standard tooth numbering system.
     - **Smart Logic**: Automatic switch between Adult (32 teeth) and Pediatric (20 deciduous teeth) charts based on patient age.
     - **Visual History**: Color-coded mapping (Red for cavities, Blue/Green for treatments) with per-tooth clinical notes.
+- **Medication Library**: 
+    - Shared database of common medications and default dosages.
+    - Streamlines prescription generation for the entire clinic.
 - **Multi-Practitioner Support**: 
     - Concurrent scheduling for multiple doctors working in separate rooms simultaneously.
     - **Room Conflict Prevention**: Automated system blocks double-booking of the same treatment room at the same time.
 - **Clinical History**: Longitudinal access to notes, allergies (hidden from assistants), and prescriptions.
 - **Room Coordination**: Doctors see patients assigned specifically to their designated rooms for the day.
+
+### 🌍 Internationalization (Global Ready)
+- **Multi-language Support**: Fully translated into **French** and **Arabic**.
+- **RTL Optimization**: Seamless Layout switching (Right-to-Left) for Arabic users.
+- **Standardized i18n**: Built on `svelte-i18n` for easy addition of new locales.
 
 ### 📦 Logistics & Inventory (Smart Supply Chain)
 - **Low Stock Visual Alerts**: Color-coded thresholds to prevent supply shortages.

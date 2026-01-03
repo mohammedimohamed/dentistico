@@ -10,6 +10,7 @@ declare global {
 				role: string;
 				full_name: string;
 			};
+			locale: string;
 		}
 		// interface PageData {}
 		// interface PageState {}

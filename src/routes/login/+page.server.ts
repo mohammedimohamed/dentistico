@@ -23,12 +23,13 @@ export const actions = {
         const sessionId = createSession(user.id);
         setSessionCookie(cookies, sessionId);
 
-        if (user.role === 'doctor') {
+        if (user.role === 'admin') {
+            throw redirect(303, '/admin');
+        } else if (user.role === 'doctor') {
             throw redirect(303, '/doctor/dashboard');
         } else if (user.role === 'assistant') {
             throw redirect(303, '/assistant/dashboard');
         } else {
-            // Patient redirect - for now we just go to home or a placeholder
             throw redirect(303, '/');
         }
     }

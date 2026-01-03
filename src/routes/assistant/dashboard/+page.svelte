@@ -286,9 +286,13 @@
                 <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md">
                     <form method="POST" action={selectedAppointment?.id ? "?/updateAppointment" : "?/createAppointment"} use:enhance={() => {
                         errorMessage = '';
-                        return async ({ result }) => {
-                            if (result.type === 'success') closeModal();
-                            else if (result.type === 'failure') errorMessage = result.data?.error || 'Error occurred';
+                        return async ({ result, update }) => {
+                            if (result.type === 'success') {
+                                closeModal();
+                            } else if (result.type === 'failure') {
+                                errorMessage = (result.data as any)?.error || 'Error occurred';
+                            }
+                            await update();
                         };
                     }}>
                         {#if selectedAppointment?.id}
@@ -394,9 +398,13 @@
                 <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md">
                     <form method="POST" action="?/createPatient" use:enhance={() => {
                         errorMessage = '';
-                        return async ({ result }) => { 
-                            if (result.type === 'success') isPatientModalOpen = false;
-                            else errorMessage = result.data?.error || 'Registration failed';
+                        return async ({ result, update }) => { 
+                            if (result.type === 'success') {
+                                isPatientModalOpen = false;
+                            } else {
+                                errorMessage = (result.data as any)?.error || 'Registration failed';
+                            }
+                            await update();
                         };
                     }}>
                         <div class="p-6">
@@ -448,9 +456,13 @@
                 <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md">
                     <form method="POST" action="?/recordPayment" use:enhance={() => {
                         errorMessage = '';
-                        return async ({ result }) => { 
-                            if (result.type === 'success') isPaymentModalOpen = false;
-                            else errorMessage = result.data?.error || 'Payment failed';
+                        return async ({ result, update }) => { 
+                            if (result.type === 'success') {
+                                isPaymentModalOpen = false;
+                            } else {
+                                errorMessage = (result.data as any)?.error || 'Payment failed';
+                            }
+                            await update();
                         };
                     }}>
                         <input type="hidden" name="patient_id" value={selectedPaymentPatient.patient_id}>

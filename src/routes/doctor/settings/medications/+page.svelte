@@ -1,6 +1,7 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
     import { page } from '$app/state';
+    import { t } from 'svelte-i18n';
     
     let { data } = $props();
     let showAddModal = $state(false);
@@ -9,8 +10,8 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex justify-between items-center mb-8">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">Bibliothèque de Médicaments</h1>
-            <p class="mt-2 text-sm text-gray-600">Gérez vos médicaments favoris et posologies par défaut.</p>
+            <h1 class="text-3xl font-bold text-gray-900">{$t('medications.title')}</h1>
+            <p class="mt-2 text-sm text-gray-600">{$t('medications.subtitle')}</p>
         </div>
         <button 
             onclick={() => showAddModal = true}
@@ -19,7 +20,7 @@
             <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            Ajouter un médicament
+            {$t('medications.add_button')}
         </button>
     </div>
 
@@ -27,11 +28,11 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médicament</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dosage par défaut</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instructions</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{$t('medications.table.name')}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{$t('medications.table.dosage')}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{$t('medications.table.instructions')}</th>
                     <th scope="col" class="relative px-6 py-3">
-                        <span class="sr-only">Actions</span>
+                        <span class="sr-only">{$t('common.actions')}</span>
                     </th>
                 </tr>
             </thead>
@@ -50,7 +51,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <form action="?/deleteMedication" method="POST" use:enhance>
                                 <input type="hidden" name="id" value={medication.id} />
-                                <button type="submit" class="text-red-600 hover:text-red-900 ml-4">Supprimer</button>
+                                <button type="submit" class="text-red-600 hover:text-red-900 ml-4">{$t('common.delete')}</button>
                             </form>
                         </td>
                     </tr>
@@ -58,7 +59,7 @@
                 {#if data.medications.length === 0}
                     <tr>
                         <td colspan="4" class="px-6 py-10 text-center text-gray-500">
-                            Aucun médicament enregistré. Commencez par en ajouter un.
+                            {$t('medications.empty_state')}
                         </td>
                     </tr>
                 {/if}
@@ -81,34 +82,35 @@
                             </svg>
                         </div>
                         <div class="mt-3 text-center sm:mt-5">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Nouveau Médicament</h3>
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">{$t('medications.modal.title')}</h3>
                         </div>
                     </div>
                     <form action="?/addMedication" method="POST" use:enhance={() => {
-                        return async ({ result }) => {
+                        return async ({ result, update }) => {
                             if (result.type === 'success') {
                                 showAddModal = false;
                             }
+                            await update();
                         };
                     }} class="mt-5 sm:mt-6 space-y-4">
                         <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700">Nom du médicament</label>
-                            <input type="text" name="name" id="name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="ex: Amoxicilline">
+                            <label for="name" class="block text-sm font-medium text-gray-700">{$t('medications.modal.name_label')}</label>
+                            <input type="text" name="name" id="name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder={$t('medications.modal.name_placeholder')}>
                         </div>
                         <div>
-                            <label for="default_dosage" class="block text-sm font-medium text-gray-700">Dosage par défaut</label>
-                            <input type="text" name="default_dosage" id="default_dosage" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="ex: 1g">
+                            <label for="default_dosage" class="block text-sm font-medium text-gray-700">{$t('medications.modal.dosage_label')}</label>
+                            <input type="text" name="default_dosage" id="default_dosage" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder={$t('medications.modal.dosage_placeholder')}>
                         </div>
                         <div>
-                            <label for="instructions" class="block text-sm font-medium text-gray-700">Instructions par défaut</label>
-                            <textarea name="instructions" id="instructions" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="ex: 1 comprimé matin et soir"></textarea>
+                            <label for="instructions" class="block text-sm font-medium text-gray-700">{$t('medications.modal.instructions_label')}</label>
+                            <textarea name="instructions" id="instructions" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder={$t('medications.modal.instructions_placeholder')}></textarea>
                         </div>
                         <div class="mt-5 sm:mt-6 flex space-x-3">
                             <button type="button" onclick={() => showAddModal = false} class="flex-1 inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
-                                Annuler
+                                {$t('common.cancel')}
                             </button>
                             <button type="submit" class="flex-1 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
-                                Enregistrer
+                                {$t('common.save')}
                             </button>
                         </div>
                     </form>

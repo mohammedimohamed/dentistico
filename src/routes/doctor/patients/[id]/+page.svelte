@@ -1,7 +1,8 @@
-<script lang="ts">
+﻿<script lang="ts">
     import type { PageData } from './$types';
     import { enhance } from '$app/forms';
     import { APP_CONFIG } from '$lib/config/app.config';
+    import { t } from 'svelte-i18n';
 
     let { data }: { data: PageData } = $props();
     let activeTab = $state('overview');
@@ -10,14 +11,14 @@
     let formError = $state<string | null>(null);
     let formSuccess = $state<string | null>(null);
 
-    const tabs = [
-        { id: 'overview', label: 'Overview' },
-        { id: 'medical', label: 'Medical History' },
-        { id: 'dental', label: 'Dental Records' },
-        { id: 'appointments', label: 'Appointments' },
-        { id: 'prescriptions', label: 'Ordonnances' },
-        { id: 'financial', label: 'Financial' }
-    ];
+    const tabs = $derived([
+        { id: 'overview', label: $t('patient_details.overview') },
+        { id: 'medical', label: $t('patient_details.medical_history') },
+        { id: 'dental', label: $t('patient_details.dental_records') },
+        { id: 'appointments', label: $t('patient_details.appointments') },
+        { id: 'prescriptions', label: $t('patient_details.prescriptions') },
+        { id: 'financial', label: $t('patient_details.financial') }
+    ]);
 
     import PrescriptionBuilder from '$lib/components/PrescriptionBuilder.svelte';
     import ToothSelector from '$lib/components/ToothSelector.svelte';
@@ -71,150 +72,156 @@
 <div class="min-h-screen bg-gray-50 pb-12">
     <!-- Header -->
     <header class="bg-white shadow">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-start">
-            <div>
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div class="text-start">
                 <div class="flex items-center gap-2">
-                    <a href="/doctor/patients" class="text-sm text-indigo-600 hover:text-indigo-800">&larr; Back to List</a>
+                    <a href="/doctor/patients" class="text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center group">
+                        <span class="margin-inline-end-2 group-hover:-translate-x-1 rtl:group-hover:translate-x-1 transition-transform inline-block">&larr;</span> 
+                        {$t('patient_details.back_to_list')}
+                    </a>
                 </div>
-                <div class="flex items-center gap-2">
-                    <h1 class="text-3xl font-bold text-gray-900 mt-2">{data.patient.full_name}</h1>
+                <div class="flex items-center gap-3 mt-4">
+                    <h1 class="text-3xl font-bold text-gray-900">{data.patient.full_name}</h1>
                     {#if data.patient.is_archived}
-                        <span class="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300">
-                            Archived
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-800 border border-gray-200 uppercase tracking-wider">
+                            {$t('patient_details.archived')}
                         </span>
                     {/if}
-                    <span class="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {isChild ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
-                        {isChild ? 'Child' : 'Adult'}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold {isChild ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'} uppercase tracking-wider">
+                        {isChild ? $t('patient_details.child') : $t('patient_details.adult')}
                     </span>
                 </div>
-                <p class="text-gray-500">Patient ID: #{data.patient.id} • DOB: {data.patient.date_of_birth} ({age} yrs)</p>
+                <p class="text-sm text-gray-500 font-medium mt-2">
+                    {$t('patients.patient_id')}: #{data.patient.id} • {$t('patients.date_of_birth')}: {data.patient.date_of_birth} ({age} {$t('patients.age')})
+                </p>
             </div>
-            <div class="flex gap-3">
-                <button onclick={() => isTreatmentModalOpen = true} class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 font-medium">
-                    + Add Treatment
+            <div class="flex flex-wrap gap-3">
+                <button onclick={() => isTreatmentModalOpen = true} class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-100 transition-all text-sm">
+                    + {$t('patient_details.add_treatment')}
                 </button>
-                <button onclick={() => isEditModalOpen = true} class="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 font-medium">
-                    Edit Profile
+                <button onclick={() => isEditModalOpen = true} class="bg-white text-gray-700 border border-gray-200 px-6 py-2.5 rounded-xl hover:bg-gray-50 font-bold shadow-sm transition-all text-sm">
+                    {$t('patient_details.edit_profile')}
                 </button>
                 {#if data.patient.is_archived}
                     <form method="POST" action="?/unarchivePatient" use:enhance>
-                        <button type="submit" class="bg-green-50 text-green-700 border border-green-200 px-4 py-2 rounded-md hover:bg-green-100 font-medium">
-                            Unarchive Patient
+                        <button type="submit" class="bg-green-50 text-green-700 border border-green-200 px-6 py-2.5 rounded-xl hover:bg-green-100 font-bold transition-all text-sm">
+                            {$t('patient_details.unarchive')}
                         </button>
                     </form>
                 {:else}
                     <form method="POST" action="?/archivePatient" use:enhance={() => {
-                        return async ({ result }) => {
+                        return async ({ result, update }) => {
                             if (result.type === 'failure') {
-                                alert(result.data?.error || 'Failed to archive patient');
+                                alert((result.data as any)?.error || $t('common.error'));
                             }
+                            await update();
                         };
                     }}>
-                        <button type="submit" class="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded-md hover:bg-red-100 font-medium" onclick={(e) => !confirm('Archive this patient? They must have 0 balance and no future appointments.') && e.preventDefault()}>
-                            Archive Patient
+                        <button type="submit" class="bg-red-50 text-red-700 border border-red-200 px-6 py-2.5 rounded-xl hover:bg-red-100 font-bold transition-all text-sm" onclick={(e) => !confirm($t('patient_details.archive_confirm')) && e.preventDefault()}>
+                            {$t('patient_details.archive')}
                         </button>
                     </form>
                 {/if}
             </div>
         </div>
         
-        <!-- Tabs -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                {#each tabs as tab}
-                    <button 
-                        class="{activeTab === tab.id ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
-                        onclick={() => activeTab = tab.id}
-                    >
-                        {tab.label}
-                    </button>
-                {/each}
-            </nav>
-        </div>
+    <!-- Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <nav class="-mb-px flex space-x-1 sm:space-x-8 overflow-x-auto no-scrollbar" aria-label="Tabs">
+            {#each tabs as tab}
+                <button 
+                    class="{activeTab === tab.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-200'} whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm transition-all"
+                    onclick={() => activeTab = tab.id}
+                >
+                    {tab.label}
+                </button>
+            {/each}
+        </nav>
+    </div>
     </header>
 
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-start">
         
         <!-- OVERVIEW TAB -->
         {#if activeTab === 'overview'}
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <!-- Personal Info -->
-                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                    <div class="px-4 py-5 sm:px-6">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900">Personal Information</h3>
+                <div class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100">
+                    <div class="px-6 py-5 sm:px-8 border-b border-gray-50 bg-gray-50/30">
+                        <h3 class="text-lg font-bold text-gray-900">{$t('patient_details.personal_info')}</h3>
                     </div>
-                    <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
-                        <dl class="sm:divide-y sm:divide-gray-200">
-                            <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt class="text-sm font-medium text-gray-500">Full name</dt>
-                                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{data.patient.full_name}</dd>
+                    <div class="px-6 py-6 sm:px-8">
+                        <dl class="divide-y divide-gray-100">
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-bold text-gray-400 uppercase tracking-wider">{$t('patients.full_name')}</dt>
+                                <dd class="text-sm text-gray-900 col-span-2 font-medium">{data.patient.full_name}</dd>
                             </div>
-                            <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt class="text-sm font-medium text-gray-500">Gender</dt>
-                                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{data.patient.gender || 'N/A'}</dd>
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-bold text-gray-400 uppercase tracking-wider">{$t('patients.gender')}</dt>
+                                <dd class="text-sm text-gray-900 col-span-2 font-medium">{data.patient.gender || 'N/A'}</dd>
                             </div>
-                            <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt class="text-sm font-medium text-gray-500">Phone</dt>
-                                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-bold text-gray-400 uppercase tracking-wider">{$t('patients.phone')}</dt>
+                                <dd class="text-sm text-gray-900 col-span-2 font-medium">
                                     {#if data.patient.phone}
-                                        <a href="tel:{data.patient.phone}" class="text-indigo-600 hover:text-indigo-900">{data.patient.phone}</a>
+                                        <a href="tel:{data.patient.phone}" class="text-indigo-600 hover:underline">{data.patient.phone}</a>
                                     {:else}
-                                        <span class="text-gray-400">N/A</span>
+                                        <span class="text-gray-400">{$t('common.none')}</span>
                                     {/if}
                                     
                                     {#if data.patient.secondary_phone}
-                                        <div class="mt-1 flex items-center gap-2">
-                                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Secondary</span>
-                                            <a href="tel:{data.patient.secondary_phone}" class="text-indigo-600 hover:text-indigo-900 text-sm">{data.patient.secondary_phone}</a>
+                                        <div class="mt-2 flex items-center gap-2">
+                                            <span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">{$t('patients.secondary_phone')}</span>
+                                            <a href="tel:{data.patient.secondary_phone}" class="text-indigo-600 hover:underline text-sm">{data.patient.secondary_phone}</a>
                                         </div>
                                     {/if}
                                 </dd>
                             </div>
-                            <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt class="text-sm font-medium text-gray-500">Email</dt>
-                                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-bold text-gray-400 uppercase tracking-wider">{$t('common.email')}</dt>
+                                <dd class="text-sm text-gray-900 col-span-2 font-medium truncate">
                                     {#if data.patient.email}
-                                        <a href="mailto:{data.patient.email}" class="text-indigo-600 hover:text-indigo-900">{data.patient.email}</a>
+                                        <a href="mailto:{data.patient.email}" class="text-indigo-600 hover:underline">{data.patient.email}</a>
                                     {:else}
-                                        <span class="text-gray-400">N/A</span>
+                                        <span class="text-gray-400">{$t('common.none')}</span>
                                     {/if}
 
                                     {#if data.patient.secondary_email}
-                                        <div class="mt-1 flex items-center gap-2">
-                                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Secondary</span>
-                                            <a href="mailto:{data.patient.secondary_email}" class="text-indigo-600 hover:text-indigo-900 text-sm">{data.patient.secondary_email}</a>
+                                        <div class="mt-2 flex items-center gap-2">
+                                            <span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">{$t('patients.secondary_email')}</span>
+                                            <a href="mailto:{data.patient.secondary_email}" class="text-indigo-600 hover:underline text-sm">{data.patient.secondary_email}</a>
                                         </div>
                                     {/if}
                                 </dd>
                             </div>
-                            <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt class="text-sm font-medium text-gray-500">Address</dt>
-                                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-bold text-gray-400 uppercase tracking-wider">{$t('patients.address')}</dt>
+                                <dd class="text-sm text-gray-900 col-span-2 font-medium">
                                     {data.patient.address || ''}<br>
                                     {data.patient.city || ''} {data.patient.postal_code || ''}
                                 </dd>
                             </div>
-                            <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt class="text-sm font-medium text-gray-500">Emergency Contact</dt>
-                                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-bold text-gray-400 uppercase tracking-wider">{$t('patients.emergency_contact')}</dt>
+                                <dd class="text-sm text-gray-900 col-span-2 font-medium">
                                     {data.patient.emergency_contact_name || 'N/A'}
                                     {#if data.patient.emergency_contact_relationship}
-                                        <span class="text-gray-500"> ({data.patient.emergency_contact_relationship})</span>
+                                        <span class="text-gray-400 font-normal"> ({data.patient.emergency_contact_relationship})</span>
                                     {/if}
                                     <br>
                                     <span class="text-gray-500">{data.patient.emergency_contact_phone || ''}</span>
                                 </dd>
                             </div>
-                            <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                <dt class="text-sm font-medium text-gray-500">Insurance</dt>
-                                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-bold text-gray-400 uppercase tracking-wider">{$t('patients.insurance')}</dt>
+                                <dd class="text-sm text-gray-900 col-span-2 font-medium">
                                     {#if data.patient.insurance_provider}
                                         {data.patient.insurance_provider}
                                         {#if data.patient.insurance_number}
-                                            <span class="text-gray-500"> - {data.patient.insurance_number}</span>
+                                            <span class="text-gray-400 font-normal"> - {data.patient.insurance_number}</span>
                                         {/if}
                                     {:else}
-                                        <span class="text-gray-400">N/A</span>
+                                        <span class="text-gray-400">{$t('common.none')}</span>
                                     {/if}
                                 </dd>
                             </div>
@@ -223,50 +230,52 @@
                 </div>
 
                 <!-- Snapshot / Alerts -->
-                <div class="space-y-6">
-                    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                        <div class="px-4 py-5 sm:px-6">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900">Medical Alerts</h3>
+                <div class="space-y-8">
+                    <div class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100">
+                        <div class="px-6 py-5 sm:px-8 border-b border-gray-50 bg-gray-50/30">
+                            <h3 class="text-lg font-bold text-gray-900">{$t('patient_details.medical_alerts')}</h3>
                         </div>
-                        <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
-                            {#if data.patient.allergies}
-                                <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
-                                    <div class="flex">
-                                        <div class="flex-shrink-0">⚠️</div>
-                                        <div class="ml-3">
-                                            <h3 class="text-sm font-medium text-red-800">Allergies</h3>
-                                            <div class="mt-2 text-sm text-red-700">
+                        <div class="px-6 py-6 sm:px-8">
+                            {#if data.patient.allergies && data.patient.allergies !== 'None'}
+                                <div class="bg-red-50 border border-red-100 rounded-2xl p-5 mb-6">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex-shrink-0 text-xl">âš ï¸</div>
+                                        <div>
+                                            <h3 class="text-sm font-bold text-red-800">{$t('patient_details.allergies')}</h3>
+                                            <div class="mt-2 text-sm text-red-700 font-medium">
                                                 <p>{data.patient.allergies}</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             {:else}
-                                <p class="text-green-600">No known allergies.</p>
+                                <div class="flex items-center gap-3 text-green-600 font-bold text-sm mb-6">
+                                    <span class="text-lg">âœ“</span> {$t('patient_details.no_allergies')}
+                                </div>
                             {/if}
 
-                            {#if data.patient.medical_conditions}
-                                <div class="mt-4">
-                                    <h4 class="text-sm font-medium text-gray-500">Conditions</h4>
-                                    <p class="mt-1 text-sm text-gray-900">{data.patient.medical_conditions}</p>
+                            {#if data.patient.medical_conditions && data.patient.medical_conditions !== 'None'}
+                                <div class="space-y-2">
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.conditions')}</h4>
+                                    <p class="text-sm text-gray-900 font-medium bg-gray-50 p-4 rounded-xl border border-gray-100">{data.patient.medical_conditions}</p>
                                 </div>
                             {/if}
                         </div>
                     </div>
 
-                    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                        <div class="px-4 py-5 sm:px-6">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900">Financial Snapshot</h3>
+                    <div class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100 font-inter">
+                        <div class="px-6 py-5 sm:px-8 border-b border-gray-50 bg-gray-50/30">
+                            <h3 class="text-lg font-bold text-gray-900">{$t('patient_details.financial_snapshot')}</h3>
                         </div>
-                        <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
-                            <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                                <div class="sm:col-span-1">
-                                    <dt class="text-sm font-medium text-gray-500">Total Billed</dt>
-                                    <dd class="mt-1 text-2xl font-semibold text-gray-900">{APP_CONFIG.currencySymbol}{data.balance.total_billed.toFixed(2)}</dd>
+                        <div class="px-6 py-8 sm:px-8">
+                            <dl class="grid grid-cols-1 gap-8 sm:grid-cols-2">
+                                <div>
+                                    <dt class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.total_billed')}</dt>
+                                    <dd class="text-3xl font-black text-gray-900 tracking-tight">{APP_CONFIG.currencySymbol}{data.balance.total_billed.toFixed(2)}</dd>
                                 </div>
-                                <div class="sm:col-span-1">
-                                    <dt class="text-sm font-medium text-gray-500">Balance Due</dt>
-                                    <dd class="mt-1 text-2xl font-semibold {data.balance.balance_due > 0 ? 'text-red-600' : 'text-green-600'}">
+                                <div>
+                                    <dt class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.balance_due')}</dt>
+                                    <dd class="text-3xl font-black tracking-tight {data.balance.balance_due > 0 ? 'text-red-600' : 'text-green-600'}">
                                         {APP_CONFIG.currencySymbol}{data.balance.balance_due.toFixed(2)}
                                     </dd>
                                 </div>
@@ -279,189 +288,161 @@
 
         <!-- MEDICAL TAB -->
         {#if activeTab === 'medical'}
-            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                <div class="px-4 py-5 sm:px-6">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Comprehensive Medical History</h3>
-                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Medical background and health status.</p>
+            <div class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100">
+                <div class="px-6 py-5 sm:px-8 border-b border-gray-50 bg-gray-50/30">
+                    <h3 class="text-lg font-bold text-gray-900">{$t('patient_details.medical_history')}</h3>
                 </div>
-                <div class="border-t border-gray-200 px-4 py-5 sm:p-6 space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500">Blood Type</h4>
-                            <p class="mt-1 text-lg text-gray-900">{data.patient.blood_type || 'Unknown'}</p>
+                <div class="px-6 py-8 sm:px-8 space-y-10">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.blood_type')}</h4>
+                            <p class="text-lg text-gray-900 font-black">{data.patient.blood_type || $t('common.none')}</p>
                         </div>
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500">Gender</h4>
-                            <p class="mt-1 text-lg text-gray-900">{data.patient.gender || 'Not specified'}</p>
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patients.gender')}</h4>
+                            <p class="text-lg text-gray-900 font-black">{data.patient.gender || $t('common.none')}</p>
                         </div>
                         {#if data.patient.pregnancy_status === 1}
                             <div class="md:col-span-2">
-                                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                                    <p class="text-sm font-medium text-yellow-800">⚠️ Pregnancy Status: Active</p>
+                                <div class="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-center gap-4">
+                                    <span class="text-2xl">ðŸ¤°</span>
+                                    <div>
+                                        <p class="text-sm font-bold text-amber-900 uppercase tracking-wider">{$t('patient_details.pregnancy_status')}</p>
+                                        <p class="text-lg font-black text-amber-700">{$t('patient_details.active')}</p>
+                                    </div>
                                 </div>
                             </div>
                         {/if}
                     </div>
-                    <div>
-                        <h4 class="text-sm font-medium text-gray-500">Allergies</h4>
-                        <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
-                            {data.patient.allergies || 'None reported'}
+                    <div class="space-y-4">
+                        <div class="space-y-2 text-start">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.allergies')}</h4>
+                            <div class="p-5 bg-gray-50 rounded-2xl border border-gray-100 font-medium text-gray-900 whitespace-pre-line">
+                                {data.patient.allergies || $t('common.none')}
+                            </div>
                         </div>
+                        <div class="space-y-2 text-start">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.current_medications')}</h4>
+                            <div class="p-5 bg-gray-50 rounded-2xl border border-gray-100 font-medium text-gray-900 whitespace-pre-line">
+                                {data.patient.current_medications || $t('common.none')}
+                            </div>
+                        </div>
+                        <div class="space-y-2 text-start">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.conditions')}</h4>
+                            <div class="p-5 bg-gray-50 rounded-2xl border border-gray-100 font-medium text-gray-900 whitespace-pre-line">
+                                {data.patient.medical_conditions || $t('common.none')}
+                            </div>
+                        </div>
+                        {#if data.patient.surgical_history}
+                            <div class="space-y-2 text-start">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.surgical_history')}</h4>
+                                <div class="p-5 bg-gray-50 rounded-2xl border border-gray-100 font-medium text-gray-900 whitespace-pre-line">
+                                    {data.patient.surgical_history}
+                                </div>
+                            </div>
+                        {/if}
+                        {#if data.patient.family_medical_history}
+                            <div class="space-y-2 text-start">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.family_history')}</h4>
+                                <div class="p-5 bg-gray-50 rounded-2xl border border-gray-100 font-medium text-gray-900 whitespace-pre-line">
+                                    {data.patient.family_medical_history}
+                                </div>
+                            </div>
+                        {/if}
+                        {#if data.patient.oral_habits}
+                            <div class="space-y-2 text-start">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.oral_habits')}</h4>
+                                <div class="p-5 bg-gray-50 rounded-2xl border border-gray-100 font-medium text-gray-900 whitespace-pre-line">
+                                    {data.patient.oral_habits}
+                                </div>
+                            </div>
+                        {/if}
+                        {#if data.patient.substance_use}
+                            <div class="space-y-2 text-start">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.substance_use')}</h4>
+                                <div class="p-5 bg-gray-50 rounded-2xl border border-gray-100 font-medium text-gray-900 whitespace-pre-line">
+                                    {data.patient.substance_use}
+                                </div>
+                            </div>
+                        {/if}
                     </div>
-                    <div>
-                        <h4 class="text-sm font-medium text-gray-500">Current Medications</h4>
-                        <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
-                            {data.patient.current_medications || 'None reported'}
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="text-sm font-medium text-gray-500">Medical Conditions</h4>
-                        <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
-                            {data.patient.medical_conditions || 'None reported'}
-                        </div>
-                    </div>
-                    {#if data.patient.surgical_history}
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500">Surgical History</h4>
-                            <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
-                                {data.patient.surgical_history}
-                            </div>
-                        </div>
-                    {/if}
-                    {#if data.patient.family_medical_history}
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500">Family Medical History</h4>
-                            <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
-                                {data.patient.family_medical_history}
-                            </div>
-                        </div>
-                    {/if}
-                    {#if data.patient.oral_habits}
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500">Oral Habits</h4>
-                            <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
-                                {data.patient.oral_habits}
-                            </div>
-                        </div>
-                    {/if}
-                    {#if data.patient.substance_use}
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500">Substance Use</h4>
-                            <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 whitespace-pre-line">
-                                {data.patient.substance_use}
-                            </div>
-                        </div>
-                    {/if}
                 </div>
             </div>
         {/if}
 
         <!-- DENTAL TAB -->
         {#if activeTab === 'dental'}
-            <div class="space-y-6">
-                <div class="bg-white shadow sm:rounded-lg">
-                    <div class="px-4 py-5 sm:px-6">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900">Dental Information</h3>
+            <div class="space-y-8">
+                <div class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100">
+                    <div class="px-6 py-5 sm:px-8 border-b border-gray-50 bg-gray-50/30">
+                        <h3 class="text-lg font-bold text-gray-900">{$t('patient_details.dental_info')}</h3>
                     </div>
-                    <div class="border-t border-gray-200 px-4 py-5 sm:p-6 space-y-4">
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500">Previous Dentist</h4>
-                            <p class="mt-1 text-gray-900">{data.patient.previous_dentist || 'Not specified'}</p>
+                    <div class="px-6 py-8 sm:px-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.previous_dentist')}</h4>
+                            <p class="text-lg text-gray-900 font-black">{data.patient.previous_dentist || $t('common.none')}</p>
                         </div>
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500">Last Visit Date</h4>
-                            <p class="mt-1 text-gray-900">{data.patient.last_visit_date || 'Not recorded'}</p>
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.last_visit')}</h4>
+                            <p class="text-lg text-gray-900 font-black">{data.patient.last_visit_date || $t('common.none')}</p>
                         </div>
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500">Dental Notes</h4>
-                            <div class="mt-1 prose max-w-none text-gray-900 whitespace-pre-line p-3 bg-gray-50 rounded-md border border-gray-200">
-                                {data.patient.dental_notes || 'No general notes.'}
+                        <div class="md:col-span-2 space-y-2 text-start">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">{$t('patient_details.dental_notes')}</h4>
+                            <div class="p-5 bg-gray-50 rounded-2xl border border-gray-100 font-medium text-gray-900 whitespace-pre-line">
+                                {data.patient.dental_notes || $t('common.none')}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Dental Records Tab -->
-                {#if activeTab === 'dental'}
-                    <div class="space-y-6">
-                        <div class="bg-white shadow rounded-lg p-6">
-                            <h3 class="text-lg font-bold text-gray-900 mb-4">Interactive Odontogram</h3>
-                            <DentalChart 
-                                teethData={JSON.parse(data.patient.teeth_treatments || '{}')} 
-                                isPediatric={isChild}
-                                onToothClick={openToothModal}
-                            />
-                        </div>
+                <div class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100 p-8">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6">{$t('patient_details.odontogram')}</h3>
+                    <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 overflow-x-auto">
+                        <DentalChart 
+                            teethData={JSON.parse(data.patient.teeth_treatments || '{}')} 
+                            isPediatric={isChild}
+                            onToothClick={openToothModal}
+                        />
+                    </div>
+                </div>
 
-                        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                            <div class="px-4 py-5 sm:px-6">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900">Treatment History</h3>
-                            </div>
-                            <div class="border-t border-gray-200">
-                                <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tooth</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Treatment</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="bg-white divide-y divide-gray-200">
-                                        {#each data.treatments as treatment}
-                                            <tr>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{treatment.treatment_date}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{treatment.tooth_number || '-'}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{treatment.treatment_type}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{APP_CONFIG.currencySymbol}{treatment.cost.toFixed(2)}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {treatment.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                                                        {treatment.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        {/each}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                <div class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100">
+                    <div class="px-6 py-5 sm:px-8 border-b border-gray-50 bg-gray-50/30">
+                        <h3 class="text-lg font-bold text-gray-900">{$t('patient_details.treatment_history')}</h3>
                     </div>
-                {/if}
-                <div class="bg-white shadow sm:rounded-lg">
-                    <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900">Treatment History</h3>
-                    </div>
-                    <div class="border-t border-gray-200 overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-100">
+                            <thead class="bg-gray-50/50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tooth</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.date')}</th>
+                                    <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.tooth')}</th>
+                                    <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.type')}</th>
+                                    <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.description')}</th>
+                                    <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.cost')}</th>
+                                    <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('common.status')}</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody class="divide-y divide-gray-100 bg-white">
                                 {#each data.treatments as treatment}
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{treatment.treatment_date}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{treatment.tooth_number || '-'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">{treatment.treatment_type.replace('_', ' ')}</td>
-                                        <td class="px-6 py-4 text-sm text-gray-500 max-w-xs">{treatment.description}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{APP_CONFIG.currencySymbol}{treatment.cost.toFixed(2)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                {treatment.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                                                {treatment.status}
+                                    <tr class="hover:bg-gray-50/50 transition-colors">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{treatment.treatment_date}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">{treatment.tooth_number || '-'}</td>
+                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700 capitalize">{$t(`patient_details.${treatment.treatment_type}`)}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-500 font-medium max-w-xs">{treatment.description}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-black text-gray-900">{APP_CONFIG.currencySymbol}{treatment.cost.toFixed(2)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-3 py-1 inline-flex text-[10px] leading-5 font-bold rounded-full uppercase tracking-wider 
+                                                {treatment.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">
+                                                {$t(`dashboard.status_${treatment.status}`)}
                                             </span>
                                         </td>
                                     </tr>
                                 {:else}
                                     <tr>
-                                        <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No treatments recorded.</td>
+                                        <td colspan="6" class="px-6 py-24 text-center text-sm font-bold text-gray-400">
+                                            <p class="mb-2 text-2xl opacity-20">ðŸ“</p>
+                                            {$t('patient_details.treatment_history')}
+                                        </td>
                                     </tr>
                                 {/each}
                             </tbody>
@@ -473,13 +454,13 @@
 
         <!-- APPOINTMENTS TAB -->
         {#if activeTab === 'appointments'}
-            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                <ul class="divide-y divide-gray-200">
+            <div class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100">
+                <ul class="divide-y divide-gray-100">
                     {#each data.appointments as appt}
-                        <li>
-                            <div class="px-4 py-4 sm:px-6">
+                        <li class="hover:bg-gray-50/50 transition-all">
+                            <div class="px-6 py-6 sm:px-8">
                                 <div class="flex items-center justify-between">
-                                    <p class="text-sm font-medium text-indigo-600 truncate">
+                                    <p class="text-sm font-bold text-indigo-600 truncate">
                                         {#if appt.start_time.includes('T')}
                                             {appt.start_time.split('T')[0]} {appt.start_time.split('T')[1].substring(0,5)}
                                         {:else}
@@ -487,24 +468,27 @@
                                         {/if}
                                     </p>
                                     <div class="ml-2 flex-shrink-0 flex">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            {appt.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
-                                             appt.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}">
-                                            {appt.status}
+                                        <span class="px-3 py-1 inline-flex text-[10px] leading-5 font-bold rounded-full uppercase tracking-wider 
+                                            {appt.status === 'confirmed' ? 'bg-green-100 text-green-700' : 
+                                             appt.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">
+                                            {$t(`dashboard.status_${appt.status}`)}
                                         </span>
                                     </div>
                                 </div>
-                                <div class="mt-2 sm:flex sm:justify-between">
+                                <div class="mt-4 sm:flex sm:justify-between items-center text-start">
                                     <div class="sm:flex">
-                                        <p class="flex items-center text-sm text-gray-500">
-                                            {appt.appointment_type} ({appt.duration_minutes} min) with Dr. {appt.doctor_name}
-                                        </p>
+                                         <p class="flex items-center text-sm text-gray-500 font-medium">
+                                             <span class="margin-inline-end-2">ðŸ¥</span> {appt.appointment_type} ({appt.duration_minutes} {$t('common.minutes_short')}) {$t('common.doctor')} {appt.doctor_name}
+                                         </p>
                                     </div>
                                 </div>
                             </div>
                         </li>
                     {:else}
-                         <li class="px-4 py-4 text-center text-gray-500">No appointments found.</li>
+                         <li class="px-6 py-24 text-center text-sm font-bold text-gray-400">
+                             <p class="mb-2 text-2xl opacity-20">ðŸ“…</p>
+                             {$t('dashboard.no_appointments', { values: { tab: $t('dashboard.upcoming') } })}
+                         </li>
                     {/each}
                 </ul>
             </div>
@@ -512,59 +496,57 @@
     
         <!-- PRESCRIPTIONS TAB -->
         {#if activeTab === 'prescriptions'}
-            <div class="space-y-6">
+            <div class="space-y-8">
                 <div class="flex justify-between items-center px-4 sm:px-0">
-                    <h2 class="text-xl font-bold text-gray-900">Historique des Ordonnances</h2>
+                    <h2 class="text-xl font-bold text-gray-900">{$t('patient_details.prescriptions')}</h2>
                     <button 
                         onclick={() => showPrescriptionBuilder = !showPrescriptionBuilder}
-                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white {showPrescriptionBuilder ? 'bg-gray-600 hover:bg-gray-700' : 'bg-indigo-600 hover:bg-indigo-700'}"
+                        class="inline-flex items-center px-6 py-2.5 rounded-xl shadow-lg font-bold text-sm transition-all {showPrescriptionBuilder ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'}"
                     >
-                        {showPrescriptionBuilder ? 'Annuler' : '+ Nouvelle Ordonnance'}
+                        {showPrescriptionBuilder ? $t('common.cancel') : '+ ' + $t('patient_details.new_prescription')}
                     </button>
                 </div>
 
                 {#if showPrescriptionBuilder}
-                    <PrescriptionBuilder 
-                        medications={data.medications} 
-                        patientId={data.patient.id} 
-                        doctorId={data.user.id} 
-                        onPrescriptionCreated={() => showPrescriptionBuilder = false}
-                    />
+                    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-2 overflow-hidden">
+                        <PrescriptionBuilder 
+                            medications={data.medications} 
+                            patientId={data.patient.id} 
+                            doctorId={data.user.id} 
+                            onPrescriptionCreated={() => showPrescriptionBuilder = false}
+                        />
+                    </div>
                 {/if}
 
-                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                <div class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100">
+                    <table class="min-w-full divide-y divide-gray-100">
+                        <thead class="bg-gray-50/50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médecin</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médicaments</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.date')}</th>
+                                <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.recorded_by')}</th>
+                                <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('common.actions')}</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="divide-y divide-gray-100 bg-white">
                             {#each data.prescriptions as prescription}
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                                         {new Date(prescription.prescription_date).toLocaleDateString()}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
                                         {prescription.doctor_name}
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-gray-500">
-                                        <!-- Note: Items are not pre-loaded in the list query by default in the current helper 
-                                             but we could fetch them or just show a count if we wanted. 
-                                             Actually, let's keep it simple. -->
-                                        Ordonnance médicale
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <a href="/print/prescription/{prescription.id}" target="_blank" class="text-indigo-600 hover:text-indigo-900">Imprimer</a>
+                                    <td class="px-6 py-4 whitespace-nowrap text-inline-end">
+                                        <a href="/print/prescription/{prescription.id}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-bold hover:bg-indigo-100 transition-colors">
+                                            <span>ðŸ–¨ï¸</span> {$t('patient_details.print')}
+                                        </a>
                                     </td>
                                 </tr>
                             {:else}
                                 <tr>
-                                    <td colspan="4" class="px-6 py-10 text-center text-gray-500">
-                                        Aucune ordonnance pour ce patient.
+                                    <td colspan="3" class="px-6 py-24 text-center text-sm font-bold text-gray-400">
+                                        <p class="mb-2 text-2xl opacity-20">ðŸ’Š</p>
+                                        {$t('patient_details.no_prescriptions')}
                                     </td>
                                 </tr>
                             {/each}
@@ -576,82 +558,64 @@
 
         <!-- FINANCIAL TAB -->
         {#if activeTab === 'financial'}
-            <div class="space-y-6">
-                <!-- Summary Card -->
-                <div class="bg-white shadow rounded-lg p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Financial Summary</h3>
-                        <button 
-                            onclick={() => isInvoiceModalOpen = true}
-                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-                        >
-                            Générer Facture
+            <div class="space-y-12">
+                <!-- Invoices -->
+                <div>
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900">{$t('patient_details.invoices')}</h2>
+                        </div>
+                        <button onclick={() => isInvoiceModalOpen = true} class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-100 transition-all text-sm">
+                            {$t('patient_details.generate_invoice')}
                         </button>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-sm text-gray-500">Total Billed (Invoiced)</p>
-                            <p class="text-2xl font-bold text-gray-900">{APP_CONFIG.currencySymbol}{data.balance.total_billed.toFixed(2)}</p>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-sm text-gray-500">Total Paid</p>
-                            <p class="text-2xl font-bold text-green-600">{APP_CONFIG.currencySymbol}{data.balance.total_paid.toFixed(2)}</p>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-sm text-gray-500">Outstanding Balance</p>
-                            <p class="text-2xl font-bold {data.balance.balance_due > 0 ? 'text-red-600' : 'text-gray-900'}">
-                                {APP_CONFIG.currencySymbol}{data.balance.balance_due.toFixed(2)}
-                            </p>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Invoices Table -->
-                <div class="bg-white shadow sm:rounded-lg">
-                    <div class="px-4 py-5 sm:px-6">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900">Factures</h3>
-                    </div>
-                    <div class="border-t border-gray-200 overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <div class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100 font-inter text-start">
+                        <table class="min-w-full divide-y divide-gray-100">
+                            <thead class="bg-gray-50/50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Facture</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.invoice_no')}</th>
+                                    <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.date')}</th>
+                                    <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.cost')}</th>
+                                    <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('common.status')}</th>
+                                    <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('common.actions')}</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody class="divide-y divide-gray-100 bg-white">
                                 {#each data.invoices as invoice}
-                                    <tr>
-                                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{invoice.invoice_number}</td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
-                                        <td class="px-6 py-4 text-sm text-gray-900 font-bold">{APP_CONFIG.currencySymbol}{invoice.total_amount.toFixed(2)}</td>
-                                        <td class="px-6 py-4 text-sm">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                {invoice.status === 'paid' ? 'bg-green-100 text-green-800' : 
-                                                 invoice.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
-                                                {invoice.status}
+                                    <tr class="hover:bg-gray-50/50 transition-colors">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">#{invoice.invoice_number}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-black text-gray-900">{APP_CONFIG.currencySymbol}{invoice.total_amount.toFixed(2)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-3 py-1 inline-flex text-[10px] leading-5 font-bold rounded-full uppercase tracking-wider 
+                                                {invoice.status === 'paid' ? 'bg-green-100 text-green-700' : 
+                                                 invoice.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-800'}">
+                                                {$t(`dashboard.status_${invoice.status}`)}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 text-right text-sm font-medium">
-                                            <a href="/print/invoice/{invoice.id}" target="_blank" class="text-indigo-600 hover:text-indigo-900 mr-4">Imprimer</a>
+                                        <td class="px-6 py-4 whitespace-nowrap text-inline-end text-sm font-bold">
+                                            <a href="/print/invoice/{invoice.id}" target="_blank" class="text-indigo-600 hover:underline margin-inline-end-4">{$t('patient_details.print')}</a>
                                             {#if invoice.status !== 'paid'}
                                                 <button 
                                                     onclick={() => {
                                                         selectedInvoice = invoice;
                                                         isPaymentModalOpen = true;
                                                     }}
-                                                    class="text-green-600 hover:text-green-900"
+                                                    class="text-green-600 hover:underline"
                                                 >
-                                                    Payer
+                                                    {$t('patient_details.pay')}
                                                 </button>
                                             {/if}
                                         </td>
                                     </tr>
                                 {:else}
-                                    <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Aucune facture émise.</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-24 text-center text-sm font-bold text-gray-400">
+                                            <p class="mb-2 text-2xl opacity-20">ðŸ“„</p>
+                                            {$t('patient_details.no_invoices')}
+                                        </td>
+                                    </tr>
                                 {/each}
                             </tbody>
                         </table>
@@ -659,32 +623,35 @@
                 </div>
 
                 <!-- Payments Table -->
-                <div class="bg-white shadow sm:rounded-lg">
-                    <div class="px-4 py-5 sm:px-6">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900">Encaissements Directs</h3>
-                    </div>
-                    <div class="border-t border-gray-200 overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                             <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recorded By</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
-                                </tr>
+                <div class="mt-12">
+                    <h2 class="text-xl font-bold text-gray-900 mb-8">{$t('patient_details.encaissements')}</h2>
+                    <div class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100 text-start">
+                        <table class="min-w-full divide-y divide-gray-100">
+                             <thead class="bg-gray-50/50">
+                                 <tr>
+                                     <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.date')}</th>
+                                     <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.cost')}</th>
+                                     <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.method')}</th>
+                                     <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.recorded_by')}</th>
+                                     <th class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.notes')}</th>
+                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody class="divide-y divide-gray-100 bg-white">
                                 {#each data.payments as payment}
-                                    <tr>
-                                        <td class="px-6 py-4 text-sm text-gray-900">{payment.payment_date}</td>
-                                        <td class="px-6 py-4 text-sm font-medium text-green-600">+{APP_CONFIG.currencySymbol}{payment.amount.toFixed(2)}</td>
-                                        <td class="px-6 py-4 text-sm text-gray-500 capitalize">{payment.payment_method}</td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">{payment.recorded_by_name}</td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">{payment.notes || '-'}</td>
+                                    <tr class="hover:bg-gray-50/50 transition-colors">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{payment.payment_date}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-black text-green-600">+{APP_CONFIG.currencySymbol}{payment.amount.toFixed(2)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700 capitalize">{payment.payment_method}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{payment.recorded_by_name}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-500 font-medium">{payment.notes || '-'}</td>
                                     </tr>
                                 {:else}
-                                    <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No payments recorded.</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-24 text-center text-sm font-bold text-gray-400">
+                                            <p class="mb-2 text-2xl opacity-20">ðŸ’°</p>
+                                            {$t('patient_details.no_payments')}
+                                        </td>
+                                    </tr>
                                 {/each}
                             </tbody>
                         </table>
@@ -703,30 +670,49 @@
                 <div class="flex min-h-full items-center justify-center p-4">
                     <div class="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl">
                         <form method="POST" action="?/createInvoice" use:enhance={() => {
-                            return async ({ result }) => {
+                            return async ({ result, update }) => {
                                 if (result.type === 'success') {
                                     isInvoiceModalOpen = false;
                                     selectedTreatmentsForInvoice = [];
                                 }
+                                await update();
                             };
                         }}>
-                             <div class="bg-white px-4 py-5 sm:p-6">
-                                <h3 class="text-lg font-semibold mb-4">Générer une Facture</h3>
-                                <p class="text-sm text-gray-500 mb-4">Sélectionnez les soins à inclure dans cette facture.</p>
+    <!-- Invoice Modal -->
+    {#if isInvoiceModalOpen}
+        <div class="relative z-50" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick={() => isInvoiceModalOpen = false}></div>
+            <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <div class="relative w-full max-w-2xl transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all">
+                        <form method="POST" action="?/createInvoice" use:enhance={() => {
+                            return async ({ result, update }) => {
+                                if (result.type === 'success') {
+                                    isInvoiceModalOpen = false;
+                                    selectedTreatmentsForInvoice = [];
+                                }
+                                await update();
+                            };
+                        }}>
+                             <div class="px-8 pt-8 pb-6">
+                                <h3 class="text-2xl font-black text-gray-900 mb-2">{$t('patient_details.generate_invoice')}</h3>
+                                <p class="text-sm text-gray-500 font-medium">{$t('patient_details.select_treatments_invoice')}</p>
+                             </div>
 
-                                <div class="max-h-60 overflow-y-auto border rounded-md">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-50">
+                             <div class="px-8 py-2">
+                                <div class="max-h-80 overflow-y-auto border border-gray-100 rounded-2xl overflow-hidden">
+                                    <table class="min-w-full divide-y divide-gray-100">
+                                        <thead class="bg-gray-50/50">
                                             <tr>
-                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"></th>
-                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Soin</th>
-                                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Montant</th>
+                                                <th class="px-6 py-3 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest w-12"></th>
+                                                <th class="px-6 py-3 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.type')}</th>
+                                                <th class="px-6 py-3 text-inline-end text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.cost')}</th>
                                             </tr>
                                         </thead>
-                                        <tbody class="divide-y divide-gray-200">
+                                        <tbody class="divide-y divide-gray-100 bg-white">
                                             {#each data.treatments as treatment}
-                                                <tr class="hover:bg-gray-50">
-                                                    <td class="px-4 py-2">
+                                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                                    <td class="px-6 py-4">
                                                         <input 
                                                             type="checkbox" 
                                                             checked={selectedTreatmentsForInvoice.includes(treatment.id)}
@@ -737,40 +723,46 @@
                                                                     selectedTreatmentsForInvoice = selectedTreatmentsForInvoice.filter(id => id !== treatment.id);
                                                                 }
                                                             }}
-                                                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                            class="h-5 w-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
                                                         />
                                                     </td>
-                                                    <td class="px-4 py-2 text-sm text-gray-900">
-                                                        <div class="font-medium">{treatment.treatment_type}</div>
-                                                        <div class="text-xs text-gray-500">{treatment.treatment_date}</div>
+                                                    <td class="px-6 py-4 text-sm font-bold text-gray-900">
+                                                        <div>{treatment.treatment_type}</div>
+                                                        <div class="text-[10px] text-gray-400 font-medium">{treatment.treatment_date}</div>
                                                     </td>
-                                                    <td class="px-4 py-2 text-sm text-gray-900 text-right font-bold">{APP_CONFIG.currencySymbol}{treatment.cost.toFixed(2)}</td>
+                                                    <td class="px-6 py-4 text-sm font-black text-gray-900 text-inline-end">{APP_CONFIG.currencySymbol}{treatment.cost.toFixed(2)}</td>
                                                 </tr>
                                             {/each}
                                         </tbody>
                                     </table>
                                 </div>
+                             </div>
 
-                                <input type="hidden" name="items" value={JSON.stringify(
-                                    data.treatments
-                                        .filter(t => selectedTreatmentsForInvoice.includes(t.id))
-                                        .map(t => ({ treatment_id: t.id, description: t.treatment_type, amount: t.cost }))
-                                )} />
+                             <input type="hidden" name="items" value={JSON.stringify(
+                                 data.treatments
+                                     .filter(t => selectedTreatmentsForInvoice.includes(t.id))
+                                     .map(t => ({ treatment_id: t.id, description: t.treatment_type, amount: t.cost }))
+                             )} />
 
-                                <div class="mt-4 pt-4 border-t flex justify-between items-center text-lg font-bold">
-                                    <span>Total Sélectionné</span>
-                                    <span class="text-indigo-600">
+                             <div class="px-8 py-6 bg-gray-50/50 mt-4 flex flex-col gap-6">
+                                <div class="flex justify-between items-center px-2">
+                                    <span class="text-sm font-bold text-gray-500 uppercase tracking-wider">{$t('patient_details.total_selected')}</span>
+                                    <span class="text-2xl font-black text-indigo-600">
                                         {APP_CONFIG.currencySymbol}{data.treatments
                                             .filter(t => selectedTreatmentsForInvoice.includes(t.id))
                                             .reduce((sum, t) => sum + t.cost, 0)
                                             .toFixed(2)}
                                     </span>
                                 </div>
-                            </div>
-                            <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                                <button type="submit" disabled={selectedTreatmentsForInvoice.length === 0} class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto disabled:opacity-50">Confirmer la Facture</button>
-                                <button type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto" onclick={() => isInvoiceModalOpen = false}>Annuler</button>
-                            </div>
+                                <div class="flex flex-row-reverse gap-3">
+                                    <button type="submit" disabled={selectedTreatmentsForInvoice.length === 0} class="flex-1 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all disabled:opacity-50 disabled:shadow-none">
+                                        {$t('patient_details.generate_invoice')}
+                                    </button>
+                                    <button type="button" class="flex-1 bg-white text-gray-700 px-6 py-3 rounded-2xl font-bold border border-gray-200 hover:bg-gray-50 transition-all" onclick={() => isInvoiceModalOpen = false}>
+                                        {$t('common.cancel')}
+                                    </button>
+                                </div>
+                             </div>
                         </form>
                     </div>
                 </div>
@@ -780,169 +772,98 @@
 
     <!-- Edit Profile Modal -->
     {#if isEditModalOpen}
-        <div class="relative z-10" role="dialog" aria-modal="true">
-            <div class="fixed inset-0 bg-gray-500/75" aria-hidden="true" onclick={() => isEditModalOpen = false}></div>
-            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="relative z-50" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick={() => isEditModalOpen = false}></div>
+            <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4">
-                    <div class="relative w-full max-w-4xl transform overflow-hidden rounded-lg bg-white shadow-xl">
+                    <div class="relative w-full max-w-4xl transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all">
                         <form method="POST" action="?/updatePatient" use:enhance={() => {
-                            return async ({ result }) => {
+                            return async ({ result, update }) => {
                                 if (result.type === 'success') isEditModalOpen = false;
+                                await update();
                             };
                         }}>
-                            <div class="bg-white px-4 py-5 sm:p-6 max-h-[85vh] overflow-y-auto">
-                                <h3 class="text-lg font-semibold mb-4">Edit Patient Profile</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white px-8 py-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                                <h3 class="text-2xl font-black text-gray-900 mb-8 border-b border-gray-100 pb-4">{$t('patient_details.edit_profile')}</h3>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-start">
                                     <!-- Personal Information -->
-                                    <div class="col-span-2 border-b pb-3">
-                                        <p class="font-semibold text-gray-900 mb-3">Personal Information</p>
+                                    <div class="col-span-2">
+                                        <h4 class="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-4">{$t('patients.personal_info')}</h4>
                                     </div>
                                     <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Full Name *</label>
-                                        <input type="text" name="full_name" value={data.patient.full_name} required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patients.full_name')} *</label>
+                                        <input type="text" name="full_name" value={data.patient.full_name} required class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border">
                                     </div>
                                     <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Date of Birth *</label>
-                                        <input type="date" name="date_of_birth" value={data.patient.date_of_birth} required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patients.date_of_birth')} *</label>
+                                        <input type="date" name="date_of_birth" value={data.patient.date_of_birth} required class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter">
                                     </div>
                                     <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Gender</label>
-                                        <select name="gender" value={data.patient.gender || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
-                                            <option value="">Select...</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                            <option value="Other">Other</option>
-                                            <option value="Prefer not to say">Prefer not to say</option>
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patients.gender')}</label>
+                                        <select name="gender" value={data.patient.gender || ''} class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border">
+                                            <option value="">{$t('common.select')}...</option>
+                                            <option value="Male">{$t('patients.male')}</option>
+                                            <option value="Female">{$t('patients.female')}</option>
+                                            <option value="Other">{$t('patients.other')}</option>
+                                            <option value="Prefer not to say">{$t('patients.prefer_not_to_say')}</option>
                                         </select>
                                     </div>
                                     <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Blood Type</label>
-                                        <input type="text" name="blood_type" value={data.patient.blood_type || ''} placeholder="e.g., A+, O-" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.blood_type')}</label>
+                                        <input type="text" name="blood_type" value={data.patient.blood_type || ''} placeholder="e.g., A+, O-" class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter">
                                     </div>
 
                                     <!-- Contact Information -->
-                                    <div class="col-span-2 border-t pt-4 mt-2 border-b pb-3">
-                                        <p class="font-semibold text-gray-900 mb-3">Contact Information</p>
+                                    <div class="col-span-2 mt-6">
+                                        <h4 class="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-4">{$t('patients.contact_info')}</h4>
                                     </div>
                                     <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Phone</label>
-                                        <input type="tel" name="phone" value={data.patient.phone || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patients.phone')}</label>
+                                        <input type="tel" name="phone" value={data.patient.phone || ''} class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter">
                                     </div>
                                     <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Email</label>
-                                        <input type="email" name="email" value={data.patient.email || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Secondary Phone</label>
-                                        <input type="tel" name="secondary_phone" value={data.patient.secondary_phone || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Secondary Email</label>
-                                        <input type="email" name="secondary_email" value={data.patient.secondary_email || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('common.email')}</label>
+                                        <input type="email" name="email" value={data.patient.email || ''} class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter">
                                     </div>
                                     <div class="col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Address</label>
-                                        <input type="text" name="address" value={data.patient.address || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patients.address')}</label>
+                                        <input type="text" name="address" value={data.patient.address || ''} class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border">
                                     </div>
                                     <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">City</label>
-                                        <input type="text" name="city" value={data.patient.city || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patients.city')}</label>
+                                        <input type="text" name="city" value={data.patient.city || ''} class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border">
                                     </div>
                                     <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Postal Code</label>
-                                        <input type="text" name="postal_code" value={data.patient.postal_code || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patients.postal_code')}</label>
+                                        <input type="text" name="postal_code" value={data.patient.postal_code || ''} class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter">
                                     </div>
 
-                                    <!-- Emergency Contact -->
-                                    <div class="col-span-2 border-t pt-4 mt-2 border-b pb-3">
-                                        <p class="font-semibold text-gray-900 mb-3">Emergency Contact</p>
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Emergency Contact Name</label>
-                                        <input type="text" name="emergency_contact_name" value={data.patient.emergency_contact_name || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Emergency Contact Phone</label>
-                                        <input type="tel" name="emergency_contact_phone" value={data.patient.emergency_contact_phone || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Relationship</label>
-                                        <input type="text" name="emergency_contact_relationship" value={data.patient.emergency_contact_relationship || ''} placeholder="e.g., Spouse, Parent" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
-                                    </div>
-
-                                    <!-- Insurance -->
-                                    <div class="col-span-2 border-t pt-4 mt-2 border-b pb-3">
-                                        <p class="font-semibold text-gray-900 mb-3">Insurance</p>
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Insurance Provider</label>
-                                        <input type="text" name="insurance_provider" value={data.patient.insurance_provider || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Insurance Number</label>
-                                        <input type="text" name="insurance_number" value={data.patient.insurance_number || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
-                                    </div>
-
-                                    <!-- Medical Information -->
-                                    <div class="col-span-2 border-t pt-4 mt-2 border-b pb-3">
-                                        <p class="font-semibold text-gray-900 mb-3">Medical Information</p>
+                                    <!-- Medical & Dental Info -->
+                                    <div class="col-span-2 mt-6">
+                                        <h4 class="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-4">{$t('patient_details.medical_history')} & {$t('patient_details.dental_info')}</h4>
                                     </div>
                                     <div class="col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Allergies</label>
-                                        <textarea name="allergies" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.allergies || ''}</textarea>
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.allergies')}</label>
+                                        <textarea name="allergies" rows="2" class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border">{data.patient.allergies || ''}</textarea>
                                     </div>
                                     <div class="col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Current Medications</label>
-                                        <textarea name="current_medications" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.current_medications || ''}</textarea>
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.medical_conditions')}</label>
+                                        <textarea name="medical_conditions" rows="2" class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border">{data.patient.medical_conditions || ''}</textarea>
                                     </div>
                                     <div class="col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Medical Conditions</label>
-                                        <textarea name="medical_conditions" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.medical_conditions || ''}</textarea>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Surgical History</label>
-                                        <textarea name="surgical_history" rows="2" placeholder="e.g., Heart surgery 2020" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.surgical_history || ''}</textarea>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Family Medical History</label>
-                                        <textarea name="family_medical_history" rows="2" placeholder="Genetic dental-relevant information" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.family_medical_history || ''}</textarea>
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label class="flex items-center gap-2">
-                                            <input type="checkbox" name="pregnancy_status" value="1" checked={data.patient.pregnancy_status === 1 || false} class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                                            <span class="text-sm font-medium text-gray-700">Pregnancy Status</span>
-                                        </label>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Oral Habits</label>
-                                        <textarea name="oral_habits" rows="2" placeholder="e.g., Smoking: Yes, 1 pack/day; Bruxism: Yes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.oral_habits || ''}</textarea>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Substance Use</label>
-                                        <textarea name="substance_use" rows="2" placeholder="e.g., Alcohol: Moderate; Drugs: None" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.substance_use || ''}</textarea>
-                                    </div>
-
-                                    <!-- Dental Information -->
-                                    <div class="col-span-2 border-t pt-4 mt-2 border-b pb-3">
-                                        <p class="font-semibold text-gray-900 mb-3">Dental Information</p>
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Previous Dentist</label>
-                                        <input type="text" name="previous_dentist" value={data.patient.previous_dentist || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label class="block text-sm font-medium text-gray-700">Last Visit Date</label>
-                                        <input type="date" name="last_visit_date" value={data.patient.last_visit_date || ''} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Dental Notes</label>
-                                        <textarea name="dental_notes" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border p-2">{data.patient.dental_notes || ''}</textarea>
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.dental_notes')}</label>
+                                        <textarea name="dental_notes" rows="3" class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border">{data.patient.dental_notes || ''}</textarea>
                                     </div>
                                 </div>
                             </div>
-                            <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                                <button type="submit" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto">Save Changes</button>
-                                <button type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto" onclick={() => isEditModalOpen = false}>Cancel</button>
+                            <div class="px-8 py-6 bg-gray-50 border-t border-gray-100 flex flex-row-reverse gap-4">
+                                <button type="submit" class="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all">
+                                    {$t('common.save')}
+                                </button>
+                                <button type="button" class="bg-white text-gray-700 px-8 py-3 rounded-2xl font-bold border border-gray-200 hover:bg-gray-50 transition-all" onclick={() => isEditModalOpen = false}>
+                                    {$t('common.cancel')}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -953,15 +874,15 @@
 
     <!-- Add Treatment Modal -->
     {#if isTreatmentModalOpen}
-        <div class="relative z-10" role="dialog" aria-modal="true">
-            <div class="fixed inset-0 bg-gray-500/75" aria-hidden="true" onclick={() => isTreatmentModalOpen = false}></div>
-            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="relative z-50" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick={() => isTreatmentModalOpen = false}></div>
+            <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4">
-                    <div class="relative w-full max-w-lg transform overflow-hidden rounded-lg bg-white shadow-xl">
+                    <div class="relative w-full max-w-2xl transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all">
                         <form method="POST" action="?/addTreatment" use:enhance={() => {
                             formError = null;
                             formSuccess = null;
-                            return async ({ result }) => {
+                            return async ({ result, update }) => {
                                 if (result.type === 'success') {
                                     formSuccess = "Treatment added successfully!";
                                     setTimeout(() => {
@@ -969,82 +890,79 @@
                                         formSuccess = null;
                                     }, 1500);
                                 } else if (result.type === 'failure' || result.type === 'error') {
-                                    formError = result.data?.error || "An unexpected error occurred.";
+                                    formError = (result.data as any)?.error || "An unexpected error occurred.";
                                 }
+                                await update();
                             };
                         }}>
-                             <div class="bg-white px-4 py-5 sm:p-6">
-                                <h3 class="text-lg font-semibold mb-4">Add New Treatment</h3>
+                             <div class="px-8 pt-8 pb-6 border-b border-gray-100">
+                                <h3 class="text-2xl font-black text-gray-900 mb-2">{$t('patient_details.add_treatment')}</h3>
+                                <p class="text-sm text-gray-500 font-medium">{$t('patient_details.add_treatment_desc')}</p>
+                             </div>
 
+                             <div class="px-8 py-8 max-h-[70vh] overflow-y-auto custom-scrollbar text-start">
                                 {#if formError}
-                                    <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
-                                        {formError}
+                                    <div class="mb-6 p-4 bg-red-50 border border-red-100 text-red-700 rounded-2xl text-sm font-bold flex items-center gap-3">
+                                         <span class="text-lg">⚠️</span> {formError}
                                     </div>
                                 {/if}
                                 {#if formSuccess}
-                                    <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded text-sm">
-                                        {formSuccess}
+                                    <div class="mb-6 p-4 bg-green-50 border border-green-100 text-green-700 rounded-2xl text-sm font-bold flex items-center gap-3">
+                                         <span class="text-lg">✓</span> {formSuccess}
                                     </div>
                                 {/if}
 
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Date</label>
-                                        <input type="date" name="treatment_date" value={new Date().toISOString().split('T')[0]} required class="mt-1 block w-full border p-2 rounded-md">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.date')}</label>
+                                        <input type="date" name="treatment_date" value={new Date().toISOString().split('T')[0]} required class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter">
                                     </div>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700">Type</label>
-                                            <select name="treatment_type" required class="mt-1 block w-full border p-2 rounded-md">
-                                                <option value="consultation">Consultation</option>
-                                                <option value="cleaning">Cleaning</option>
-                                                <option value="filling">Filling</option>
-                                                <option value="root_canal">Root Canal</option>
-                                                <option value="extraction">Extraction</option>
-                                                <option value="crown">Crown</option>
-                                                <option value="whitening">Whitening</option>
-                                                <option value="x_ray">X-Ray</option>
-                                            </select>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.type')}</label>
+                                        <select name="treatment_type" required class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border">
+                                            <option value="consultation">{$t('patient_details.consultation')}</option>
+                                            <option value="cleaning">{$t('patient_details.cleaning')}</option>
+                                            <option value="filling">{$t('patient_details.filling')}</option>
+                                            <option value="root_canal">{$t('patient_details.root_canal')}</option>
+                                            <option value="extraction">{$t('patient_details.extraction')}</option>
+                                            <option value="crown">{$t('patient_details.crown')}</option>
+                                            <option value="whitening">{$t('patient_details.whitening')}</option>
+                                            <option value="x_ray">{$t('patient_details.x_ray')}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.tooth')} #</label>
+                                        <input type="text" name="tooth_number" value={selectedTeeth.join(', ')} placeholder="Select from below..." class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter">
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.cost')} ({APP_CONFIG.currencySymbol})</label>
+                                        <input type="number" step="0.01" name="cost" required placeholder="0.00" class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter">
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.visual_tooth_selector')}</label>
+                                        <div class="bg-gray-50/50 rounded-2xl p-6 border border-gray-100">
+                                            <ToothSelector selectedTeeth={selectedTeeth} onToggle={toggleTooth} />
                                         </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700">Tooth #</label>
-                                            <input type="text" name="tooth_number" value={selectedTeeth.join(', ')} placeholder="Select from below or type..." class="mt-1 block w-full border p-2 rounded-md">
-                                        </div>
                                     </div>
-                                    <div class="py-2">
-                                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Visual Tooth Selector</label>
-                                        <ToothSelector selectedTeeth={selectedTeeth} onToggle={toggleTooth} />
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.description')}</label>
+                                        <input type="text" name="description" placeholder="{$t('patient_details.short_description')}" class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border">
                                     </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Description</label>
-                                        <input type="text" name="description" placeholder="Short description" class="mt-1 block w-full border p-2 rounded-md">
-                                    </div>
-                                    <div>
-                                         <label class="block text-sm font-medium text-gray-700">Cost ({APP_CONFIG.currencySymbol})</label>
-                                         <input type="number" step="0.01" name="cost" required placeholder="0.00" class="mt-1 block w-full border p-2 rounded-md">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Diagnosis</label>
-                                        <input type="text" name="diagnosis" placeholder="Primary diagnosis" class="mt-1 block w-full border p-2 rounded-md">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Treatment Notes</label>
-                                        <textarea name="treatment_notes" rows="2" placeholder="Clinical notes..." class="mt-1 block w-full border p-2 rounded-md"></textarea>
-                                    </div>
-                                    <div>
-                                         <label class="block text-sm font-medium text-gray-700">Status</label>
-                                         <select name="status" class="mt-1 block w-full border p-2 rounded-md">
-                                             <option value="pending">Pending</option>
-                                             <option value="in_progress">In Progress</option>
-                                             <option value="completed">Completed</option>
-                                         </select>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('doctor_dashboard.clinical_notes')}</label>
+                                        <textarea name="treatment_notes" rows="3" placeholder="{$t('doctor_dashboard.clinical_notes_placeholder')}" class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border"></textarea>
                                     </div>
                                 </div>
-                            </div>
-                             <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                                <button type="submit" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto">Add Treatment</button>
-                                <button type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto" onclick={() => isTreatmentModalOpen = false}>Cancel</button>
-                            </div>
+                             </div>
+
+                             <div class="px-8 py-6 bg-gray-50 border-t border-gray-100 flex flex-row-reverse gap-4">
+                                <button type="submit" class="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all">
+                                    {$t('patient_details.add_treatment')}
+                                </button>
+                                <button type="button" class="bg-white text-gray-700 px-8 py-3 rounded-2xl font-bold border border-gray-200 hover:bg-gray-50 transition-all" onclick={() => isTreatmentModalOpen = false}>
+                                    {$t('common.cancel')}
+                                </button>
+                             </div>
                         </form>
                     </div>
                 </div>
@@ -1053,55 +971,67 @@
     {/if}
     <!-- Payment Modal -->
     {#if isPaymentModalOpen && selectedInvoice}
-        <div class="relative z-10" role="dialog" aria-modal="true">
-            <div class="fixed inset-0 bg-gray-500/75" aria-hidden="true" onclick={() => isPaymentModalOpen = false}></div>
-            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="relative z-50" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick={() => isPaymentModalOpen = false}></div>
+            <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4">
-                    <div class="relative w-full max-md transform overflow-hidden rounded-lg bg-white shadow-xl">
+                    <div class="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all">
                         <form method="POST" action="?/recordPayment" use:enhance={() => {
-                            return async ({ result }) => {
+                            return async ({ result, update }) => {
                                 if (result.type === 'success') isPaymentModalOpen = false;
+                                await update();
                             };
                         }}>
-                             <div class="bg-white px-4 py-5 sm:p-6">
-                                <h3 class="text-lg font-semibold mb-4">Enregistrer un Paiement</h3>
-                                <p class="text-sm text-gray-500 mb-4">Facture: {selectedInvoice.invoice_number}</p>
-                                
+                             <div class="px-8 pt-8 pb-6 border-b border-gray-100">
+                                <h3 class="text-2xl font-black text-gray-900 mb-2">{$t('patient_details.record_payment')}</h3>
+                                <p class="text-sm text-gray-500 font-medium">{$t('patient_details.invoice_no')}: {selectedInvoice.invoice_number}</p>
+                             </div>
+
+                             <div class="px-8 py-8 text-start space-y-6">
                                 <input type="hidden" name="invoice_id" value={selectedInvoice.id} />
                                 
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Montant à payer</label>
-                                        <div class="mt-1 relative rounded-md shadow-sm">
-                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <span class="text-gray-500 sm:text-sm">{APP_CONFIG.currencySymbol}</span>
-                                            </div>
-                                            <input 
-                                                type="number" 
-                                                step="0.01" 
-                                                name="amount" 
-                                                value={selectedInvoice.total_amount} 
-                                                required 
-                                                class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md py-2 border"
-                                            />
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.payment_amount')}</label>
+                                    <div class="relative rounded-xl border border-gray-200 bg-gray-50/50 shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
+                                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <span class="text-gray-500 font-bold">{APP_CONFIG.currencySymbol}</span>
                                         </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Moyen de paiement</label>
-                                        <select name="payment_method" class="mt-1 block w-full border p-2 rounded-md">
-                                            <option value="cash">Espèces</option>
-                                            <option value="card">Carte Bancaire</option>
-                                            <option value="check">Chèque</option>
-                                            <option value="bank_transfer">Virement</option>
-                                        </select>
+                                        <input 
+                                            type="number" 
+                                            step="0.01" 
+                                            name="amount" 
+                                            value={selectedInvoice.total_amount} 
+                                            required 
+                                            class="block w-full pl-8 pr-4 py-4 bg-transparent border-none focus:ring-0 font-black text-lg text-gray-900 font-inter"
+                                        />
                                     </div>
                                 </div>
-                            </div>
-                            <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                                <button type="submit" class="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 sm:ml-3 sm:w-auto">Confirmer le Paiement</button>
-                                <button type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto" onclick={() => isPaymentModalOpen = false}>Annuler</button>
-                            </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.method')}</label>
+                                    <select name="payment_method" class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-bold py-4 px-4 border">
+                                        <option value="cash">{$t('patient_details.cash')}</option>
+                                        <option value="card">{$t('patient_details.card')}</option>
+                                        <option value="check">{$t('patient_details.check')}</option>
+                                        <option value="bank_transfer">{$t('patient_details.bank_transfer')}</option>
+                                    </select>
+                                </div>
+                             </div>
+
+                             <div class="px-8 py-6 bg-gray-50 border-t border-gray-100 flex flex-row-reverse gap-4">
+                                <button type="submit" class="bg-green-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-green-700 shadow-lg shadow-green-100 transition-all w-full">
+                                    {$t('patient_details.confirm_payment')}
+                                </button>
+                                <button type="button" class="bg-white text-gray-700 px-8 py-3 rounded-2xl font-bold border border-gray-200 hover:bg-gray-50 transition-all w-full" onclick={() => isPaymentModalOpen = false}>
+                                    {$t('common.cancel')}
+                                </button>
+                             </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
                         </form>
                     </div>
                 </div>
@@ -1110,47 +1040,57 @@
     {/if}
     <!-- Tooth Update Modal -->
     {#if isToothModalOpen && selectedTooth}
-        <div class="relative z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick={() => isToothModalOpen = false}></div>
-            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
-                <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-                    <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:max-w-md sm:w-full">
+        <div class="relative z-50" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick={() => isToothModalOpen = false}></div>
+            <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <div class="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all">
                         <form method="POST" action="?/updateDentalChart" use:enhance={() => {
-                            return async ({ result }) => {
+                            return async ({ result, update }) => {
                                 if (result.type === 'success') isToothModalOpen = false;
+                                await update();
                             };
                         }}>
-                            <input type="hidden" name="tooth_number" value={selectedTooth} />
-                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                <h3 class="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Edit Tooth #{selectedTooth}</h3>
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Treatments (comma separated)</label>
-                                        <input type="text" name="treatments" value={toothForm.treatments} class="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm" placeholder="e.g., Filling, Crown" />
+                             <div class="px-8 pt-8 pb-6 border-b border-gray-100">
+                                <h3 class="text-2xl font-black text-gray-900 mb-2">{$t('patient_details.edit_tooth')} #{selectedTooth}</h3>
+                             </div>
+
+                            <div class="px-8 py-8 text-start space-y-6">
+                                <input type="hidden" name="tooth_number" value={selectedTooth} />
+                                
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.treatments')} ({$t('patient_details.comma_separated')})</label>
+                                    <input type="text" name="treatments" value={toothForm.treatments} class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border" placeholder="e.g., Filling, Crown" />
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.display_color')}</label>
+                                    <div class="flex gap-4 mt-2">
+                                        {#each ['#ffffff', '#ef4444', '#3b82f6', '#10b981', '#f59e0b'] as c}
+                                            <button 
+                                                type="button"
+                                                onclick={() => toothForm.color = c}
+                                                class="w-10 h-10 rounded-full border-4 transition-all hover:scale-110 {toothForm.color === c ? 'border-indigo-500 scale-110' : 'border-gray-50'}"
+                                                style="background-color: {c}"
+                                            ></button>
+                                        {/each}
                                     </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Display Color</label>
-                                        <div class="flex gap-2 mt-2">
-                                            {#each ['#ffffff', '#ef4444', '#3b82f6', '#10b981', '#f59e0b'] as c}
-                                                <button 
-                                                    type="button"
-                                                    onclick={() => toothForm.color = c}
-                                                    class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 {toothForm.color === c ? 'border-gray-900 scale-110' : 'border-gray-200'}"
-                                                    style="background-color: {c}"
-                                                ></button>
-                                            {/each}
-                                        </div>
-                                        <input type="hidden" name="color" value={toothForm.color} />
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Odontogram Notes</label>
-                                        <textarea name="notes" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm" placeholder="Internal notes for this tooth...">{toothForm.notes}</textarea>
-                                    </div>
+                                    <input type="hidden" name="color" value={toothForm.color} />
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.odontogram_notes')}</label>
+                                    <textarea name="notes" rows="3" class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border" placeholder="{$t('patient_details.internal_notes_placeholder')}">{toothForm.notes}</textarea>
                                 </div>
                             </div>
-                            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm">Save Tooth Status</button>
-                                <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick={() => isToothModalOpen = false}>Cancel</button>
+
+                            <div class="px-8 py-6 bg-gray-50 border-t border-gray-100 flex flex-row-reverse gap-4">
+                                <button type="submit" class="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all w-full">
+                                    {$t('common.save')}
+                                </button>
+                                <button type="button" class="bg-white text-gray-700 px-8 py-3 rounded-2xl font-bold border border-gray-200 hover:bg-gray-50 transition-all w-full" onclick={() => isToothModalOpen = false}>
+                                    {$t('common.cancel')}
+                                </button>
                             </div>
                         </form>
                     </div>

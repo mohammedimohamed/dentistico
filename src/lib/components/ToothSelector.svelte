@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { t } from 'svelte-i18n';
+
     interface Props {
         selectedTeeth: string[];
         onToggle: (tooth: string) => void;
@@ -37,46 +39,46 @@
     }
 </script>
 
-<div class="tooth-selector select-none">
-    <div class="flex justify-center mb-4 gap-2">
+<div class="tooth-selector select-none font-inter">
+    <div class="flex justify-center mb-6 gap-3">
         <button 
             type="button"
             onclick={() => view = 'adult'}
-            class="px-3 py-1 text-xs font-bold rounded-md {view === 'adult' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}"
+            class="px-5 py-2 text-xs font-black rounded-xl transition-all {view === 'adult' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}"
         >
-            Adult (18-48)
+            {$t('patient_details.adult')} (18-48)
         </button>
         <button 
             type="button"
             onclick={() => view = 'pedo'}
-            class="px-3 py-1 text-xs font-bold rounded-md {view === 'pedo' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}"
+            class="px-5 py-2 text-xs font-black rounded-xl transition-all {view === 'pedo' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}"
         >
-            Pediatric (51-85)
+            {$t('patient_details.child')} (51-85)
         </button>
     </div>
 
-    <div class="grid grid-rows-2 gap-8 border p-4 rounded-xl bg-gray-50">
+    <div class="grid grid-rows-2 gap-8 border border-gray-100 p-8 rounded-3xl bg-gray-50/50">
         <!-- Upper Arch -->
-        <div class="flex justify-center gap-1 border-b pb-4">
-            <div class="flex gap-1 border-r pr-2">
+        <div class="flex justify-center gap-1.5 border-b border-gray-200/50 pb-6">
+            <div class="flex gap-1.5 border-inline-end border-gray-200/50 padding-inline-end-3">
                 {#each currentTeeth.upper.right as tooth}
                     <button 
                         type="button"
                         onclick={() => onToggle(tooth)}
-                        class="w-8 h-10 flex items-center justify-center rounded border transition-all text-xs font-bold
-                            {isSelected(tooth) ? 'bg-indigo-600 text-white border-indigo-700 shadow-inner' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'}"
+                        class="w-9 h-11 flex items-center justify-center rounded-lg border transition-all text-[11px] font-black
+                            {isSelected(tooth) ? 'bg-indigo-600 text-white border-indigo-700 shadow-lg shadow-indigo-100 scale-105 z-10' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-400 hover:shadow-sm'}"
                     >
                         {tooth}
                     </button>
                 {/each}
             </div>
-            <div class="flex gap-1 pl-1">
+            <div class="flex gap-1.5 padding-inline-start-1">
                 {#each currentTeeth.upper.left as tooth}
                     <button 
                         type="button"
                         onclick={() => onToggle(tooth)}
-                        class="w-8 h-10 flex items-center justify-center rounded border transition-all text-xs font-bold
-                            {isSelected(tooth) ? 'bg-indigo-600 text-white border-indigo-700 shadow-inner' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'}"
+                        class="w-9 h-11 flex items-center justify-center rounded-lg border transition-all text-[11px] font-black
+                            {isSelected(tooth) ? 'bg-indigo-600 text-white border-indigo-700 shadow-lg shadow-indigo-100 scale-105 z-10' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-400 hover:shadow-sm'}"
                     >
                         {tooth}
                     </button>
@@ -85,26 +87,26 @@
         </div>
 
         <!-- Lower Arch -->
-        <div class="flex justify-center gap-1">
-            <div class="flex gap-1 border-r pr-2">
+        <div class="flex justify-center gap-1.5">
+            <div class="flex gap-1.5 border-inline-end border-gray-200/50 padding-inline-end-3">
                 {#each currentTeeth.lower.right as tooth}
                     <button 
                         type="button"
                         onclick={() => onToggle(tooth)}
-                        class="w-8 h-10 flex items-center justify-center rounded border transition-all text-xs font-bold
-                            {isSelected(tooth) ? 'bg-indigo-600 text-white border-indigo-700 shadow-inner' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'}"
+                        class="w-9 h-11 flex items-center justify-center rounded-lg border transition-all text-[11px] font-black
+                            {isSelected(tooth) ? 'bg-indigo-600 text-white border-indigo-700 shadow-lg shadow-indigo-100 scale-105 z-10' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-400 hover:shadow-sm'}"
                     >
                         {tooth}
                     </button>
                 {/each}
             </div>
-            <div class="flex gap-1 pl-1">
+            <div class="flex gap-1.5 padding-inline-start-1">
                 {#each currentTeeth.lower.left as tooth}
                     <button 
                         type="button"
                         onclick={() => onToggle(tooth)}
-                        class="w-8 h-10 flex items-center justify-center rounded border transition-all text-xs font-bold
-                            {isSelected(tooth) ? 'bg-indigo-600 text-white border-indigo-700 shadow-inner' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'}"
+                        class="w-9 h-11 flex items-center justify-center rounded-lg border transition-all text-[11px] font-black
+                            {isSelected(tooth) ? 'bg-indigo-600 text-white border-indigo-700 shadow-lg shadow-indigo-100 scale-105 z-10' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-400 hover:shadow-sm'}"
                     >
                         {tooth}
                     </button>
@@ -119,4 +121,14 @@
         max-width: fit-content;
         margin: 0 auto;
     }
+
+    /* Logical properties for borders and padding */
+    :global([dir="rtl"]) .border-inline-end { border-left-width: 1px; }
+    :global([dir="ltr"]) .border-inline-end { border-right-width: 1px; }
+
+    :global([dir="rtl"]) .padding-inline-end-3 { padding-left: 0.75rem; }
+    :global([dir="ltr"]) .padding-inline-end-3 { padding-right: 0.75rem; }
+
+    :global([dir="rtl"]) .padding-inline-start-1 { padding-right: 0.25rem; }
+    :global([dir="ltr"]) .padding-inline-start-1 { padding-left: 0.25rem; }
 </style>

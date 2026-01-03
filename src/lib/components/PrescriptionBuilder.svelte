@@ -1,6 +1,6 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
-    import type { ActionData } from '../../routes/doctor/patients/[id]/$types';
+    import { t } from 'svelte-i18n';
 
     let { medications, patientId, doctorId, onPrescriptionCreated } = $props();
 
@@ -45,38 +45,41 @@
     }
 </script>
 
-<div class="bg-white p-6 rounded-lg shadow border border-gray-200">
-    <h3 class="text-xl font-bold text-gray-900 mb-6">Nouvelle Ordonnance</h3>
+<div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-start font-inter">
+    <h3 class="text-xl font-bold text-gray-900 mb-6">{$t('patient_details.prescription_new_title')}</h3>
 
     <!-- Medik Search -->
-    <div class="relative mb-6">
-        <label for="med-search" class="block text-sm font-medium text-gray-700 mb-1">Rechercher un médicament</label>
-        <div class="flex gap-2">
+    <div class="relative mb-8">
+        <label for="med-search" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.prescription_search_meds')}</label>
+        <div class="flex gap-3">
             <div class="relative flex-grow">
                 <input 
                     type="text" 
                     id="med-search"
                     bind:value={searchTerm}
                     onfocus={() => showSuggestions = true}
-                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    placeholder="Tapez le nom d'un médicament..."
+                    class="block w-full border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border"
+                    placeholder="{$t('patient_details.prescription_search_placeholder')}"
                 />
                 {#if showSuggestions && searchTerm}
-                    <div class="absolute z-20 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                    <div class="absolute z-20 mt-2 w-full bg-white shadow-2xl rounded-2xl py-2 text-base ring-1 ring-gray-100 overflow-hidden max-h-64 overflow-y-auto custom-scrollbar">
                         {#each filteredMedications as med}
                             <button 
-                                class="w-full text-left px-4 py-2 hover:bg-indigo-600 hover:text-white"
+                                class="w-full text-start px-4 py-3 hover:bg-gray-50 flex flex-col gap-0.5 transition-colors border-b border-gray-50 last:border-0"
                                 onclick={() => addItem(med)}
                             >
-                                {med.name} <span class="text-xs opacity-50">({med.default_dosage})</span>
+                                <span class="font-bold text-gray-900">{med.name}</span>
+                                {#if med.default_dosage}
+                                    <span class="text-xs text-gray-500">{med.default_dosage}</span>
+                                {/if}
                             </button>
                         {/each}
                         {#if filteredMedications.length === 0}
                             <button 
-                                class="w-full text-left px-4 py-2 text-indigo-600 italic hover:bg-indigo-50"
+                                class="w-full text-start px-4 py-4 text-indigo-600 font-bold hover:bg-indigo-50/50 transition-colors"
                                 onclick={addCustomItem}
                             >
-                                Ajouter "{searchTerm}" comme médicament personnalisé
+                                <span class="text-sm">{$t('patient_details.prescription_add_custom', { values: { name: searchTerm } })}</span>
                             </button>
                         {/if}
                     </div>
@@ -85,56 +88,56 @@
             <button 
                 onclick={addCustomItem}
                 disabled={!searchTerm}
-                class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                class="bg-indigo-600 text-white px-6 rounded-xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-100 transition-all text-sm disabled:opacity-50 disabled:shadow-none"
             >
-                Ajouter
+                {$t('common.add')}
             </button>
         </div>
     </div>
 
     <!-- Basket -->
     {#if selectedItems.length > 0}
-        <div class="space-y-4 mb-6">
+        <div class="space-y-6 mb-8">
             {#each selectedItems as item, i}
-                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 relative">
+                <div class="p-6 bg-gray-50/50 rounded-2xl border border-gray-100 relative group transition-all hover:bg-white hover:shadow-md">
                     <button 
                         onclick={() => removeItem(i)}
-                        class="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                        class="absolute top-4 inset-inline-end-4 text-gray-300 hover:text-red-500 transition-colors"
                     >
                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                         </svg>
                     </button>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="md:col-span-1">
-                            <p class="text-sm font-bold text-gray-900">{item.medication_name}</p>
-                            <p class="text-xs text-gray-500">Médicament</p>
+                            <h4 class="text-lg font-black text-indigo-600 mb-1">{item.medication_name}</h4>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{$t('patient_details.prescription_item_medication')}</span>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-500">Posologie</label>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">{$t('patient_details.prescription_dosage')}</label>
                             <input 
                                 type="text" 
                                 bind:value={item.dosage}
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="ex: 1 comprimé 3x/jour"
+                                class="block w-full border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 border p-2.5 text-sm font-medium"
+                                placeholder="{$t('patient_details.prescription_dosage_placeholder')}"
                             />
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-500">Durée</label>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">{$t('patient_details.prescription_duration')}</label>
                             <input 
                                 type="text" 
                                 bind:value={item.duration}
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="ex: 7 jours"
+                                class="block w-full border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 border p-2.5 text-sm font-medium"
+                                placeholder="{$t('patient_details.prescription_duration_placeholder')}"
                             />
                         </div>
                         <div class="md:col-span-3">
-                            <label class="block text-xs font-medium text-gray-500">Instructions complémentaires</label>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">{$t('patient_details.prescription_instructions')}</label>
                             <input 
                                 type="text" 
                                 bind:value={item.instructions}
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="ex: Pendant les repas"
+                                class="block w-full border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 border p-2.5 text-sm font-medium"
+                                placeholder="{$t('patient_details.prescription_instructions_placeholder')}"
                             />
                         </div>
                     </div>
@@ -142,14 +145,14 @@
             {/each}
         </div>
 
-        <div class="mb-6">
-            <label for="prescription-notes" class="block text-sm font-medium text-gray-700 mb-1">Notes (optionnel)</label>
+        <div class="mb-8">
+            <label for="prescription-notes" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{$t('patient_details.prescription_notes_label')}</label>
             <textarea 
                 id="prescription-notes"
                 bind:value={notes}
-                rows="2"
-                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Instructions générales pour l'ordonnance..."
+                rows="3"
+                class="block w-full border-gray-200 rounded-2xl bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border"
+                placeholder="{$t('patient_details.prescription_notes_placeholder')}"
             ></textarea>
         </div>
 
@@ -171,18 +174,36 @@
             <div class="flex justify-end">
                 <button 
                     type="submit"
-                    class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    class="bg-indigo-600 text-white px-10 py-4 rounded-2xl hover:bg-indigo-700 font-black shadow-xl shadow-indigo-100 transition-all text-base"
                 >
-                    Générer l'ordonnance
+                    {$t('patient_details.prescription_generate_button')}
                 </button>
             </div>
         </form>
     {:else}
-        <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p class="mt-2 text-sm text-gray-500">Ajoutez des médicaments pour commencer l'ordonnance.</p>
+        <div class="text-center py-16 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100 flex flex-col items-center gap-4">
+            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm text-3xl">💊</div>
+            <p class="text-gray-400 font-bold">{$t('patient_details.prescription_empty_prompt')}</p>
         </div>
     {/if}
 </div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #cbd5e1;
+    }
+
+    /* Logical positioning for close button */
+    :global([dir="rtl"]) .inset-inline-end-4 { left: 1rem; }
+    :global([dir="ltr"]) .inset-inline-end-4 { right: 1rem; }
+</style>

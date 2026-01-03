@@ -13,9 +13,21 @@
         onDateClick?: (info: any) => void;
         initialView?: string;
         editable?: boolean;
+        locale?: string;
+        direction?: 'ltr' | 'rtl';
     }
 
-    let { events = [], onEventClick, onEventDrop, onEventResize, onDateClick, initialView = 'timeGridWeek', editable = false }: Props = $props();
+    let { 
+        events = [], 
+        onEventClick, 
+        onEventDrop, 
+        onEventResize, 
+        onDateClick, 
+        initialView = 'timeGridWeek', 
+        editable = false,
+        locale = 'fr',
+        direction = 'ltr'
+    }: Props = $props();
 
     let calendarEl: HTMLElement;
     let calendar: Calendar;
@@ -27,10 +39,19 @@
         }
     });
 
+    $effect(() => {
+        if (calendar) {
+            calendar.setOption('locale', locale);
+            calendar.setOption('direction', direction);
+        }
+    });
+
     onMount(() => {
         calendar = new Calendar(calendarEl, {
             plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
             initialView,
+            locale,
+            direction,
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',

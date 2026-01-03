@@ -1,8 +1,11 @@
-import type { Handle } from '@sveltejs/kit';
+import { redirect, type Handle } from '@sveltejs/kit';
 import { getSession } from '$lib/server/auth';
-import { redirect } from '@sveltejs/kit';
+import { setupI18n } from '$lib/i18n';
 
 export const handle: Handle = async ({ event, resolve }) => {
+    const locale = event.cookies.get('lang') || 'fr';
+    event.locals.locale = locale;
+    setupI18n(locale);
     const sessionId = event.cookies.get('session_id');
 
     if (sessionId) {
