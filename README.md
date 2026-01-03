@@ -5,7 +5,7 @@
 [![SQLite](https://img.shields.io/badge/SQLite-3-003b57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Dentistico** is a premium, full-stack dental clinic management application designed for the modern practice. Built with **SvelteKit 5 (Runes)** and a **state-of-the-art UI/UX**, it streamlines the entire patient lifecycle—from online booking to archival.
+**Dentistico** is a premium, full-stack dental clinic management application designed for the modern practice. Built with **SvelteKit 5 (Runes)** and a **state-of-the-art UI/UX**, it streamlines the entire patient lifecycle—from online booking to clinical treatment and archival.
 
 ---
 
@@ -32,15 +32,24 @@ A high-efficiency command center for administrative staff.
     - **Archiving**: Safely archive inactive patients (requires zero balance and no upcoming visits).
     - **Archived View**: Separate section to review or **unarchive** historical records.
 - **Financial Reconciliation**: Record payments and generate itemized invoices that automatically sync with clinical treatments.
-- **Lead Tracking**: Clear visibility into which bookings originated from the public website.
+- **Lead Tracking**: Clear visibility into which bookings originated from the public website vs. manual entry.
+- **Appointment Source Attribution**: 
+    - Every booking is tagged with its origin channel ("Source: Web" or "Source: Assistant: Name").
+    - Doctors can view the source directly in their daily schedule for context.
+- **Web Booking Confirmation Flow**: 
+    - Online appointments land in a "Pending Confirmation" state.
+    - Assistants review, assign rooms, and confirm bookings before they move into the active doctor's schedule.
 
 ### 👨‍⚕️ Doctor’s Clinical Command (Patient Care)
 Designed for focus, speed, and clinical accuracy.
-- **Custom Svelte 5 Dental Charting**:
+- **Custom-Built Dental Charting (Svelte 5)**:
     - **FDI Numbering**: International standard tooth numbering system.
-    - **Smart Logic**: Automatic switch between Adult (32 teeth) and Pediatric (20 deciduous teeth) charts.
+    - **Smart Logic**: Automatic switch between Adult (32 teeth) and Pediatric (20 deciduous teeth) charts based on patient age.
     - **Visual History**: Color-coded mapping (Red for cavities, Blue/Green for treatments) with per-tooth clinical notes.
-- **Clinical History**: longitudinal access to notes, allergies (hidden from assistants), and prescriptions.
+- **Multi-Practitioner Support**: 
+    - Concurrent scheduling for multiple doctors working in separate rooms simultaneously.
+    - **Room Conflict Prevention**: Automated system blocks double-booking of the same treatment room at the same time.
+- **Clinical History**: Longitudinal access to notes, allergies (hidden from assistants), and prescriptions.
 - **Room Coordination**: Doctors see patients assigned specifically to their designated rooms for the day.
 
 ### 📦 Logistics & Inventory (Smart Supply Chain)
@@ -148,6 +157,36 @@ We maintain a comprehensive **Manual Testing Suite** in `testing.md`. It contain
 
 ## 🎨 Customizable Website (CMS)
 The public website is fully **decoupled** from the code. By editing `src/lib/config/landing-page.json`, you can update heroes, services, and team members without redeploying code.
+
+---
+
+## 📸 Screenshots
+*[Coming Soon]* 
+
+## 🎥 Live Demo  
+Demo environment: [Visit Live Demo](https://dentistico.app) *(Link coming soon)*
+
+---
+
+## 🤝 Contributing
+Contributions are welcome! To contribute:
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📧 Support
+- **Issues**: [GitHub Issues](https://github.com/mohammedimohamed/dentistico/issues)
+- **Email**: support@dentistico.example.com
+
+---
+
+## 🗺️ Roadmap
+- [ ] SMS appointment reminders & Patient SMS notifications
+- [ ] Insurance claim integration and auto-processing
+- [ ] Multi-clinic support for group practices
+- [ ] Mobile companion app for Doctors (Native)
 
 ---
 
