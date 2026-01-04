@@ -75,7 +75,10 @@ export const actions: Actions = {
             const dbStartTime = start_time.replace('T', ' ') + ':00';
             const startDate = new Date(start_time);
             const endDate = new Date(startDate.getTime() + 30 * 60000);
-            const dbEndTime = endDate.toISOString().replace('T', ' ').substring(0, 19);
+
+            // Fix end time timezone issue
+            const tzOffset = endDate.getTimezoneOffset() * 60000;
+            const dbEndTime = new Date(endDate.getTime() - tzOffset).toISOString().slice(0, 19).replace('T', ' ');
 
             createAppointment({
                 patient_id: target_patient_id,

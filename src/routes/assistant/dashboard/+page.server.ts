@@ -107,10 +107,13 @@ export const actions: Actions = {
             return fail(400, { error: 'Missing required fields' });
         }
 
-        // Calculate end_time
+        // Calculate end_time preserving local time
         const start = new Date(startTimeStr);
         const end = new Date(start.getTime() + duration * 60000);
-        const endTimeStr = end.toISOString(); // Or keep consistent format, db assumes TEXT ISO usually
+
+        // Convert to local ISO string (mocking local time by shifting UTC)
+        const tzOffset = end.getTimezoneOffset() * 60000;
+        const endTimeStr = new Date(end.getTime() - tzOffset).toISOString().slice(0, 19).replace('T', ' ');
 
         try {
             createAppointment({
@@ -281,7 +284,10 @@ export const actions: Actions = {
 
         const start = new Date(startTimeStr);
         const end = new Date(start.getTime() + duration * 60000);
-        const endTimeStr = end.toISOString();
+
+        // Convert to local ISO string
+        const tzOffset = end.getTimezoneOffset() * 60000;
+        const endTimeStr = new Date(end.getTime() - tzOffset).toISOString().slice(0, 19).replace('T', ' ');
 
         try {
             updateAppointment(id, {

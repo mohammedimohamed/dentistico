@@ -2,6 +2,22 @@ import Database from 'better-sqlite3';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
+// Helper to normalize date strings for DB consistency
+// Converts 'YYYY-MM-DDTHH:MM' or ISO to 'YYYY-MM-DD HH:MM:SS'
+function normalizeDate(dateStr: string) {
+    if (!dateStr) return dateStr;
+    // Replace T with space
+    let res = dateStr.replace('T', ' ');
+    // Remove milliseconds and timezone Z if present
+    res = res.split('.')[0];
+
+    // If format is YYYY-MM-DD HH:MM, append :00
+    if (res.length === 16) {
+        res += ':00';
+    }
+    return res;
+}
+
 export const db = new Database('dental_clinic.db', { verbose: console.log });
 
 export function init_db() {
@@ -109,6 +125,7 @@ export function init_db() {
             FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (booked_by_id) REFERENCES patients(id)
         );
+
 
         CREATE TABLE IF NOT EXISTS treatments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -833,17 +850,20 @@ export function checkDoctorConflict(doctorId: number, startTime: string, endTime
           AND status NOT IN ('cancelled', 'no_show')
           AND (
               -- New appointment starts during existing appointment
-              (? >= start_time AND ? < end_time)
+              (? >= REPLACE(start_time, 'T', ' ') AND ? < REPLACE(end_time, 'T', ' '))
               OR
               -- New appointment ends during existing appointment
-              (? > start_time AND ? <= end_time)
+              (? > REPLACE(start_time, 'T', ' ') AND ? <= REPLACE(end_time, 'T', ' '))
               OR
               -- New appointment completely overlaps existing appointment
-              (? <= start_time AND ? >= end_time)
+              (? <= REPLACE(start_time, 'T', ' ') AND ? >= REPLACE(end_time, 'T', ' '))
           )
     `;
 
-    const params: any[] = [doctorId, startTime, startTime, endTime, endTime, startTime, endTime];
+    const normalizedStart = normalizeDate(startTime);
+    const normalizedEnd = normalizeDate(endTime);
+
+    const params: any[] = [doctorId, normalizedStart, normalizedStart, normalizedEnd, normalizedEnd, normalizedStart, normalizedEnd];
 
     if (excludeAppointmentId) {
         query += ' AND id != ?';
@@ -855,6 +875,11 @@ export function checkDoctorConflict(doctorId: number, startTime: string, endTime
 }
 
 export function createAppointment(appointmentData: any) {
+    // function createAppointment(appointmentData: any) { // Removed redundant header from tool logic
+    // Normalize dates in appointmentData
+    if (appointmentData.start_time) appointmentData.start_time = normalizeDate(appointmentData.start_time);
+    if (appointmentData.end_time) appointmentData.end_time = normalizeDate(appointmentData.end_time);
+
     // Check for conflicts before creating
     if (appointmentData.doctor_id && appointmentData.start_time && appointmentData.end_time) {
         const hasConflict = checkDoctorConflict(
@@ -879,6 +904,11 @@ export function createAppointment(appointmentData: any) {
 }
 
 export function updateAppointment(id: number, appointmentData: any) {
+    // function updateAppointment(id: number, appointmentData: any) {
+    // Normalize dates if present
+    if (appointmentData.start_time) appointmentData.start_time = normalizeDate(appointmentData.start_time);
+    if (appointmentData.end_time) appointmentData.end_time = normalizeDate(appointmentData.end_time);
+
     // Check for conflicts before updating if time or doctor is being changed
     if (appointmentData.doctor_id || appointmentData.start_time || appointmentData.end_time) {
         const currentAppt = getAppointmentById(id) as any;
@@ -888,7 +918,11 @@ export function updateAppointment(id: number, appointmentData: any) {
             const startTime = appointmentData.start_time || currentAppt.start_time;
             const endTime = appointmentData.end_time || currentAppt.end_time;
 
-            const hasConflict = checkDoctorConflict(doctorId, startTime, endTime, id);
+            // Re-normalize just in case fetched data is messy
+            const nStart = normalizeDate(startTime);
+            const nEnd = normalizeDate(endTime);
+
+            const hasConflict = checkDoctorConflict(doctorId, nStart, nEnd, id);
 
             if (hasConflict) {
                 throw new Error('Doctor already has an appointment at this time');
