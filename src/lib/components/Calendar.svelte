@@ -34,7 +34,13 @@
 
     $effect(() => {
         if (calendar) {
-            calendar.setOption("events", events);
+            // Remove existing event sources
+            const sources = calendar.getEventSources();
+            for (const source of sources) {
+                source.remove();
+            }
+            // Add new events
+            calendar.addEventSource(events);
         }
     });
 

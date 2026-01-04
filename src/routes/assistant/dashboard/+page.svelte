@@ -127,10 +127,20 @@
                 extendedProps: a,
                 backgroundColor:
                     a.status === "confirmed"
-                        ? "#10b981"
-                        : a.status === "scheduled"
-                          ? "#3b82f6"
-                          : "#9ca3af",
+                        ? "#10b981" // green-500
+                        : a.status === "cancelled"
+                          ? "#ef4444" // red-500
+                          : a.status === "no_show"
+                            ? "#6b7280" // gray-500
+                            : "#3b82f6", // blue-500 (scheduled)
+                borderColor:
+                    a.status === "confirmed"
+                        ? "#059669" // green-600
+                        : a.status === "cancelled"
+                          ? "#dc2626" // red-600
+                          : a.status === "no_show"
+                            ? "#4b5563" // gray-600
+                            : "#2563eb", // blue-600
             };
         }),
     );
@@ -456,14 +466,58 @@
                         {/each}
                     </ul>
                 {:else}
-                    <Calendar
-                        events={calendarEvents}
-                        onEventClick={handleEventClick}
-                        onEventDrop={handleEventChange}
-                        onEventResize={handleEventChange}
-                        onDateClick={handleDateClick}
-                        editable={false}
-                    />
+                    <!-- Calendar Legend -->
+                    <div
+                        class="flex flex-wrap gap-4 mb-4 p-4 bg-gray-50 rounded-lg justify-center sm:justify-start"
+                    >
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-blue-500"
+                            ></span>
+                            <span class="text-xs font-medium text-gray-700"
+                                >{$t(
+                                    "assistant.dashboard.appointment.status.scheduled",
+                                )}</span
+                            >
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-green-500"
+                            ></span>
+                            <span class="text-xs font-medium text-gray-700"
+                                >{$t(
+                                    "assistant.dashboard.appointment.status.confirmed",
+                                )}</span
+                            >
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-red-500"
+                            ></span>
+                            <span class="text-xs font-medium text-gray-700"
+                                >{$t(
+                                    "assistant.dashboard.appointment.status.cancelled",
+                                )}</span
+                            >
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-gray-500"
+                            ></span>
+                            <span class="text-xs font-medium text-gray-700"
+                                >{$t(
+                                    "assistant.dashboard.appointment.status.no_show",
+                                )}</span
+                            >
+                        </div>
+                    </div>
+
+                    {#key filteredAppointments}
+                        <Calendar
+                            events={calendarEvents}
+                            onEventClick={handleEventClick}
+                            onEventDrop={handleEventChange}
+                            onEventResize={handleEventChange}
+                            onDateClick={handleDateClick}
+                            editable={false}
+                        />
+                    {/key}
                 {/if}
             </div>
         </div>
