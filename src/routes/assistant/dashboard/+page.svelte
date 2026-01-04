@@ -114,7 +114,7 @@
 
     // Map appointments to FC events
     const calendarEvents = $derived(
-        data.appointments.map((a: any) => {
+        filteredAppointments.map((a: any) => {
             const icon = a.relationship_to_primary ? "👶" : "👤";
             const webIndicator =
                 a.notes && a.notes.includes("Source: Web") ? " 🌐" : "";
