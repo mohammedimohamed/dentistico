@@ -23,6 +23,32 @@
     let selectedAppointment = $state<any>(null); // For booking/editing
     let searchPatientQuery = $state("");
     let errorMessage = $state("");
+    // New search & filter state for appointments
+    let searchQuery = $state("");
+    let statusFilter = $state("");
+
+    // Reactive filtered appointments list using $derived.by for complex logic
+    const filteredAppointments = $derived.by(() => {
+        const appointments = data.appointments ?? [];
+        return appointments.filter((appt: any) => {
+            const matchesSearch = searchQuery
+                ? appt.patient_name
+                      ?.toLowerCase()
+                      .includes(searchQuery.toLowerCase()) ||
+                  appt.doctor_name
+                      ?.toLowerCase()
+                      .includes(searchQuery.toLowerCase()) ||
+                  (appt.notes &&
+                      appt.notes
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()))
+                : true;
+            const matchesStatus = statusFilter
+                ? appt.status === statusFilter
+                : true;
+            return matchesSearch && matchesStatus;
+        });
+    });
 
     $effect(() => {
         if (!isPatientModalOpen) {
@@ -88,20 +114,25 @@
 
     // Map appointments to FC events
     const calendarEvents = $derived(
-        data.appointments.map((a: any) => ({
-            id: a.id,
-            title: `${a.patient_name} - ${a.appointment_type.replace("_", " ")}`,
-            // Ensure ISO format for Calendar by replacing space with T if needed
-            start: a.start_time.replace(" ", "T"),
-            end: a.end_time.replace(" ", "T"),
-            extendedProps: a,
-            backgroundColor:
-                a.status === "confirmed"
-                    ? "#10b981"
-                    : a.status === "scheduled"
-                      ? "#3b82f6"
-                      : "#9ca3af",
-        })),
+        data.appointments.map((a: any) => {
+            const icon = a.relationship_to_primary ? "👶" : "👤";
+            const webIndicator =
+                a.notes && a.notes.includes("Source: Web") ? " 🌐" : "";
+            return {
+                id: a.id,
+                title: `${icon} ${a.patient_name} - ${a.appointment_type.replace("_", " ")}${webIndicator}`,
+                // Ensure ISO format for Calendar by replacing space with T if needed
+                start: a.start_time.replace(" ", "T"),
+                end: a.end_time.replace(" ", "T"),
+                extendedProps: a,
+                backgroundColor:
+                    a.status === "confirmed"
+                        ? "#10b981"
+                        : a.status === "scheduled"
+                          ? "#3b82f6"
+                          : "#9ca3af",
+            };
+        }),
     );
 
     function handleEventClick(info: any) {
@@ -173,6 +204,43 @@
                             {$t("assistant.dashboard.buttons.calendar")}
                         </button>
                     </div>
+                    <!-- Search and filter controls -->
+                    <div class="flex items-center gap-4 mt-2">
+                        <input
+                            type="text"
+                            placeholder={$t(
+                                "assistant.dashboard.search.placeholder",
+                            ) || "Search appointments..."}
+                            bind:value={searchQuery}
+                            class="px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <select
+                            bind:value={statusFilter}
+                            class="px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                            <option value="">All statuses</option>
+                            <option value="scheduled"
+                                >{$t(
+                                    "assistant.dashboard.appointment.status.scheduled",
+                                )}</option
+                            >
+                            <option value="confirmed"
+                                >{$t(
+                                    "assistant.dashboard.appointment.status.confirmed",
+                                )}</option
+                            >
+                            <option value="cancelled"
+                                >{$t(
+                                    "assistant.dashboard.appointment.status.cancelled",
+                                )}</option
+                            >
+                            <option value="no_show"
+                                >{$t(
+                                    "assistant.dashboard.appointment.status.no_show",
+                                )}</option
+                            >
+                        </select>
+                    </div>
                     <button
                         onclick={() => openBookingModal()}
                         class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-bold shadow-lg transition-all flex items-center gap-2"
@@ -186,10 +254,17 @@
             <div class="p-6">
                 {#if viewMode === "list"}
                     <ul role="list" class="divide-y divide-gray-100">
-                        {#each data.appointments as appt}
+                        {#each filteredAppointments as appt}
                             <li class="group">
                                 <div
-                                    class="px-4 py-5 hover:bg-indigo-50/50 transition-colors rounded-xl flex items-center justify-between"
+                                    class="px-4 py-5 transition-colors rounded-xl flex items-center justify-between border-l-4
+                                    {appt.status === 'confirmed'
+                                        ? 'border-l-green-500 bg-green-50/30 hover:bg-green-50'
+                                        : appt.status === 'cancelled'
+                                          ? 'border-l-red-500 bg-red-50/30 hover:bg-red-50'
+                                          : appt.status === 'no_show'
+                                            ? 'border-l-gray-500 bg-gray-50/30 hover:bg-gray-100'
+                                            : 'border-l-blue-500 bg-blue-50/30 hover:bg-blue-50'}"
                                 >
                                     <div class="flex flex-col">
                                         <div
@@ -213,11 +288,74 @@
                                                 ).toLocaleDateString()}
                                             </span>
                                         </div>
-                                        <p
-                                            class="text-base font-bold text-gray-900"
+                                        <div
+                                            class="flex items-center gap-2 mb-1"
                                         >
-                                            {appt.patient_name}
-                                        </p>
+                                            {#if appt.relationship_to_primary}
+                                                <span
+                                                    class="text-lg"
+                                                    title="Child/Dependent"
+                                                >
+                                                    👶
+                                                </span>
+                                            {:else}
+                                                <span
+                                                    class="text-lg"
+                                                    title="Adult"
+                                                >
+                                                    👤
+                                                </span>
+                                            {/if}
+                                            <p
+                                                class="text-base font-bold text-gray-900"
+                                            >
+                                                {appt.patient_name}
+                                            </p>
+                                        </div>
+                                        <div
+                                            class="flex flex-wrap items-center gap-2 mb-1"
+                                        >
+                                            {#if appt.date_of_birth}
+                                                {@const age = Math.floor(
+                                                    (new Date().getTime() -
+                                                        new Date(
+                                                            appt.date_of_birth,
+                                                        ).getTime()) /
+                                                        (365.25 *
+                                                            24 *
+                                                            60 *
+                                                            60 *
+                                                            1000),
+                                                )}
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                                                >
+                                                    {age}
+                                                    {age === 1
+                                                        ? "year"
+                                                        : "years"}
+                                                </span>
+                                            {/if}
+                                            {#if appt.gender}
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                                                >
+                                                    {appt.gender === "male"
+                                                        ? "♂️ Male"
+                                                        : appt.gender ===
+                                                            "female"
+                                                          ? "♀️ Female"
+                                                          : appt.gender}
+                                                </span>
+                                            {/if}
+                                            {#if appt.notes && appt.notes.includes("Source: Web")}
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800"
+                                                >
+                                                    🌐 Source: Web
+                                                </span>
+                                            {/if}
+                                        </div>
                                         <p
                                             class="text-xs text-gray-500 uppercase tracking-wider font-semibold"
                                         >
@@ -228,13 +366,38 @@
                                             )}
                                             {appt.doctor_name}
                                         </p>
-                                        {#if appt.notes && (appt.notes.includes("Online") || appt.notes.includes("Web"))}
-                                            <span
-                                                class="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800"
+                                        {#if appt.relationship_to_primary && appt.booked_by_name}
+                                            <p
+                                                class="text-xs text-gray-500 italic mt-1"
                                             >
-                                                🌐 Source: Web
-                                            </span>
+                                                Booked by: {appt.booked_by_name}
+                                                ({appt.relationship_to_primary})
+                                            </p>
                                         {/if}
+                                        <div
+                                            class="flex flex-wrap items-center gap-2 mt-1"
+                                        >
+                                            {#if appt.created_by_name}
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800"
+                                                >
+                                                    ✏️ Created by: {appt.created_by_name}
+                                                </span>
+                                            {:else if appt.notes && appt.notes.includes("Source: Web")}
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800"
+                                                >
+                                                    🌐 Portal Booking
+                                                </span>
+                                            {/if}
+                                            {#if appt.confirmed_by_name}
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800"
+                                                >
+                                                    ✓ Confirmed by: {appt.confirmed_by_name}
+                                                </span>
+                                            {/if}
+                                        </div>
                                     </div>
                                     <div class="flex items-center gap-4">
                                         <span
@@ -738,6 +901,52 @@
                                             >
                                         </select>
                                     </div>
+
+                                    <!-- Appointment Tracking Info -->
+                                    {#if selectedAppointment?.created_by_name || selectedAppointment?.confirmed_by_name}
+                                        <div
+                                            class="bg-gray-50 rounded-xl p-4 border border-gray-200"
+                                        >
+                                            <p
+                                                class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"
+                                            >
+                                                Appointment History
+                                            </p>
+                                            <div class="space-y-1">
+                                                {#if selectedAppointment.created_by_name}
+                                                    <p
+                                                        class="text-sm text-gray-700"
+                                                    >
+                                                        <span
+                                                            class="font-semibold"
+                                                            >✏️ Created by:</span
+                                                        >
+                                                        {selectedAppointment.created_by_name}
+                                                    </p>
+                                                {:else if selectedAppointment.notes && selectedAppointment.notes.includes("Source: Web")}
+                                                    <p
+                                                        class="text-sm text-gray-700"
+                                                    >
+                                                        <span
+                                                            class="font-semibold"
+                                                            >🌐 Source:</span
+                                                        > Portal Booking
+                                                    </p>
+                                                {/if}
+                                                {#if selectedAppointment.confirmed_by_name}
+                                                    <p
+                                                        class="text-sm text-gray-700"
+                                                    >
+                                                        <span
+                                                            class="font-semibold"
+                                                            >✓ Confirmed by:</span
+                                                        >
+                                                        {selectedAppointment.confirmed_by_name}
+                                                    </p>
+                                                {/if}
+                                            </div>
+                                        </div>
+                                    {/if}
                                 {/if}
 
                                 <div>

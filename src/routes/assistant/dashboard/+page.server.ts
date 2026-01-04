@@ -124,7 +124,8 @@ export const actions: Actions = {
                 duration_minutes: duration,
                 appointment_type: type,
                 status: 'scheduled',
-                notes
+                notes,
+                created_by_user_id: locals.user.id
             });
             return { success: true, message: 'Appointment scheduled successfully' };
         } catch (e: any) {
@@ -153,8 +154,12 @@ export const actions: Actions = {
         }
 
         try {
-            // Update status
-            updateAppointment(appointmentId, { status, updated_at: new Date().toISOString() });
+            // Update status and track who confirmed it
+            const updateData: any = { status, updated_at: new Date().toISOString() };
+            if (status === 'confirmed') {
+                updateData.confirmed_by_user_id = locals.user.id;
+            }
+            updateAppointment(appointmentId, updateData);
 
             // If confirmed, handle user creation
             if (status === 'confirmed') {

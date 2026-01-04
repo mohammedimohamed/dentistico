@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { getDoctors, getPatientByPhoneOrEmail, createPatient, createAppointment, getSecondaryPatient } from '$lib/server/db';
+import { getDoctors, getPatientByPhoneOrEmail, createPatient, createAppointment, getSecondaryPatient, getUserByUsername } from '$lib/server/db';
+import db from '$lib/server/db';
 
 export const load: PageServerLoad = async () => {
     const doctors = getDoctors();
@@ -33,6 +34,28 @@ export const actions: Actions = {
         }
 
         try {
+            // Check if email/phone belongs to an existing user account
+            if (email) {
+                const existingUser = getUserByUsername(email);
+                if (existingUser) {
+                    return fail(400, {
+                        error: 'This email is already registered. Please log in to your account to book appointments, or use a different email address.'
+                    });
+                }
+            }
+
+            // Check if phone belongs to a patient with a user account
+            const existingPatientWithAccount = db.prepare(`
+                SELECT p.* FROM patients p 
+                WHERE p.phone = ? AND p.user_id IS NOT NULL
+            `).get(phone);
+
+            if (existingPatientWithAccount) {
+                return fail(400, {
+                    error: 'This phone number is already registered. Please log in to your account to book appointments, or use a different phone number.'
+                });
+            }
+
             // 1. Find or create the Requester (Primary Patient)
             let requester = getPatientByPhoneOrEmail(phone, email) as any;
             let requester_id: number;
@@ -80,6 +103,13 @@ export const actions: Actions = {
             const tzOffset = endDate.getTimezoneOffset() * 60000;
             const dbEndTime = new Date(endDate.getTime() - tzOffset).toISOString().slice(0, 19).replace('T', ' ');
 
+            // Construct notes with source tag
+            let finalNotes = notes ? notes + " " : "";
+            finalNotes += "Source: Web";
+            if (booking_for === 'other') {
+                finalNotes += ` - Booked by ${full_name} (${relationship})`;
+            }
+
             createAppointment({
                 patient_id: target_patient_id,
                 doctor_id,
@@ -89,7 +119,7 @@ export const actions: Actions = {
                 duration_minutes: 30,
                 appointment_type: appointment_type || 'consultation',
                 status: 'scheduled',
-                notes: notes || (booking_for === 'other' ? `Booked by ${full_name} (${relationship})` : 'Online booking')
+                notes: finalNotes
             });
 
             return { success: true };

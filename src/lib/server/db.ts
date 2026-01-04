@@ -500,6 +500,23 @@ export function init_db() {
     } catch (e) {
         console.error('Migration for is_active on users failed:', e);
     }
+
+    // Migration for appointment tracking fields
+    try {
+        const apptCols = db.prepare("PRAGMA table_info(appointments)").all() as any[];
+        const colNames = apptCols.map(c => c.name);
+
+        if (!colNames.includes('created_by_user_id')) {
+            db.exec('ALTER TABLE appointments ADD COLUMN created_by_user_id INTEGER REFERENCES users(id)');
+            console.log('Added created_by_user_id column to appointments');
+        }
+        if (!colNames.includes('confirmed_by_user_id')) {
+            db.exec('ALTER TABLE appointments ADD COLUMN confirmed_by_user_id INTEGER REFERENCES users(id)');
+            console.log('Added confirmed_by_user_id column to appointments');
+        }
+    } catch (e) {
+        console.error('Migration for appointment tracking fields failed:', e);
+    }
 }
 
 function seed_db() {
@@ -831,14 +848,21 @@ export function getAllUpcomingAppointments() {
         SELECT 
             a.id, a.start_time, a.end_time, a.duration_minutes, 
             a.status, a.appointment_type, a.doctor_id, a.notes,
+            a.created_by_user_id, a.confirmed_by_user_id,
             p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone,
+            p.email as patient_email, p.date_of_birth, p.gender,
+            p.secondary_email, p.secondary_phone,
             u.full_name as doctor_name,
             b.full_name as booked_by_name,
-            p.relationship_to_primary
+            p.relationship_to_primary,
+            creator.full_name as created_by_name,
+            confirmer.full_name as confirmed_by_name
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         JOIN users u ON a.doctor_id = u.id
         LEFT JOIN patients b ON a.booked_by_id = b.id
+        LEFT JOIN users creator ON a.created_by_user_id = creator.id
+        LEFT JOIN users confirmer ON a.confirmed_by_user_id = confirmer.id
         WHERE date(a.start_time) >= date('now')
         ORDER BY a.start_time ASC
         LIMIT 50
