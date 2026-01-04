@@ -20,6 +20,10 @@ export const actions = {
             return fail(400, { incorrect: true });
         }
 
+        if (user.is_active !== undefined && user.is_active === 0) {
+            return fail(400, { inactive: true, error: 'Account is deactivated' });
+        }
+
         const sessionId = createSession(user.id);
         setSessionCookie(cookies, sessionId);
 

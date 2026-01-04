@@ -225,6 +225,18 @@ export const actions: Actions = {
             return fail(403, { error: 'Unauthorized' });
         }
         const patientId = parseInt(params.id);
+
+        const balance = getPatientBalance(patientId);
+        if (balance > 0) {
+            return fail(400, { error: 'Cannot archive patient with outstanding balance' });
+        }
+
+        const appointments = getPatientAppointments(patientId);
+        const hasFutureAppointments = appointments.some((a: any) => new Date(a.start_time) > new Date());
+        if (hasFutureAppointments) {
+            return fail(400, { error: 'Cannot archive patient with future appointments' });
+        }
+
         try {
             archivePatient(patientId);
             return { success: true, message: 'Patient archived' };

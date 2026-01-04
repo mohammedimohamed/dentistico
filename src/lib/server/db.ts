@@ -478,6 +478,28 @@ export function init_db() {
     } catch (e) {
         console.error('Migration for inventory fields failed:', e);
     }
+
+    // Migration for phone on users
+    try {
+        const userCols = db.prepare("PRAGMA table_info(users)").all() as any[];
+        if (!userCols.find(c => c.name === 'phone')) {
+            db.exec('ALTER TABLE users ADD COLUMN phone TEXT');
+            console.log('Added phone column to users');
+        }
+    } catch (e) {
+        console.error('Migration for phone on users failed:', e);
+    }
+
+    // Migration for is_active on users
+    try {
+        const userCols = db.prepare("PRAGMA table_info(users)").all() as any[];
+        if (!userCols.find(c => c.name === 'is_active')) {
+            db.exec('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1');
+            console.log('Added is_active column to users');
+        }
+    } catch (e) {
+        console.error('Migration for is_active on users failed:', e);
+    }
 }
 
 function seed_db() {

@@ -649,7 +649,11 @@
                                             class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium"
                                             value={selectedAppointment?.start_time
                                                 ? new Date(
-                                                      selectedAppointment.start_time,
+                                                      new Date(
+                                                          selectedAppointment.start_time,
+                                                      ).getTime() -
+                                                          new Date().getTimezoneOffset() *
+                                                              60000,
                                                   )
                                                       .toISOString()
                                                       .slice(0, 16)
