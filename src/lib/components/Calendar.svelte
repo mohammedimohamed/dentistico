@@ -1,9 +1,9 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte';
-    import { Calendar } from '@fullcalendar/core';
-    import dayGridPlugin from '@fullcalendar/daygrid';
-    import timeGridPlugin from '@fullcalendar/timegrid';
-    import interactionPlugin from '@fullcalendar/interaction';
+    import { onMount, onDestroy } from "svelte";
+    import { Calendar } from "@fullcalendar/core";
+    import dayGridPlugin from "@fullcalendar/daygrid";
+    import timeGridPlugin from "@fullcalendar/timegrid";
+    import interactionPlugin from "@fullcalendar/interaction";
 
     interface Props {
         events: any[];
@@ -14,19 +14,19 @@
         initialView?: string;
         editable?: boolean;
         locale?: string;
-        direction?: 'ltr' | 'rtl';
+        direction?: "ltr" | "rtl";
     }
 
-    let { 
-        events = [], 
-        onEventClick, 
-        onEventDrop, 
-        onEventResize, 
-        onDateClick, 
-        initialView = 'timeGridWeek', 
+    let {
+        events = [],
+        onEventClick,
+        onEventDrop,
+        onEventResize,
+        onDateClick,
+        initialView = "timeGridWeek",
         editable = false,
-        locale = 'fr',
-        direction = 'ltr'
+        locale = "fr",
+        direction = "ltr",
     }: Props = $props();
 
     let calendarEl: HTMLElement;
@@ -34,15 +34,14 @@
 
     $effect(() => {
         if (calendar) {
-            calendar.removeAllEvents();
-            calendar.addEventSource(events);
+            calendar.setOption("events", events);
         }
     });
 
     $effect(() => {
         if (calendar) {
-            calendar.setOption('locale', locale);
-            calendar.setOption('direction', direction);
+            calendar.setOption("locale", locale);
+            calendar.setOption("direction", direction);
         }
     });
 
@@ -53,9 +52,9 @@
             locale,
             direction,
             headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay",
             },
             events,
             editable,
@@ -63,16 +62,16 @@
             eventDrop: onEventDrop,
             eventResize: onEventResize,
             dateClick: onDateClick,
-            height: 'auto',
+            height: "auto",
             nowIndicator: true,
-            slotMinTime: '08:00:00',
-            slotMaxTime: '20:00:00',
+            slotMinTime: "00:00:00",
+            slotMaxTime: "24:00:00",
             allDaySlot: false,
             businessHours: {
                 daysOfWeek: [1, 2, 3, 4, 5, 6], // Monday - Saturday
-                startTime: '08:30',
-                endTime: '19:30',
-            }
+                startTime: "08:30",
+                endTime: "19:30",
+            },
         });
 
         calendar.render();
@@ -99,7 +98,7 @@
         --fc-event-bg-color: #4f46e5;
         --fc-event-border-color: #4f46e5;
     }
-    
+
     :global(.fc-toolbar-title) {
         font-size: 1.25rem !important;
         font-weight: 700 !important;
@@ -117,6 +116,6 @@
     :global(.fc-v-event) {
         border-radius: 4px !important;
         padding: 2px 4px !important;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
 </style>
