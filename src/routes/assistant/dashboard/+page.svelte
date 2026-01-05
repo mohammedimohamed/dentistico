@@ -30,6 +30,18 @@
     let searchQuery = $state("");
     let statusFilter = $state("");
 
+    // Table view state
+    let tableSortColumn = $state<string | null>(null);
+    let tableSortDirection = $state<"asc" | "desc">("asc");
+    let selectedRows = $state<Set<number>>(new Set());
+    let columnFilters = $state<Record<string, string>>({
+        patient: "",
+        doctor: "",
+        status: "",
+        type: "",
+        date: ""
+    });
+
     // Reactive filtered appointments list using $derived.by for complex logic
     const filteredAppointments = $derived.by(() => {
         const appointments = data.appointments ?? [];
@@ -52,6 +64,116 @@
             return matchesSearch && matchesStatus;
         });
     });
+
+    // Table filtered and sorted appointments
+    const tableAppointments = $derived.by(() => {
+        let result = [...filteredAppointments];
+        
+        // Apply column filters
+        if (columnFilters.patient) {
+            result = result.filter((appt: any) =>
+                appt.patient_name?.toLowerCase().includes(columnFilters.patient.toLowerCase())
+            );
+        }
+        if (columnFilters.doctor) {
+            result = result.filter((appt: any) =>
+                appt.doctor_name?.toLowerCase().includes(columnFilters.doctor.toLowerCase())
+            );
+        }
+        if (columnFilters.status) {
+            result = result.filter((appt: any) => appt.status === columnFilters.status);
+        }
+        if (columnFilters.type) {
+            result = result.filter((appt: any) => appt.appointment_type === columnFilters.type);
+        }
+        if (columnFilters.date) {
+            const filterDate = columnFilters.date;
+            result = result.filter((appt: any) => {
+                const apptDate = new Date(appt.start_time).toISOString().split('T')[0];
+                return apptDate === filterDate;
+            });
+        }
+
+        // Apply sorting
+        if (tableSortColumn) {
+            result.sort((a: any, b: any) => {
+                let aVal: any;
+                let bVal: any;
+
+                switch (tableSortColumn) {
+                    case "patient":
+                        aVal = a.patient_name || "";
+                        bVal = b.patient_name || "";
+                        break;
+                    case "doctor":
+                        aVal = a.doctor_name || "";
+                        bVal = b.doctor_name || "";
+                        break;
+                    case "status":
+                        aVal = a.status || "";
+                        bVal = b.status || "";
+                        break;
+                    case "type":
+                        aVal = a.appointment_type || "";
+                        bVal = b.appointment_type || "";
+                        break;
+                    case "date":
+                        aVal = new Date(a.start_time).getTime();
+                        bVal = new Date(b.start_time).getTime();
+                        break;
+                    case "time":
+                        aVal = new Date(a.start_time).getTime();
+                        bVal = new Date(b.start_time).getTime();
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (aVal < bVal) return tableSortDirection === "asc" ? -1 : 1;
+                if (aVal > bVal) return tableSortDirection === "asc" ? 1 : -1;
+                return 0;
+            });
+        }
+
+        return result;
+    });
+
+    function toggleSort(column: string) {
+        if (tableSortColumn === column) {
+            tableSortDirection = tableSortDirection === "asc" ? "desc" : "asc";
+        } else {
+            tableSortColumn = column;
+            tableSortDirection = "asc";
+        }
+    }
+
+    function toggleRowSelection(id: number) {
+        const newSelection = new Set(selectedRows);
+        if (newSelection.has(id)) {
+            newSelection.delete(id);
+        } else {
+            newSelection.add(id);
+        }
+        selectedRows = newSelection;
+    }
+
+    function toggleSelectAll() {
+        if (selectedRows.size === tableAppointments.length) {
+            selectedRows = new Set();
+        } else {
+            selectedRows = new Set(tableAppointments.map((appt: any) => appt.id));
+        }
+    }
+
+    function clearFilters() {
+        columnFilters = {
+            patient: "",
+            doctor: "",
+            status: "",
+            type: "",
+            date: ""
+        };
+    }
 
     $effect(() => {
         if (!isPatientModalOpen) {
@@ -215,6 +337,15 @@
                                 : 'text-gray-500 hover:text-gray-700'}"
                         >
                             {$t("assistant.dashboard.buttons.calendar")}
+                        </button>
+                        <button
+                            onclick={() => (viewMode = "table")}
+                            class="px-3 py-1.5 text-xs font-bold rounded-md transition-all {viewMode ===
+                            'table'
+                                ? 'bg-white shadow text-indigo-600'
+                                : 'text-gray-500 hover:text-gray-700'}"
+                        >
+                            Table
                         </button>
                     </div>
                     <!-- Search and filter controls -->
@@ -468,7 +599,7 @@
                             </li>
                         {/each}
                     </ul>
-                {:else}
+                {:else if viewMode === "calendar"}
                     <!-- Calendar Legend -->
                     <div
                         class="flex flex-wrap gap-4 mb-4 p-4 bg-gray-50 rounded-lg justify-center sm:justify-start"
@@ -521,6 +652,301 @@
                             editable={false}
                         />
                     {/key}
+                {:else if viewMode === "table"}
+                    <!-- Table View -->
+                    <div class="overflow-x-auto">
+                        <!-- Bulk Actions Bar -->
+                        {#if selectedRows.size > 0}
+                            <div class="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center justify-between">
+                                <span class="text-sm font-bold text-indigo-900">
+                                    {selectedRows.size} appointment{selectedRows.size === 1 ? '' : 's'} selected
+                                </span>
+                                <div class="flex gap-2">
+                                    <form
+                                        method="POST"
+                                        action="?/bulkUpdateStatus"
+                                        use:enhance
+                                        class="inline"
+                                    >
+                                        <input type="hidden" name="appointment_ids" value={Array.from(selectedRows).join(',')} />
+                                        <input type="hidden" name="status" value="confirmed" />
+                                        <button
+                                            type="submit"
+                                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm transition-colors"
+                                        >
+                                            Confirm Selected
+                                        </button>
+                                    </form>
+                                    <form
+                                        method="POST"
+                                        action="?/bulkUpdateStatus"
+                                        use:enhance
+                                        class="inline"
+                                    >
+                                        <input type="hidden" name="appointment_ids" value={Array.from(selectedRows).join(',')} />
+                                        <input type="hidden" name="status" value="cancelled" />
+                                        <button
+                                            type="submit"
+                                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-sm transition-colors"
+                                        >
+                                            Cancel Selected
+                                        </button>
+                                    </form>
+                                    <button
+                                        onclick={() => selectedRows = new Set()}
+                                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-bold text-sm transition-colors"
+                                    >
+                                        Clear Selection
+                                    </button>
+                                </div>
+                            </div>
+                        {/if}
+
+                        <!-- Column Filters -->
+                        <div class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-sm font-bold text-gray-700">Column Filters</h4>
+                                <button
+                                    onclick={clearFilters}
+                                    class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
+                                >
+                                    Clear All
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Filter Patient..."
+                                    bind:value={columnFilters.patient}
+                                    class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Filter Doctor..."
+                                    bind:value={columnFilters.doctor}
+                                    class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <select
+                                    bind:value={columnFilters.status}
+                                    class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                    <option value="">All Statuses</option>
+                                    <option value="scheduled">Scheduled</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="no_show">No Show</option>
+                                </select>
+                                <select
+                                    bind:value={columnFilters.type}
+                                    class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                    <option value="">All Types</option>
+                                    <option value="consultation">Consultation</option>
+                                    <option value="checkup">Checkup</option>
+                                    <option value="cleaning">Cleaning</option>
+                                    <option value="cosmetic">Cosmetic</option>
+                                    <option value="emergency">Emergency</option>
+                                </select>
+                                <input
+                                    type="date"
+                                    bind:value={columnFilters.date}
+                                    class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Table -->
+                        <table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedRows.size === tableAppointments.length && tableAppointments.length > 0}
+                                            onchange={toggleSelectAll}
+                                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        onclick={() => toggleSort("date")}
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            Date
+                                            {#if tableSortColumn === "date"}
+                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                            {/if}
+                                        </div>
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        onclick={() => toggleSort("time")}
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            Time
+                                            {#if tableSortColumn === "time"}
+                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                            {/if}
+                                        </div>
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        onclick={() => toggleSort("patient")}
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            Patient
+                                            {#if tableSortColumn === "patient"}
+                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                            {/if}
+                                        </div>
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        onclick={() => toggleSort("doctor")}
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            Doctor
+                                            {#if tableSortColumn === "doctor"}
+                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                            {/if}
+                                        </div>
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        onclick={() => toggleSort("type")}
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            Type
+                                            {#if tableSortColumn === "type"}
+                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                            {/if}
+                                        </div>
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        onclick={() => toggleSort("status")}
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            Status
+                                            {#if tableSortColumn === "status"}
+                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                            {/if}
+                                        </div>
+                                    </th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                        Notes
+                                    </th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {#each tableAppointments as appt}
+                                    <tr class="hover:bg-gray-50 {selectedRows.has(appt.id) ? 'bg-indigo-50' : ''}">
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedRows.has(appt.id)}
+                                                onchange={() => toggleRowSelection(appt.id)}
+                                                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                            {new Date(appt.start_time).toLocaleDateString()}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                            {new Date(appt.start_time).toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit"
+                                            })}
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-gray-900">
+                                            <div class="flex items-center gap-2">
+                                                {#if appt.relationship_to_primary}
+                                                    <span title="Child/Dependent">👶</span>
+                                                {:else}
+                                                    <span title="Adult">👤</span>
+                                                {/if}
+                                                <span class="font-semibold">{appt.patient_name}</span>
+                                            </div>
+                                            {#if appt.date_of_birth}
+                                                {@const age = Math.floor(
+                                                    (new Date().getTime() - new Date(appt.date_of_birth).getTime()) /
+                                                    (365.25 * 24 * 60 * 60 * 1000)
+                                                )}
+                                                <span class="text-xs text-gray-500">({age} {age === 1 ? 'year' : 'years'})</span>
+                                            {/if}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                            {appt.doctor_name || 'N/A'}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                            {$t(`assistant.dashboard.appointment.type.${appt.appointment_type}`)}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <span
+                                                class="px-2 py-1 text-xs font-bold rounded-full uppercase
+                                                {appt.status === 'confirmed'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : appt.status === 'cancelled'
+                                                      ? 'bg-red-100 text-red-800'
+                                                      : appt.status === 'no_show'
+                                                        ? 'bg-gray-100 text-gray-800'
+                                                        : 'bg-blue-100 text-blue-800'}"
+                                            >
+                                                {$t(`assistant.dashboard.appointment.status.${appt.status}`)}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
+                                            {appt.notes || '-'}
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                                            <div class="flex items-center gap-2">
+                                                {#if appt.status === "scheduled"}
+                                                    <form
+                                                        method="POST"
+                                                        action="?/updateStatus"
+                                                        use:enhance
+                                                        class="inline"
+                                                    >
+                                                        <input type="hidden" name="appointment_id" value={appt.id} />
+                                                        <input type="hidden" name="status" value="confirmed" />
+                                                        <button
+                                                            type="submit"
+                                                            class="text-green-600 hover:text-green-900"
+                                                            title="Confirm"
+                                                        >
+                                                            ✓
+                                                        </button>
+                                                    </form>
+                                                {/if}
+                                                <button
+                                                    onclick={() => openBookingModal(appt)}
+                                                    class="text-indigo-600 hover:text-indigo-900"
+                                                    title="Edit"
+                                                >
+                                                    ✎
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {:else}
+                                    <tr>
+                                        <td colspan="9" class="px-4 py-12 text-center text-gray-500 italic">
+                                            {$t("assistant.dashboard.tabs.schedule.empty")}
+                                        </td>
+                                    </tr>
+                                {/each}
+                            </tbody>
+                        </table>
+                    </div>
                 {/if}
             </div>
         </div>

@@ -214,6 +214,79 @@ export const actions: Actions = {
         }
     },
 
+    bulkUpdateStatus: async ({ request, locals }) => {
+        if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const appointmentIdsStr = formData.get('appointment_ids') as string;
+        const status = formData.get('status') as string;
+
+        if (!appointmentIdsStr || !status) {
+            return fail(400, { error: 'Missing appointment IDs or status' });
+        }
+
+        if (!['scheduled', 'confirmed', 'cancelled', 'no_show'].includes(status)) {
+            return fail(400, { error: 'Invalid status' });
+        }
+
+        try {
+            const appointmentIds = appointmentIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            
+            if (appointmentIds.length === 0) {
+                return fail(400, { error: 'No valid appointment IDs provided' });
+            }
+
+            const updateData: any = { status, updated_at: new Date().toISOString() };
+            if (status === 'confirmed') {
+                updateData.confirmed_by_user_id = locals.user.id;
+            }
+
+            // Update all appointments
+            for (const appointmentId of appointmentIds) {
+                updateAppointment(appointmentId, updateData);
+
+                // If confirmed, handle user creation (same logic as single update)
+                if (status === 'confirmed') {
+                    const appt = getAppointmentById(appointmentId) as any;
+                    if (appt) {
+                        const accountHolderId = appt.booked_by_id || appt.patient_id;
+                        const person = getPatientByIdFull(accountHolderId) as any;
+
+                        if (person && person.email && !person.user_id) {
+                            const existingUser = getUserByUsername(person.email);
+                            if (!existingUser) {
+                                import('bcrypt').then(async (bcrypt) => {
+                                    try {
+                                        const passwordHash = await bcrypt.hash('welcome123', 10);
+                                        const userId = createUser({
+                                            username: person.email,
+                                            password_hash: passwordHash,
+                                            full_name: person.full_name,
+                                            role: 'patient'
+                                        });
+                                        updatePatient(person.id, { user_id: Number(userId) });
+                                        console.log(`Created portal account for ${person.full_name} (${person.email})`);
+                                    } catch (err) {
+                                        console.error('Error creating user:', err);
+                                    }
+                                });
+                            } else {
+                                updatePatient(person.id, { user_id: (existingUser as any).id });
+                            }
+                        }
+                    }
+                }
+            }
+
+            return { success: true, message: `Updated ${appointmentIds.length} appointment(s) to ${status}` };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to update appointments' });
+        }
+    },
+
     recordPayment: async ({ request, locals }) => {
         if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
