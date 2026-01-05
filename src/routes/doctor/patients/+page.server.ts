@@ -32,12 +32,22 @@ export const actions: Actions = {
         const formData = await request.formData();
         const fullName = formData.get('full_name') as string;
         const phone = formData.get('phone') as string;
-        const dob = formData.get('date_of_birth') as string;
+        const dobRaw = formData.get('date_of_birth') as string;
         const email = formData.get('email') as string;
 
-        if (!fullName || !dob) {
+        if (!fullName || !dobRaw) {
             return fail(400, { error: 'Name and date of birth are required' });
         }
+
+        // Validate date of birth is not in the future
+        const birthDate = new Date(dobRaw);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (birthDate > today) {
+            return fail(400, { error: 'Date of birth cannot be in the future' });
+        }
+        
+        const dob = dobRaw;
 
         try {
             const patientData: any = {

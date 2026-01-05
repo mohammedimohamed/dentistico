@@ -1481,6 +1481,7 @@
                                             name="date_of_birth"
                                             value={data.patient.date_of_birth}
                                             required
+                                            max={new Date().toISOString().split('T')[0]}
                                             class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter"
                                         />
                                     </div>

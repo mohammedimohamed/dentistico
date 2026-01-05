@@ -20,7 +20,7 @@ export interface Patient {
 export interface Appointment {
     id: number;
     patient_id: number;
-    doctor_id: number;
+    doctor_id: number | null;
     start_time: string;
     duration_minutes: number;
     status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';

@@ -131,7 +131,7 @@
                                             </div>
                                             <div>
                                                 <label for="date_of_birth" class="block text-sm font-bold text-gray-700 mb-2">{$t('patients.date_of_birth')} *</label>
-                                                <input type="date" name="date_of_birth" id="date_of_birth" required class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none font-medium">
+                                                <input type="date" name="date_of_birth" id="date_of_birth" required max={new Date().toISOString().split('T')[0]} class="block w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none font-medium">
                                             </div>
                                             <div>
                                                 <label for="gender" class="block text-sm font-bold text-gray-700 mb-2">{$t('patients.gender')}</label>

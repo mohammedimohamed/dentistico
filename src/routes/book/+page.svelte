@@ -9,6 +9,8 @@
     
     // Set min date to today for the datetime input
     const today = new Date().toISOString().slice(0, 16);
+    // Set max date to today for date of birth (cannot be in the future)
+    const maxDateOfBirth = new Date().toISOString().split('T')[0];
 </script>
 
 <div class="min-h-screen bg-slate-50 py-20 px-6">
@@ -97,6 +99,7 @@
                                 <div>
                                     <label for="date_of_birth" class="block text-sm font-semibold text-slate-700 mb-2">Date of Birth</label>
                                     <input type="date" name="date_of_birth" id="date_of_birth" required 
+                                        max={maxDateOfBirth}
                                         class="w-full px-4 py-3 rounded-xl border-slate-200 border bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
                                 </div>
                             {/if}
@@ -116,6 +119,7 @@
                                     <div>
                                         <label for="patient_dob" class="block text-sm font-semibold text-slate-700 mb-2">Patient DOB</label>
                                         <input type="date" name="patient_dob" id="patient_dob" required 
+                                            max={maxDateOfBirth}
                                             class="w-full px-4 py-3 rounded-xl border-slate-200 border bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
                                     </div>
                                     <div>
@@ -136,8 +140,8 @@
                             <h3 class="text-xs font-bold uppercase tracking-widest text-teal-600 mb-4">Schedule</h3>
 
                             <div>
-                                <label for="doctor_id" class="block text-sm font-semibold text-slate-700 mb-2">Select Specialist</label>
-                                <select name="doctor_id" id="doctor_id" required 
+                                <label for="doctor_id" class="block text-sm font-semibold text-slate-700 mb-2">Select Specialist (Optional)</label>
+                                <select name="doctor_id" id="doctor_id" 
                                     class="w-full px-4 py-3 rounded-xl border-slate-200 border bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all">
                                     <option value="">Choose a doctor...</option>
                                     {#each data.doctors as doctor}

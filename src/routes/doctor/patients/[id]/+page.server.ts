@@ -63,12 +63,23 @@ export const actions: Actions = {
         const patientId = parseInt(params.id);
         const formData = await request.formData();
 
+        // Validate date of birth is not in the future
+        const dobRaw = formData.get('date_of_birth') as string;
+        if (dobRaw) {
+            const birthDate = new Date(dobRaw);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (birthDate > today) {
+                return fail(400, { error: 'Date of birth cannot be in the future' });
+            }
+        }
+
         const pregnancyStatus = formData.get('pregnancy_status');
         const updatedData: any = {
             full_name: formData.get('full_name'),
             phone: formData.get('phone') || null,
             email: formData.get('email') || null,
-            date_of_birth: formData.get('date_of_birth'),
+            date_of_birth: dobRaw || null,
             gender: formData.get('gender') || null,
             address: formData.get('address') || null,
             city: formData.get('city') || null,

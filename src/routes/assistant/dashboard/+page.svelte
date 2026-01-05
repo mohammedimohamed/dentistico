@@ -10,6 +10,9 @@
 
     let { data }: { data: PageData } = $props();
     let activeTab = $state("schedule");
+    
+    // Set max date to today for date of birth (cannot be in the future)
+    const maxDateOfBirth = new Date().toISOString().split('T')[0];
 
     // Initialize viewMode from URL param or default to 'list'
     let viewMode = $state($page.url.searchParams.get("view") || "list");
@@ -1143,6 +1146,7 @@
                                             type="date"
                                             name="date_of_birth"
                                             required
+                                            max={maxDateOfBirth}
                                             class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium"
                                         />
                                     </div>

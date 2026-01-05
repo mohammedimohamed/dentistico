@@ -3,6 +3,19 @@ import type { Actions, PageServerLoad } from './$types';
 import { getDoctors, getPatientByPhoneOrEmail, createPatient, createAppointment, getSecondaryPatient, getUserByUsername } from '$lib/server/db';
 import db from '$lib/server/db';
 
+// Helper function to validate date of birth is not in the future
+function validateDateOfBirth(dob: string | null | undefined): string | null {
+    if (!dob) return null;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to compare dates only
+    
+    if (birthDate > today) {
+        throw new Error('Date of birth cannot be in the future');
+    }
+    return dob;
+}
+
 export const load: PageServerLoad = async () => {
     const doctors = getDoctors();
     return {
@@ -17,19 +30,35 @@ export const actions: Actions = {
         const full_name = formData.get('full_name') as string;
         const phone = formData.get('phone') as string;
         const email = formData.get('email') as string;
-        const date_of_birth = formData.get('date_of_birth') as string;
+        const date_of_birth_raw = formData.get('date_of_birth') as string;
+        const patient_dob_raw = formData.get('patient_dob') as string;
+
+        // Validate dates of birth are not in the future
+        let date_of_birth: string | null = null;
+        let patient_dob: string | null = null;
+        
+        try {
+            if (date_of_birth_raw) {
+                date_of_birth = validateDateOfBirth(date_of_birth_raw);
+            }
+            if (patient_dob_raw) {
+                patient_dob = validateDateOfBirth(patient_dob_raw);
+            }
+        } catch (e: any) {
+            return fail(400, { error: e.message || 'Invalid date of birth' });
+        }
 
         // Secondary patient info (if booking for other)
         const patient_name = formData.get('patient_name') as string;
-        const patient_dob = formData.get('patient_dob') as string;
         const relationship = formData.get('relationship') as string;
 
-        const doctor_id = parseInt(formData.get('doctor_id') as string);
+        const doctor_id_str = formData.get('doctor_id') as string;
+        const doctor_id = doctor_id_str ? parseInt(doctor_id_str) : null;
         const start_time = formData.get('start_time') as string;
         const notes = formData.get('notes') as string;
         const appointment_type = formData.get('appointment_type') as string;
 
-        if (!full_name || !phone || !doctor_id || !start_time) {
+        if (!full_name || !phone || !start_time) {
             return fail(400, { error: 'Missing required fields' });
         }
 
@@ -65,7 +94,7 @@ export const actions: Actions = {
                     full_name,
                     phone,
                     email,
-                    date_of_birth: booking_for === 'self' ? date_of_birth : '1900-01-01', // Dummy if they didn't provide it
+                    date_of_birth: booking_for === 'self' ? (date_of_birth || '1900-01-01') : '1900-01-01', // Dummy if they didn't provide it
                     registration_date: new Date().toISOString()
                 }));
             } else {
@@ -86,7 +115,7 @@ export const actions: Actions = {
                 } else {
                     target_patient_id = Number(createPatient({
                         full_name: patient_name,
-                        date_of_birth: patient_dob,
+                        date_of_birth: patient_dob || '1900-01-01',
                         primary_contract_id: requester_id,
                         relationship_to_primary: relationship,
                         registration_date: new Date().toISOString()
@@ -110,9 +139,8 @@ export const actions: Actions = {
                 finalNotes += ` - Booked by ${full_name} (${relationship})`;
             }
 
-            createAppointment({
+            const appointmentData: any = {
                 patient_id: target_patient_id,
-                doctor_id,
                 booked_by_id: requester_id,
                 start_time: dbStartTime,
                 end_time: dbEndTime,
@@ -120,7 +148,14 @@ export const actions: Actions = {
                 appointment_type: appointment_type || 'consultation',
                 status: 'scheduled',
                 notes: finalNotes
-            });
+            };
+            
+            // Only include doctor_id if it was provided
+            if (doctor_id) {
+                appointmentData.doctor_id = doctor_id;
+            }
+
+            createAppointment(appointmentData);
 
             return { success: true };
         } catch (e: any) {

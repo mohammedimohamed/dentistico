@@ -111,7 +111,7 @@ export function init_db() {
         CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             patient_id INTEGER NOT NULL,
-            doctor_id INTEGER NOT NULL,
+            doctor_id INTEGER, -- Made nullable to allow appointments without a specific doctor
             booked_by_id INTEGER, -- The patient ID who actually made the booking
             start_time TEXT NOT NULL,
             end_time TEXT NOT NULL,
@@ -516,6 +516,55 @@ export function init_db() {
         }
     } catch (e) {
         console.error('Migration for appointment tracking fields failed:', e);
+    }
+
+    // Migration to make doctor_id nullable in appointments table
+    try {
+        // Check if doctor_id column exists and is NOT NULL
+        const tableInfo = db.prepare("PRAGMA table_info(appointments)").all() as Array<{ name: string; notnull: number }>;
+        const doctorIdColumn = tableInfo.find(col => col.name === 'doctor_id');
+        
+        // If doctor_id exists and is NOT NULL, we need to recreate the table
+        if (doctorIdColumn && doctorIdColumn.notnull === 1) {
+            console.log('Migrating appointments table to make doctor_id nullable...');
+            
+            // Create new table with nullable doctor_id
+            db.exec(`
+                CREATE TABLE appointments_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    patient_id INTEGER NOT NULL,
+                    doctor_id INTEGER,
+                    booked_by_id INTEGER,
+                    start_time TEXT NOT NULL,
+                    end_time TEXT NOT NULL,
+                    duration_minutes INTEGER DEFAULT 30,
+                    appointment_type TEXT DEFAULT 'consultation',
+                    status TEXT DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show', 'in_progress')),
+                    notes TEXT,
+                    created_at TEXT DEFAULT (datetime('now')),
+                    updated_at TEXT DEFAULT (datetime('now')),
+                    created_by_user_id INTEGER REFERENCES users(id),
+                    confirmed_by_user_id INTEGER REFERENCES users(id),
+                    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+                    FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (booked_by_id) REFERENCES patients(id)
+                );
+            `);
+            
+            // Copy data from old table to new table
+            db.exec(`
+                INSERT INTO appointments_new 
+                SELECT * FROM appointments;
+            `);
+            
+            // Drop old table and rename new one
+            db.exec('DROP TABLE appointments');
+            db.exec('ALTER TABLE appointments_new RENAME TO appointments');
+            
+            console.log('Successfully migrated appointments table - doctor_id is now nullable');
+        }
+    } catch (e) {
+        console.error('Migration for nullable doctor_id failed:', e);
     }
 }
 
