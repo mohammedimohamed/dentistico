@@ -1,9 +1,15 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import config from '$lib/config/landing-page.json';
+    import { locale } from 'svelte-i18n';
 
     let scrolled = $state(false);
     let observer: IntersectionObserver | null = null;
+
+    async function setLanguage(lang: string) {
+        document.cookie = `lang=${lang}; path=/; max-age=31536000`;
+        window.location.reload();
+    }
 
     // Extract config sections for easier access
     const nav = config.navigation;
@@ -71,6 +77,20 @@
             </div>
 
             <div class={nav.actions.classes.container}>
+                <div class="flex gap-2 bg-gray-100 rounded-lg p-1 mr-4">
+                    <button 
+                        onclick={() => setLanguage('fr')} 
+                        class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all {$locale === 'fr' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+                    >
+                        FR
+                    </button>
+                    <button 
+                        onclick={() => setLanguage('ar')} 
+                        class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all {$locale === 'ar' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+                    >
+                        AR
+                    </button>
+                </div>
                 {#each nav.actions.buttons as button}
                     <a href={button.href} class={button.classes}>{button.label}</a>
                 {/each}

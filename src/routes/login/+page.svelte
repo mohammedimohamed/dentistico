@@ -1,12 +1,31 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
     import type { ActionData } from "./$types";
-    import { t } from "svelte-i18n";
+    import { t, locale } from "svelte-i18n";
 
     let { form }: { form: ActionData } = $props();
+
+    async function setLanguage(lang: string) {
+        document.cookie = `lang=${lang}; path=/; max-age=31536000`;
+        window.location.reload();
+    }
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gray-50">
+<div class="min-h-screen flex items-center justify-center bg-gray-50 relative">
+    <div class="absolute top-4 right-4 flex gap-2 bg-gray-100 rounded-lg p-1 z-10">
+        <button 
+            onclick={() => setLanguage('fr')} 
+            class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all {$locale === 'fr' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+        >
+            FR
+        </button>
+        <button 
+            onclick={() => setLanguage('ar')} 
+            class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all {$locale === 'ar' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+        >
+            AR
+        </button>
+    </div>
     <div
         class="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg border border-gray-100"
     >

@@ -2,7 +2,7 @@
     import { page } from '$app/state';
     import type { Snippet } from 'svelte';
     import Sidebar from '$lib/components/Sidebar.svelte';
-    import { t } from 'svelte-i18n';
+    import { t, locale } from 'svelte-i18n';
     
     let { children, data }: { children: Snippet, data: any } = $props();
     
@@ -12,6 +12,11 @@
         { label: $t('common.inventory'), href: '/inventory', icon: '📦' },
         { label: $t('medications.title'), href: '/doctor/settings/medications', icon: '💊' }
     ]);
+
+    async function setLanguage(lang: string) {
+        document.cookie = `lang=${lang}; path=/; max-age=31536000`;
+        window.location.reload();
+    }
 </script>
 
 <div class="flex min-h-screen bg-gray-50 overflow-hidden">
@@ -27,6 +32,20 @@
                 {navItems.find(i => page.url.pathname.startsWith(i.href))?.label || $t('common.portal')}
             </h1>
             <div class="flex items-center gap-4">
+                <div class="flex gap-2 bg-gray-100 rounded-lg p-1">
+                    <button 
+                        onclick={() => setLanguage('fr')} 
+                        class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all {$locale === 'fr' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+                    >
+                        FR
+                    </button>
+                    <button 
+                        onclick={() => setLanguage('ar')} 
+                        class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all {$locale === 'ar' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+                    >
+                        AR
+                    </button>
+                </div>
                 <span class="text-sm text-gray-500 italic">{$t('common.doctor')}</span>
             </div>
         </header>

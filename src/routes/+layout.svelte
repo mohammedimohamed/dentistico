@@ -44,21 +44,6 @@
     {/if}
 </svelte:head>
 
-<div class="fixed top-4 right-4 z-[9999] flex gap-2">
-    <button 
-        onclick={() => setLanguage('fr')} 
-        class="bg-white/80 backdrop-blur-sm border shadow-sm px-3 py-1 rounded-full text-xs font-bold transition-all hover:bg-white {data.locale === 'fr' ? 'border-indigo-600 text-indigo-600' : 'border-gray-200 text-gray-400'}"
-    >
-        FR
-    </button>
-    <button 
-        onclick={() => setLanguage('ar')} 
-        class="bg-white/80 backdrop-blur-sm border shadow-sm px-3 py-1 rounded-full text-xs font-bold transition-all hover:bg-white {data.locale === 'ar' ? 'border-indigo-600 text-indigo-600' : 'border-gray-200 text-gray-400'}"
-    >
-        AR (عربي)
-    </button>
-</div>
-
 {#await waitLocale()}
     <div class="min-h-screen flex items-center justify-center bg-gray-50">
         <div class="animate-spin text-4xl">⏳</div>

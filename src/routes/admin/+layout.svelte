@@ -2,7 +2,7 @@
     import { page } from '$app/state';
     import { enhance } from '$app/forms';
     import type { Snippet } from 'svelte';
-    import { t } from 'svelte-i18n';
+    import { t, locale } from 'svelte-i18n';
 
     let { children }: { children: Snippet } = $props();
 
@@ -14,6 +14,11 @@
     ];
 
     let isMobileMenuOpen = $state(false);
+
+    async function setLanguage(lang: string) {
+        document.cookie = `lang=${lang}; path=/; max-age=31536000`;
+        window.location.reload();
+    }
 </script>
 
 <div class="min-h-screen bg-gray-100 flex overflow-hidden">
@@ -58,6 +63,22 @@
 
     <!-- Main Column -->
     <div class="flex flex-col w-0 flex-1 overflow-hidden">
+        <header class="bg-white shadow-sm border-b border-gray-200 py-4 px-8 flex justify-end items-center">
+            <div class="flex gap-2 bg-gray-100 rounded-lg p-1">
+                <button 
+                    onclick={() => setLanguage('fr')} 
+                    class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all {$locale === 'fr' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+                >
+                    FR
+                </button>
+                <button 
+                    onclick={() => setLanguage('ar')} 
+                    class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all {$locale === 'ar' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+                >
+                    AR
+                </button>
+            </div>
+        </header>
         <main class="flex-1 relative z-0 overflow-y-auto focus:outline-none py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
                 {@render children()}
