@@ -314,7 +314,8 @@
                     "consultation": "استشارة",
                     "checkup": "فحص دوري",
                     "cleaning": "تنظيف",
-                    "emergency": "طوارئ"
+                    "emergency": "طوارئ",
+                    "root_canal": "علاج عصب"
                 },
                 "modals": {
                     "new": "موعد جديد",

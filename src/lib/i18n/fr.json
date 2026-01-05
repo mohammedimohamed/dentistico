@@ -314,7 +314,8 @@
                     "consultation": "Consultation",
                     "checkup": "Contrôle",
                     "cleaning": "Nettoyage",
-                    "emergency": "Urgence"
+                    "emergency": "Urgence",
+                    "root_canal": "Traitement de Canal"
                 },
                 "modals": {
                     "new": "Nouveau Rendez-vous",

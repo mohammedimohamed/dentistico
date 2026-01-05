@@ -26,6 +26,17 @@
     let selectedAppointment = $state<any>(null); // For booking/editing
     let searchPatientQuery = $state("");
     let errorMessage = $state("");
+    
+    // Confirmation modal state
+    let isConfirmModalOpen = $state(false);
+    let pendingAction = $state<{
+        type: 'single' | 'bulk';
+        status: string;
+        appointmentId?: number;
+        appointmentIds?: number[];
+        count?: number;
+    } | null>(null);
+    let pendingFormElement = $state<HTMLFormElement | null>(null);
     // New search & filter state for appointments
     let searchQuery = $state("");
     let statusFilter = $state("");
@@ -173,6 +184,39 @@
             type: "",
             date: ""
         };
+    }
+
+    function showConfirmation(event: Event, type: 'single' | 'bulk', status: string, appointmentId?: number, appointmentIds?: number[]) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const form = (event.target as HTMLElement).closest('form') as HTMLFormElement;
+        pendingFormElement = form;
+        
+        pendingAction = {
+            type,
+            status,
+            appointmentId,
+            appointmentIds,
+            count: type === 'bulk' ? appointmentIds?.length : 1
+        };
+        isConfirmModalOpen = true;
+    }
+
+    function confirmAction() {
+        if (pendingFormElement && pendingAction) {
+            // Submit the form
+            pendingFormElement.requestSubmit();
+            isConfirmModalOpen = false;
+            pendingAction = null;
+            pendingFormElement = null;
+        }
+    }
+
+    function cancelConfirmation() {
+        isConfirmModalOpen = false;
+        pendingAction = null;
+        pendingFormElement = null;
     }
 
     $effect(() => {
@@ -667,11 +711,13 @@
                                         action="?/bulkUpdateStatus"
                                         use:enhance
                                         class="inline"
+                                        id="bulk-confirm-form"
                                     >
                                         <input type="hidden" name="appointment_ids" value={Array.from(selectedRows).join(',')} />
                                         <input type="hidden" name="status" value="confirmed" />
                                         <button
-                                            type="submit"
+                                            type="button"
+                                            onclick={(e) => showConfirmation(e, 'bulk', 'confirmed', undefined, Array.from(selectedRows))}
                                             class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm transition-colors"
                                         >
                                             Confirm Selected
@@ -682,11 +728,13 @@
                                         action="?/bulkUpdateStatus"
                                         use:enhance
                                         class="inline"
+                                        id="bulk-cancel-form"
                                     >
                                         <input type="hidden" name="appointment_ids" value={Array.from(selectedRows).join(',')} />
                                         <input type="hidden" name="status" value="cancelled" />
                                         <button
-                                            type="submit"
+                                            type="button"
+                                            onclick={(e) => showConfirmation(e, 'bulk', 'cancelled', undefined, Array.from(selectedRows))}
                                             class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-sm transition-colors"
                                         >
                                             Cancel Selected
@@ -849,12 +897,17 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 {#each tableAppointments as appt}
-                                    <tr class="hover:bg-gray-50 {selectedRows.has(appt.id) ? 'bg-indigo-50' : ''}">
-                                        <td class="px-4 py-3 whitespace-nowrap">
+                                    <tr 
+                                        class="hover:bg-gray-50 {selectedRows.has(appt.id) ? 'bg-indigo-50' : ''} cursor-pointer"
+                                        ondblclick={() => openBookingModal(appt)}
+                                        title="Double-click to edit appointment"
+                                    >
+                                        <td class="px-4 py-3 whitespace-nowrap" onclick={(e) => e.stopPropagation()}>
                                             <input
                                                 type="checkbox"
                                                 checked={selectedRows.has(appt.id)}
                                                 onchange={() => toggleRowSelection(appt.id)}
+                                                ondblclick={(e) => e.stopPropagation()}
                                                 class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                             />
                                         </td>
@@ -907,8 +960,8 @@
                                         <td class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
                                             {appt.notes || '-'}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                                            <div class="flex items-center gap-2">
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium" onclick={(e) => e.stopPropagation()}>
+                                            <div class="flex items-center gap-4">
                                                 {#if appt.status === "scheduled"}
                                                     <form
                                                         method="POST"
@@ -919,9 +972,11 @@
                                                         <input type="hidden" name="appointment_id" value={appt.id} />
                                                         <input type="hidden" name="status" value="confirmed" />
                                                         <button
-                                                            type="submit"
-                                                            class="text-green-600 hover:text-green-900"
+                                                            type="button"
+                                                            onclick={(e) => showConfirmation(e, 'single', 'confirmed', appt.id)}
+                                                            class="px-4 py-3 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-colors text-2xl font-bold min-w-[50px]"
                                                             title="Confirm"
+                                                            ondblclick={(e) => e.stopPropagation()}
                                                         >
                                                             ✓
                                                         </button>
@@ -929,8 +984,9 @@
                                                 {/if}
                                                 <button
                                                     onclick={() => openBookingModal(appt)}
-                                                    class="text-indigo-600 hover:text-indigo-900"
+                                                    class="px-4 py-3 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition-colors text-2xl font-bold min-w-[50px]"
                                                     title="Edit"
+                                                    ondblclick={(e) => e.stopPropagation()}
                                                 >
                                                     ✎
                                                 </button>
@@ -1111,6 +1167,79 @@
             </div>
         </div>
     {/if}
+
+<!-- Confirmation Modal -->
+{#if isConfirmModalOpen && pendingAction}
+    <div
+        class="relative z-50 overflow-y-auto"
+        aria-labelledby="confirm-modal-title"
+        role="dialog"
+        aria-modal="true"
+    >
+        <div
+            class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
+            aria-hidden="true"
+            onclick={cancelConfirmation}
+        ></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div
+                class="flex min-h-full items-center justify-center p-4 text-center sm:p-0"
+            >
+                <div
+                    class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+                >
+                    <div class="bg-white px-6 py-5">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                                    <span class="text-2xl">⚠️</span>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h3
+                                    class="text-lg font-bold text-gray-900"
+                                    id="confirm-modal-title"
+                                >
+                                    Confirm Status Change
+                                </h3>
+                            </div>
+                        </div>
+                        <div class="mb-6">
+                            <p class="text-sm text-gray-600">
+                                {#if pendingAction.type === 'bulk'}
+                                    Are you sure you want to {pendingAction.status === 'confirmed' ? 'confirm' : 'cancel'} <strong>{pendingAction.count}</strong> appointment{pendingAction.count === 1 ? '' : 's'}?
+                                {:else}
+                                    Are you sure you want to change this appointment status to <strong>{pendingAction.status}</strong>?
+                                {/if}
+                            </p>
+                        </div>
+                        <div class="flex gap-3 justify-end">
+                            <button
+                                type="button"
+                                onclick={cancelConfirmation}
+                                class="px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onclick={confirmAction}
+                                class="px-4 py-2 text-sm font-bold text-white rounded-lg transition-colors
+                                {pendingAction.status === 'confirmed' 
+                                    ? 'bg-green-600 hover:bg-green-700' 
+                                    : pendingAction.status === 'cancelled'
+                                      ? 'bg-red-600 hover:bg-red-700'
+                                      : 'bg-indigo-600 hover:bg-indigo-700'}"
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{/if}
 </div>
 
 <!-- MODALS -->
@@ -1762,6 +1891,79 @@
                             >
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{/if}
+
+<!-- Confirmation Modal -->
+{#if isConfirmModalOpen && pendingAction}
+    <div
+        class="relative z-50 overflow-y-auto"
+        aria-labelledby="confirm-modal-title"
+        role="dialog"
+        aria-modal="true"
+    >
+        <div
+            class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
+            aria-hidden="true"
+            onclick={cancelConfirmation}
+        ></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div
+                class="flex min-h-full items-center justify-center p-4 text-center sm:p-0"
+            >
+                <div
+                    class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+                >
+                    <div class="bg-white px-6 py-5">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                                    <span class="text-2xl">⚠️</span>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h3
+                                    class="text-lg font-bold text-gray-900"
+                                    id="confirm-modal-title"
+                                >
+                                    Confirm Status Change
+                                </h3>
+                            </div>
+                        </div>
+                        <div class="mb-6">
+                            <p class="text-sm text-gray-600">
+                                {#if pendingAction.type === 'bulk'}
+                                    Are you sure you want to {pendingAction.status === 'confirmed' ? 'confirm' : 'cancel'} <strong>{pendingAction.count}</strong> appointment{pendingAction.count === 1 ? '' : 's'}?
+                                {:else}
+                                    Are you sure you want to change this appointment status to <strong>{pendingAction.status}</strong>?
+                                {/if}
+                            </p>
+                        </div>
+                        <div class="flex gap-3 justify-end">
+                            <button
+                                type="button"
+                                onclick={cancelConfirmation}
+                                class="px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onclick={confirmAction}
+                                class="px-4 py-2 text-sm font-bold text-white rounded-lg transition-colors
+                                {pendingAction.status === 'confirmed' 
+                                    ? 'bg-green-600 hover:bg-green-700' 
+                                    : pendingAction.status === 'cancelled'
+                                      ? 'bg-red-600 hover:bg-red-700'
+                                      : 'bg-indigo-600 hover:bg-indigo-700'}"
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
