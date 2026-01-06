@@ -300,7 +300,9 @@
             "buttons": {
                 "bookNew": "حجز جديد",
                 "list": "قائمة",
-                "calendar": "تقويم"
+                "calendar": "تقويم",
+                "showPast": "عرض الماضي",
+                "hidePast": "إخفاء الماضي"
             },
             "appointment": {
                 "status": {
@@ -380,6 +382,9 @@
             "time": {
                 "dr": "د.",
                 "at": "في"
+            },
+            "search": {
+                "placeholder": "البحث في المواعيد..."
             },
             "errors": {
                 "general": "حدث خطأ",

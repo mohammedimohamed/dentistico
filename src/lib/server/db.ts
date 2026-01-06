@@ -912,9 +912,8 @@ export function getAllUpcomingAppointments() {
         LEFT JOIN patients b ON a.booked_by_id = b.id
         LEFT JOIN users creator ON a.created_by_user_id = creator.id
         LEFT JOIN users confirmer ON a.confirmed_by_user_id = confirmer.id
-        WHERE date(a.start_time) >= date('now')
         ORDER BY a.start_time ASC
-        LIMIT 50
+        LIMIT 200
     `).all();
 }
 

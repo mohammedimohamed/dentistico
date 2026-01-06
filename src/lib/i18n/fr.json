@@ -300,7 +300,9 @@
             "buttons": {
                 "bookNew": "Nouveau Rendez-vous",
                 "list": "Liste",
-                "calendar": "Calendrier"
+                "calendar": "Calendrier",
+                "showPast": "Montrer passé",
+                "hidePast": "Masquer passé"
             },
             "appointment": {
                 "status": {
@@ -380,6 +382,9 @@
             "time": {
                 "dr": "Dr.",
                 "at": "à"
+            },
+            "search": {
+                "placeholder": "Rechercher des rendez-vous..."
             },
             "errors": {
                 "general": "Erreur survenue",

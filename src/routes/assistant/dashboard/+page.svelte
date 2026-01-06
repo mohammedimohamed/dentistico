@@ -40,6 +40,12 @@
     // New search & filter state for appointments
     let searchQuery = $state("");
     let statusFilter = $state("");
+    // Show past appointments preference (persistent in localStorage)
+    let showPastAppointments = $state(
+        typeof localStorage !== 'undefined'
+            ? JSON.parse(localStorage.getItem('assistant-show-past-appointments') || 'false')
+            : false
+    );
 
     // Table view state
     let tableSortColumn = $state<string | null>(null);
@@ -56,7 +62,15 @@
     // Reactive filtered appointments list using $derived.by for complex logic
     const filteredAppointments = $derived.by(() => {
         const appointments = data.appointments ?? [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         return appointments.filter((appt: any) => {
+            const apptDate = new Date(appt.start_time);
+
+            const matchesTime =
+                showPastAppointments || apptDate >= today;
+
             const matchesSearch = searchQuery
                 ? appt.patient_name
                       ?.toLowerCase()
@@ -72,7 +86,7 @@
             const matchesStatus = statusFilter
                 ? appt.status === statusFilter
                 : true;
-            return matchesSearch && matchesStatus;
+            return matchesTime && matchesSearch && matchesStatus;
         });
     });
 
@@ -222,6 +236,13 @@
     $effect(() => {
         if (!isPatientModalOpen) {
             errorMessage = "";
+        }
+    });
+
+    // Save show past appointments preference to localStorage
+    $effect(() => {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('assistant-show-past-appointments', JSON.stringify(showPastAppointments));
         }
     });
 
@@ -428,6 +449,15 @@
                                 )}</option
                             >
                         </select>
+                        <button
+                            type="button"
+                            onclick={() => (showPastAppointments = !showPastAppointments)}
+                            class="px-3 py-1.5 text-xs font-bold rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
+                        >
+                            {$t(showPastAppointments
+                                ? "assistant.dashboard.buttons.hidePast"
+                                : "assistant.dashboard.buttons.showPast")}
+                        </button>
                     </div>
                     <button
                         onclick={() => openBookingModal()}
