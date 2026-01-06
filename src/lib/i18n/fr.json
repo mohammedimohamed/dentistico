@@ -302,7 +302,9 @@
                 "list": "Liste",
                 "calendar": "Calendrier",
                 "showPast": "Montrer passé",
-                "hidePast": "Masquer passé"
+                "hidePast": "Masquer passé",
+                "scheduleAndClose": "Programmer & Fermer",
+                "scheduleAndNew": "Programmer & Nouveau"
             },
             "appointment": {
                 "status": {
@@ -339,6 +341,17 @@
                 "selectOptions": {
                     "selectPatient": "Sélectionner patient...",
                     "selectDoctor": "Sélectionner médecin..."
+                },
+                "newPatient": {
+                    "title": "Nouveau Patient",
+                    "searchPlaceholder": "Rechercher patient par nom, téléphone ou date...",
+                    "createNew": "Créer nouveau patient",
+                    "noResults": "Aucun patient trouvé",
+                    "fullName": "Nom complet",
+                    "phone": "Téléphone",
+                    "dob": "Date de naissance",
+                    "email": "Email",
+                    "generateCard": "Générer fiche patient"
                 }
             },
             "patient": {

@@ -302,7 +302,9 @@
                 "list": "قائمة",
                 "calendar": "تقويم",
                 "showPast": "عرض الماضي",
-                "hidePast": "إخفاء الماضي"
+                "hidePast": "إخفاء الماضي",
+                "scheduleAndClose": "جدولة وإغلاق",
+                "scheduleAndNew": "جدولة وجديد"
             },
             "appointment": {
                 "status": {
@@ -339,6 +341,17 @@
                 "selectOptions": {
                     "selectPatient": "اختر مريض...",
                     "selectDoctor": "اختر طبيب..."
+                },
+                "newPatient": {
+                    "title": "مريض جديد",
+                    "searchPlaceholder": "البحث في المرضى بالاسم أو الهاتف أو التاريخ...",
+                    "createNew": "إنشاء مريض جديد",
+                    "noResults": "لم يتم العثور على مرضى",
+                    "fullName": "الاسم الكامل",
+                    "phone": "الهاتف",
+                    "dob": "تاريخ الميلاد",
+                    "email": "البريد الإلكتروني",
+                    "generateCard": "إنشاء بطاقة المريض"
                 }
             },
             "patient": {

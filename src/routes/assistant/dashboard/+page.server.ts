@@ -106,7 +106,51 @@ export const actions: Actions = {
         }
 
         const formData = await request.formData();
-        const patientId = parseInt(formData.get('patient_id') as string);
+        const action = formData.get('action') as string; // 'schedule_close' or 'schedule_new'
+
+        let patientId: number;
+
+        // Check if we're creating a new patient
+        const newPatientName = formData.get('new_patient_name') as string;
+        const newPatientPhone = formData.get('new_patient_phone') as string;
+        const newPatientDob = formData.get('new_patient_dob') as string;
+        const newPatientEmail = formData.get('new_patient_email') as string;
+
+        if (newPatientName && newPatientPhone && newPatientDob) {
+            // Create new patient first
+            const existingPatient = getPatientByPhoneOrEmail(newPatientPhone, newPatientEmail);
+            if (existingPatient) {
+                return fail(400, { error: 'A patient with this phone or email already exists' });
+            }
+
+            // Validate date of birth
+            const birthDate = new Date(newPatientDob);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (birthDate > today) {
+                return fail(400, { error: 'Date of birth cannot be in the future' });
+            }
+
+            try {
+                patientId = createPatient({
+                    full_name: newPatientName,
+                    phone: newPatientPhone,
+                    email: newPatientEmail || null,
+                    date_of_birth: newPatientDob,
+                    created_by: locals.user.id
+                });
+            } catch (e) {
+                console.error(e);
+                return fail(500, { error: 'Failed to create new patient' });
+            }
+        } else {
+            // Use existing patient
+            patientId = parseInt(formData.get('patient_id') as string);
+            if (!patientId) {
+                return fail(400, { error: 'No patient selected' });
+            }
+        }
+
         const doctorId = parseInt(formData.get('doctor_id') as string);
         const startTimeStr = formData.get('start_time') as string; // date + time
         const duration = parseInt(formData.get('duration_minutes') as string);
@@ -137,6 +181,12 @@ export const actions: Actions = {
                 notes,
                 created_by_user_id: locals.user.id
             });
+
+            // Return different response based on action
+            if (action === 'schedule_new') {
+                return { success: true, message: 'Appointment scheduled successfully', action: 'schedule_new' };
+            }
+
             return { success: true, message: 'Appointment scheduled successfully' };
         } catch (e: any) {
             console.error(e);

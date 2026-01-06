@@ -47,6 +47,12 @@
             : false
     );
 
+    // Appointment form state
+    let patientSearchQuery = $state("");
+    let selectedPatient = $state<any>(null);
+    let isNewPatient = $state(false);
+    let patientCardUrl = $state<string | null>(null);
+
     // Table view state
     let tableSortColumn = $state<string | null>(null);
     let tableSortDirection = $state<"asc" | "desc">("asc");
@@ -231,6 +237,164 @@
         isConfirmModalOpen = false;
         pendingAction = null;
         pendingFormElement = null;
+    }
+
+    function selectPatient(patient: any) {
+        selectedPatient = patient;
+        isNewPatient = false;
+        patientSearchQuery = "";
+    }
+
+    function createNewPatient() {
+        selectedPatient = null;
+        isNewPatient = true;
+    }
+
+    function resetAppointmentForm() {
+        selectedAppointment = null;
+        selectedPatient = null;
+        isNewPatient = false;
+        patientSearchQuery = "";
+        patientCardUrl = null;
+    }
+
+    async function generatePatientCard(patientId: number) {
+        try {
+            // Find the patient
+            const patient = data.patients.find((p: any) => p.id === patientId);
+            if (!patient) return;
+
+            const allAppointments = data.appointments;
+            const patientAppointments = allAppointments.filter((appt: any) => appt.patient_id === patientId);
+
+            // Get only future appointments (upcoming)
+            const futureAppointments = patientAppointments.filter((appt: any) => new Date(appt.start_time) >= new Date());
+
+            // Calculate age if date of birth is available
+            let ageDisplay = '';
+            if (patient.date_of_birth) {
+                const birthDate = new Date(patient.date_of_birth);
+                const today = new Date();
+                const age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+                ageDisplay = ' (' + age + ' ans)';
+            }
+
+            const patientName = patient.full_name;
+            const patientPhone = patient.phone || 'N/A';
+            const patientEmail = patient.email || 'N/A';
+            const patientDob = patient.date_of_birth
+                ? new Date(patient.date_of_birth).toLocaleDateString('fr-FR') + ageDisplay
+                : 'N/A';
+
+            const currentDate = new Date().toLocaleDateString('fr-FR');
+
+            // Open a new window
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) return;
+
+            const doc = printWindow.document;
+            doc.open();
+
+            // Basic HTML structure
+            doc.write('<!DOCTYPE html>');
+            doc.write('<html lang="fr"><head><meta charset="UTF-8">');
+            doc.write('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+            doc.write('<title>Fiche Patient - ' + patientName + '</title>');
+
+            // Inject styles via a <style> element added to <head>
+            const css = [
+                'body{font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#f8fafc;color:#0f172a;padding:24px;}',
+                '.card{max-width:640px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 20px 25px -5px rgba(15,23,42,0.15);overflow:hidden;border:1px solid #e2e8f0;}',
+                '.header{background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;padding:24px 28px;text-align:center;}',
+                '.header h1{font-size:24px;font-weight:700;margin-bottom:4px;}',
+                '.header p{font-size:13px;opacity:.9;}',
+                '.content{padding:24px 28px;}',
+                '.section{margin-bottom:24px;}',
+                '.section-title{font-size:16px;font-weight:600;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #e5e7eb;}',
+                '.info-row{display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid #e5e7eb;font-size:13px;margin-bottom:6px;}',
+                '.info-label{color:#6b7280;font-weight:500;}',
+                '.info-value{color:#111827;font-weight:600;}',
+                '.appt-card{border-radius:12px;border:1px solid #fbbf24;background:linear-gradient(135deg,#fef3c7,#fde68a);padding:14px 14px 12px 14px;margin-bottom:10px;font-size:13px;}',
+                '.appt-date{font-weight:700;color:#92400e;margin-bottom:6px;}',
+                '.appt-meta{display:flex;justify-content:space-between;gap:8px;}',
+                '.appt-label{font-size:11px;text-transform:uppercase;color:#78350f;font-weight:500;}',
+                '.appt-value{font-weight:600;color:#92400e;}',
+                '.no-appt{text-align:center;font-size:13px;color:#6b7280;font-style:italic;padding:18px 8px;}',
+                '.footer{text-align:center;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:10px;font-size:12px;color:#6b7280;}',
+                '.clinic-name{color:#0d9488;font-weight:700;}'
+            ].join('');
+
+            const styleEl = doc.createElement('style');
+            styleEl.textContent = css;
+            doc.head.appendChild(styleEl);
+
+            doc.write('</head><body>');
+
+            doc.write('<div class="card">');
+
+            // Header
+            doc.write('<div class="header">');
+            doc.write('<h1>Fiche Patient</h1>');
+            doc.write('<p>Résumé des informations et rendez-vous</p>');
+            doc.write('</div>');
+
+            // Content
+            doc.write('<div class="content">');
+
+            // Personal info
+            doc.write('<div class="section">');
+            doc.write('<div class="section-title">Informations Personnelles</div>');
+            doc.write('<div class="info-row"><div class="info-label">Nom complet</div><div class="info-value">' + patientName + '</div></div>');
+            doc.write('<div class="info-row"><div class="info-label">Téléphone</div><div class="info-value">' + patientPhone + '</div></div>');
+            doc.write('<div class="info-row"><div class="info-label">Email</div><div class="info-value">' + patientEmail + '</div></div>');
+            doc.write('<div class="info-row"><div class="info-label">Date de naissance</div><div class="info-value">' + patientDob + '</div></div>');
+            doc.write('</div>');
+
+            // Upcoming appointments
+            doc.write('<div class="section">');
+            doc.write('<div class="section-title">Rendez-vous à venir</div>');
+
+            if (futureAppointments.length > 0) {
+                for (const appt of futureAppointments) {
+                    const apptDate = new Date(appt.start_time).toLocaleDateString('fr-FR');
+                    const apptTime = new Date(appt.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                    const apptType = appt.appointment_type;
+                    const apptDoctor = appt.doctor_name;
+
+                    doc.write('<div class="appt-card">');
+                    doc.write('<div class="appt-date">' + apptDate + ' à ' + apptTime + '</div>');
+                    doc.write('<div class="appt-meta">');
+                    doc.write('<div><div class="appt-label">Type</div><div class="appt-value">' + apptType + '</div></div>');
+                    doc.write('<div><div class="appt-label">Docteur</div><div class="appt-value">' + apptDoctor + '</div></div>');
+                    doc.write('</div>');
+                    doc.write('</div>');
+                }
+            } else {
+                doc.write('<div class="no-appt">Aucun rendez-vous programmé</div>');
+            }
+
+            doc.write('</div>'); // end section
+
+            // Footer
+            doc.write('<div class="footer">');
+            doc.write('<span class="clinic-name">Dentistico</span> - ' + currentDate);
+            doc.write('</div>'); // footer
+
+            doc.write('</div>'); // content
+            doc.write('</div>'); // card
+
+            doc.write('</body></html>');
+            doc.close();
+
+            // Auto-print when ready
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
+
+        } catch (error) {
+            console.error('Error generating patient card:', error);
+        }
     }
 
     $effect(() => {
@@ -1303,7 +1467,18 @@
                             errorMessage = "";
                             return async ({ result, update }) => {
                                 if (result.type === "success") {
-                                    closeModal();
+                                    const resultData = result.data as any;
+
+                                    if (resultData.action === 'schedule_new') {
+                                        // Reset form for new appointment
+                                        resetAppointmentForm();
+                                        // Keep modal open for next appointment
+                                        errorMessage = "";
+                                    } else {
+                                        // Close modal for normal schedule & close action
+                                        closeModal();
+                                    }
+
                                     // Force reload if in calendar view to ensure fresh data and view persistence
                                     if (viewMode === "calendar") {
                                         window.location.href = "?view=calendar";
@@ -1349,6 +1524,7 @@
                             {/if}
 
                             <div class="space-y-5">
+                                <!-- Patient Selection/Search -->
                                 <div>
                                     <label
                                         class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
@@ -1356,25 +1532,179 @@
                                             "assistant.dashboard.appointment.fields.patient",
                                         )}</label
                                     >
-                                    <select
-                                        name="patient_id"
-                                        required
-                                        class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500"
-                                        value={selectedAppointment?.patient_id ||
-                                            ""}
-                                    >
-                                        <option value=""
-                                            >{$t(
-                                                "assistant.dashboard.appointment.selectOptions.selectPatient",
-                                            )}</option
-                                        >
-                                        {#each data.patients as patient}
-                                            <option value={patient.id}
-                                                >{patient.full_name}</option
+
+                                    {#if selectedPatient || isNewPatient}
+                                        <!-- Selected Patient Display -->
+                                        <div class="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                                            <div class="flex items-center gap-3">
+                                                {#if isNewPatient}
+                                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                        <span class="text-green-600 text-sm font-bold">+</span>
+                                                    </div>
+                                                    <span class="text-sm font-semibold text-green-800">{$t("assistant.dashboard.appointment.newPatient.title")}</span>
+                                                {:else}
+                                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                                        <span class="text-blue-600 text-sm">👤</span>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-sm font-semibold text-gray-900">{selectedPatient.full_name}</p>
+                                                        <p class="text-xs text-gray-600">
+                                                            {selectedPatient.phone || 'Pas de téléphone'} •
+                                                            {selectedPatient.date_of_birth ? new Date(selectedPatient.date_of_birth).toLocaleDateString('fr-FR') : 'Pas de date'}
+                                                        </p>
+                                                    </div>
+                                                {/if}
+                                            </div>
+                                            <div class="flex gap-2">
+                                                {#if !isNewPatient && selectedPatient}
+                                                    <button
+                                                        type="button"
+                                                        onclick={() => generatePatientCard(selectedPatient.id)}
+                                                        class="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                                        title={$t("assistant.dashboard.appointment.newPatient.generateCard")}
+                                                    >
+                                                        📄
+                                                    </button>
+                                                {/if}
+                                                <button
+                                                    type="button"
+                                                    onclick={() => {
+                                                        selectedPatient = null;
+                                                        isNewPatient = false;
+                                                    }}
+                                                    class="px-3 py-1 text-xs bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        </div>
+                                    {:else}
+                                        <!-- Patient Search -->
+                                            <div class="space-y-2">
+                                            <div class="relative">
+                                                <input
+                                                    type="text"
+                                                    placeholder={$t("assistant.dashboard.appointment.newPatient.searchPlaceholder")}
+                                                    bind:value={patientSearchQuery}
+                                                    class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 pl-4 pr-10 text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500"
+                                                />
+                                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                                    <span class="text-gray-400 text-sm">🔍</span>
+                                                </div>
+                                            </div>
+
+                                            {#if patientSearchQuery}
+                                                <!-- Search Results -->
+                                                <div class="max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white shadow-sm">
+                                                    {#each data.patients.filter(p =>
+                                                        p.full_name.toLowerCase().includes(patientSearchQuery.toLowerCase()) ||
+                                                        (p.phone && p.phone.includes(patientSearchQuery)) ||
+                                                        (p.date_of_birth && new Date(p.date_of_birth).toLocaleDateString('fr-FR').includes(patientSearchQuery))
+                                                    ).slice(0, 10) as patient}
+                                                        <button
+                                                            type="button"
+                                                            onclick={() => selectPatient(patient)}
+                                                            class="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                                                        >
+                                                            <div class="flex items-center justify-between">
+                                                                <div>
+                                                                    <p class="text-sm font-semibold text-gray-900">{patient.full_name}</p>
+                                                                    <p class="text-xs text-gray-600">
+                                                                        {patient.phone || 'Pas de téléphone'} •
+                                                                        {patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString('fr-FR') : 'Pas de date'}
+                                                                    </p>
+                                                                </div>
+                                                                <span class="text-xs text-gray-400">→</span>
+                                                            </div>
+                                                        </button>
+                                                    {/each}
+
+                                                    {#if data.patients.filter(p =>
+                                                        p.full_name.toLowerCase().includes(patientSearchQuery.toLowerCase()) ||
+                                                        (p.phone && p.phone.includes(patientSearchQuery)) ||
+                                                        (p.date_of_birth && new Date(p.date_of_birth).toLocaleDateString('fr-FR').includes(patientSearchQuery))
+                                                    ).length === 0}
+                                                        <div class="px-4 py-3 text-center text-gray-500 text-sm">
+                                                            {$t("assistant.dashboard.appointment.newPatient.noResults")}
+                                                        </div>
+                                                    {/if}
+                                                </div>
+                                            {/if}
+
+                                            <!-- Create New Patient Button -->
+                                            <button
+                                                type="button"
+                                                onclick={createNewPatient}
+                                                class="w-full px-4 py-3 text-left bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors flex items-center gap-3"
                                             >
-                                        {/each}
-                                    </select>
+                                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                    <span class="text-green-600 text-sm font-bold">+</span>
+                                                </div>
+                                                <span class="text-sm font-semibold text-green-800">{$t("assistant.dashboard.appointment.newPatient.createNew")}</span>
+                                            </button>
+                                        </div>
+                                    {/if}
+
+                                    <!-- Hidden patient_id field for existing patients -->
+                                    {#if selectedPatient && !isNewPatient}
+                                        <input type="hidden" name="patient_id" value={selectedPatient.id} />
+                                    {/if}
                                 </div>
+
+                                <!-- New Patient Form Fields -->
+                                {#if isNewPatient}
+                                    <div class="bg-green-50 border border-green-200 rounded-xl p-4 space-y-4">
+                                        <h4 class="text-sm font-bold text-green-800 flex items-center gap-2">
+                                            <span class="text-green-600">👤</span>
+                                            {$t("assistant.dashboard.appointment.newPatient.title")}
+                                        </h4>
+
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">{$t("assistant.dashboard.appointment.newPatient.fullName")} *</label>
+                                                <input
+                                                    type="text"
+                                                    name="new_patient_name"
+                                                    required
+                                                    class="w-full rounded-lg border-gray-200 bg-white py-2 px-3 text-sm font-medium focus:ring-green-500 focus:border-green-500"
+                                                    placeholder="ex: Dupont Jean"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">{$t("assistant.dashboard.appointment.newPatient.phone")} *</label>
+                                                <input
+                                                    type="tel"
+                                                    name="new_patient_phone"
+                                                    required
+                                                    class="w-full rounded-lg border-gray-200 bg-white py-2 px-3 text-sm font-medium focus:ring-green-500 focus:border-green-500"
+                                                    placeholder="06XXXXXXXX"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">{$t("assistant.dashboard.appointment.newPatient.dob")} *</label>
+                                                <input
+                                                    type="date"
+                                                    name="new_patient_dob"
+                                                    required
+                                                    max={new Date().toISOString().split('T')[0]}
+                                                    class="w-full rounded-lg border-gray-200 bg-white py-2 px-3 text-sm font-medium focus:ring-green-500 focus:border-green-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">{$t("assistant.dashboard.appointment.newPatient.email")}</label>
+                                                <input
+                                                    type="email"
+                                                    name="new_patient_email"
+                                                    class="w-full rounded-lg border-gray-200 bg-white py-2 px-3 text-sm font-medium focus:ring-green-500 focus:border-green-500"
+                                                    placeholder="email@exemple.com"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                {/if}
 
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
@@ -1616,16 +1946,22 @@
                         >
                             <button
                                 type="submit"
+                                name="action"
+                                value="schedule_close"
                                 class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all"
                             >
-                                {selectedAppointment?.id
-                                    ? $t(
-                                          "assistant.dashboard.appointment.modals.save",
-                                      )
-                                    : $t(
-                                          "assistant.dashboard.appointment.modals.schedule",
-                                      )}
+                                {$t("assistant.dashboard.buttons.scheduleAndClose")}
                             </button>
+                            {#if !selectedAppointment?.id}
+                                <button
+                                    type="submit"
+                                    name="action"
+                                    value="schedule_new"
+                                    class="px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-200 transition-all"
+                                >
+                                    {$t("assistant.dashboard.buttons.scheduleAndNew")}
+                                </button>
+                            {/if}
                             <button
                                 type="button"
                                 class="px-6 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-100 hover:bg-gray-100 transition-all"
