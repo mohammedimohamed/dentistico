@@ -1729,7 +1729,7 @@
                 class="flex min-h-full items-center justify-center p-4 text-center sm:p-0"
             >
                 <div
-                    class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+                    class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl"
                 >
                     <form
                         method="POST"
@@ -1858,6 +1858,16 @@
                                                                   )
                                                                 : "Pas de date"}
                                                         </p>
+                                                        {#if selectedPatient.parent_name}
+                                                            <p
+                                                                class="text-xs text-indigo-600 mt-0.5 flex items-center gap-1"
+                                                            >
+                                                                <span>👪</span>
+                                                                Parent: {selectedPatient.parent_name}
+                                                                ({selectedPatient.parent_phone ||
+                                                                    "Pas de téléphone"})
+                                                            </p>
+                                                        {/if}
                                                     </div>
                                                 {/if}
                                             </div>
@@ -1956,6 +1966,19 @@
                                                                               )
                                                                             : "Pas de date"}
                                                                     </p>
+                                                                    {#if patient.parent_name}
+                                                                        <p
+                                                                            class="text-xs text-indigo-600 mt-0.5 flex items-center gap-1"
+                                                                        >
+                                                                            <span
+                                                                                >👪</span
+                                                                            >
+                                                                            Parent:
+                                                                            {patient.parent_name}
+                                                                            ({patient.parent_phone ||
+                                                                                "Pas de téléphone"})
+                                                                        </p>
+                                                                    {/if}
                                                                 </div>
                                                                 <span
                                                                     class="text-xs text-gray-400"

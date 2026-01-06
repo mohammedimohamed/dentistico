@@ -523,11 +523,11 @@ export function init_db() {
         // Check if doctor_id column exists and is NOT NULL
         const tableInfo = db.prepare("PRAGMA table_info(appointments)").all() as Array<{ name: string; notnull: number }>;
         const doctorIdColumn = tableInfo.find(col => col.name === 'doctor_id');
-        
+
         // If doctor_id exists and is NOT NULL, we need to recreate the table
         if (doctorIdColumn && doctorIdColumn.notnull === 1) {
             console.log('Migrating appointments table to make doctor_id nullable...');
-            
+
             // Create new table with nullable doctor_id
             db.exec(`
                 CREATE TABLE appointments_new (
@@ -550,17 +550,17 @@ export function init_db() {
                     FOREIGN KEY (booked_by_id) REFERENCES patients(id)
                 );
             `);
-            
+
             // Copy data from old table to new table
             db.exec(`
                 INSERT INTO appointments_new 
                 SELECT * FROM appointments;
             `);
-            
+
             // Drop old table and rename new one
             db.exec('DROP TABLE appointments');
             db.exec('ALTER TABLE appointments_new RENAME TO appointments');
-            
+
             console.log('Successfully migrated appointments table - doctor_id is now nullable');
         }
     } catch (e) {
@@ -798,7 +798,16 @@ export function unarchivePatient(id: number) {
 
 // Limited access for Assistants
 export function getAllPatientsLimited() {
-    return db.prepare('SELECT id, full_name, phone, email, secondary_phone, secondary_email, date_of_birth FROM patients WHERE is_archived = 0 ORDER BY full_name ASC').all();
+    return db.prepare(`
+        SELECT 
+            p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth,
+            p.relationship_to_primary,
+            parent.full_name as parent_name, parent.phone as parent_phone
+        FROM patients p
+        LEFT JOIN patients parent ON p.primary_contract_id = parent.id
+        WHERE p.is_archived = 0 
+        ORDER BY p.full_name ASC
+    `).all();
 }
 
 export function getArchivedPatientsLimited() {
