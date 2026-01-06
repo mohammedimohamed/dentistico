@@ -10,9 +10,9 @@
 
     let { data }: { data: PageData } = $props();
     let activeTab = $state("schedule");
-    
+
     // Set max date to today for date of birth (cannot be in the future)
-    const maxDateOfBirth = new Date().toISOString().split('T')[0];
+    const maxDateOfBirth = new Date().toISOString().split("T")[0];
 
     // Initialize viewMode from URL param or default to 'list'
     let viewMode = $state($page.url.searchParams.get("view") || "list");
@@ -26,11 +26,11 @@
     let selectedAppointment = $state<any>(null); // For booking/editing
     let searchPatientQuery = $state("");
     let errorMessage = $state("");
-    
+
     // Confirmation modal state
     let isConfirmModalOpen = $state(false);
     let pendingAction = $state<{
-        type: 'single' | 'bulk';
+        type: "single" | "bulk";
         status: string;
         appointmentId?: number;
         appointmentIds?: number[];
@@ -42,9 +42,12 @@
     let statusFilter = $state("");
     // Show past appointments preference (persistent in localStorage)
     let showPastAppointments = $state(
-        typeof localStorage !== 'undefined'
-            ? JSON.parse(localStorage.getItem('assistant-show-past-appointments') || 'false')
-            : false
+        typeof localStorage !== "undefined"
+            ? JSON.parse(
+                  localStorage.getItem("assistant-show-past-appointments") ||
+                      "false",
+              )
+            : false,
     );
 
     // Appointment form state
@@ -62,7 +65,7 @@
         doctor: "",
         status: "",
         type: "",
-        date: ""
+        date: "",
     });
 
     // Reactive filtered appointments list using $derived.by for complex logic
@@ -74,8 +77,7 @@
         return appointments.filter((appt: any) => {
             const apptDate = new Date(appt.start_time);
 
-            const matchesTime =
-                showPastAppointments || apptDate >= today;
+            const matchesTime = showPastAppointments || apptDate >= today;
 
             const matchesSearch = searchQuery
                 ? appt.patient_name
@@ -99,28 +101,38 @@
     // Table filtered and sorted appointments
     const tableAppointments = $derived.by(() => {
         let result = [...filteredAppointments];
-        
+
         // Apply column filters
         if (columnFilters.patient) {
             result = result.filter((appt: any) =>
-                appt.patient_name?.toLowerCase().includes(columnFilters.patient.toLowerCase())
+                appt.patient_name
+                    ?.toLowerCase()
+                    .includes(columnFilters.patient.toLowerCase()),
             );
         }
         if (columnFilters.doctor) {
             result = result.filter((appt: any) =>
-                appt.doctor_name?.toLowerCase().includes(columnFilters.doctor.toLowerCase())
+                appt.doctor_name
+                    ?.toLowerCase()
+                    .includes(columnFilters.doctor.toLowerCase()),
             );
         }
         if (columnFilters.status) {
-            result = result.filter((appt: any) => appt.status === columnFilters.status);
+            result = result.filter(
+                (appt: any) => appt.status === columnFilters.status,
+            );
         }
         if (columnFilters.type) {
-            result = result.filter((appt: any) => appt.appointment_type === columnFilters.type);
+            result = result.filter(
+                (appt: any) => appt.appointment_type === columnFilters.type,
+            );
         }
         if (columnFilters.date) {
             const filterDate = columnFilters.date;
             result = result.filter((appt: any) => {
-                const apptDate = new Date(appt.start_time).toISOString().split('T')[0];
+                const apptDate = new Date(appt.start_time)
+                    .toISOString()
+                    .split("T")[0];
                 return apptDate === filterDate;
             });
         }
@@ -192,7 +204,9 @@
         if (selectedRows.size === tableAppointments.length) {
             selectedRows = new Set();
         } else {
-            selectedRows = new Set(tableAppointments.map((appt: any) => appt.id));
+            selectedRows = new Set(
+                tableAppointments.map((appt: any) => appt.id),
+            );
         }
     }
 
@@ -202,23 +216,31 @@
             doctor: "",
             status: "",
             type: "",
-            date: ""
+            date: "",
         };
     }
 
-    function showConfirmation(event: Event, type: 'single' | 'bulk', status: string, appointmentId?: number, appointmentIds?: number[]) {
+    function showConfirmation(
+        event: Event,
+        type: "single" | "bulk",
+        status: string,
+        appointmentId?: number,
+        appointmentIds?: number[],
+    ) {
         event.preventDefault();
         event.stopPropagation();
-        
-        const form = (event.target as HTMLElement).closest('form') as HTMLFormElement;
+
+        const form = (event.target as HTMLElement).closest(
+            "form",
+        ) as HTMLFormElement;
         pendingFormElement = form;
-        
+
         pendingAction = {
             type,
             status,
             appointmentId,
             appointmentIds,
-            count: type === 'bulk' ? appointmentIds?.length : 1
+            count: type === "bulk" ? appointmentIds?.length : 1,
         };
         isConfirmModalOpen = true;
     }
@@ -265,90 +287,118 @@
             if (!patient) return;
 
             const allAppointments = data.appointments;
-            const patientAppointments = allAppointments.filter((appt: any) => appt.patient_id === patientId);
+            const patientAppointments = allAppointments.filter(
+                (appt: any) => appt.patient_id === patientId,
+            );
 
             // Get only future appointments (upcoming)
-            const futureAppointments = patientAppointments.filter((appt: any) => new Date(appt.start_time) >= new Date());
+            const futureAppointments = patientAppointments.filter(
+                (appt: any) => new Date(appt.start_time) >= new Date(),
+            );
 
             // Calculate age if date of birth is available
-            let ageDisplay = '';
+            let ageDisplay = "";
             if (patient.date_of_birth) {
                 const birthDate = new Date(patient.date_of_birth);
                 const today = new Date();
-                const age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-                ageDisplay = ' (' + age + ' ans)';
+                const age = Math.floor(
+                    (today.getTime() - birthDate.getTime()) /
+                        (365.25 * 24 * 60 * 60 * 1000),
+                );
+                ageDisplay = " (" + age + " ans)";
             }
 
             const patientName = patient.full_name;
-            const patientPhone = patient.phone || 'N/A';
-            const patientEmail = patient.email || 'N/A';
+            const patientPhone = patient.phone || "N/A";
+            const patientEmail = patient.email || "N/A";
             const patientDob = patient.date_of_birth
-                ? new Date(patient.date_of_birth).toLocaleDateString('fr-FR') + ageDisplay
-                : 'N/A';
+                ? new Date(patient.date_of_birth).toLocaleDateString("fr-FR") +
+                  ageDisplay
+                : "N/A";
 
-            const currentDate = new Date().toLocaleDateString('fr-FR');
+            const currentDate = new Date().toLocaleDateString("fr-FR");
 
             // Open a new window
-            const printWindow = window.open('', '_blank');
+            const printWindow = window.open("", "_blank");
             if (!printWindow) return;
 
             const doc = printWindow.document;
             doc.open();
 
             // Basic HTML structure
-            doc.write('<!DOCTYPE html>');
+            doc.write("<!DOCTYPE html>");
             doc.write('<html lang="fr"><head><meta charset="UTF-8">');
-            doc.write('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
-            doc.write('<title>Fiche Patient - ' + patientName + '</title>');
+            doc.write(
+                '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+            );
+            doc.write("<title>Fiche Patient - " + patientName + "</title>");
 
             // Inject styles via a <style> element added to <head>
             const css = [
-                'body{font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#f8fafc;color:#0f172a;padding:24px;}',
-                '.card{max-width:640px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 20px 25px -5px rgba(15,23,42,0.15);overflow:hidden;border:1px solid #e2e8f0;}',
-                '.header{background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;padding:24px 28px;text-align:center;}',
-                '.header h1{font-size:24px;font-weight:700;margin-bottom:4px;}',
-                '.header p{font-size:13px;opacity:.9;}',
-                '.content{padding:24px 28px;}',
-                '.section{margin-bottom:24px;}',
-                '.section-title{font-size:16px;font-weight:600;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #e5e7eb;}',
-                '.info-row{display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid #e5e7eb;font-size:13px;margin-bottom:6px;}',
-                '.info-label{color:#6b7280;font-weight:500;}',
-                '.info-value{color:#111827;font-weight:600;}',
-                '.appt-card{border-radius:12px;border:1px solid #fbbf24;background:linear-gradient(135deg,#fef3c7,#fde68a);padding:14px 14px 12px 14px;margin-bottom:10px;font-size:13px;}',
-                '.appt-date{font-weight:700;color:#92400e;margin-bottom:6px;}',
-                '.appt-meta{display:flex;justify-content:space-between;gap:8px;}',
-                '.appt-label{font-size:11px;text-transform:uppercase;color:#78350f;font-weight:500;}',
-                '.appt-value{font-weight:600;color:#92400e;}',
-                '.no-appt{text-align:center;font-size:13px;color:#6b7280;font-style:italic;padding:18px 8px;}',
-                '.footer{text-align:center;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:10px;font-size:12px;color:#6b7280;}',
-                '.clinic-name{color:#0d9488;font-weight:700;}'
-            ].join('');
+                "body{font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#f8fafc;color:#0f172a;padding:24px;}",
+                ".card{max-width:640px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 20px 25px -5px rgba(15,23,42,0.15);overflow:hidden;border:1px solid #e2e8f0;}",
+                ".header{background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;padding:24px 28px;text-align:center;}",
+                ".header h1{font-size:24px;font-weight:700;margin-bottom:4px;}",
+                ".header p{font-size:13px;opacity:.9;}",
+                ".content{padding:24px 28px;}",
+                ".section{margin-bottom:24px;}",
+                ".section-title{font-size:16px;font-weight:600;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #e5e7eb;}",
+                ".info-row{display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid #e5e7eb;font-size:13px;margin-bottom:6px;}",
+                ".info-label{color:#6b7280;font-weight:500;}",
+                ".info-value{color:#111827;font-weight:600;}",
+                ".appt-card{border-radius:12px;border:1px solid #fbbf24;background:linear-gradient(135deg,#fef3c7,#fde68a);padding:14px 14px 12px 14px;margin-bottom:10px;font-size:13px;}",
+                ".appt-date{font-weight:700;color:#92400e;margin-bottom:6px;}",
+                ".appt-meta{display:flex;justify-content:space-between;gap:8px;}",
+                ".appt-label{font-size:11px;text-transform:uppercase;color:#78350f;font-weight:500;}",
+                ".appt-value{font-weight:600;color:#92400e;}",
+                ".no-appt{text-align:center;font-size:13px;color:#6b7280;font-style:italic;padding:18px 8px;}",
+                ".footer{text-align:center;padding-top:14px;border-top:1px solid #e5e7eb;margin-top:10px;font-size:12px;color:#6b7280;}",
+                ".clinic-name{color:#0d9488;font-weight:700;}",
+            ].join("");
 
-            const styleEl = doc.createElement('style');
+            const styleEl = doc.createElement("style");
             styleEl.textContent = css;
             doc.head.appendChild(styleEl);
 
-            doc.write('</head><body>');
+            doc.write("</head><body>");
 
             doc.write('<div class="card">');
 
             // Header
             doc.write('<div class="header">');
-            doc.write('<h1>Fiche Patient</h1>');
-            doc.write('<p>Résumé des informations et rendez-vous</p>');
-            doc.write('</div>');
+            doc.write("<h1>Fiche Patient</h1>");
+            doc.write("<p>Résumé des informations et rendez-vous</p>");
+            doc.write("</div>");
 
             // Content
             doc.write('<div class="content">');
 
             // Personal info
             doc.write('<div class="section">');
-            doc.write('<div class="section-title">Informations Personnelles</div>');
-            doc.write('<div class="info-row"><div class="info-label">Nom complet</div><div class="info-value">' + patientName + '</div></div>');
-            doc.write('<div class="info-row"><div class="info-label">Téléphone</div><div class="info-value">' + patientPhone + '</div></div>');
-            doc.write('<div class="info-row"><div class="info-label">Email</div><div class="info-value">' + patientEmail + '</div></div>');
-            doc.write('<div class="info-row"><div class="info-label">Date de naissance</div><div class="info-value">' + patientDob + '</div></div>');
-            doc.write('</div>');
+            doc.write(
+                '<div class="section-title">Informations Personnelles</div>',
+            );
+            doc.write(
+                '<div class="info-row"><div class="info-label">Nom complet</div><div class="info-value">' +
+                    patientName +
+                    "</div></div>",
+            );
+            doc.write(
+                '<div class="info-row"><div class="info-label">Téléphone</div><div class="info-value">' +
+                    patientPhone +
+                    "</div></div>",
+            );
+            doc.write(
+                '<div class="info-row"><div class="info-label">Email</div><div class="info-value">' +
+                    patientEmail +
+                    "</div></div>",
+            );
+            doc.write(
+                '<div class="info-row"><div class="info-label">Date de naissance</div><div class="info-value">' +
+                    patientDob +
+                    "</div></div>",
+            );
+            doc.write("</div>");
 
             // Upcoming appointments
             doc.write('<div class="section">');
@@ -356,34 +406,59 @@
 
             if (futureAppointments.length > 0) {
                 for (const appt of futureAppointments) {
-                    const apptDate = new Date(appt.start_time).toLocaleDateString('fr-FR');
-                    const apptTime = new Date(appt.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                    const apptDate = new Date(
+                        appt.start_time,
+                    ).toLocaleDateString("fr-FR");
+                    const apptTime = new Date(
+                        appt.start_time,
+                    ).toLocaleTimeString("fr-FR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    });
                     const apptType = appt.appointment_type;
                     const apptDoctor = appt.doctor_name;
 
                     doc.write('<div class="appt-card">');
-                    doc.write('<div class="appt-date">' + apptDate + ' à ' + apptTime + '</div>');
+                    doc.write(
+                        '<div class="appt-date">' +
+                            apptDate +
+                            " à " +
+                            apptTime +
+                            "</div>",
+                    );
                     doc.write('<div class="appt-meta">');
-                    doc.write('<div><div class="appt-label">Type</div><div class="appt-value">' + apptType + '</div></div>');
-                    doc.write('<div><div class="appt-label">Docteur</div><div class="appt-value">' + apptDoctor + '</div></div>');
-                    doc.write('</div>');
-                    doc.write('</div>');
+                    doc.write(
+                        '<div><div class="appt-label">Type</div><div class="appt-value">' +
+                            apptType +
+                            "</div></div>",
+                    );
+                    doc.write(
+                        '<div><div class="appt-label">Docteur</div><div class="appt-value">' +
+                            apptDoctor +
+                            "</div></div>",
+                    );
+                    doc.write("</div>");
+                    doc.write("</div>");
                 }
             } else {
-                doc.write('<div class="no-appt">Aucun rendez-vous programmé</div>');
+                doc.write(
+                    '<div class="no-appt">Aucun rendez-vous programmé</div>',
+                );
             }
 
-            doc.write('</div>'); // end section
+            doc.write("</div>"); // end section
 
             // Footer
             doc.write('<div class="footer">');
-            doc.write('<span class="clinic-name">Dentistico</span> - ' + currentDate);
-            doc.write('</div>'); // footer
+            doc.write(
+                '<span class="clinic-name">Dentistico</span> - ' + currentDate,
+            );
+            doc.write("</div>"); // footer
 
-            doc.write('</div>'); // content
-            doc.write('</div>'); // card
+            doc.write("</div>"); // content
+            doc.write("</div>"); // card
 
-            doc.write('</body></html>');
+            doc.write("</body></html>");
             doc.close();
 
             // Auto-print when ready
@@ -391,9 +466,8 @@
             setTimeout(() => {
                 printWindow.print();
             }, 500);
-
         } catch (error) {
-            console.error('Error generating patient card:', error);
+            console.error("Error generating patient card:", error);
         }
     }
 
@@ -405,8 +479,11 @@
 
     // Save show past appointments preference to localStorage
     $effect(() => {
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('assistant-show-past-appointments', JSON.stringify(showPastAppointments));
+        if (typeof localStorage !== "undefined") {
+            localStorage.setItem(
+                "assistant-show-past-appointments",
+                JSON.stringify(showPastAppointments),
+            );
         }
     });
 
@@ -615,12 +692,15 @@
                         </select>
                         <button
                             type="button"
-                            onclick={() => (showPastAppointments = !showPastAppointments)}
+                            onclick={() =>
+                                (showPastAppointments = !showPastAppointments)}
                             class="px-3 py-1.5 text-xs font-bold rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
                         >
-                            {$t(showPastAppointments
-                                ? "assistant.dashboard.buttons.hidePast"
-                                : "assistant.dashboard.buttons.showPast")}
+                            {$t(
+                                showPastAppointments
+                                    ? "assistant.dashboard.buttons.hidePast"
+                                    : "assistant.dashboard.buttons.showPast",
+                            )}
                         </button>
                     </div>
                     <button
@@ -698,24 +778,40 @@
                                             class="flex flex-wrap items-center gap-2 mb-1"
                                         >
                                             {#if appt.date_of_birth}
-                                                {@const age = Math.floor(
-                                                    (new Date().getTime() -
-                                                        new Date(
-                                                            appt.date_of_birth,
-                                                        ).getTime()) /
-                                                        (365.25 *
-                                                            24 *
-                                                            60 *
-                                                            60 *
-                                                            1000),
+                                                {@const birth = new Date(
+                                                    appt.date_of_birth,
                                                 )}
+                                                {@const now = new Date()}
+                                                {@const diffMonths =
+                                                    (now.getFullYear() -
+                                                        birth.getFullYear()) *
+                                                        12 +
+                                                    now.getMonth() -
+                                                    birth.getMonth() -
+                                                    (now.getDate() <
+                                                    birth.getDate()
+                                                        ? 1
+                                                        : 0)}
+                                                {@const years = Math.floor(
+                                                    diffMonths / 12,
+                                                )}
+                                                {@const months =
+                                                    diffMonths % 12}
                                                 <span
                                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
                                                 >
-                                                    {age}
-                                                    {age === 1
-                                                        ? "year"
-                                                        : "years"}
+                                                    {years > 0
+                                                        ? `${years} ${years === 1 ? "year" : "years"}`
+                                                        : ""}
+                                                    {years > 0 && months > 0
+                                                        ? " "
+                                                        : ""}
+                                                    {months > 0
+                                                        ? `${months} ${months === 1 ? "month" : "months"}`
+                                                        : ""}
+                                                    {years === 0 && months === 0
+                                                        ? "Newborn"
+                                                        : ""}
                                                 </span>
                                             {/if}
                                             {#if appt.gender}
@@ -895,9 +991,14 @@
                     <div class="overflow-x-auto">
                         <!-- Bulk Actions Bar -->
                         {#if selectedRows.size > 0}
-                            <div class="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center justify-between">
+                            <div
+                                class="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center justify-between"
+                            >
                                 <span class="text-sm font-bold text-indigo-900">
-                                    {selectedRows.size} appointment{selectedRows.size === 1 ? '' : 's'} selected
+                                    {selectedRows.size} appointment{selectedRows.size ===
+                                    1
+                                        ? ""
+                                        : "s"} selected
                                 </span>
                                 <div class="flex gap-2">
                                     <form
@@ -907,11 +1008,28 @@
                                         class="inline"
                                         id="bulk-confirm-form"
                                     >
-                                        <input type="hidden" name="appointment_ids" value={Array.from(selectedRows).join(',')} />
-                                        <input type="hidden" name="status" value="confirmed" />
+                                        <input
+                                            type="hidden"
+                                            name="appointment_ids"
+                                            value={Array.from(
+                                                selectedRows,
+                                            ).join(",")}
+                                        />
+                                        <input
+                                            type="hidden"
+                                            name="status"
+                                            value="confirmed"
+                                        />
                                         <button
                                             type="button"
-                                            onclick={(e) => showConfirmation(e, 'bulk', 'confirmed', undefined, Array.from(selectedRows))}
+                                            onclick={(e) =>
+                                                showConfirmation(
+                                                    e,
+                                                    "bulk",
+                                                    "confirmed",
+                                                    undefined,
+                                                    Array.from(selectedRows),
+                                                )}
                                             class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm transition-colors"
                                         >
                                             Confirm Selected
@@ -924,18 +1042,36 @@
                                         class="inline"
                                         id="bulk-cancel-form"
                                     >
-                                        <input type="hidden" name="appointment_ids" value={Array.from(selectedRows).join(',')} />
-                                        <input type="hidden" name="status" value="cancelled" />
+                                        <input
+                                            type="hidden"
+                                            name="appointment_ids"
+                                            value={Array.from(
+                                                selectedRows,
+                                            ).join(",")}
+                                        />
+                                        <input
+                                            type="hidden"
+                                            name="status"
+                                            value="cancelled"
+                                        />
                                         <button
                                             type="button"
-                                            onclick={(e) => showConfirmation(e, 'bulk', 'cancelled', undefined, Array.from(selectedRows))}
+                                            onclick={(e) =>
+                                                showConfirmation(
+                                                    e,
+                                                    "bulk",
+                                                    "cancelled",
+                                                    undefined,
+                                                    Array.from(selectedRows),
+                                                )}
                                             class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-sm transition-colors"
                                         >
                                             Cancel Selected
                                         </button>
                                     </form>
                                     <button
-                                        onclick={() => selectedRows = new Set()}
+                                        onclick={() =>
+                                            (selectedRows = new Set())}
                                         class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-bold text-sm transition-colors"
                                     >
                                         Clear Selection
@@ -945,9 +1081,13 @@
                         {/if}
 
                         <!-- Column Filters -->
-                        <div class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div
+                            class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
+                        >
                             <div class="flex items-center justify-between mb-2">
-                                <h4 class="text-sm font-bold text-gray-700">Column Filters</h4>
+                                <h4 class="text-sm font-bold text-gray-700">
+                                    Column Filters
+                                </h4>
                                 <button
                                     onclick={clearFilters}
                                     class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
@@ -983,7 +1123,9 @@
                                     class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 >
                                     <option value="">All Types</option>
-                                    <option value="consultation">Consultation</option>
+                                    <option value="consultation"
+                                        >Consultation</option
+                                    >
                                     <option value="checkup">Checkup</option>
                                     <option value="cleaning">Cleaning</option>
                                     <option value="cosmetic">Cosmetic</option>
@@ -998,13 +1140,17 @@
                         </div>
 
                         <!-- Table -->
-                        <table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
+                        <table
+                            class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden"
+                        >
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th scope="col" class="px-4 py-3 text-left">
                                         <input
                                             type="checkbox"
-                                            checked={selectedRows.size === tableAppointments.length && tableAppointments.length > 0}
+                                            checked={selectedRows.size ===
+                                                tableAppointments.length &&
+                                                tableAppointments.length > 0}
                                             onchange={toggleSelectAll}
                                             class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                         />
@@ -1017,7 +1163,9 @@
                                         <div class="flex items-center gap-2">
                                             Date
                                             {#if tableSortColumn === "date"}
-                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                                {tableSortDirection === "asc"
+                                                    ? "↑"
+                                                    : "↓"}
                                             {/if}
                                         </div>
                                     </th>
@@ -1029,7 +1177,9 @@
                                         <div class="flex items-center gap-2">
                                             Time
                                             {#if tableSortColumn === "time"}
-                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                                {tableSortDirection === "asc"
+                                                    ? "↑"
+                                                    : "↓"}
                                             {/if}
                                         </div>
                                     </th>
@@ -1041,7 +1191,9 @@
                                         <div class="flex items-center gap-2">
                                             Patient
                                             {#if tableSortColumn === "patient"}
-                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                                {tableSortDirection === "asc"
+                                                    ? "↑"
+                                                    : "↓"}
                                             {/if}
                                         </div>
                                     </th>
@@ -1053,7 +1205,9 @@
                                         <div class="flex items-center gap-2">
                                             Doctor
                                             {#if tableSortColumn === "doctor"}
-                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                                {tableSortDirection === "asc"
+                                                    ? "↑"
+                                                    : "↓"}
                                             {/if}
                                         </div>
                                     </th>
@@ -1065,7 +1219,9 @@
                                         <div class="flex items-center gap-2">
                                             Type
                                             {#if tableSortColumn === "type"}
-                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                                {tableSortDirection === "asc"
+                                                    ? "↑"
+                                                    : "↓"}
                                             {/if}
                                         </div>
                                     </th>
@@ -1077,85 +1233,168 @@
                                         <div class="flex items-center gap-2">
                                             Status
                                             {#if tableSortColumn === "status"}
-                                                {tableSortDirection === "asc" ? "↑" : "↓"}
+                                                {tableSortDirection === "asc"
+                                                    ? "↑"
+                                                    : "↓"}
                                             {/if}
                                         </div>
                                     </th>
-                                    <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"
+                                    >
                                         Notes
                                     </th>
-                                    <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                    <th
+                                        scope="col"
+                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"
+                                    >
                                         Actions
                                     </th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 {#each tableAppointments as appt}
-                                    <tr 
-                                        class="hover:bg-gray-50 {selectedRows.has(appt.id) ? 'bg-indigo-50' : ''} cursor-pointer"
-                                        ondblclick={() => openBookingModal(appt)}
+                                    <tr
+                                        class="hover:bg-gray-50 {selectedRows.has(
+                                            appt.id,
+                                        )
+                                            ? 'bg-indigo-50'
+                                            : ''} cursor-pointer"
+                                        ondblclick={() =>
+                                            openBookingModal(appt)}
                                         title="Double-click to edit appointment"
                                     >
-                                        <td class="px-4 py-3 whitespace-nowrap" onclick={(e) => e.stopPropagation()}>
+                                        <td
+                                            class="px-4 py-3 whitespace-nowrap"
+                                            onclick={(e) => e.stopPropagation()}
+                                        >
                                             <input
                                                 type="checkbox"
-                                                checked={selectedRows.has(appt.id)}
-                                                onchange={() => toggleRowSelection(appt.id)}
-                                                ondblclick={(e) => e.stopPropagation()}
+                                                checked={selectedRows.has(
+                                                    appt.id,
+                                                )}
+                                                onchange={() =>
+                                                    toggleRowSelection(appt.id)}
+                                                ondblclick={(e) =>
+                                                    e.stopPropagation()}
                                                 class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                             />
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                            {new Date(appt.start_time).toLocaleDateString()}
+                                        <td
+                                            class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
+                                        >
+                                            {new Date(
+                                                appt.start_time,
+                                            ).toLocaleDateString()}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                            {new Date(appt.start_time).toLocaleTimeString([], {
+                                        <td
+                                            class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
+                                        >
+                                            {new Date(
+                                                appt.start_time,
+                                            ).toLocaleTimeString([], {
                                                 hour: "2-digit",
-                                                minute: "2-digit"
+                                                minute: "2-digit",
                                             })}
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-gray-900">
-                                            <div class="flex items-center gap-2">
+                                        <td
+                                            class="px-4 py-3 text-sm text-gray-900"
+                                        >
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
                                                 {#if appt.relationship_to_primary}
-                                                    <span title="Child/Dependent">👶</span>
+                                                    <span
+                                                        title="Child/Dependent"
+                                                        >👶</span
+                                                    >
                                                 {:else}
-                                                    <span title="Adult">👤</span>
+                                                    <span title="Adult">👤</span
+                                                    >
                                                 {/if}
-                                                <span class="font-semibold">{appt.patient_name}</span>
+                                                <span class="font-semibold"
+                                                    >{appt.patient_name}</span
+                                                >
                                             </div>
                                             {#if appt.date_of_birth}
-                                                {@const age = Math.floor(
-                                                    (new Date().getTime() - new Date(appt.date_of_birth).getTime()) /
-                                                    (365.25 * 24 * 60 * 60 * 1000)
+                                                {@const birth = new Date(
+                                                    appt.date_of_birth,
                                                 )}
-                                                <span class="text-xs text-gray-500">({age} {age === 1 ? 'year' : 'years'})</span>
+                                                {@const now = new Date()}
+                                                {@const diffMonths =
+                                                    (now.getFullYear() -
+                                                        birth.getFullYear()) *
+                                                        12 +
+                                                    now.getMonth() -
+                                                    birth.getMonth() -
+                                                    (now.getDate() <
+                                                    birth.getDate()
+                                                        ? 1
+                                                        : 0)}
+                                                {@const years = Math.floor(
+                                                    diffMonths / 12,
+                                                )}
+                                                {@const months =
+                                                    diffMonths % 12}
+                                                <span
+                                                    class="text-xs text-gray-500"
+                                                    >({years > 0
+                                                        ? `${years} ${years === 1 ? "year" : "years"}`
+                                                        : ""}{years > 0 &&
+                                                    months > 0
+                                                        ? " "
+                                                        : ""}{months > 0
+                                                        ? `${months} ${months === 1 ? "month" : "months"}`
+                                                        : ""}{years === 0 &&
+                                                    months === 0
+                                                        ? "Newborn"
+                                                        : ""})</span
+                                                >
                                             {/if}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                            {appt.doctor_name || 'N/A'}
+                                        <td
+                                            class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
+                                        >
+                                            {appt.doctor_name || "N/A"}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                            {$t(`assistant.dashboard.appointment.type.${appt.appointment_type}`)}
+                                        <td
+                                            class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
+                                        >
+                                            {$t(
+                                                `assistant.dashboard.appointment.type.${appt.appointment_type}`,
+                                            )}
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
                                             <span
                                                 class="px-2 py-1 text-xs font-bold rounded-full uppercase
                                                 {appt.status === 'confirmed'
                                                     ? 'bg-green-100 text-green-800'
-                                                    : appt.status === 'cancelled'
+                                                    : appt.status ===
+                                                        'cancelled'
                                                       ? 'bg-red-100 text-red-800'
-                                                      : appt.status === 'no_show'
+                                                      : appt.status ===
+                                                          'no_show'
                                                         ? 'bg-gray-100 text-gray-800'
                                                         : 'bg-blue-100 text-blue-800'}"
                                             >
-                                                {$t(`assistant.dashboard.appointment.status.${appt.status}`)}
+                                                {$t(
+                                                    `assistant.dashboard.appointment.status.${appt.status}`,
+                                                )}
                                             </span>
                                         </td>
-                                        <td class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
-                                            {appt.notes || '-'}
+                                        <td
+                                            class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate"
+                                        >
+                                            {appt.notes || "-"}
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium" onclick={(e) => e.stopPropagation()}>
-                                            <div class="flex items-center gap-4">
+                                        <td
+                                            class="px-4 py-3 whitespace-nowrap text-sm font-medium"
+                                            onclick={(e) => e.stopPropagation()}
+                                        >
+                                            <div
+                                                class="flex items-center gap-4"
+                                            >
                                                 {#if appt.status === "scheduled"}
                                                     <form
                                                         method="POST"
@@ -1163,24 +1402,41 @@
                                                         use:enhance
                                                         class="inline"
                                                     >
-                                                        <input type="hidden" name="appointment_id" value={appt.id} />
-                                                        <input type="hidden" name="status" value="confirmed" />
+                                                        <input
+                                                            type="hidden"
+                                                            name="appointment_id"
+                                                            value={appt.id}
+                                                        />
+                                                        <input
+                                                            type="hidden"
+                                                            name="status"
+                                                            value="confirmed"
+                                                        />
                                                         <button
                                                             type="button"
-                                                            onclick={(e) => showConfirmation(e, 'single', 'confirmed', appt.id)}
+                                                            onclick={(e) =>
+                                                                showConfirmation(
+                                                                    e,
+                                                                    "single",
+                                                                    "confirmed",
+                                                                    appt.id,
+                                                                )}
                                                             class="px-4 py-3 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-colors text-2xl font-bold min-w-[50px]"
                                                             title="Confirm"
-                                                            ondblclick={(e) => e.stopPropagation()}
+                                                            ondblclick={(e) =>
+                                                                e.stopPropagation()}
                                                         >
                                                             ✓
                                                         </button>
                                                     </form>
                                                 {/if}
                                                 <button
-                                                    onclick={() => openBookingModal(appt)}
+                                                    onclick={() =>
+                                                        openBookingModal(appt)}
                                                     class="px-4 py-3 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition-colors text-2xl font-bold min-w-[50px]"
                                                     title="Edit"
-                                                    ondblclick={(e) => e.stopPropagation()}
+                                                    ondblclick={(e) =>
+                                                        e.stopPropagation()}
                                                 >
                                                     ✎
                                                 </button>
@@ -1189,8 +1445,13 @@
                                     </tr>
                                 {:else}
                                     <tr>
-                                        <td colspan="9" class="px-4 py-12 text-center text-gray-500 italic">
-                                            {$t("assistant.dashboard.tabs.schedule.empty")}
+                                        <td
+                                            colspan="9"
+                                            class="px-4 py-12 text-center text-gray-500 italic"
+                                        >
+                                            {$t(
+                                                "assistant.dashboard.tabs.schedule.empty",
+                                            )}
                                         </td>
                                     </tr>
                                 {/each}
@@ -1362,78 +1623,90 @@
         </div>
     {/if}
 
-<!-- Confirmation Modal -->
-{#if isConfirmModalOpen && pendingAction}
-    <div
-        class="relative z-50 overflow-y-auto"
-        aria-labelledby="confirm-modal-title"
-        role="dialog"
-        aria-modal="true"
-    >
+    <!-- Confirmation Modal -->
+    {#if isConfirmModalOpen && pendingAction}
         <div
-            class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
-            aria-hidden="true"
-            onclick={cancelConfirmation}
-        ></div>
-        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            class="relative z-50 overflow-y-auto"
+            aria-labelledby="confirm-modal-title"
+            role="dialog"
+            aria-modal="true"
+        >
             <div
-                class="flex min-h-full items-center justify-center p-4 text-center sm:p-0"
-            >
+                class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
+                aria-hidden="true"
+                onclick={cancelConfirmation}
+            ></div>
+            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
                 <div
-                    class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+                    class="flex min-h-full items-center justify-center p-4 text-center sm:p-0"
                 >
-                    <div class="bg-white px-6 py-5">
-                        <div class="flex items-center gap-4 mb-4">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
-                                    <span class="text-2xl">⚠️</span>
+                    <div
+                        class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+                    >
+                        <div class="bg-white px-6 py-5">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="flex-shrink-0">
+                                    <div
+                                        class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center"
+                                    >
+                                        <span class="text-2xl">⚠️</span>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <h3
+                                        class="text-lg font-bold text-gray-900"
+                                        id="confirm-modal-title"
+                                    >
+                                        Confirm Status Change
+                                    </h3>
                                 </div>
                             </div>
-                            <div class="flex-1">
-                                <h3
-                                    class="text-lg font-bold text-gray-900"
-                                    id="confirm-modal-title"
-                                >
-                                    Confirm Status Change
-                                </h3>
+                            <div class="mb-6">
+                                <p class="text-sm text-gray-600">
+                                    {#if pendingAction.type === "bulk"}
+                                        Are you sure you want to {pendingAction.status ===
+                                        "confirmed"
+                                            ? "confirm"
+                                            : "cancel"}
+                                        <strong>{pendingAction.count}</strong>
+                                        appointment{pendingAction.count === 1
+                                            ? ""
+                                            : "s"}?
+                                    {:else}
+                                        Are you sure you want to change this
+                                        appointment status to <strong
+                                            >{pendingAction.status}</strong
+                                        >?
+                                    {/if}
+                                </p>
                             </div>
-                        </div>
-                        <div class="mb-6">
-                            <p class="text-sm text-gray-600">
-                                {#if pendingAction.type === 'bulk'}
-                                    Are you sure you want to {pendingAction.status === 'confirmed' ? 'confirm' : 'cancel'} <strong>{pendingAction.count}</strong> appointment{pendingAction.count === 1 ? '' : 's'}?
-                                {:else}
-                                    Are you sure you want to change this appointment status to <strong>{pendingAction.status}</strong>?
-                                {/if}
-                            </p>
-                        </div>
-                        <div class="flex gap-3 justify-end">
-                            <button
-                                type="button"
-                                onclick={cancelConfirmation}
-                                class="px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onclick={confirmAction}
-                                class="px-4 py-2 text-sm font-bold text-white rounded-lg transition-colors
-                                {pendingAction.status === 'confirmed' 
-                                    ? 'bg-green-600 hover:bg-green-700' 
-                                    : pendingAction.status === 'cancelled'
-                                      ? 'bg-red-600 hover:bg-red-700'
-                                      : 'bg-indigo-600 hover:bg-indigo-700'}"
-                            >
-                                Confirm
-                            </button>
+                            <div class="flex gap-3 justify-end">
+                                <button
+                                    type="button"
+                                    onclick={cancelConfirmation}
+                                    class="px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onclick={confirmAction}
+                                    class="px-4 py-2 text-sm font-bold text-white rounded-lg transition-colors
+                                {pendingAction.status === 'confirmed'
+                                        ? 'bg-green-600 hover:bg-green-700'
+                                        : pendingAction.status === 'cancelled'
+                                          ? 'bg-red-600 hover:bg-red-700'
+                                          : 'bg-indigo-600 hover:bg-indigo-700'}"
+                                >
+                                    Confirm
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-{/if}
+    {/if}
 </div>
 
 <!-- MODALS -->
@@ -1469,7 +1742,7 @@
                                 if (result.type === "success") {
                                     const resultData = result.data as any;
 
-                                    if (resultData.action === 'schedule_new') {
+                                    if (resultData.action === "schedule_new") {
                                         // Reset form for new appointment
                                         resetAppointmentForm();
                                         // Keep modal open for next appointment
@@ -1535,22 +1808,55 @@
 
                                     {#if selectedPatient || isNewPatient}
                                         <!-- Selected Patient Display -->
-                                        <div class="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
-                                            <div class="flex items-center gap-3">
+                                        <div
+                                            class="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-200 rounded-xl"
+                                        >
+                                            <div
+                                                class="flex items-center gap-3"
+                                            >
                                                 {#if isNewPatient}
-                                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                                        <span class="text-green-600 text-sm font-bold">+</span>
+                                                    <div
+                                                        class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center"
+                                                    >
+                                                        <span
+                                                            class="text-green-600 text-sm font-bold"
+                                                            >+</span
+                                                        >
                                                     </div>
-                                                    <span class="text-sm font-semibold text-green-800">{$t("assistant.dashboard.appointment.newPatient.title")}</span>
+                                                    <span
+                                                        class="text-sm font-semibold text-green-800"
+                                                        >{$t(
+                                                            "assistant.dashboard.appointment.newPatient.title",
+                                                        )}</span
+                                                    >
                                                 {:else}
-                                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                                        <span class="text-blue-600 text-sm">👤</span>
+                                                    <div
+                                                        class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center"
+                                                    >
+                                                        <span
+                                                            class="text-blue-600 text-sm"
+                                                            >👤</span
+                                                        >
                                                     </div>
                                                     <div>
-                                                        <p class="text-sm font-semibold text-gray-900">{selectedPatient.full_name}</p>
-                                                        <p class="text-xs text-gray-600">
-                                                            {selectedPatient.phone || 'Pas de téléphone'} •
-                                                            {selectedPatient.date_of_birth ? new Date(selectedPatient.date_of_birth).toLocaleDateString('fr-FR') : 'Pas de date'}
+                                                        <p
+                                                            class="text-sm font-semibold text-gray-900"
+                                                        >
+                                                            {selectedPatient.full_name}
+                                                        </p>
+                                                        <p
+                                                            class="text-xs text-gray-600"
+                                                        >
+                                                            {selectedPatient.phone ||
+                                                                "Pas de téléphone"}
+                                                            •
+                                                            {selectedPatient.date_of_birth
+                                                                ? new Date(
+                                                                      selectedPatient.date_of_birth,
+                                                                  ).toLocaleDateString(
+                                                                      "fr-FR",
+                                                                  )
+                                                                : "Pas de date"}
                                                         </p>
                                                     </div>
                                                 {/if}
@@ -1559,9 +1865,14 @@
                                                 {#if !isNewPatient && selectedPatient}
                                                     <button
                                                         type="button"
-                                                        onclick={() => generatePatientCard(selectedPatient.id)}
+                                                        onclick={() =>
+                                                            generatePatientCard(
+                                                                selectedPatient.id,
+                                                            )}
                                                         class="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                                                        title={$t("assistant.dashboard.appointment.newPatient.generateCard")}
+                                                        title={$t(
+                                                            "assistant.dashboard.appointment.newPatient.generateCard",
+                                                        )}
                                                     >
                                                         📄
                                                     </button>
@@ -1580,52 +1891,91 @@
                                         </div>
                                     {:else}
                                         <!-- Patient Search -->
-                                            <div class="space-y-2">
+                                        <div class="space-y-2">
                                             <div class="relative">
                                                 <input
                                                     type="text"
-                                                    placeholder={$t("assistant.dashboard.appointment.newPatient.searchPlaceholder")}
-                                                    bind:value={patientSearchQuery}
+                                                    placeholder={$t(
+                                                        "assistant.dashboard.appointment.newPatient.searchPlaceholder",
+                                                    )}
+                                                    bind:value={
+                                                        patientSearchQuery
+                                                    }
                                                     class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 pl-4 pr-10 text-sm font-medium focus:ring-indigo-500 focus:border-indigo-500"
                                                 />
-                                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-                                                    <span class="text-gray-400 text-sm">🔍</span>
+                                                <div
+                                                    class="absolute inset-y-0 right-0 flex items-center pr-3"
+                                                >
+                                                    <span
+                                                        class="text-gray-400 text-sm"
+                                                        >🔍</span
+                                                    >
                                                 </div>
                                             </div>
 
                                             {#if patientSearchQuery}
                                                 <!-- Search Results -->
-                                                <div class="max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white shadow-sm">
-                                                    {#each data.patients.filter(p =>
-                                                        p.full_name.toLowerCase().includes(patientSearchQuery.toLowerCase()) ||
-                                                        (p.phone && p.phone.includes(patientSearchQuery)) ||
-                                                        (p.date_of_birth && new Date(p.date_of_birth).toLocaleDateString('fr-FR').includes(patientSearchQuery))
-                                                    ).slice(0, 10) as patient}
+                                                <div
+                                                    class="max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white shadow-sm"
+                                                >
+                                                    {#each data.patients
+                                                        .filter((p) => p.full_name
+                                                                    .toLowerCase()
+                                                                    .includes(patientSearchQuery.toLowerCase()) || (p.phone && p.phone.includes(patientSearchQuery)) || (p.date_of_birth && new Date(p.date_of_birth)
+                                                                        .toLocaleDateString("fr-FR")
+                                                                        .includes(patientSearchQuery)))
+                                                        .slice(0, 10) as patient}
                                                         <button
                                                             type="button"
-                                                            onclick={() => selectPatient(patient)}
+                                                            onclick={() =>
+                                                                selectPatient(
+                                                                    patient,
+                                                                )}
                                                             class="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
                                                         >
-                                                            <div class="flex items-center justify-between">
+                                                            <div
+                                                                class="flex items-center justify-between"
+                                                            >
                                                                 <div>
-                                                                    <p class="text-sm font-semibold text-gray-900">{patient.full_name}</p>
-                                                                    <p class="text-xs text-gray-600">
-                                                                        {patient.phone || 'Pas de téléphone'} •
-                                                                        {patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString('fr-FR') : 'Pas de date'}
+                                                                    <p
+                                                                        class="text-sm font-semibold text-gray-900"
+                                                                    >
+                                                                        {patient.full_name}
+                                                                    </p>
+                                                                    <p
+                                                                        class="text-xs text-gray-600"
+                                                                    >
+                                                                        {patient.phone ||
+                                                                            "Pas de téléphone"}
+                                                                        •
+                                                                        {patient.date_of_birth
+                                                                            ? new Date(
+                                                                                  patient.date_of_birth,
+                                                                              ).toLocaleDateString(
+                                                                                  "fr-FR",
+                                                                              )
+                                                                            : "Pas de date"}
                                                                     </p>
                                                                 </div>
-                                                                <span class="text-xs text-gray-400">→</span>
+                                                                <span
+                                                                    class="text-xs text-gray-400"
+                                                                    >→</span
+                                                                >
                                                             </div>
                                                         </button>
                                                     {/each}
 
-                                                    {#if data.patients.filter(p =>
-                                                        p.full_name.toLowerCase().includes(patientSearchQuery.toLowerCase()) ||
-                                                        (p.phone && p.phone.includes(patientSearchQuery)) ||
-                                                        (p.date_of_birth && new Date(p.date_of_birth).toLocaleDateString('fr-FR').includes(patientSearchQuery))
-                                                    ).length === 0}
-                                                        <div class="px-4 py-3 text-center text-gray-500 text-sm">
-                                                            {$t("assistant.dashboard.appointment.newPatient.noResults")}
+                                                    {#if data.patients.filter((p) => p.full_name
+                                                                .toLowerCase()
+                                                                .includes(patientSearchQuery.toLowerCase()) || (p.phone && p.phone.includes(patientSearchQuery)) || (p.date_of_birth && new Date(p.date_of_birth)
+                                                                    .toLocaleDateString("fr-FR")
+                                                                    .includes(patientSearchQuery))).length === 0}
+                                                        <div
+                                                            class="px-4 py-3 text-center text-gray-500 text-sm"
+                                                        >
+                                                            {$t(
+                                                                "assistant.dashboard.appointment.newPatient.noResults",
+                                                            )}
                                                         </div>
                                                     {/if}
                                                 </div>
@@ -1637,31 +1987,58 @@
                                                 onclick={createNewPatient}
                                                 class="w-full px-4 py-3 text-left bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-colors flex items-center gap-3"
                                             >
-                                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                                    <span class="text-green-600 text-sm font-bold">+</span>
+                                                <div
+                                                    class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center"
+                                                >
+                                                    <span
+                                                        class="text-green-600 text-sm font-bold"
+                                                        >+</span
+                                                    >
                                                 </div>
-                                                <span class="text-sm font-semibold text-green-800">{$t("assistant.dashboard.appointment.newPatient.createNew")}</span>
+                                                <span
+                                                    class="text-sm font-semibold text-green-800"
+                                                    >{$t(
+                                                        "assistant.dashboard.appointment.newPatient.createNew",
+                                                    )}</span
+                                                >
                                             </button>
                                         </div>
                                     {/if}
 
                                     <!-- Hidden patient_id field for existing patients -->
                                     {#if selectedPatient && !isNewPatient}
-                                        <input type="hidden" name="patient_id" value={selectedPatient.id} />
+                                        <input
+                                            type="hidden"
+                                            name="patient_id"
+                                            value={selectedPatient.id}
+                                        />
                                     {/if}
                                 </div>
 
                                 <!-- New Patient Form Fields -->
                                 {#if isNewPatient}
-                                    <div class="bg-green-50 border border-green-200 rounded-xl p-4 space-y-4">
-                                        <h4 class="text-sm font-bold text-green-800 flex items-center gap-2">
-                                            <span class="text-green-600">👤</span>
-                                            {$t("assistant.dashboard.appointment.newPatient.title")}
+                                    <div
+                                        class="bg-green-50 border border-green-200 rounded-xl p-4 space-y-4"
+                                    >
+                                        <h4
+                                            class="text-sm font-bold text-green-800 flex items-center gap-2"
+                                        >
+                                            <span class="text-green-600"
+                                                >👤</span
+                                            >
+                                            {$t(
+                                                "assistant.dashboard.appointment.newPatient.title",
+                                            )}
                                         </h4>
 
                                         <div class="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">{$t("assistant.dashboard.appointment.newPatient.fullName")} *</label>
+                                                <label
+                                                    class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1"
+                                                    >{$t(
+                                                        "assistant.dashboard.appointment.newPatient.fullName",
+                                                    )} *</label
+                                                >
                                                 <input
                                                     type="text"
                                                     name="new_patient_name"
@@ -1671,7 +2048,12 @@
                                                 />
                                             </div>
                                             <div>
-                                                <label class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">{$t("assistant.dashboard.appointment.newPatient.phone")} *</label>
+                                                <label
+                                                    class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1"
+                                                    >{$t(
+                                                        "assistant.dashboard.appointment.newPatient.phone",
+                                                    )} *</label
+                                                >
                                                 <input
                                                     type="tel"
                                                     name="new_patient_phone"
@@ -1684,17 +2066,29 @@
 
                                         <div class="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">{$t("assistant.dashboard.appointment.newPatient.dob")} *</label>
+                                                <label
+                                                    class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1"
+                                                    >{$t(
+                                                        "assistant.dashboard.appointment.newPatient.dob",
+                                                    )} *</label
+                                                >
                                                 <input
                                                     type="date"
                                                     name="new_patient_dob"
                                                     required
-                                                    max={new Date().toISOString().split('T')[0]}
+                                                    max={new Date()
+                                                        .toISOString()
+                                                        .split("T")[0]}
                                                     class="w-full rounded-lg border-gray-200 bg-white py-2 px-3 text-sm font-medium focus:ring-green-500 focus:border-green-500"
                                                 />
                                             </div>
                                             <div>
-                                                <label class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">{$t("assistant.dashboard.appointment.newPatient.email")}</label>
+                                                <label
+                                                    class="block text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1"
+                                                    >{$t(
+                                                        "assistant.dashboard.appointment.newPatient.email",
+                                                    )}</label
+                                                >
                                                 <input
                                                     type="email"
                                                     name="new_patient_email"
@@ -1950,7 +2344,9 @@
                                 value="schedule_close"
                                 class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all"
                             >
-                                {$t("assistant.dashboard.buttons.scheduleAndClose")}
+                                {$t(
+                                    "assistant.dashboard.buttons.scheduleAndClose",
+                                )}
                             </button>
                             {#if !selectedAppointment?.id}
                                 <button
@@ -1959,7 +2355,9 @@
                                     value="schedule_new"
                                     class="px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-200 transition-all"
                                 >
-                                    {$t("assistant.dashboard.buttons.scheduleAndNew")}
+                                    {$t(
+                                        "assistant.dashboard.buttons.scheduleAndNew",
+                                    )}
                                 </button>
                             {/if}
                             <button
@@ -2286,7 +2684,9 @@
                     <div class="bg-white px-6 py-5">
                         <div class="flex items-center gap-4 mb-4">
                             <div class="flex-shrink-0">
-                                <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                                <div
+                                    class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center"
+                                >
                                     <span class="text-2xl">⚠️</span>
                                 </div>
                             </div>
@@ -2301,10 +2701,20 @@
                         </div>
                         <div class="mb-6">
                             <p class="text-sm text-gray-600">
-                                {#if pendingAction.type === 'bulk'}
-                                    Are you sure you want to {pendingAction.status === 'confirmed' ? 'confirm' : 'cancel'} <strong>{pendingAction.count}</strong> appointment{pendingAction.count === 1 ? '' : 's'}?
+                                {#if pendingAction.type === "bulk"}
+                                    Are you sure you want to {pendingAction.status ===
+                                    "confirmed"
+                                        ? "confirm"
+                                        : "cancel"}
+                                    <strong>{pendingAction.count}</strong>
+                                    appointment{pendingAction.count === 1
+                                        ? ""
+                                        : "s"}?
                                 {:else}
-                                    Are you sure you want to change this appointment status to <strong>{pendingAction.status}</strong>?
+                                    Are you sure you want to change this
+                                    appointment status to <strong
+                                        >{pendingAction.status}</strong
+                                    >?
                                 {/if}
                             </p>
                         </div>
@@ -2320,8 +2730,8 @@
                                 type="button"
                                 onclick={confirmAction}
                                 class="px-4 py-2 text-sm font-bold text-white rounded-lg transition-colors
-                                {pendingAction.status === 'confirmed' 
-                                    ? 'bg-green-600 hover:bg-green-700' 
+                                {pendingAction.status === 'confirmed'
+                                    ? 'bg-green-600 hover:bg-green-700'
                                     : pendingAction.status === 'cancelled'
                                       ? 'bg-red-600 hover:bg-red-700'
                                       : 'bg-indigo-600 hover:bg-indigo-700'}"
