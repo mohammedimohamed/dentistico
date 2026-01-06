@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDoctors, getPatientByPhoneOrEmail, createPatient, createAppointment, getSecondaryPatient, getUserByUsername } from '$lib/server/db';
 import db from '$lib/server/db';
+import { createNotification, getAllAssistantIds } from '$lib/server/notifications';
 
 // Helper function to validate date of birth is not in the future
 function validateDateOfBirth(dob: string | null | undefined): string | null {
@@ -9,7 +10,7 @@ function validateDateOfBirth(dob: string | null | undefined): string | null {
     const birthDate = new Date(dob);
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to compare dates only
-    
+
     if (birthDate > today) {
         throw new Error('Date of birth cannot be in the future');
     }
@@ -36,7 +37,7 @@ export const actions: Actions = {
         // Validate dates of birth are not in the future
         let date_of_birth: string | null = null;
         let patient_dob: string | null = null;
-        
+
         try {
             if (date_of_birth_raw) {
                 date_of_birth = validateDateOfBirth(date_of_birth_raw);
@@ -108,7 +109,7 @@ export const actions: Actions = {
             } else {
                 // Booking for someone else
                 // Check if this specific secondary patient already exists under this requester
-                const existingSecondary = getSecondaryPatient(requester_id, patient_name, patient_dob);
+                const existingSecondary = getSecondaryPatient(requester_id, patient_name, patient_dob || '');
 
                 if (existingSecondary) {
                     target_patient_id = Number((existingSecondary as any).id);
@@ -149,13 +150,22 @@ export const actions: Actions = {
                 status: 'scheduled',
                 notes: finalNotes
             };
-            
+
             // Only include doctor_id if it was provided
             if (doctor_id) {
                 appointmentData.doctor_id = doctor_id;
             }
 
-            createAppointment(appointmentData);
+            const appointmentId = Number(createAppointment(appointmentData));
+
+            // Notify all assistants about new web booking
+            createNotification({
+                userIds: getAllAssistantIds(),
+                type: 'booking_created',
+                title: 'New Web Booking',
+                message: `${full_name} booked an appointment for ${dbStartTime}`,
+                link: `/assistant/dashboard`
+            });
 
             return { success: true };
         } catch (e: any) {

@@ -25,6 +25,8 @@ The ultimate oversight for clinical directors and owners.
 - **Website Configuration**: Real-time control over landing page content, services, and branding via the JSON CMS.
 - **Global Settings UI**: Manage system-wide parameters like currency, symbols, and clinic hours via a dedicated settings dashboard.
 - **System Metrics**: Overview of total patient registrations and user activity.
+- **Expense Categories**: Customize expense types and organize spending
+- **Financial Analytics**: Revenue vs expenses, profit/loss tracking
 
 ### 👩‍💼 Clinic Assistant Portal (Management & Ops)
 A high-efficiency command center for administrative staff.
@@ -33,6 +35,7 @@ A high-efficiency command center for administrative staff.
     - **Archiving**: Safely archive inactive patients (requires zero balance and no upcoming visits).
     - **Archived View**: Separate section to review or **unarchive** historical records.
 - **Financial Reconciliation**: Record payments and generate itemized invoices that automatically sync with clinical treatments.
+- **Spending Management**: Track clinic expenses (bills, salaries, repairs)
 - **Lead Tracking**: Clear visibility into which bookings originated from the public website vs. manual entry.
 - **Appointment Source Attribution**: 
     - Every booking is tagged with its origin channel ("Source: Web" or "Source: Assistant: Name").
@@ -40,6 +43,9 @@ A high-efficiency command center for administrative staff.
 - **Web Booking Confirmation Flow**: 
     - Online appointments land in a "Pending Confirmation" state.
     - Assistants review, assign rooms, and confirm bookings before they move into the active doctor's schedule.
+- **Real-Time Notifications**:
+    - Instant alerts for new web bookings, payment receipts, and low stock warnings.
+    - **Interactive Bell**: Dropdown with unread count and quick actions to mark as read.
 
 ### 👨‍⚕️ Doctor’s Clinical Command (Patient Care)
 Designed for focus, speed, and clinical accuracy.
@@ -55,6 +61,7 @@ Designed for focus, speed, and clinical accuracy.
     - **Room Conflict Prevention**: Automated system blocks double-booking of the same treatment room at the same time.
 - **Clinical History**: Longitudinal access to notes, allergies (hidden from assistants), and prescriptions.
 - **Room Coordination**: Doctors see patients assigned specifically to their designated rooms for the day.
+- **Live Updates**: Receive instant notifications when appointments are confirmed or cancelled.
 
 ### 🌍 Internationalization (Global Ready)
 - **Multi-language Support**: Fully translated into **French** and **Arabic**.
@@ -63,6 +70,7 @@ Designed for focus, speed, and clinical accuracy.
 
 ### 📦 Logistics & Inventory (Smart Supply Chain)
 - **Low Stock Visual Alerts**: Color-coded thresholds to prevent supply shortages.
+- **Auto-Notifications**: System automatically alerts all staff when an item drops below its defined minimum threshold.
 - **Movement Audit Logs**: Detailed "Entry/Exit" tracking with reason logging.
 
 ---

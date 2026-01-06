@@ -527,5 +527,132 @@
                 "cancel": "إلغاء"
             }
         }
+    },
+    "spending": {
+        "title": "إدارة المصروفات",
+        "menu": "المصروفات",
+        "categories_menu": "الفئات",
+        "subtitle": "تتبع نفقات العيادة",
+        "add_expense": "إضافة مصروف",
+        "edit_expense": "تعديل المصروف",
+        "new_expense": "مصروف جديد",
+        "export_csv": "تصدير CSV",
+        "total_spending": "إجمالي المصروفات",
+        "no_records": "لم يتم العثور على سجلات مصروفات",
+        "loading": "جاري التحميل...",
+        "table": {
+            "date": "التاريخ",
+            "category": "الفئة",
+            "description": "الوصف",
+            "amount": "المبلغ",
+            "payment": "الدفع",
+            "receipt": "رقم الإيصال",
+            "actions": "الإجراءات",
+            "edit": "تعديل",
+            "delete": "حذف"
+        },
+        "form": {
+            "category_required": "الفئة *",
+            "select_category": "اختر الفئة",
+            "amount_required": "المبلغ *",
+            "amount_placeholder": "0.00",
+            "description_required": "الوصف *",
+            "description_placeholder": "مثال: فاتورة الكهرباء الشهرية",
+            "payment_method": "طريقة الدفع",
+            "payment_cash": "نقدي",
+            "payment_card": "بطاقة",
+            "payment_transfer": "تحويل بنكي",
+            "payment_check": "شيك",
+            "receipt_number": "رقم الإيصال",
+            "receipt_optional": "اختياري",
+            "date_required": "التاريخ *",
+            "notes": "ملاحظات",
+            "notes_placeholder": "تفاصيل إضافية...",
+            "cancel": "إلغاء",
+            "save": "حفظ",
+            "update": "تحديث"
+        },
+        "filters": {
+            "start_date": "تاريخ البداية",
+            "end_date": "تاريخ النهاية",
+            "category": "الفئة",
+            "all_categories": "جميع الفئات",
+            "apply": "تطبيق الفلاتر"
+        },
+        "summary": {
+            "transactions": "معاملات"
+        },
+        "categories": {
+            "title": "فئات المصروفات",
+            "subtitle": "إدارة فئات المصروفات",
+            "add_category": "إضافة فئة",
+            "edit_category": "تعديل الفئة",
+            "new_category": "فئة جديدة",
+            "name_required": "الاسم *",
+            "name_placeholder": "مثال: إيجار المكتب",
+            "description": "الوصف",
+            "description_placeholder": "وصف اختياري",
+            "color": "اللون",
+            "delete_error": "لا يمكن حذف فئة تحتوي على سجلات مصروفات موجودة",
+            "delete_confirm": "حذف هذه الفئة؟ سيفشل هذا إذا كانت هناك سجلات مصروفات موجودة.",
+            "defaults": {
+                "electricity": "الكهرباء",
+                "electricity_desc": "فواتير الكهرباء الشهرية",
+                "water": "الماء",
+                "water_desc": "فواتير الماء الشهرية",
+                "internet": "الإنترنت والهاتف",
+                "internet_desc": "مصاريف الاتصالات",
+                "rent": "الإيجار",
+                "rent_desc": "إيجار المكتب/العيادة",
+                "salaries": "الرواتب",
+                "salaries_desc": "رواتب وأجور الموظفين",
+                "repair": "إصلاح المعدات",
+                "repair_desc": "الصيانة والإصلاحات",
+                "cleaning": "خدمات التنظيف",
+                "cleaning_desc": "النظافة والتنظيف",
+                "supplies": "مستلزمات المكتب",
+                "supplies_desc": "مستلزمات غير طبية",
+                "insurance": "التأمين",
+                "insurance_desc": "أقساط التأمين التجاري",
+                "marketing": "التسويق",
+                "marketing_desc": "الإعلان والترويج",
+                "professional": "الرسوم المهنية",
+                "professional_desc": "رسوم المحاسب والمحامي",
+                "taxes": "الضرائب",
+                "taxes_desc": "الضرائب والرسوم التجارية",
+                "other": "أخرى",
+                "other_desc": "مصروفات متنوعة"
+            }
+        },
+        "notifications": {
+            "new_expense": "تم تسجيل مصروف جديد",
+            "expense_added": "تمت إضافة المصروف بنجاح",
+            "expense_updated": "تم تحديث المصروف بنجاح",
+            "expense_deleted": "تم حذف المصروف بنجاح",
+            "category_added": "تم إنشاء الفئة بنجاح",
+            "category_updated": "تم تحديث الفئة بنجاح",
+            "category_deleted": "تم حذف الفئة بنجاح"
+        },
+        "confirm": {
+            "delete_expense": "حذف سجل المصروف هذا؟"
+        }
+    },
+    "notifications": {
+        "page_title": "كل الإشعارات",
+        "title": "الإشعارات",
+        "mark_read": "تحديد كمقروء",
+        "mark_all_read": "تحديد الكل كمقروء",
+        "view_details": "عرض التفاصيل",
+        "view_all": "عرض كل الإشعارات",
+        "dismiss": "تجاهل",
+        "loading": "جاري التحميل...",
+        "empty": "لا توجد إشعارات حتى الآن",
+        "new_empty": "لا توجد إشعارات جديدة",
+        "types": {
+            "New Expense Recorded": "تم تسجيل مصروف جديد",
+            "Low Stock Alert": "تنبيه انخفاض المخزون",
+            "Appointment Booked": "تم حجز موعد",
+            "Appointment Cancelled": "تم إلغاء الموعد"
+        }
     }
 }

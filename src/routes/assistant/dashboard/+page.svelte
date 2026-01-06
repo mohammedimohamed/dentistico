@@ -398,6 +398,18 @@
                     patientDob +
                     "</div></div>",
             );
+            if (patient.parent_name) {
+                const parentInfo =
+                    patient.parent_name +
+                    " (" +
+                    (patient.parent_phone || "Pas de téléphone") +
+                    ")";
+                doc.write(
+                    '<div class="info-row"><div class="info-label">Parent</div><div class="info-value">' +
+                        parentInfo +
+                        "</div></div>",
+                );
+            }
             doc.write("</div>");
 
             // Upcoming appointments
@@ -531,10 +543,21 @@
     ) {
         if (appt) {
             selectedAppointment = appt;
+            // Auto-populate patient
+            if (appt.patient_id) {
+                const foundPatient = data.patients.find(
+                    (p: any) => p.id === appt.patient_id,
+                );
+                if (foundPatient) {
+                    selectedPatient = foundPatient;
+                }
+            }
         } else if (startTime) {
             selectedAppointment = { start_time: startTime };
+            selectedPatient = null;
         } else {
             selectedAppointment = null;
+            selectedPatient = null;
         }
         isBookingModalOpen = true;
     }

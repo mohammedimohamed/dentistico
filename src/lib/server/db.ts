@@ -258,6 +258,47 @@ export function init_db() {
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
 
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            message TEXT NOT NULL,
+            link TEXT,
+            is_read INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+        CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);
+
+        CREATE TABLE IF NOT EXISTS spending_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            color TEXT DEFAULT '#3B82F6',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS spending (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id INTEGER NOT NULL,
+            amount REAL NOT NULL,
+            description TEXT NOT NULL,
+            payment_method TEXT DEFAULT 'cash',
+            receipt_number TEXT,
+            spending_date TEXT NOT NULL,
+            created_by_user_id INTEGER NOT NULL,
+            notes TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (category_id) REFERENCES spending_categories(id),
+            FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_spending_date ON spending(spending_date);
+        CREATE INDEX IF NOT EXISTS idx_spending_category ON spending(category_id);
+
         DROP VIEW IF EXISTS patient_balance;
         CREATE VIEW patient_balance AS
         SELECT 
@@ -270,6 +311,32 @@ export function init_db() {
             COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
         FROM patients p;
     `);
+
+    // Insert default categories
+    const defaultCategories = [
+        ['Electricity', 'Monthly electricity bills', '#F59E0B'],
+        ['Water', 'Monthly water bills', '#3B82F6'],
+        ['Internet & Phone', 'Communication expenses', '#8B5CF6'],
+        ['Rent', 'Office/clinic rent', '#EF4444'],
+        ['Salaries', 'Staff salaries and wages', '#10B981'],
+        ['Equipment Repair', 'Maintenance and repairs', '#6B7280'],
+        ['Cleaning Services', 'Janitorial and cleaning', '#EC4899'],
+        ['Office Supplies', 'Non-medical supplies', '#F97316'],
+        ['Insurance', 'Business insurance premiums', '#14B8A6'],
+        ['Marketing', 'Advertising and promotion', '#8B5CF6'],
+        ['Professional Fees', 'Accountant, lawyer fees', '#6366F1'],
+        ['Taxes', 'Business taxes and fees', '#DC2626'],
+        ['Other', 'Miscellaneous expenses', '#6B7280']
+    ];
+
+    const insertCategory = db.prepare(`
+      INSERT OR IGNORE INTO spending_categories (name, description, color)
+      VALUES (?, ?, ?)
+    `);
+
+    for (const [name, desc, color] of defaultCategories) {
+        insertCategory.run(name, desc, color);
+    }
 
     // Check if seed needed
     const userCount = db.prepare('SELECT count(*) as count FROM users').get() as { count: number };
@@ -1303,6 +1370,17 @@ export function recordStockMove(moveData: { item_id: number; type: 'IN' | 'OUT';
         `).run(adjustment, moveData.item_id);
     });
     txn();
+}
+
+export function createInventoryItem(itemData: any) {
+    const keys = Object.keys(itemData);
+    const columns = keys.join(', ');
+    const placeholders = keys.map(() => '?').join(', ');
+    const values = Object.values(itemData);
+
+    const stmt = db.prepare(`INSERT INTO inventory_items (${columns}) VALUES (${placeholders})`);
+    const info = stmt.run(...values);
+    return info.lastInsertRowid;
 }
 
 export function getStockMoves(itemId?: number) {

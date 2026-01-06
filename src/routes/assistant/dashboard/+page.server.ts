@@ -14,8 +14,10 @@ import {
     updatePatient,
     getAppointmentById,
     getUserByUsername,
-    createUser
+    createUser,
+    db
 } from '$lib/server/db';
+import { createNotification, getAllAdminIds } from '$lib/server/notifications';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -67,7 +69,7 @@ export const actions: Actions = {
         if (birthDate > today) {
             return fail(400, { error: 'Date of birth cannot be in the future' });
         }
-        
+
         const dob = dobRaw;
 
         // Only check uniqueness if it's NOT a secondary contact
@@ -132,13 +134,13 @@ export const actions: Actions = {
             }
 
             try {
-                patientId = createPatient({
+                patientId = Number(createPatient({
                     full_name: newPatientName,
                     phone: newPatientPhone,
                     email: newPatientEmail || null,
                     date_of_birth: newPatientDob,
                     created_by: locals.user.id
-                });
+                }));
             } catch (e) {
                 console.error(e);
                 return fail(500, { error: 'Failed to create new patient' });
@@ -225,6 +227,25 @@ export const actions: Actions = {
             if (status === 'confirmed') {
                 const appt = getAppointmentById(appointmentId) as any;
                 if (appt) {
+                    // Notify the doctor
+                    const appointmentDetails = db.prepare(`
+                      SELECT a.*, p.full_name as patient_name, d.id as doctor_id
+                      FROM appointments a
+                      JOIN patients p ON a.patient_id = p.id
+                      JOIN users d ON a.doctor_id = d.id
+                      WHERE a.id = ?
+                    `).get(appointmentId) as any;
+
+                    if (appointmentDetails) {
+                        createNotification({
+                            userIds: [appointmentDetails.doctor_id],
+                            type: 'booking_confirmed',
+                            title: 'Appointment Confirmed',
+                            message: `${appointmentDetails.patient_name}'s appointment has been confirmed`,
+                            link: `/doctor/dashboard`
+                        });
+                    }
+
                     // Logic: We want to create a user account for the responsible party
                     // If booked_by_id exists and is different from patient_id, create it for the requester
                     // Otherwise create it for the patient.
@@ -283,7 +304,7 @@ export const actions: Actions = {
 
         try {
             const appointmentIds = appointmentIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-            
+
             if (appointmentIds.length === 0) {
                 return fail(400, { error: 'No valid appointment IDs provided' });
             }
@@ -363,6 +384,19 @@ export const actions: Actions = {
                 notes,
                 recorded_by: locals.user.id
             });
+
+            // Get patient name for notification
+            const patient = getPatientByIdLimited(patientId) as any;
+
+            // Notify admins about payment
+            createNotification({
+                userIds: getAllAdminIds(),
+                type: 'payment_received',
+                title: 'Payment Received',
+                message: `${patient ? patient.full_name : 'Invité'} paid ${amount} MAD`,
+                link: `/admin`
+            });
+
             return { success: true, message: 'Payment recorded successfully' };
         } catch (e) {
             console.error(e);

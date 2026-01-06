@@ -527,5 +527,132 @@
                 "cancel": "Annuler"
             }
         }
+    },
+    "spending": {
+        "title": "Gestion des Dépenses",
+        "menu": "Dépenses",
+        "categories_menu": "Catégories",
+        "subtitle": "Suivre les dépenses de la clinique",
+        "add_expense": "Ajouter une Dépense",
+        "edit_expense": "Modifier la Dépense",
+        "new_expense": "Nouvelle Dépense",
+        "export_csv": "Exporter CSV",
+        "total_spending": "Dépenses Totales",
+        "no_records": "Aucun enregistrement de dépense trouvé",
+        "loading": "Chargement...",
+        "table": {
+            "date": "Date",
+            "category": "Catégorie",
+            "description": "Description",
+            "amount": "Montant",
+            "payment": "Paiement",
+            "receipt": "Reçu #",
+            "actions": "Actions",
+            "edit": "Modifier",
+            "delete": "Supprimer"
+        },
+        "form": {
+            "category_required": "Catégorie *",
+            "select_category": "Sélectionner une catégorie",
+            "amount_required": "Montant *",
+            "amount_placeholder": "0.00",
+            "description_required": "Description *",
+            "description_placeholder": "ex: Facture d'électricité mensuelle",
+            "payment_method": "Mode de Paiement",
+            "payment_cash": "Espèces",
+            "payment_card": "Carte",
+            "payment_transfer": "Virement Bancaire",
+            "payment_check": "Chèque",
+            "receipt_number": "Numéro de Reçu",
+            "receipt_optional": "Optionnel",
+            "date_required": "Date *",
+            "notes": "Notes",
+            "notes_placeholder": "Détails supplémentaires...",
+            "cancel": "Annuler",
+            "save": "Enregistrer",
+            "update": "Mettre à Jour"
+        },
+        "filters": {
+            "start_date": "Date de Début",
+            "end_date": "Date de Fin",
+            "category": "Catégorie",
+            "all_categories": "Toutes les Catégories",
+            "apply": "Appliquer les Filtres"
+        },
+        "summary": {
+            "transactions": "transactions"
+        },
+        "categories": {
+            "title": "Catégories de Dépenses",
+            "subtitle": "Gérer les catégories de dépenses",
+            "add_category": "Ajouter une Catégorie",
+            "edit_category": "Modifier la Catégorie",
+            "new_category": "Nouvelle Catégorie",
+            "name_required": "Nom *",
+            "name_placeholder": "ex: Loyer du Bureau",
+            "description": "Description",
+            "description_placeholder": "Description optionnelle",
+            "color": "Couleur",
+            "delete_error": "Impossible de supprimer une catégorie avec des enregistrements de dépenses existants",
+            "delete_confirm": "Supprimer cette catégorie ? Cela échouera s'il y a des enregistrements de dépenses existants.",
+            "defaults": {
+                "electricity": "Électricité",
+                "electricity_desc": "Factures mensuelles d'électricité",
+                "water": "Eau",
+                "water_desc": "Factures mensuelles d'eau",
+                "internet": "Internet & Téléphone",
+                "internet_desc": "Dépenses de communication",
+                "rent": "Loyer",
+                "rent_desc": "Loyer du bureau/clinique",
+                "salaries": "Salaires",
+                "salaries_desc": "Salaires et rémunérations du personnel",
+                "repair": "Réparation d'Équipement",
+                "repair_desc": "Maintenance et réparations",
+                "cleaning": "Services de Nettoyage",
+                "cleaning_desc": "Entretien et nettoyage",
+                "supplies": "Fournitures de Bureau",
+                "supplies_desc": "Fournitures non médicales",
+                "insurance": "Assurance",
+                "insurance_desc": "Primes d'assurance professionnelle",
+                "marketing": "Marketing",
+                "marketing_desc": "Publicité et promotion",
+                "professional": "Honoraires Professionnels",
+                "professional_desc": "Frais de comptable, avocat",
+                "taxes": "Taxes",
+                "taxes_desc": "Taxes et frais commerciaux",
+                "other": "Autre",
+                "other_desc": "Dépenses diverses"
+            }
+        },
+        "notifications": {
+            "new_expense": "Nouvelle Dépense Enregistrée",
+            "expense_added": "Dépense ajoutée avec succès",
+            "expense_updated": "Dépense mise à jour avec succès",
+            "expense_deleted": "Dépense supprimée avec succès",
+            "category_added": "Catégorie créée avec succès",
+            "category_updated": "Catégorie mise à jour avec succès",
+            "category_deleted": "Catégorie supprimée avec succès"
+        },
+        "confirm": {
+            "delete_expense": "Supprimer cet enregistrement de dépense ?"
+        }
+    },
+    "notifications": {
+        "page_title": "Toutes les Notifications",
+        "title": "Notifications",
+        "mark_read": "Marquer comme lu",
+        "mark_all_read": "Tout marquer comme lu",
+        "view_details": "Voir les détails",
+        "view_all": "Voir toutes les notifications",
+        "dismiss": "Ignorer",
+        "loading": "Chargement...",
+        "empty": "Aucune notification pour le moment",
+        "new_empty": "Aucune nouvelle notification",
+        "types": {
+            "New Expense Recorded": "Nouvelle Dépense Enregistrée",
+            "Low Stock Alert": "Alerte Stock Faible",
+            "Appointment Booked": "Rendez-vous Réservé",
+            "Appointment Cancelled": "Rendez-vous Annulé"
+        }
     }
 }

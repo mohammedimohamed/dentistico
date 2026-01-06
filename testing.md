@@ -309,6 +309,118 @@ _________________________________________________________________
 
 ---
 
+### Scenario 61: Notification System - Web Booking Alert
+**User Story:** Sarah books online. Maria should receive a notification.
+**Steps:**
+1. Sarah books an appointment via public website
+2. Maria (Assistant) logs in
+3. Check notification bell icon in top-right
+**Expected Results:**
+- Red badge shows "1" unread notification
+- Clicking bell shows "New Web Booking" notification
+- Message includes patient name and appointment time
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 62: Notification System - Low Stock Alert
+**User Story:** Inventory item drops below threshold. All staff get notified.
+**Steps:**
+1. Go to Inventory
+2. Reduce "Sterile Gloves" quantity to below minimum threshold
+3. Check notification bell for Admin, Doctor, and Assistant
+**Expected Results:**
+- All users see "Low Stock Alert" notification
+- Message shows item name and remaining quantity
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+---
+
+### Scenario 63: Recording Clinic Expense
+**User Story:** Maria pays the monthly electricity bill of €150.
+**Steps:**
+1. Login as Assistant
+2. Go to "Expenses" or "Spending"
+3. Click "Add Expense"
+4. Category: "Electricity"
+5. Amount: 150
+6. Description: "December electricity bill"
+7. Payment Method: "Bank Transfer"
+8. Date: Today
+9. Save
+**Expected Results:**
+- Expense appears in spending list
+- Total spending updates
+- Admin receives notification
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 64: Filtering Expenses by Category
+**User Story:** Admin wants to see all salary expenses for last month.
+**Steps:**
+1. Login as Admin
+2. Go to "Spending Management"
+3. Set Start Date: First day of last month
+4. Set End Date: Last day of last month
+5. Category: "Salaries"
+6. Click "Apply Filters"
+**Expected Results:**
+- Only salary expenses from last month are shown
+- Total reflects filtered amount
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 65: Creating Custom Expense Category
+**User Story:** Admin needs a new category "Equipment Maintenance".
+**Steps:**
+1. Login as Admin
+2. Go to "Spending Categories"
+3. Click "Add Category"
+4. Name: "Equipment Maintenance"
+5. Description: "Dental equipment repairs and maintenance"
+6. Choose color (e.g., Orange)
+7. Save
+**Expected Results:**
+- New category appears in list
+- Available in expense creation dropdown
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 66: Exporting Spending Report
+**User Story:** Accountant needs spending data for tax filing.
+**Steps:**
+1. Login as Admin
+2. Go to "Spending Management"
+3. Set date range: Full calendar year
+4. Click "Export CSV"
+**Expected Results:**
+- CSV file downloads
+- Contains all columns: date, category, description, amount, etc.
+- Openable in Excel/Google Sheets
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 67: Preventing Category Deletion with Records
+**User Story:** Admin tries to delete "Salaries" category that has expense records.
+**Steps:**
+1. Login as Admin
+2. Go to "Spending Categories"
+3. Try to delete a category that has expenses
+**Expected Results:**
+- System prevents deletion
+- Error message: "Cannot delete category with existing spending records"
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+---
+
 ## 📝 General Feedback & Bug Reports
 
 *Please use this section for any general comments or bugs found that don't fit a specific scenario.*
