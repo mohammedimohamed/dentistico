@@ -794,7 +794,20 @@ export function getDoctors() {
 // --- Patients ---
 // Full access for Doctors
 export function getAllPatientsFull() {
-    return db.prepare('SELECT * FROM patients WHERE is_archived = 0 ORDER BY full_name ASC').all();
+    return db.prepare('SELECT * FROM patients WHERE is_archived = 0 ORDER BY full_name ASC LIMIT 1000').all();
+}
+
+export function getAllPatientsFullPaginated(limit: number, offset: number) {
+    return db.prepare('SELECT * FROM patients WHERE is_archived = 0 ORDER BY full_name ASC LIMIT ? OFFSET ?').all(limit, offset);
+}
+
+export function getPatientsCount(searchTerm?: string) {
+    if (searchTerm) {
+        const res = db.prepare('SELECT COUNT(*) as count FROM patients WHERE full_name LIKE ? AND is_archived = 0').get(`%${searchTerm}%`) as { count: number };
+        return res.count;
+    }
+    const res = db.prepare('SELECT COUNT(*) as count FROM patients WHERE is_archived = 0').get() as { count: number };
+    return res.count;
 }
 
 export function getArchivedPatientsFull() {
@@ -807,6 +820,10 @@ export function getPatientByIdFull(id: number) {
 
 export function searchPatientsByName(searchTerm: string) {
     return db.prepare('SELECT * FROM patients WHERE full_name LIKE ? AND is_archived = 0 ORDER BY full_name ASC').all(`%${searchTerm}%`);
+}
+
+export function searchPatientsByNamePaginated(searchTerm: string, limit: number, offset: number) {
+    return db.prepare('SELECT * FROM patients WHERE full_name LIKE ? AND is_archived = 0 ORDER BY full_name ASC LIMIT ? OFFSET ?').all(`%${searchTerm}%`, limit, offset);
 }
 
 export function createPatient(patientData: any) {
@@ -890,7 +907,22 @@ export function getAllPatientsLimited() {
         LEFT JOIN patients parent ON p.primary_contract_id = parent.id
         WHERE p.is_archived = 0 
         ORDER BY p.full_name ASC
+        LIMIT 1000
     `).all();
+}
+
+export function searchPatientsByNameLimited(searchTerm: string) {
+    return db.prepare(`
+        SELECT 
+            p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth,
+            p.relationship_to_primary,
+            parent.full_name as parent_name, parent.phone as parent_phone
+        FROM patients p
+        LEFT JOIN patients parent ON p.primary_contract_id = parent.id
+        WHERE p.is_archived = 0 AND p.full_name LIKE ?
+        ORDER BY p.full_name ASC
+        LIMIT 100
+    `).all(`%${searchTerm}%`);
 }
 
 export function getArchivedPatientsLimited() {
@@ -1187,12 +1219,13 @@ export function getPendingPayments() {
         JOIN patients p ON pb.patient_id = p.id
         WHERE pb.balance_due > 0
         ORDER BY pb.balance_due DESC
+        LIMIT 1000
     `).all();
 }
 
 // --- Medications ---
 export function getAllMedications() {
-    return db.prepare('SELECT * FROM medications ORDER BY name ASC').all();
+    return db.prepare('SELECT * FROM medications ORDER BY name ASC LIMIT 1000').all();
 }
 
 export function createMedication(medData: any) {

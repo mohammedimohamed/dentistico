@@ -8,7 +8,10 @@
     import { page } from "$app/stores";
     import { goto, invalidateAll } from "$app/navigation";
 
-    let { data }: { data: PageData } = $props();
+    let { data }: { data: any } = $props();
+    const patients = $derived(data.patients as any[]);
+    const patientSearch = $derived((data.patientSearch as string) || "");
+
     let activeTab = $state("schedule");
 
     // Set max date to today for date of birth (cannot be in the future)
@@ -24,7 +27,7 @@
     let isPaymentModalOpen = $state(false);
     let selectedPaymentPatient = $state<any>(null);
     let selectedAppointment = $state<any>(null); // For booking/editing
-    let searchPatientQuery = $state("");
+    let searchPatientQuery = $state(patientSearch);
     let errorMessage = $state("");
 
     // Confirmation modal state
@@ -51,7 +54,7 @@
     );
 
     // Appointment form state
-    let patientSearchQuery = $state("");
+    let patientSearchQuery = $state(patientSearch);
     let selectedPatient = $state<any>(null);
     let isNewPatient = $state(false);
     let patientCardUrl = $state<string | null>(null);
@@ -522,14 +525,43 @@
         isPaymentModalOpen = true;
     }
 
-    // Filter patients
+    // Server-side search for patients
+    let searchTimeout: any;
+
+    $effect(() => {
+        const query = searchPatientQuery.trim();
+        const modalQuery = patientSearchQuery.trim();
+        const activeQuery = query !== patientSearch ? query : modalQuery;
+
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            if (activeQuery === patientSearch) return;
+            const url = new URL($page.url);
+            if (activeQuery) {
+                url.searchParams.set("patientSearch", activeQuery);
+            } else {
+                url.searchParams.delete("patientSearch");
+            }
+            goto(url.toString(), {
+                replaceState: true,
+                noScroll: true,
+                keepFocus: true,
+            });
+        }, 400);
+    });
+
+    $effect(() => {
+        if (patientSearch !== undefined) {
+            if (document.activeElement?.tagName !== "INPUT") {
+                searchPatientQuery = patientSearch;
+                patientSearchQuery = patientSearch;
+            }
+        }
+    });
+
     function getFilteredPatients() {
-        if (!searchPatientQuery) return data.patients;
-        return data.patients.filter((p) =>
-            p.full_name
-                .toLowerCase()
-                .includes(searchPatientQuery.toLowerCase()),
-        );
+        // Now patients is already filtered by the server if a search was performed
+        return patients;
     }
 
     function closeModal() {
@@ -1951,13 +1983,7 @@
                                                 <div
                                                     class="max-h-48 overflow-y-auto border border-gray-200 rounded-xl bg-white shadow-sm"
                                                 >
-                                                    {#each data.patients
-                                                        .filter((p) => p.full_name
-                                                                    .toLowerCase()
-                                                                    .includes(patientSearchQuery.toLowerCase()) || (p.phone && p.phone.includes(patientSearchQuery)) || (p.date_of_birth && new Date(p.date_of_birth)
-                                                                        .toLocaleDateString("fr-FR")
-                                                                        .includes(patientSearchQuery)))
-                                                        .slice(0, 10) as patient}
+                                                    {#each data.patients.slice(0, 10) as patient}
                                                         <button
                                                             type="button"
                                                             onclick={() =>

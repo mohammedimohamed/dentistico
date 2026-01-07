@@ -2,6 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import {
     getAllUpcomingAppointments,
     getAllPatientsLimited,
+    searchPatientsByNameLimited,
     getDoctors,
     getPendingPayments,
     createPatient,
@@ -20,13 +21,16 @@ import {
 import { createNotification, getAllAdminIds } from '$lib/server/notifications';
 import type { PageServerLoad, Actions } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
     if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
         throw redirect(302, '/login');
     }
 
+    const patientSearch = url.searchParams.get('patientSearch') || '';
+
+    // Safety: only fetch all if no search, but even then getAllPatientsLimited has a 1000 limit now
     const appointments = getAllUpcomingAppointments();
-    const patients = getAllPatientsLimited();
+    const patients = patientSearch ? searchPatientsByNameLimited(patientSearch) : getAllPatientsLimited();
     const doctors = getDoctors();
     const pendingPayments = getPendingPayments();
 
@@ -35,6 +39,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         patients,
         doctors,
         pendingPayments,
+        patientSearch,
         user: locals.user
     };
 };

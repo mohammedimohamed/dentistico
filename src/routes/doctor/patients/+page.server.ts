@@ -1,5 +1,5 @@
 import { redirect, fail } from '@sveltejs/kit';
-import { getAllPatientsFull, searchPatientsByName, createPatient, getUserById } from '$lib/server/db';
+import { getAllPatientsFullPaginated, searchPatientsByNamePaginated, getPatientsCount, createPatient } from '$lib/server/db';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -7,18 +7,28 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         throw redirect(302, '/login');
     }
 
-    const searchQuery = url.searchParams.get('search');
+    const searchQuery = url.searchParams.get('search') || '';
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = 24;
+    const offset = (page - 1) * limit;
+
     let patients;
+    let totalPatients;
 
     if (searchQuery) {
-        patients = searchPatientsByName(searchQuery);
+        patients = searchPatientsByNamePaginated(searchQuery, limit, offset);
+        totalPatients = getPatientsCount(searchQuery);
     } else {
-        patients = getAllPatientsFull();
+        patients = getAllPatientsFullPaginated(limit, offset);
+        totalPatients = getPatientsCount();
     }
 
     return {
         patients,
         searchQuery,
+        totalPatients,
+        page,
+        totalPages: Math.ceil(totalPatients / limit),
         user: locals.user
     };
 };
@@ -46,7 +56,7 @@ export const actions: Actions = {
         if (birthDate > today) {
             return fail(400, { error: 'Date of birth cannot be in the future' });
         }
-        
+
         const dob = dobRaw;
 
         try {
