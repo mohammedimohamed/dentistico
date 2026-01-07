@@ -51,9 +51,17 @@ export function init_db() {
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             full_name TEXT NOT NULL,
+            phone TEXT, 
             role TEXT NOT NULL CHECK(role IN ('doctor', 'assistant', 'patient', 'admin')),
             created_at TEXT DEFAULT (datetime('now'))
         );
+
+        -- Add phone column if it doesn't exist (for existing databases)
+        BEGIN;
+        SELECT count(*) FROM pragma_table_info('users') WHERE name='phone';
+        COMMIT;
+        -- Note: Better-sqlite3 doesn't easily support conditional ALTER in one exec block without logic.
+        -- We will try-catch the alter in init_db function logic instead or just use a safe dev-mode trick.
 
         CREATE TABLE IF NOT EXISTS patients (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -372,6 +380,13 @@ export function init_db() {
     try {
         db.exec('ALTER TABLE patients ADD COLUMN secondary_email TEXT');
         console.log('Added secondary_email column to patients table');
+    } catch (e) {
+        // Column might already exist
+    }
+
+    try {
+        db.exec('ALTER TABLE users ADD COLUMN phone TEXT');
+        console.log('Added phone column to users table');
     } catch (e) {
         // Column might already exist
     }
@@ -784,7 +799,15 @@ export function createUser(userData: any) {
 }
 
 export function getUserById(id: number) {
-    return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    return db.prepare('SELECT id, username, full_name, role, phone FROM users WHERE id = ?').get(id);
+}
+
+export function updateUserProfile(id: number, fullName: string, phone: string) {
+    return db.prepare('UPDATE users SET full_name = ?, phone = ? WHERE id = ?').run(fullName, phone, id);
+}
+
+export function updateUserPassword(id: number, passwordHash: string) {
+    return db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, id);
 }
 
 export function getDoctors() {

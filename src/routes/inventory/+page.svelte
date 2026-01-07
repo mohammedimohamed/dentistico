@@ -1,6 +1,6 @@
 <script lang="ts">
     import Sidebar from "$lib/components/Sidebar.svelte";
-    import NotificationBell from "$lib/components/NotificationBell.svelte";
+    import Header from "$lib/components/Header.svelte";
     import { page } from "$app/state";
     import { enhance } from "$app/forms";
     import { t } from "svelte-i18n";
@@ -45,41 +45,32 @@
     }
 </script>
 
-<div class="flex min-h-screen bg-gray-50 overflow-hidden">
+<div class="flex h-screen bg-gray-50 overflow-hidden">
     <Sidebar
         items={navItems}
         title="Dentistico"
         userName={data.user.full_name}
     />
 
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <header
-            class="bg-white shadow-sm border-b border-gray-200 py-4 px-8 flex justify-between items-center"
+    <div class="flex flex-col w-0 flex-1 overflow-hidden">
+        <Header
+            title="inventory.title"
+            roleLabel={data.user?.role === "doctor"
+                ? "common.doctor"
+                : data.user?.role === "admin"
+                  ? "common.admin"
+                  : "common.assistant"}
         >
-            <h1 class="text-xl font-bold text-gray-900">
-                {$t("inventory.title")}
-            </h1>
-            <div class="flex items-center gap-4">
-                {#if data.user.role === "admin"}
-                    <button
-                        onclick={() => (isCreateModalOpen = true)}
-                        class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-                    >
-                        <span class="margin-inline-end-2">+</span>
-                        {$t("inventory.add_item")}
-                    </button>
-                {/if}
-                <NotificationBell />
-                <span
-                    class="text-[10px] text-gray-500 italic uppercase tracking-widest font-bold px-2 py-1 rounded {data
-                        .user.role === 'admin'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-gray-100'}"
+            {#if data.user.role === "admin"}
+                <button
+                    onclick={() => (isCreateModalOpen = true)}
+                    class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
                 >
-                    {$t("common.portal")}: {$t(`common.${data.user.role}`)}
-                </span>
-            </div>
-        </header>
+                    <span class="margin-inline-end-2">+</span>
+                    {$t("inventory.add_item")}
+                </button>
+            {/if}
+        </Header>
 
         <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             <div class="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -376,6 +367,7 @@
                                         </div>
                                         <div>
                                             <label
+                                                for="min_threshold"
                                                 class="block text-xs font-bold text-red-500 uppercase tracking-widest mb-1"
                                                 >Min Threshold</label
                                             >
@@ -383,6 +375,7 @@
                                                 <input
                                                     type="number"
                                                     name="min_threshold"
+                                                    id="min_threshold"
                                                     value="5"
                                                     min="1"
                                                     required
@@ -401,12 +394,14 @@
                                         </div>
                                         <div>
                                             <label
+                                                for="unit_cost"
                                                 class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1"
                                                 >Unit Cost</label
                                             >
                                             <input
                                                 type="number"
                                                 name="unit_cost"
+                                                id="unit_cost"
                                                 step="0.01"
                                                 value="0"
                                                 min="0"
@@ -415,11 +410,13 @@
                                         </div>
                                         <div class="col-span-2">
                                             <label
+                                                for="supplier_id"
                                                 class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1"
                                                 >Supplier</label
                                             >
                                             <select
                                                 name="supplier_id"
+                                                id="supplier_id"
                                                 class="block w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
                                             >
                                                 <option value=""
@@ -509,6 +506,7 @@
                                     <div class="space-y-6">
                                         <div>
                                             <label
+                                                for="quantity"
                                                 class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2"
                                                 >{$t("common.quantity")} ({selectedItem.unit})</label
                                             >
@@ -516,12 +514,14 @@
                                                 type="number"
                                                 step="0.01"
                                                 name="quantity"
+                                                id="quantity"
                                                 required
                                                 class="block w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"
                                             />
                                         </div>
                                         <div>
                                             <label
+                                                for="reason"
                                                 class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2"
                                                 >{$t("common.reason")} / {$t(
                                                     "common.comment",
@@ -530,6 +530,7 @@
                                             <input
                                                 type="text"
                                                 name="reason"
+                                                id="reason"
                                                 placeholder={moveType === "in"
                                                     ? $t(
                                                           "inventory.reason_placeholder_in",
@@ -595,10 +596,11 @@
                             <div class="p-8">
                                 <div class="space-y-8">
                                     <div>
-                                        <label
+                                        <h4
                                             class="block text-xs font-bold text-gray-400 mb-4 text-start uppercase tracking-widest"
-                                            >{$t("export.report_type")}</label
                                         >
+                                            {$t("export.report_type")}
+                                        </h4>
                                         <div class="grid grid-cols-2 gap-4">
                                             <button
                                                 onclick={() =>
@@ -702,10 +704,11 @@
                                     </div>
 
                                     <div>
-                                        <label
+                                        <h4
                                             class="block text-xs font-bold text-gray-400 mb-4 text-start uppercase tracking-widest"
-                                            >{$t("export.file_format")}</label
                                         >
+                                            {$t("export.file_format")}
+                                        </h4>
                                         <div class="flex gap-4">
                                             {#each ["xlsx", "pdf", "csv"] as fmt}
                                                 <button

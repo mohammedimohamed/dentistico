@@ -3,14 +3,38 @@
     import { t } from "svelte-i18n";
 
     let unreadCount = $state(0);
+    let previousCount = 0;
+    let isInitialLoad = true;
     let showDropdown = $state(false);
     let notifications = $state<any[]>([]);
     let loading = $state(false);
+    let audio: HTMLAudioElement;
+
+    function playNotificationSound() {
+        if (audio) {
+            audio.currentTime = 0;
+            audio.play().catch((e) => {
+                // Browsers often block audio until first user interaction
+                console.log("Audio playback deferred or blocked:", e.message);
+            });
+        }
+    }
 
     async function fetchUnreadCount() {
-        const res = await fetch("/api/notifications?type=count");
-        const data = await res.json();
-        unreadCount = data.count;
+        try {
+            const res = await fetch("/api/notifications?type=count");
+            const data = await res.json();
+
+            if (!isInitialLoad && data.count > previousCount) {
+                playNotificationSound();
+            }
+
+            unreadCount = data.count;
+            previousCount = data.count;
+            isInitialLoad = false;
+        } catch (e) {
+            console.error("Failed to fetch notification count:", e);
+        }
     }
 
     async function fetchNotifications() {
@@ -25,12 +49,14 @@
         await fetch(`/api/notifications/${id}/read`, { method: "POST" });
         notifications = notifications.filter((n) => n.id !== id);
         unreadCount = Math.max(0, unreadCount - 1);
+        previousCount = unreadCount;
     }
 
     async function markAllRead() {
         await fetch("/api/notifications", { method: "POST" });
         notifications = [];
         unreadCount = 0;
+        previousCount = 0;
         showDropdown = false;
     }
 
@@ -175,6 +201,7 @@
             </div>
         </div>
     {/if}
+    <audio bind:this={audio} src="/notification.mp3" preload="auto"></audio>
 </div>
 
 <svelte:window

@@ -33,7 +33,8 @@
         "article": "Article",
         "email": "Email",
         "select": "Sélectionner",
-        "minutes_short": "min"
+        "minutes_short": "min",
+        "profile": "Profil"
     },
     "inventory": {
         "title": "Inventaire & Stock",

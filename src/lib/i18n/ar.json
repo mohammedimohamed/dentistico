@@ -33,7 +33,8 @@
         "article": "الصنف",
         "email": "البريد الإلكتروني",
         "select": "اختيار",
-        "minutes_short": "دقيقة"
+        "minutes_short": "دقيقة",
+        "profile": "الملف الشخصي"
     },
     "inventory": {
         "title": "المخزون والمتجر",

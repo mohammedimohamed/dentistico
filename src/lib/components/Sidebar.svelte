@@ -23,9 +23,9 @@
 </script>
 
 <aside
-    class="bg-gray-900 text-white min-h-screen transition-all duration-300 flex flex-col {isCollapsed
+    class="bg-gray-900 text-white h-screen sticky top-0 transition-all duration-300 flex flex-col {isCollapsed
         ? 'w-20'
-        : 'w-64'} border-inline-end border-gray-800"
+        : 'w-64'} border-inline-end border-gray-800 flex-shrink-0"
 >
     <div class="p-6 flex items-center justify-between border-b border-gray-800">
         {#if !isCollapsed}
