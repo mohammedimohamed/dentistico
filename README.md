@@ -1,96 +1,66 @@
 # 🏥 Dentistico - Modern Dental Clinic Management System
 
 [![SvelteKit 2.x](https://img.shields.io/badge/SvelteKit-2.x-ff3e00?logo=svelte&logoColor=white)](https://kit.svelte.dev/)
-[![Tailwind CSS 3.x/4.x](https://img.shields.io/badge/Tailwind_CSS-3.x/4.x_Preview-38bdf8?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Tailwind CSS 4.x](https://img.shields.io/badge/Tailwind_CSS-4.x-38bdf8?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-003b57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Dentistico** is a premium, full-stack dental clinic management application designed for the modern practice. Built with **SvelteKit 5 (Runes)** and a **state-of-the-art UI/UX**, it streamlines the entire patient lifecycle—from online booking to clinical treatment and archival.
+**Dentistico** is a premium, full-stack dental clinic management application designed for the modern practice. Built with **Svelte 5 (Runes)** and a **state-of-the-art UI/UX**, it streamlines the entire patient lifecycle—from online booking to clinical treatment and archival.
 
 ---
 
 ## 📋 Prerequisites
 - **Node.js**: 18.x or higher
 - **npm**: 9.x or higher
-- **OS**: Linux, macOS, or Windows (WSL recommended)
+- **OS**: Windows, Linux, or macOS
 
 ---
 
 ## 🌟 Premium Features
 
-### ⚙️ Admin System Control
-The ultimate oversight for clinical directors and owners.
-- **User Management**: Create and manage accounts for assistants and doctors; reset forgotten passwords.
-- **Portal Oversight (God Mode)**: Direct access to Doctor and Assistant dashboards to monitor clinical activity and administrative queues.
+### ⚙️ Admin System Control (The "God Mode")
+Ultimate oversight for clinical directors and owners.
+- **Global Access**: Admins can seamlessly access Doctor and Assistant portals to monitor clinical activity and administrative queues.
+- **User Management**: Create and manage accounts for all staff; toggle active/inactive status and reset passwords.
 - **Website Configuration**: Real-time control over landing page content, services, and branding via the JSON CMS.
-- **Global Settings UI**: Manage system-wide parameters like currency, symbols, and clinic hours via a dedicated settings dashboard.
-- **System Metrics**: Overview of total patient registrations and user activity.
-- **Expense Categories**: Customize expense types and organize spending
-- **Financial Analytics**: Revenue vs expenses, profit/loss tracking
+- **Global Settings UI**: Manage system-wide parameters like currency codes, symbols, and clinic hours.
+- **Spending Analytics**: Monitor high-level financial health with revenue vs. expenses tracking.
+- **Categorized Spending Rules**: Define custom expense categories (e.g., Salaries, Rent, Utilities) with unique visual identifiers.
 
 ### 👩‍💼 Clinic Assistant Portal (Management & Ops)
 A high-efficiency command center for administrative staff.
-- **Conflict-Free Scheduling**: Visual calendar with **room assignment** tracking and **source attribution** (Web vs. Manual).
+- **Advanced Schedule Hub**: Multi-view dashboard including **List, Calendar, and Table** views for flexible management.
+- **Family-Friendly Booking**: Support for "Book for Someone Else" flow, allowing parents or guardians to manage appointments for dependents.
+- **Automated Conflict Prevention**: Intelligent system detects and blocks doctor scheduling conflicts across both online and manual bookings.
 - **Patient Lifecycle Management**: 
-    - **Archiving**: Safely archive inactive patients (requires zero balance and no upcoming visits).
-    - **Archived View**: Separate section to review or **unarchive** historical records.
-- **Financial Reconciliation**: Record payments and generate itemized invoices that automatically sync with clinical treatments.
-- **Spending Management**: Track clinic expenses (bills, salaries, repairs)
-- **Lead Tracking**: Clear visibility into which bookings originated from the public website vs. manual entry.
-- **Appointment Source Attribution**: 
-    - Every booking is tagged with its origin channel ("Source: Web" or "Source: Assistant: Name").
-    - Doctors can view the source directly in their daily schedule for context.
-- **Web Booking Confirmation Flow**: 
-    - Online appointments land in a "Pending Confirmation" state.
-    - Assistants review, assign rooms, and confirm bookings before they move into the active doctor's schedule.
-- **Real-Time Notifications**:
-    - Instant alerts for new web bookings, payment receipts, and low stock warnings.
-    - **Interactive Bell**: Dropdown with unread count and quick actions to mark as read.
+    - **Archiving**: Safely archive inactive patients with balance validation.
+    - **Medical History Audits**: Detailed logs of patient record updates and changes.
+- **Financial Reconciliation**: Generate professional itemized invoices and record multi-method payments (Cash, Card, Insurance).
+- **Spending Management**: Dedicated portal to track clinic-side expenses with category-based filtering.
+- **Printable Patient Cards**: Generate and print professional appointment summaries and patient info sheets.
+- **Real-Time Notification Center**: Instant alerts for new web bookings, payment receipts, and low stock warnings.
 
 ### 👨‍⚕️ Doctor’s Clinical Command (Patient Care)
 Designed for focus, speed, and clinical accuracy.
-- **Custom-Built Dental Charting (Svelte 5)**:
-    - **FDI Numbering**: International standard tooth numbering system.
+- **State-of-the-Art Dental Charting (Svelte 5)**:
+    - **FDI Numbering**: International standard tooth numbering.
     - **Smart Logic**: Automatic switch between Adult (32 teeth) and Pediatric (20 deciduous teeth) charts based on patient age.
-    - **Visual History**: Color-coded mapping (Red for cavities, Blue/Green for treatments) with per-tooth clinical notes.
-- **Medication Library**: 
-    - Shared database of common medications and default dosages.
-    - Streamlines prescription generation for the entire clinic.
-- **Multi-Practitioner Support**: 
-    - Concurrent scheduling for multiple doctors working in separate rooms simultaneously.
-    - **Room Conflict Prevention**: Automated system blocks double-booking of the same treatment room at the same time.
-- **Clinical History**: Longitudinal access to notes, allergies (hidden from assistants), and prescriptions.
-- **Room Coordination**: Doctors see patients assigned specifically to their designated rooms for the day.
-- **Live Updates**: Receive instant notifications when appointments are confirmed or cancelled.
+    - **Visual Mapping**: Color-coded tooth status (Red for cavities, Blue/Green for treatments) with per-tooth history.
+- **Prescription Builder**: 
+    - Intelligent library of common medications and dosages.
+    - Quick-generate professional PDFs for patients.
+- **Clinical History**: longitudinal access to treatment notes, allergies (hidden from non-clinical staff), and previous dental work.
+- **Daily Agendas**: Specific views for current doctor's appointments to minimize cognitive load.
 
 ### 🌍 Internationalization (Global Ready)
 - **Multi-language Support**: Fully translated into **French** and **Arabic**.
-- **RTL Optimization**: Seamless Layout switching (Right-to-Left) for Arabic users.
-- **Standardized i18n**: Built on `svelte-i18n` for easy addition of new locales.
+- **RTL Optimization**: Complete Right-to-Left layout switching for Arabic users, ensuring a native feel.
+- **Standardized i18n**: Built on `svelte-i18n` for robust localization.
 
 ### 📦 Logistics & Inventory (Smart Supply Chain)
-- **Low Stock Visual Alerts**: Color-coded thresholds to prevent supply shortages.
-- **Auto-Notifications**: System automatically alerts all staff when an item drops below its defined minimum threshold.
-- **Movement Audit Logs**: Detailed "Entry/Exit" tracking with reason logging.
-
----
-
-## 💱 Global Configuration
-
-### Currency & Symbols
-Easily change the system-wide currency via the **Admin Dashboard**:
-1. Login as **Administrator**.
-2. Navigate to **System Settings**.
-3. Update Currency Code and Symbol.
-
-*Alternatively, manually edit `src/lib/config/app.config.json`:*
-```json
-{
-    "currency": "USD",
-    "currencySymbol": "$"
-}
-```
-All financial views, invoices, and reports will update instantly across the entire application.
+- **Low Stock Visual Alerts**: Color-coded thresholds and automated staff notifications.
+- **Movement Audit Logs**: Detailed "Stock In/Out" tracking with user attribution and reason logging.
+- **Supplier Directory**: Manage contacts and supply chain relations directly from the inventory hub.
 
 ---
 
@@ -98,10 +68,10 @@ All financial views, invoices, and reports will update instantly across the enti
 
 | Layer | Technology | Rationale |
 | :--- | :--- | :--- |
-| **Framework** | **SvelteKit 5 (Preview)** | Runes ($state, $derived) for ultra-fast, predictable reactivity. |
-| **Styling** | **Tailwind CSS 3/4** | Bespoke animations, glassmorphism, and premium aesthetics. |
-| **Database** | **SQLite (Better-SQLite3)** | Zero-config, ACID-compliant local storage with synchronous performance. |
-| **Security** | **Argon2/Bcrypt + Cookies** | Enterprise-grade password hashing and secure session management. |
+| **Framework** | **Svelte 5 (Runes)** | State-of-the-art reactivity ($state, $derived) for ultra-fast, smooth performance. |
+| **UI Engine** | **Tailwind CSS 4** | Advanced glassmorphism, fluid animations, and high-performance styling. |
+| **Database** | **SQLite (Better-SQLite3)** | Zero-config, ACID-compliant local storage with auto-migration support. |
+| **Security** | **Bcrypt + Cookies** | Secure password hashing and robust session-based authentication. |
 
 ---
 
@@ -111,18 +81,19 @@ All financial views, invoices, and reports will update instantly across the enti
 dentistico/
 ├── src/
 │   ├── lib/
-│   │   ├── server/db.ts           # Schema, Migrations, and High-Perf Queries
+│   │   ├── server/db.ts           # Schema, Zero-Config Migrations, and SQL logic
 │   │   ├── config/
 │   │   │   ├── app.config.ts      # Global System Settings (Currency, etc.)
 │   │   │   └── landing-page.json  # Advanced JSON-based CMS
-│   │   └── components/            # Custom SVG Dental Charts & UI Atoms
+│   │   └── components/            # Svelte 5 Charts, Calendars, and UI Atoms
 │   ├── routes/
-│   │   ├── admin/                 # User & System Management
+│   │   ├── admin/                 # Admin oversight & Settings
 │   │   ├── doctor/                # Clinical Portals
-│   │   ├── assistant/             # Administrative Portals
-│   │   └── book/                  # Public Booking Engine
-├── testing.md                     # MASTER QA: 60+ Manual Testing Scenarios
-└── dental_clinic.db               # SQLite database
+│   │   ├── assistant/             # Administrative & Financial Hubs
+│   │   ├── inventory/             # Stock & Logistics
+│   │   └── book/                  # Public Family-Friendly Booking Engine
+├── testing.md                     # MASTER QA: 65+ Manual Testing Scenarios
+└── dental_clinic.db               # Local SQLite database
 ```
 
 ---
@@ -146,14 +117,14 @@ The system initializes with the following demo accounts:
 - **Admin**: `admin` / `admin123`
 - **Assistant**: `assistant1` / `assistant123`
 - **Doctor**: `doctor1` / `doctor123`
-*⚠️ Change default passwords immediately after first login.*
+*⚠️ Change default passwords immediately after initial login.*
 
 ---
 
 ## 🐳 Production Deployment
 
 ### Docker (Recommended)
-The multi-stage Docker build produces an image under 200MB.
+The multi-stage Docker build produces an optimized image under 200MB.
 ```bash
 docker build -t dentistico .
 docker run -d -p 10000:10000 -v dentistico_data:/app/data dentistico
@@ -169,49 +140,30 @@ ORIGIN=http://yourdomain.com node build/index.js
 ---
 
 ## 📊 Quality Assurance
-We maintain a comprehensive **Manual Testing Suite** in `testing.md`. It contains **60+ real-world scenarios** covering:
-- ✅ Online Booking Conflicts
-- ✅ Simultaneous Room Assignments
+We maintain a comprehensive **Manual Testing Suite** in `testing.md`. It contains **65+ real-world scenarios** covering:
+- ✅ Intelligent Booking Conflicts
+- ✅ Family & Secondary Patient Logic
 - ✅ Pediatric vs Adult Chart Auto-detection
 - ✅ Patient Archival & Restoration
-- ✅ Administrator Oversight & God Mode Access
+- ✅ Multi-language RTL Layout Stability
 
 ---
 
-## 🎨 Customizable Website (CMS)
-The public website is fully **decoupled** from the code. By editing `src/lib/config/landing-page.json`, you can update heroes, services, and team members without redeploying code.
-
----
-
-## 📸 Screenshots
-*[Coming Soon]* 
-
-## 🎥 Live Demo  
-Demo environment: [Visit Live Demo](https://dentistico.app) *(Link coming soon)*
+## 🎨 Customizable CMS
+The landing page and public services are fully **decoupled** from the code. By editing `src/lib/config/landing-page.json`, you can update heroes, services, and team members without a single line of code change.
 
 ---
 
 ## 🤝 Contributing
-Contributions are welcome! To contribute:
+Contributions are welcome! Please follow the contribution guide:
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+3. Commit your changes
+4. Push to the branch
 5. Open a Pull Request
-
-## 📧 Support
-- **Issues**: [GitHub Issues](https://github.com/mohammedimohamed/dentistico/issues)
-- **Email**: support@dentistico.example.com
-
----
-
-## 🗺️ Roadmap
-- [ ] SMS appointment reminders & Patient SMS notifications
-- [ ] Insurance claim integration and auto-processing
-- [ ] Multi-clinic support for group practices
-- [ ] Mobile companion app for Doctors (Native)
 
 ---
 
 ## 📄 License
 This project is licensed under the MIT License. Built with ❤️ for the dental community.
+
