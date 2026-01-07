@@ -4,25 +4,12 @@
     import type { Snippet } from "svelte";
     import { t, locale } from "svelte-i18n";
     import NotificationBell from "$lib/components/NotificationBell.svelte";
+    import Sidebar from "$lib/components/Sidebar.svelte";
+    import { NAVIGATION } from "$lib/config/navigation";
 
-    let { children }: { children: Snippet } = $props();
+    let { children, data }: { children: Snippet; data: any } = $props();
 
-    const navItems = [
-        { label: $t("admin.nav.dashboard"), href: "/admin", icon: "📊" },
-        { label: $t("admin.nav.users"), href: "/admin/users", icon: "👥" },
-        {
-            label: $t("admin.nav.settings"),
-            href: "/admin/settings",
-            icon: "⚙️",
-        },
-        { label: $t("admin.nav.inventory"), href: "/inventory", icon: "📦" },
-        { label: $t("spending.menu"), href: "/admin/spending", icon: "💸" },
-        {
-            label: $t("spending.categories_menu"),
-            href: "/admin/spending/categories",
-            icon: "🏷️",
-        },
-    ];
+    const navItems = NAVIGATION.admin;
 
     let isMobileMenuOpen = $state(false);
 
@@ -32,73 +19,24 @@
     }
 </script>
 
-<div class="min-h-screen bg-gray-100 flex overflow-hidden">
-    <!-- Desktop Sidebar -->
-    <div class="hidden md:flex md:flex-shrink-0">
-        <div class="flex flex-col w-64">
-            <div
-                class="flex flex-col h-0 flex-1 border-r border-gray-200 bg-white"
-            >
-                <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-                    <div class="flex items-center flex-shrink-0 px-4 mb-5">
-                        <span class="text-2xl font-bold text-indigo-600"
-                            >Dentistico <span
-                                class="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded ml-2"
-                                >ADMIN</span
-                            ></span
-                        >
-                    </div>
-                    <nav class="mt-5 flex-1 px-2 bg-white space-y-1">
-                        {#each navItems as item}
-                            <a
-                                href={item.href}
-                                class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {page
-                                    .url.pathname === item.href
-                                    ? 'bg-indigo-50 text-indigo-600'
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}"
-                            >
-                                <span class="mr-3 text-lg">{item.icon}</span>
-                                {item.label}
-                            </a>
-                        {/each}
-                    </nav>
-                </div>
-                <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
-                    <form
-                        action="/logout"
-                        method="POST"
-                        use:enhance={() => {
-                            return async () => {
-                                window.location.href = "/login";
-                            };
-                        }}
-                        class="w-full"
-                    >
-                        <button
-                            type="submit"
-                            class="flex-shrink-0 w-full group block"
-                        >
-                            <div class="flex items-center">
-                                <div class="ml-3">
-                                    <p
-                                        class="text-sm font-medium text-red-600 group-hover:text-red-800"
-                                    >
-                                        {$t("admin.nav.logout")}
-                                    </p>
-                                </div>
-                            </div>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="flex min-h-screen bg-gray-50 overflow-hidden">
+    <Sidebar
+        items={navItems}
+        title="Dentistico Admin"
+        userName={data?.user?.full_name || "Admin"}
+    />
 
     <!-- Main Column -->
     <div class="flex flex-col w-0 flex-1 overflow-hidden">
         <header
-            class="bg-white shadow-sm border-b border-gray-200 py-4 px-8 flex justify-end items-center"
+            class="bg-white shadow-sm border-b border-gray-200 py-4 px-8 flex justify-between items-center"
         >
+            <h1 class="text-xl font-bold text-gray-900">
+                {$t(
+                    navItems.find((i) => page.url.pathname.startsWith(i.href))
+                        ?.label || "admin.nav.dashboard",
+                )}
+            </h1>
             <div class="flex items-center gap-4">
                 <NotificationBell />
                 <div class="flex gap-2 bg-gray-100 rounded-lg p-1">

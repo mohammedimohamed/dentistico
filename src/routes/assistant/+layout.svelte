@@ -5,32 +5,10 @@
     import { t, locale } from "svelte-i18n";
     import NotificationBell from "$lib/components/NotificationBell.svelte";
 
+    import { NAVIGATION } from "$lib/config/navigation";
     let { children, data }: { children: Snippet; data: any } = $props();
 
-    const navItems = [
-        {
-            label: $t("assistant.nav.items.schedule"),
-            href: "/assistant/dashboard",
-            icon:
-                $t("assistant.nav.items.schedule") === "Planning" ? "📅" : "📅",
-        },
-        {
-            label: $t("assistant.nav.items.inventory"),
-            href: "/inventory",
-            icon: $t("assistant.nav.items.inventory") === "Stock" ? "📦" : "📦",
-        },
-        {
-            label: $t("assistant.nav.items.invoices"),
-            href: "/assistant/invoices",
-            icon:
-                $t("assistant.nav.items.invoices") === "Factures" ? "📄" : "📄",
-        },
-        {
-            label: $t("spending.menu"),
-            href: "/assistant/spending",
-            icon: "💸",
-        },
-    ];
+    const navItems = NAVIGATION.assistant;
 
     async function setLanguage(lang: string) {
         document.cookie = `lang=${lang}; path=/; max-age=31536000`;

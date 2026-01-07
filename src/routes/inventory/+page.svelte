@@ -5,57 +5,15 @@
     import { enhance } from "$app/forms";
     import { t } from "svelte-i18n";
 
+    import { NAVIGATION } from "$lib/config/navigation";
     let { data }: { data: any } = $props();
-
-    const doctorNav = [
-        { label: "common.dashboard", href: "/doctor/dashboard", icon: "📊" },
-        { label: "common.patients", href: "/doctor/patients", icon: "👥" },
-        { label: "common.inventory", href: "/inventory", icon: "📦" },
-        {
-            label: "common.settings",
-            href: "/doctor/settings/medications",
-            icon: "💊",
-        },
-    ];
-
-    const assistantNav = [
-        {
-            label: "assistant.nav.items.schedule",
-            href: "/assistant/dashboard",
-            icon: "📅",
-        },
-        { label: "common.inventory", href: "/inventory", icon: "📦" },
-        {
-            label: "assistant.nav.items.invoices",
-            href: "/assistant/invoices",
-            icon: "📄",
-        },
-        {
-            label: "spending.menu",
-            href: "/assistant/spending",
-            icon: "💸",
-        },
-    ];
-
-    const adminNav = [
-        { label: "common.dashboard", href: "/admin", icon: "📊" },
-        { label: "common.patients", href: "/admin/users", icon: "👥" },
-        { label: "common.settings", href: "/admin/settings", icon: "⚙️" },
-        { label: "common.inventory", href: "/inventory", icon: "📦" },
-        { label: "spending.menu", href: "/admin/spending", icon: "💸" },
-        {
-            label: "spending.categories_menu",
-            href: "/admin/spending/categories",
-            icon: "🏷️",
-        },
-    ];
 
     const navItems = $derived(
         data.user.role === "doctor"
-            ? doctorNav
+            ? NAVIGATION.doctor
             : data.user.role === "admin"
-              ? adminNav
-              : assistantNav,
+              ? NAVIGATION.admin
+              : NAVIGATION.assistant,
     );
 
     let isMoveModalOpen = $state(false);
@@ -291,7 +249,8 @@
                                             await update();
                                         } else if (result.type === "failure") {
                                             createErrorMessage =
-                                                result.data?.error ||
+                                                (result.data
+                                                    ?.error as string) ||
                                                 "Une erreur est survenue";
                                         }
                                     };
@@ -328,34 +287,40 @@
                                     <div class="grid grid-cols-2 gap-4">
                                         <div class="col-span-2">
                                             <label
+                                                for="name"
                                                 class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1"
                                                 >{$t("common.name")}</label
                                             >
                                             <input
                                                 type="text"
                                                 name="name"
+                                                id="name"
                                                 required
                                                 class="block w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
                                             />
                                         </div>
                                         <div>
                                             <label
+                                                for="sku"
                                                 class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1"
                                                 >{$t("common.sku")}</label
                                             >
                                             <input
                                                 type="text"
                                                 name="sku"
+                                                id="sku"
                                                 class="block w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
                                             />
                                         </div>
                                         <div>
                                             <label
+                                                for="category"
                                                 class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1"
                                                 >{$t("common.category")}</label
                                             >
                                             <select
                                                 name="category"
+                                                id="category"
                                                 class="block w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
                                             >
                                                 <option value="Consommables"
@@ -380,12 +345,14 @@
                                         </div>
                                         <div>
                                             <label
+                                                for="current_quantity"
                                                 class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1"
                                                 >{$t("common.quantity")}</label
                                             >
                                             <input
                                                 type="number"
                                                 name="current_quantity"
+                                                id="current_quantity"
                                                 value="0"
                                                 min="0"
                                                 required
@@ -394,12 +361,14 @@
                                         </div>
                                         <div>
                                             <label
+                                                for="unit"
                                                 class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1"
                                                 >{$t("common.unit")}</label
                                             >
                                             <input
                                                 type="text"
                                                 name="unit"
+                                                id="unit"
                                                 placeholder="ex: Boîte, Unité"
                                                 required
                                                 class="block w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"

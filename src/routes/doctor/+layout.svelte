@@ -5,22 +5,10 @@
     import { t, locale } from "svelte-i18n";
     import NotificationBell from "$lib/components/NotificationBell.svelte";
 
+    import { NAVIGATION } from "$lib/config/navigation";
     let { children, data }: { children: Snippet; data: any } = $props();
 
-    const navItems = $derived([
-        {
-            label: $t("common.dashboard"),
-            href: "/doctor/dashboard",
-            icon: "📊",
-        },
-        { label: $t("common.patients"), href: "/doctor/patients", icon: "👥" },
-        { label: $t("common.inventory"), href: "/inventory", icon: "📦" },
-        {
-            label: $t("medications.title"),
-            href: "/doctor/settings/medications",
-            icon: "💊",
-        },
-    ]);
+    const navItems = $derived(NAVIGATION.doctor);
 
     async function setLanguage(lang: string) {
         document.cookie = `lang=${lang}; path=/; max-age=31536000`;
