@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-package-lock.json
 pnpm-lock.yaml
 yarn.lock
 
@@ -62,3 +61,10 @@ temp/
 
 # TypeScript
 *.tsbuildinfo
+
+# Local Utility Scripts
+fix_emojis*
+database.sqlite
+
+# Temporary Testing Docs
+testing - rs.md
