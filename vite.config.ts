@@ -6,5 +6,9 @@ export default defineConfig({
 	server: {
 		port: 10000,
 		strictPort: false
+	},
+	preview: {
+		port: 10000,
+		strictPort: false
 	}
 });

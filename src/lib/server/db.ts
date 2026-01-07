@@ -20,6 +20,13 @@ function normalizeDate(dateStr: string) {
 
 export const db = new Database('dental_clinic.db', { verbose: console.log });
 
+db.pragma('journal_mode = WAL');
+db.pragma('synchronous = NORMAL');
+db.pragma('cache_size = -64000'); // 64MB cache
+db.pragma('temp_store = MEMORY');
+db.pragma('busy_timeout = 5000'); // Wait up to 5s if DB is busy
+db.pragma('threads = 4');      // Use 4 threads for complex queries
+
 export function init_db() {
     // Drop tables if they exist to ensure schema is updated (Development only)
     // In production, we would use migrations, but for this checklist we start fresh
@@ -298,6 +305,15 @@ export function init_db() {
 
         CREATE INDEX IF NOT EXISTS idx_spending_date ON spending(spending_date);
         CREATE INDEX IF NOT EXISTS idx_spending_category ON spending(category_id);
+
+        CREATE INDEX IF NOT EXISTS idx_appointments_start ON appointments(start_time);
+        CREATE INDEX IF NOT EXISTS idx_appointments_doctor ON appointments(doctor_id);
+        CREATE INDEX IF NOT EXISTS idx_treatments_patient ON treatments(patient_id);
+        CREATE INDEX IF NOT EXISTS idx_payments_patient ON payments(patient_id);
+
+        -- Data normalization migration for appointments
+        UPDATE appointments SET start_time = REPLACE(start_time, 'T', ' ') WHERE start_time LIKE '%T%';
+        UPDATE appointments SET end_time = REPLACE(end_time, 'T', ' ') WHERE end_time LIKE '%T%';
 
         DROP VIEW IF EXISTS patient_balance;
         CREATE VIEW patient_balance AS
@@ -931,9 +947,10 @@ export function getDoctorAppointmentsToday(doctorId: number) {
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         WHERE a.doctor_id = ? 
-          AND date(a.start_time) = date(?)
+          AND a.start_time >= ? 
+          AND a.start_time <= ?
         ORDER BY a.start_time ASC
-    `).all(doctorId, today);
+    `).all(doctorId, today + ' 00:00:00', today + ' 23:59:59');
 }
 
 // Deprecated or alias for compatibility
@@ -962,7 +979,7 @@ export function getDoctorUpcomingAppointments(doctorId: number) {
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         WHERE a.doctor_id = ? 
-          AND date(a.start_time) >= date('now')
+          AND a.start_time >= date('now')
         ORDER BY a.start_time ASC
         LIMIT 100
     `).all(doctorId);
@@ -1020,13 +1037,13 @@ export function checkDoctorConflict(doctorId: number, startTime: string, endTime
           AND status NOT IN ('cancelled', 'no_show')
           AND (
               -- New appointment starts during existing appointment
-              (? >= REPLACE(start_time, 'T', ' ') AND ? < REPLACE(end_time, 'T', ' '))
+              (? >= start_time AND ? < end_time)
               OR
               -- New appointment ends during existing appointment
-              (? > REPLACE(start_time, 'T', ' ') AND ? <= REPLACE(end_time, 'T', ' '))
+              (? > start_time AND ? <= end_time)
               OR
               -- New appointment completely overlaps existing appointment
-              (? <= REPLACE(start_time, 'T', ' ') AND ? >= REPLACE(end_time, 'T', ' '))
+              (? <= start_time AND ? >= end_time)
           )
     `;
 

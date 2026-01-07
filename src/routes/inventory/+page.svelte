@@ -30,6 +30,11 @@
             href: "/assistant/invoices",
             icon: "📄",
         },
+        {
+            label: "spending.menu",
+            href: "/assistant/spending",
+            icon: "💸",
+        },
     ];
 
     const adminNav = [
@@ -37,6 +42,12 @@
         { label: "common.patients", href: "/admin/users", icon: "👥" },
         { label: "common.settings", href: "/admin/settings", icon: "⚙️" },
         { label: "common.inventory", href: "/inventory", icon: "📦" },
+        { label: "spending.menu", href: "/admin/spending", icon: "💸" },
+        {
+            label: "spending.categories_menu",
+            href: "/admin/spending/categories",
+            icon: "🏷️",
+        },
     ];
 
     const navItems = $derived(

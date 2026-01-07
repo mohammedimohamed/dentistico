@@ -39,6 +39,8 @@
 	},
 	"devDependencies": {
 		"@types/pdfkit": "^0.17.4",
+		"autocannon": "^8.0.0",
+		"clinic": "^13.0.0",
 		"exceljs": "^4.4.0",
 		"pdfkit": "^0.17.2"
 	}
