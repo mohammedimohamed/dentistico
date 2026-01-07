@@ -165,5 +165,5 @@ Contributions are welcome! Please follow the contribution guide:
 ---
 
 ## 📄 License
-This project is licensed under the MIT License. Built with ❤️ for the dental community.
+This project is licensed under the MIT License. Built with ❤️&🧠 for the dental community.
 
