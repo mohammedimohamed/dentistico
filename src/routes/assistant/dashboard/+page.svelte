@@ -529,25 +529,38 @@
     let searchTimeout: any;
 
     $effect(() => {
-        const query = searchPatientQuery.trim();
-        const modalQuery = patientSearchQuery.trim();
-        const activeQuery = query !== patientSearch ? query : modalQuery;
+        let activeQuery = "";
+        let shouldUpdate = false;
 
-        if (searchTimeout) clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            if (activeQuery === patientSearch) return;
-            const url = new URL($page.url);
-            if (activeQuery) {
-                url.searchParams.set("patientSearch", activeQuery);
-            } else {
-                url.searchParams.delete("patientSearch");
-            }
-            goto(url.toString(), {
-                replaceState: true,
-                noScroll: true,
-                keepFocus: true,
-            });
-        }, 400);
+        // Determine which search input is "active" based on the UI state
+        if (isBookingModalOpen) {
+            activeQuery = patientSearchQuery.trim();
+            shouldUpdate = true;
+        } else if (activeTab === "patients") {
+            activeQuery = searchPatientQuery.trim();
+            shouldUpdate = true;
+        }
+
+        // Only proceed if we have an active search context
+        if (shouldUpdate) {
+            if (searchTimeout) clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                // Don't trigger navigation if the query hasn't effectively changed from what the server gave us
+                if (activeQuery === patientSearch) return;
+
+                const url = new URL($page.url);
+                if (activeQuery) {
+                    url.searchParams.set("patientSearch", activeQuery);
+                } else {
+                    url.searchParams.delete("patientSearch");
+                }
+                goto(url.toString(), {
+                    replaceState: true,
+                    noScroll: true,
+                    keepFocus: true,
+                });
+            }, 400);
+        }
     });
 
     $effect(() => {
@@ -650,6 +663,46 @@
             alert("Failed to reschedule appointment");
             info.revert();
         }
+    }
+
+    // Tooltip State
+    let tooltip = $state({
+        visible: false,
+        x: 0,
+        y: 0,
+        title: "",
+        time: "",
+        notes: "",
+        patient: "",
+        status: "",
+    });
+
+    function handleEventMouseEnter(info: any) {
+        console.log("Hover event:", info);
+        if (!info.el) return;
+
+        // Ensure we work with valid data
+        const props = info.event.extendedProps || {};
+        const rect = info.el.getBoundingClientRect();
+
+        // Calculate position - ensure it doesn't go offscreen
+        const x = rect.right + 10;
+        const y = rect.top;
+
+        tooltip = {
+            visible: true,
+            x,
+            y,
+            title: info.event.title || "Appointment",
+            time: `${info.event.start?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) || ""} - ${info.event.end?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) || ""}`,
+            notes: props.notes || "No notes",
+            patient: props.patient_name || "Unknown Patient",
+            status: props.status || "scheduled",
+        };
+    }
+
+    function handleEventMouseLeave() {
+        tooltip.visible = false;
     }
 </script>
 
@@ -1038,6 +1091,8 @@
                             onEventDrop={handleEventChange}
                             onEventResize={handleEventChange}
                             onDateClick={handleDateClick}
+                            onEventMouseEnter={handleEventMouseEnter}
+                            onEventMouseLeave={handleEventMouseLeave}
                             editable={false}
                         />
                     {/key}
@@ -2816,4 +2871,44 @@
             </div>
         </div>
     </div>
+
+    <!-- Tooltip for Calendar Events -->
+    {#if tooltip.visible}
+        <div
+            class="fixed z-[9999] bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-72 pointer-events-none transform -translate-y-1/2"
+            style="left: {tooltip.x}px; top: {tooltip.y}px;"
+        >
+            <div class="flex items-start justify-between mb-2">
+                <h4 class="font-bold text-gray-900">{tooltip.title}</h4>
+                <span
+                    class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest
+                    {tooltip.status === 'confirmed'
+                        ? 'bg-green-100 text-green-800'
+                        : tooltip.status === 'cancelled'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-blue-100 text-blue-800'}"
+                >
+                    {tooltip.status}
+                </span>
+            </div>
+            <div class="space-y-1 text-xs">
+                <div class="flex items-center gap-2 text-gray-600">
+                    <span class="font-semibold w-12">Time:</span>
+                    <span>{tooltip.time}</span>
+                </div>
+                <div class="flex items-center gap-2 text-gray-600">
+                    <span class="font-semibold w-12">Patient:</span>
+                    <span>{tooltip.patient}</span>
+                </div>
+                {#if tooltip.notes}
+                    <div class="mt-2 pt-2 border-t border-gray-100">
+                        <span class="font-semibold text-gray-500 block mb-0.5"
+                            >Notes:</span
+                        >
+                        <p class="text-gray-700 italic">{tooltip.notes}</p>
+                    </div>
+                {/if}
+            </div>
+        </div>
+    {/if}
 {/if}

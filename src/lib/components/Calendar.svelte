@@ -11,6 +11,8 @@
         onEventDrop?: (info: any) => void;
         onEventResize?: (info: any) => void;
         onDateClick?: (info: any) => void;
+        onEventMouseEnter?: (info: any) => void;
+        onEventMouseLeave?: (info: any) => void;
         initialView?: string;
         editable?: boolean;
         locale?: string;
@@ -23,6 +25,8 @@
         onEventDrop,
         onEventResize,
         onDateClick,
+        onEventMouseEnter,
+        onEventMouseLeave,
         initialView = "timeGridWeek",
         editable = false,
         locale = "fr",
@@ -68,6 +72,13 @@
             eventDrop: onEventDrop,
             eventResize: onEventResize,
             dateClick: onDateClick,
+            eventMouseEnter: (info) => {
+                console.log("Calendar: mouseenter fired", info);
+                if (onEventMouseEnter) onEventMouseEnter(info);
+            },
+            eventMouseLeave: (info) => {
+                if (onEventMouseLeave) onEventMouseLeave(info);
+            },
             height: "auto",
             nowIndicator: true,
             slotMinTime: "00:00:00",

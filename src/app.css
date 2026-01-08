@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    font-size: 85%; /* Scales down UI to simulate ~85% zoom for a denser interface */
     --brand-primary: #0f766e;
     --brand-secondary: #14b8a6;
     --brand-accent: #f59e0b;

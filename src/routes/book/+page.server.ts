@@ -90,12 +90,31 @@ export const actions: Actions = {
             let requester = getPatientByPhoneOrEmail(phone, email) as any;
             let requester_id: number;
 
+            // Strict Identity Check
+            if (requester) {
+                // Normalize for comparison
+                const dbName = requester.full_name?.toLowerCase().trim();
+                const inputName = full_name?.toLowerCase().trim();
+                const dbDob = requester.date_of_birth; // YYYY-MM-DD
+                const inputDob = date_of_birth; // YYYY-MM-DD
+
+                const nameMatch = dbName === inputName;
+                const dobMatch = dbDob === inputDob;
+
+                if (!nameMatch || !dobMatch) {
+                    // Identity mismatch - Do NOT attach to this user.
+                    // We will treat this as a new patient (or duplicate contact) to be resolved by assistant.
+                    console.log(`Web Booking: Identity mismatch for phone ${phone}. DB: ${dbName}/${dbDob}, Input: ${inputName}/${inputDob}. Creating new record.`);
+                    requester = null;
+                }
+            }
+
             if (!requester) {
                 requester_id = Number(createPatient({
                     full_name,
                     phone,
                     email,
-                    date_of_birth: booking_for === 'self' ? (date_of_birth || '1900-01-01') : '1900-01-01', // Dummy if they didn't provide it
+                    date_of_birth: booking_for === 'self' ? (date_of_birth || '1900-01-01') : '1900-01-01',
                     registration_date: new Date().toISOString()
                 }));
             } else {
