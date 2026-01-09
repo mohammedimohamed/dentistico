@@ -6,6 +6,20 @@
     let { data, form }: { data: PageData; form: ActionData } = $props();
 
     let isSaving = $state(false);
+
+    // Local state for form fields to avoid Svelte/SvelteKit "reset" issues
+    let currency = $state(data.config.currency);
+    let currencySymbol = $state(data.config.currencySymbol);
+    let bookingMode = $state(data.config.bookingMode);
+
+    // Sync if data changes (e.g. on fresh load or after server update)
+    $effect(() => {
+        if (data.config) {
+            currency = data.config.currency;
+            currencySymbol = data.config.currencySymbol;
+            bookingMode = data.config.bookingMode;
+        }
+    });
 </script>
 
 <div class="py-6">
@@ -33,8 +47,15 @@
                     action="?/updateConfig"
                     use:enhance={() => {
                         isSaving = true;
-                        return async ({ update }) => {
-                            await update();
+                        // Avoid resetting the form which causes the fields to clear
+                        return async ({ update, result }) => {
+                            // Only update if successful
+                            if (result.type === "success") {
+                                // Re-run load function to get fresh data
+                                await update({ reset: false });
+                            } else {
+                                await update();
+                            }
                             isSaving = false;
                         };
                     }}
@@ -56,7 +77,7 @@
                                     type="text"
                                     name="currency"
                                     id="currency"
-                                    value={data.config.currency}
+                                    bind:value={currency}
                                     placeholder={$t(
                                         "admin.settings.financial.currencyPlaceholder",
                                     )}
@@ -83,7 +104,7 @@
                                     type="text"
                                     name="currencySymbol"
                                     id="currencySymbol"
-                                    value={data.config.currencySymbol}
+                                    bind:value={currencySymbol}
                                     placeholder={$t(
                                         "admin.settings.financial.symbolPlaceholder",
                                     )}
@@ -105,24 +126,17 @@
                                 <select
                                     name="bookingMode"
                                     id="bookingMode"
+                                    bind:value={bookingMode}
                                     class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                                 >
-                                    <option
-                                        value="freeform"
-                                        selected={data.config.bookingMode ===
-                                            "freeform"}
-                                        >{$t(
-                                            "admin.settings.booking.freeform",
-                                        )}</option
-                                    >
-                                    <option
-                                        value="availability"
-                                        selected={data.config.bookingMode ===
-                                            "availability"}
-                                        >{$t(
+                                    <option value="freeform">
+                                        {$t("admin.settings.booking.freeform")}
+                                    </option>
+                                    <option value="availability">
+                                        {$t(
                                             "admin.settings.booking.availability",
-                                        )}</option
-                                    >
+                                        )}
+                                    </option>
                                 </select>
                                 <p class="mt-1 text-xs text-gray-400">
                                     {$t("admin.settings.booking.help")}
