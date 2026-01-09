@@ -1,4 +1,6 @@
 import Database from 'better-sqlite3';
+import fs from 'fs';
+import path from 'path';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
@@ -18,7 +20,19 @@ function normalizeDate(dateStr: string) {
     return res;
 }
 
-export const db = new Database('dental_clinic.db', { verbose: console.log });
+const DB_PATH = 'dental_clinic.db';
+export const db = new Database(DB_PATH, { verbose: console.log });
+
+export const VERSION = '1.2.5-debug';
+
+export function getDatabaseSize() {
+    try {
+        const stats = fs.statSync(DB_PATH);
+        return stats.size;
+    } catch (e) {
+        return 0;
+    }
+}
 
 db.pragma('journal_mode = WAL');
 db.pragma('synchronous = NORMAL');
@@ -599,6 +613,17 @@ export function init_db() {
         console.error('Migration for is_active on users failed:', e);
     }
 
+    // Migration for permissions on users
+    try {
+        const userCols = db.prepare("PRAGMA table_info(users)").all() as any[];
+        if (!userCols.find(c => c.name === 'can_export_spending')) {
+            db.exec('ALTER TABLE users ADD COLUMN can_export_spending INTEGER DEFAULT 0');
+            console.log('Added can_export_spending column to users');
+        }
+    } catch (e) {
+        console.error('Migration for can_export_spending on users failed:', e);
+    }
+
     // Migration for appointment tracking fields
     try {
         const apptCols = db.prepare("PRAGMA table_info(appointments)").all() as any[];
@@ -1056,7 +1081,7 @@ export function getAllUpcomingAppointments() {
             confirmer.full_name as confirmed_by_name
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
-        JOIN users u ON a.doctor_id = u.id
+        LEFT JOIN users u ON a.doctor_id = u.id
         LEFT JOIN patients b ON a.booked_by_id = b.id
         LEFT JOIN users creator ON a.created_by_user_id = creator.id
         LEFT JOIN users confirmer ON a.confirmed_by_user_id = confirmer.id

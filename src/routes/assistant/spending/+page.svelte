@@ -3,10 +3,20 @@
     import { APP_CONFIG } from "$lib/config/app.config";
     import { t } from "svelte-i18n";
 
+    let { data } = $props();
     let spending = $state<any[]>([]);
     let summary = $state<any>(null);
     let loading = $state(true);
     let showAddModal = $state(false);
+
+    function triggerExport() {
+        const params = new URLSearchParams();
+        if (filters.start_date) params.set("start_date", filters.start_date);
+        if (filters.end_date) params.set("end_date", filters.end_date);
+        if (filters.category_id) params.set("category_id", filters.category_id);
+
+        window.location.href = `/api/spending/export?${params}`;
+    }
 
     let filters = $state({
         start_date: "",
@@ -95,12 +105,23 @@
 <div class="p-8">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">{$t("spending.title")}</h1>
-        <button
-            onclick={openAddModal}
-            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-            + {$t("spending.add_expense")}
-        </button>
+        <div class="flex gap-2">
+            {#if data.user.can_export_spending || data.user.role === "admin"}
+                <button
+                    onclick={triggerExport}
+                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-medium flex items-center gap-2"
+                >
+                    <span class="text-xl">📥</span>
+                    {$t("common.export") || "Export"}
+                </button>
+            {/if}
+            <button
+                onclick={openAddModal}
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium"
+            >
+                + {$t("spending.add_expense")}
+            </button>
+        </div>
     </div>
 
     <!-- Summary Cards -->

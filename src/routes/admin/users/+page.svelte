@@ -70,6 +70,10 @@
                         >{$t("admin.users.table.created")}</th
                     >
                     <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >{$t("admin.users.table.spending_export")}</th
+                    >
+                    <th
                         class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >{$t("admin.users.table.actions")}</th
                     >
@@ -103,6 +107,43 @@
                                 user.created_at,
                             ).toLocaleDateString()}</td
                         >
+                        <td
+                            class="px-6 py-4 whitespace-nowrap text-sm font-medium"
+                        >
+                            {#if user.role !== "admin"}
+                                <form
+                                    method="POST"
+                                    action="?/toggleSpendingExport"
+                                    use:enhance
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="id"
+                                        value={user.id}
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="can_export"
+                                        value={user.can_export_spending ? 0 : 1}
+                                    />
+                                    <button
+                                        type="submit"
+                                        class="px-3 py-1 rounded-full text-xs font-bold transition-all {user.can_export_spending
+                                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+                                    >
+                                        {user.can_export_spending
+                                            ? $t("common.enabled") || "Enabled"
+                                            : $t("common.disabled") ||
+                                              "Disabled"}
+                                    </button>
+                                </form>
+                            {:else}
+                                <span class="text-xs text-gray-400 italic"
+                                    >Global Access</span
+                                >
+                            {/if}
+                        </td>
                         <td
                             class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
                         >

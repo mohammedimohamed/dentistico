@@ -4,13 +4,21 @@
 
 @layer base {
   :root {
-    font-size: 85%; /* Scales down UI to simulate ~85% zoom for a denser interface */
+    font-size: 85%;
+    /* Scales down UI to simulate ~85% zoom for a denser interface */
     --brand-primary: #0f766e;
     --brand-secondary: #14b8a6;
     --brand-accent: #f59e0b;
     --surface-light: #f8fafc;
     --text-main: #1e293b;
     --text-muted: #64748b;
+  }
+
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
   }
 
   body {

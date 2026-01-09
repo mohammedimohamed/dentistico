@@ -15,7 +15,8 @@ export const handle: Handle = async ({ event, resolve }) => {
                 id: user.user_id,
                 username: user.username,
                 role: user.role,
-                full_name: user.full_name
+                full_name: user.full_name,
+                can_export_spending: user.can_export_spending
             };
         }
     }
@@ -53,5 +54,24 @@ export const handle: Handle = async ({ event, resolve }) => {
         if (event.locals.user.role === 'admin') throw redirect(303, '/admin');
     }
 
-    return resolve(event);
+    const { getDatabaseSize, VERSION } = await import('$lib/server/db');
+    const dbSize = getDatabaseSize();
+    event.locals.debug = {
+        version: VERSION,
+        loadTime: '...', // Resolved below
+        dbSize: (dbSize / 1024).toFixed(2),
+        memory: (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)
+    };
+
+    const start = performance.now();
+    const response = await resolve(event);
+    const end = performance.now();
+
+    // We can't easily update event.locals.debug in the already rendered response data,
+    // but we can add the timing to a header for debugging
+    if (response.headers.get('content-type')?.includes('text/html')) {
+        response.headers.set('x-server-load-time', `${(end - start).toFixed(2)}ms`);
+    }
+
+    return response;
 };

@@ -34,7 +34,10 @@
         "email": "البريد الإلكتروني",
         "select": "اختيار",
         "minutes_short": "دقيقة",
-        "profile": "الملف الشخصي"
+        "profile": "الملف الشخصي",
+        "export": "تصدير",
+        "enabled": "مفعل",
+        "disabled": "معطل"
     },
     "inventory": {
         "title": "المخزون والمتجر",
@@ -450,85 +453,6 @@
             "incorrect": "اسم المستخدم أو كلمة المرور غير صحيحة."
         }
     },
-    "admin": {
-        "nav": {
-            "dashboard": "لوحة تحكم المدير",
-            "users": "إدارة المستخدمين",
-            "settings": "إعدادات النظام",
-            "inventory": "المخزون (كامل)",
-            "logout": "تسجيل خروج المدير"
-        },
-        "dashboard": {
-            "title": "لوحة تحكم المدير",
-            "stats": {
-                "totalUsers": "إجمالي المستخدمين",
-                "systemStatus": "حالة النظام",
-                "dbVersion": "إصدار قاعدة البيانات",
-                "online": "متصل"
-            },
-            "welcome": {
-                "title": "مرحباً بك في مركز القيادة",
-                "description": "من هنا يمكنك إدارة حسابات الموظفين، تعديل الإعدادات العامة، ومراقبة مخزون النظام بأكمله.",
-                "userManagement": "الذهاب إلى إدارة المستخدمين",
-                "systemSettings": "إعدادات النظام"
-            }
-        },
-        "settings": {
-            "title": "إعدادات النظام",
-            "description": "تكوين معلمات التطبيق العامة مثل العملة وتفاصيل العيادة.",
-            "financial": {
-                "title": "التكوين المالي",
-                "description": "هذه الإعدادات تؤثر على كيفية عرض الأسعار والمدفوعات في جميع أنحاء النظام.",
-                "currencyCode": "رمز العملة",
-                "currencyPlaceholder": "مثال: USD",
-                "currencyHelp": "رمز العملة المعياري المكون من 3 أحرف (DZD, USD, EUR, إلخ)",
-                "currencySymbol": "رمز العملة",
-                "symbolPlaceholder": "مثال: $",
-                "symbolHelp": "الرمز المعروض بجانب المبالغ ($, €, دج, إلخ)"
-            },
-            "saveButton": "حفظ التكوين",
-            "success": "تم حفظ الإعدادات بنجاح!",
-            "advanced": {
-                "title": "التكوين المتقدم (المستقبل)",
-                "description": "المعلمات التالية تُدار حالياً عبر CMS (تكوين الصفحة الرئيسية) وستُدمج في لوحة التحكم هذه في التحديثات المستقبلية:",
-                "clinicName": "اسم العيادة",
-                "bookingInterval": "فترة الحجز",
-                "bookingValue": "30 دقيقة",
-                "workHours": "ساعات العمل",
-                "workHoursValue": "08:00 - 18:00"
-            }
-        },
-        "users": {
-            "title": "إدارة المستخدمين",
-            "description": "إدارة موظفي العيادة والوصول الإداري.",
-            "createButton": "إنشاء مستخدم جديد",
-            "confirmDelete": "هل أنت متأكد؟",
-            "table": {
-                "name": "الاسم",
-                "username": "اسم المستخدم/البريد الإلكتروني",
-                "role": "الدور",
-                "created": "تم الإنشاء",
-                "actions": "الإجراءات"
-            },
-            "modal": {
-                "title": "إنشاء مستخدم نظام",
-                "fullName": "الاسم الكامل",
-                "fullNamePlaceholder": "أحمد محمد",
-                "username": "اسم المستخدم / البريد الإلكتروني",
-                "usernamePlaceholder": "ahmed@example.com",
-                "password": "كلمة المرور الأولية",
-                "passwordPlaceholder": "••••••••",
-                "role": "دور الحساب",
-                "roles": {
-                    "doctor": "طبيب (وصول سريري)",
-                    "assistant": "مساعد (وصول إداري)",
-                    "admin": "مدير (وصول نظام)"
-                },
-                "createButton": "إنشاء الحساب",
-                "cancel": "إلغاء"
-            }
-        }
-    },
     "spending": {
         "title": "إدارة المصروفات",
         "menu": "المصروفات",
@@ -654,6 +578,121 @@
             "Low Stock Alert": "تنبيه انخفاض المخزون",
             "Appointment Booked": "تم حجز موعد",
             "Appointment Cancelled": "تم إلغاء الموعد"
+        }
+    },
+    "admin": {
+        "settings": {
+            "title": "إعدادات النظام",
+            "description": "تكوين الإعدادات العامة للعيادة",
+            "financial": {
+                "title": "التكوين المالي",
+                "description": "إدارة إعدادات العملة والفواتير",
+                "currencyCode": "رمز العملة",
+                "currencyPlaceholder": "مثال: DZD, EUR, USD",
+                "currencyHelp": "رمز ISO للعملة (3 أحرف)",
+                "currencySymbol": "رمز العملة",
+                "symbolPlaceholder": "مثال: دج, €, $",
+                "symbolHelp": "الرمز المعروض في الفواتير"
+            },
+            "booking": {
+                "mode": "وضع الحجز",
+                "freeform": "نموذج حر (الحالي)",
+                "availability": "بناءً على التوفر",
+                "help": "وضع 'التوفر' يعرض فقط الأوقات المتاحة للمرضى"
+            },
+            "advanced": {
+                "title": "إعدادات متقدمة",
+                "description": "هذه الإعدادات تتطلب تعديلات في الكود",
+                "clinicName": "اسم العيادة",
+                "bookingInterval": "فترة الحجز",
+                "bookingValue": "30 دقيقة",
+                "workHours": "ساعات العمل",
+                "workHoursValue": "9:00 - 18:00"
+            },
+            "saveButton": "حفظ التغييرات",
+            "success": "تم حفظ الإعدادات بنجاح"
+        },
+        "dashboard": {
+            "title": "لوحة تحكم المسؤول",
+            "stats": {
+                "totalUsers": "إجمالي المستخدمين",
+                "systemStatus": "حالة النظام",
+                "online": "متصل",
+                "dbVersion": "إصدار قاعدة البيانات"
+            },
+            "welcome": {
+                "title": "مرحباً بك في لوحة الإدارة",
+                "description": "إدارة المستخدمين، تكوين إعدادات النظام ومراقبة عمليات العيادة.",
+                "userManagement": "إدارة المستخدمين",
+                "systemSettings": "إعدادات النظام"
+            }
+        },
+        "nav": {
+            "dashboard": "لوحة التحكم",
+            "users": "المستخدمون",
+            "settings": "الإعدادات",
+            "inventory": "المخزون"
+        }
+    },
+    "booking": {
+        "title": "احجز موعدك",
+        "subtitle": "اتخذ الخطوة الأولى نحو ابتسامة أكثر صحة وإشراقاً.",
+        "who_booking_for": "لمن تحجز الموعد؟",
+        "myself": "لنفسي",
+        "someone_else": "شخص آخر",
+        "personal_details": "البيانات الشخصية",
+        "your_info": "بياناتك (مقدم الطلب)",
+        "patient_info": "بيانات المريض",
+        "full_name": "الاسم الكامل",
+        "full_name_placeholder": "أدخل اسمك الكامل",
+        "email": "البريد الإلكتروني",
+        "phone": "رقم الهاتف",
+        "dob": "تاريخ الميلاد",
+        "patient_name": "اسم المريض الكامل",
+        "patient_name_placeholder": "اسم المريض",
+        "patient_dob": "تاريخ ميلاد المريض",
+        "relationship": "العلاقة",
+        "schedule": "الجدولة",
+        "specialist": "اختر الطبيب (اختياري)",
+        "doctor_placeholder": "اختر طبيباً...",
+        "service_type": "نوع الخدمة",
+        "datetime": "التاريخ والوقت المفضل",
+        "notes": "ملاحظات إضافية (اختياري)",
+        "notes_placeholder": "سبب الزيارة...",
+        "confirm": "تأكيد الطلب",
+        "processing": "جاري المعالجة...",
+        "success_title": "تم استلام الطلب!",
+        "success_message": "شكراً لاختياركم دينتيستيكو. سيقوم فريقنا بمراجعة طلبك والاتصال بك قريباً لتأكيد الموعد.",
+        "back_home": "العودة للرئيسية",
+        "terms": "من خلال الحجز، فإنك توافق على شروط الخدمة وسياسة الخصوصية الخاصة بنا.",
+        "call_us": "اتصل بنا",
+        "email_us": "راسلنا",
+        "emergency": "طوارئ",
+        "support_line": "خط الدعم 24/7",
+        "select_date": "اختر تاريخ الموعد",
+        "available_slots_for": "المواعيد المتاحة ليوم {date}",
+        "loading_slots": "جاري التحقق من التوفر...",
+        "fully_booked": "ممتلئ بالكامل",
+        "select_another_date": "يرجى اختيار تاريخ آخر من التقويم",
+        "pick_date_to_begin": "اختر تاريخاً للبدء",
+        "select_preferred_day": "اختر يومك المفضل من التقويم أعلاه",
+        "status_available": "متاح",
+        "status_pending": "قيد الانتظار",
+        "status_booked": "مشغول",
+        "select_time_for": "اختر الوقت ليوم {date}",
+        "relationships": {
+            "child": "طفل",
+            "spouse": "زوج(ة)",
+            "parent": "والد(ة)",
+            "friend": "صديق(ة)",
+            "other": "آخر"
+        },
+        "services": {
+            "consultation": "استشارة أولية",
+            "checkup": "فحص روتيني",
+            "cleaning": "تنظيف أسنان",
+            "cosmetic": "تجميل الأسنان",
+            "emergency": "علاج طوارئ"
         }
     }
 }

@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt';
 
 export const load: PageServerLoad = async () => {
     const users = db.prepare(`
-        SELECT id, username, full_name, role, created_at, is_active 
+        SELECT id, username, full_name, role, created_at, is_active, can_export_spending
         FROM users 
         ORDER BY created_at DESC
     `).all();
@@ -64,6 +64,14 @@ export const actions: Actions = {
         }
 
         db.prepare('UPDATE users SET is_active = ? WHERE id = ?').run(isActive, id);
+        return { success: true };
+    },
+    toggleSpendingExport: async ({ request }) => {
+        const data = await request.formData();
+        const id = Number(data.get('id'));
+        const canExport = Number(data.get('can_export'));
+
+        db.prepare('UPDATE users SET can_export_spending = ? WHERE id = ?').run(canExport, id);
         return { success: true };
     }
 };

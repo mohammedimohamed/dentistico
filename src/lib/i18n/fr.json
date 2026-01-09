@@ -34,7 +34,10 @@
         "email": "Email",
         "select": "Sélectionner",
         "minutes_short": "min",
-        "profile": "Profil"
+        "profile": "Profil",
+        "export": "Exporter",
+        "enabled": "Activé",
+        "disabled": "Désactivé"
     },
     "inventory": {
         "title": "Inventaire & Stock",
@@ -450,85 +453,6 @@
             "incorrect": "Nom d'utilisateur ou mot de passe incorrect."
         }
     },
-    "admin": {
-        "nav": {
-            "dashboard": "Tableau de Bord Admin",
-            "users": "Gestion des Utilisateurs",
-            "settings": "Paramètres Système",
-            "inventory": "Stock (Complet)",
-            "logout": "Déconnexion Admin"
-        },
-        "dashboard": {
-            "title": "Tableau de Bord Admin",
-            "stats": {
-                "totalUsers": "Utilisateurs Totaux",
-                "systemStatus": "Statut Système",
-                "dbVersion": "Version BD",
-                "online": "En Ligne"
-            },
-            "welcome": {
-                "title": "Bienvenue au Centre de Commande",
-                "description": "D'ici, vous pouvez gérer les comptes du personnel, ajuster les paramètres globaux, et surveiller l'inventaire système complet.",
-                "userManagement": "Aller à la Gestion des Utilisateurs",
-                "systemSettings": "Paramètres Système"
-            }
-        },
-        "settings": {
-            "title": "Paramètres Système",
-            "description": "Configurer les paramètres globaux de l'application comme la devise et les détails de la clinique.",
-            "financial": {
-                "title": "Configuration Financière",
-                "description": "Ces paramètres affectent la façon dont les prix et paiements sont affichés dans tout le système.",
-                "currencyCode": "Code Devise",
-                "currencyPlaceholder": "ex: USD",
-                "currencyHelp": "Code devise standard à 3 lettres (DZD, USD, EUR, etc.)",
-                "currencySymbol": "Symbole Devise",
-                "symbolPlaceholder": "ex: $",
-                "symbolHelp": "Le symbole affiché à côté des montants ($, €, دج, etc.)"
-            },
-            "saveButton": "Sauvegarder Configuration",
-            "success": "Paramètres sauvegardés avec succès !",
-            "advanced": {
-                "title": "Configuration Avancée (Futur)",
-                "description": "Les paramètres suivants sont actuellement gérés via le CMS (Configuration Page d'Accueil) et seront intégrés dans ce tableau de bord dans les futures mises à jour :",
-                "clinicName": "Nom Clinique",
-                "bookingInterval": "Intervalle Réservation",
-                "bookingValue": "30 Minutes",
-                "workHours": "Heures Travail",
-                "workHoursValue": "08:00 - 18:00"
-            }
-        },
-        "users": {
-            "title": "Gestion des Utilisateurs",
-            "description": "Gérer le personnel clinique et l'accès administratif.",
-            "createButton": "Créer Nouvel Utilisateur",
-            "confirmDelete": "Êtes-vous sûr ?",
-            "table": {
-                "name": "Nom",
-                "username": "Nom d'Utilisateur/Email",
-                "role": "Rôle",
-                "created": "Créé",
-                "actions": "Actions"
-            },
-            "modal": {
-                "title": "Créer Utilisateur Système",
-                "fullName": "Nom Complet",
-                "fullNamePlaceholder": "Jean Dupont",
-                "username": "Nom d'Utilisateur / Email",
-                "usernamePlaceholder": "jean@example.com",
-                "password": "Mot de Passe Initial",
-                "passwordPlaceholder": "••••••••",
-                "role": "Rôle du Compte",
-                "roles": {
-                    "doctor": "Médecin (Accès Clinique)",
-                    "assistant": "Assistant (Accès Administratif)",
-                    "admin": "Admin (Accès Système)"
-                },
-                "createButton": "Créer Compte",
-                "cancel": "Annuler"
-            }
-        }
-    },
     "spending": {
         "title": "Gestion des Dépenses",
         "menu": "Dépenses",
@@ -654,6 +578,154 @@
             "Low Stock Alert": "Alerte Stock Faible",
             "Appointment Booked": "Rendez-vous Réservé",
             "Appointment Cancelled": "Rendez-vous Annulé"
+        }
+    },
+    "admin": {
+        "settings": {
+            "title": "Paramètres Système",
+            "description": "Configurez les paramètres globaux de la clinique",
+            "financial": {
+                "title": "Configuration Financière",
+                "description": "Gérez les paramètres de devise et de facturation",
+                "currencyCode": "Code de Devise",
+                "currencyPlaceholder": "ex: DZD, EUR, USD",
+                "currencyHelp": "Code ISO de la devise (3 lettres)",
+                "currencySymbol": "Symbole de Devise",
+                "symbolPlaceholder": "ex: دج, €, $",
+                "symbolHelp": "Symbole affiché dans les factures"
+            },
+            "booking": {
+                "mode": "Mode de Réservation",
+                "freeform": "Formulaire Libre (Actuel)",
+                "availability": "Basé sur la Disponibilité",
+                "help": "Le mode 'Disponibilité' affiche uniquement les créneaux horaires disponibles aux patients"
+            },
+            "advanced": {
+                "title": "Paramètres Avancés",
+                "description": "Ces paramètres nécessitent des modifications du code",
+                "clinicName": "Nom de la Clinique",
+                "bookingInterval": "Intervalle de Réservation",
+                "bookingValue": "30 minutes",
+                "workHours": "Heures de Travail",
+                "workHoursValue": "9h00 - 18h00"
+            },
+            "saveButton": "Enregistrer les Modifications",
+            "success": "Paramètres enregistrés avec succès"
+        },
+        "dashboard": {
+            "title": "Tableau de Bord Admin",
+            "stats": {
+                "totalUsers": "Utilisateurs Totaux",
+                "systemStatus": "Statut Système",
+                "online": "En Ligne",
+                "dbVersion": "Version BD"
+            },
+            "welcome": {
+                "title": "Bienvenue dans le Panneau d'Administration",
+                "description": "Gérez les utilisateurs, configurez les paramètres système et surveillez les opérations de la clinique.",
+                "userManagement": "Gestion des Utilisateurs",
+                "systemSettings": "Paramètres Système"
+            }
+        },
+        "nav": {
+            "dashboard": "Tableau de Bord",
+            "users": "Utilisateurs",
+            "settings": "Paramètres",
+            "inventory": "Inventaire"
+        },
+        "users": {
+            "title": "Gestion des Utilisateurs",
+            "description": "Configurez les comptes et les permissions du personnel.",
+            "createButton": "Créer un Utilisateur",
+            "table": {
+                "name": "Nom Complet",
+                "username": "Identifiant / Email",
+                "role": "Rôle",
+                "created": "Créé le",
+                "actions": "Actions",
+                "spending_export": "Export Dépenses"
+            },
+            "modal": {
+                "title": "Nouvel Utilisateur",
+                "fullName": "Nom Complet",
+                "fullNamePlaceholder": "ex: Jean Dupont",
+                "phone": "Téléphone",
+                "phonePlaceholder": "ex: 0612345678",
+                "username": "Identifiant / Email",
+                "usernamePlaceholder": "email@clinique.com",
+                "password": "Mot de Passe",
+                "passwordPlaceholder": "••••••••",
+                "confirmPassword": "Confirmer le Mot de Passe",
+                "confirmPasswordPlaceholder": "••••••••",
+                "role": "Rôle du Compte",
+                "roles": {
+                    "doctor": "Docteur",
+                    "assistant": "Assistant",
+                    "admin": "Administrateur"
+                },
+                "createButton": "Créer le Compte"
+            }
+        }
+    },
+    "booking": {
+        "title": "Réservez votre Rendez-vous",
+        "subtitle": "Faites le premier pas vers un sourire plus sain et plus éclatant.",
+        "who_booking_for": "Pour qui réservez-vous ?",
+        "myself": "Moi-même",
+        "someone_else": "Quelqu'un d'autre",
+        "personal_details": "Détails Personnels",
+        "your_info": "Vos Informations (Demandeur)",
+        "patient_info": "Informations du Patient",
+        "full_name": "Nom Complet",
+        "full_name_placeholder": "Entrez votre nom complet",
+        "email": "Adresse Email",
+        "phone": "Numéro de Téléphone",
+        "dob": "Date de Naissance",
+        "patient_name": "Nom Complet du Patient",
+        "patient_name_placeholder": "Nom du patient",
+        "patient_dob": "Date de Naissance du Patient",
+        "relationship": "Relation",
+        "schedule": "Planification",
+        "specialist": "Choisir un Spécialiste (Optionnel)",
+        "doctor_placeholder": "Choisir un docteur...",
+        "service_type": "Type de Service",
+        "datetime": "Date et Heure Préférées",
+        "notes": "Notes Additionnelles (Optionnel)",
+        "notes_placeholder": "Motif de la visite...",
+        "confirm": "Confirmer la Demande",
+        "processing": "Traitement...",
+        "success_title": "Demande Reçue !",
+        "success_message": "Merci d'avoir choisi Dentistico. Notre équipe examinera votre demande et vous contactera sous peu pour confirmer le rendez-vous.",
+        "back_home": "Retour à l'Accueil",
+        "terms": "En réservant, vous acceptez nos conditions d'utilisation et notre politique de confidentialité.",
+        "call_us": "Appelez-nous",
+        "email_us": "Écrivez-nous",
+        "emergency": "Urgence",
+        "support_line": "Ligne d'assistance 24/7",
+        "select_date": "Choisir la Date du Rendez-vous",
+        "available_slots_for": "Créneaux disponibles pour le {date}",
+        "loading_slots": "Vérification des disponibilités...",
+        "fully_booked": "Complet",
+        "select_another_date": "Veuillez choisir une autre date dans le calendrier",
+        "pick_date_to_begin": "Choisissez une date pour commencer",
+        "select_preferred_day": "Sélectionnez votre jour préféré sur le calendrier ci-dessus",
+        "status_available": "Disponible",
+        "status_pending": "En attente",
+        "status_booked": "Occupé",
+        "select_time_for": "Choisir l'heure pour le {date}",
+        "relationships": {
+            "child": "Enfant",
+            "spouse": "Conjoint(e)",
+            "parent": "Parent",
+            "friend": "Ami(e)",
+            "other": "Autre"
+        },
+        "services": {
+            "consultation": "Consultation Initiale",
+            "checkup": "Contrôle de Routine",
+            "cleaning": "Nettoyage Dentaire",
+            "cosmetic": "Dentisterie Esthétique",
+            "emergency": "Soins d'Urgence"
         }
     }
 }

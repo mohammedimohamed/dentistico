@@ -3,24 +3,40 @@ import type { Actions, PageServerLoad } from './$types';
 import { getDoctors, getPatientByPhoneOrEmail, createPatient, createAppointment, getSecondaryPatient, getUserByUsername } from '$lib/server/db';
 import db from '$lib/server/db';
 import { createNotification, getAllAssistantIds } from '$lib/server/notifications';
+import { APP_CONFIG } from '$lib/config/app.config';
 
 // Helper function to validate date of birth is not in the future
 function validateDateOfBirth(dob: string | null | undefined): string | null {
     if (!dob) return null;
-    const birthDate = new Date(dob);
+    let normalizedDob = dob;
+
+    // If date is in DD/MM/YYYY format, convert to YYYY-MM-DD
+    if (dob.includes('/') && dob.split('/').length === 3) {
+        const [day, month, year] = dob.split('/');
+        if (day && month && year && year.length === 4) {
+            normalizedDob = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+    }
+
+    const birthDate = new Date(normalizedDob);
+    if (isNaN(birthDate.getTime())) {
+        throw new Error('Format de date invalide. Utilisez JJ/MM/AAAA');
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to compare dates only
 
     if (birthDate > today) {
-        throw new Error('Date of birth cannot be in the future');
+        throw new Error('La date de naissance ne peut pas être dans le futur');
     }
-    return dob;
+    return normalizedDob;
 }
 
 export const load: PageServerLoad = async () => {
     const doctors = getDoctors();
     return {
-        doctors
+        doctors,
+        config: APP_CONFIG
     };
 };
 
@@ -64,61 +80,66 @@ export const actions: Actions = {
         }
 
         try {
-            // Check if email/phone belongs to an existing user account
-            if (email) {
-                const existingUser = getUserByUsername(email);
-                if (existingUser) {
-                    return fail(400, {
-                        error: 'This email is already registered. Please log in to your account to book appointments, or use a different email address.'
-                    });
-                }
-            }
-
-            // Check if phone belongs to a patient with a user account
-            const existingPatientWithAccount = db.prepare(`
-                SELECT p.* FROM patients p 
-                WHERE p.phone = ? AND p.user_id IS NOT NULL
-            `).get(phone);
-
-            if (existingPatientWithAccount) {
-                return fail(400, {
-                    error: 'This phone number is already registered. Please log in to your account to book appointments, or use a different phone number.'
-                });
-            }
-
             // 1. Find or create the Requester (Primary Patient)
-            let requester = getPatientByPhoneOrEmail(phone, email) as any;
+            // Normalize phone for comparison
+            const inputPhoneNum = phone?.replace(/\D/g, ''); // Keep only digits
+            const inputEmail = email?.toLowerCase().trim();
+            const inputFullName = full_name?.toLowerCase().trim();
+
+            // Try to find a patient by searching through all patients (we'll filter in JS for better control)
+            let existingPatients = db.prepare(`
+                SELECT id, full_name, phone, email, date_of_birth 
+                FROM patients 
+                WHERE is_archived = 0
+            `).all() as any[];
+
+            let requesterMatch = existingPatients.find(p => {
+                const dbPhoneNum = p.phone?.replace(/\D/g, '');
+                const dbEmail = p.email?.toLowerCase().trim();
+                const dbName = p.full_name?.toLowerCase().trim();
+
+                // Match by phone OR email
+                const phoneMatch = inputPhoneNum && dbPhoneNum === inputPhoneNum;
+                const emailMatch = inputEmail && dbEmail === inputEmail;
+
+                // If phone or email matches, verify the name matches (fuzzy)
+                if (phoneMatch || emailMatch) {
+                    // Name match: either exact or one is contained in the other
+                    if (dbName === inputFullName || (dbName && inputFullName && (dbName.includes(inputFullName) || inputFullName.includes(dbName)))) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
             let requester_id: number;
 
-            // Strict Identity Check
-            if (requester) {
-                // Normalize for comparison
-                const dbName = requester.full_name?.toLowerCase().trim();
-                const inputName = full_name?.toLowerCase().trim();
-                const dbDob = requester.date_of_birth; // YYYY-MM-DD
-                const inputDob = date_of_birth; // YYYY-MM-DD
+            if (requesterMatch) {
+                requester_id = Number(requesterMatch.id);
+                console.log(`Web Booking: Matched existing patient ID ${requester_id} for ${full_name}`);
 
-                const nameMatch = dbName === inputName;
-                const dobMatch = dbDob === inputDob;
-
-                if (!nameMatch || !dobMatch) {
-                    // Identity mismatch - Do NOT attach to this user.
-                    // We will treat this as a new patient (or duplicate contact) to be resolved by assistant.
-                    console.log(`Web Booking: Identity mismatch for phone ${phone}. DB: ${dbName}/${dbDob}, Input: ${inputName}/${inputDob}. Creating new record.`);
-                    requester = null;
+                // Update missing info if found
+                const updates: any = {};
+                if (!requesterMatch.email && inputEmail) updates.email = inputEmail;
+                if ((!requesterMatch.date_of_birth || requesterMatch.date_of_birth === '1900-01-01') && date_of_birth) {
+                    updates.date_of_birth = date_of_birth;
                 }
-            }
 
-            if (!requester) {
+                if (Object.keys(updates).length > 0) {
+                    // Use db.prepare directly since we are already in a server action and want minimal side effects
+                    const setClause = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+                    db.prepare(`UPDATE patients SET ${setClause} WHERE id = ?`).run(...Object.values(updates), requester_id);
+                }
+            } else {
+                // No existing patient found - create new
                 requester_id = Number(createPatient({
                     full_name,
                     phone,
                     email,
-                    date_of_birth: booking_for === 'self' ? (date_of_birth || '1900-01-01') : '1900-01-01',
+                    date_of_birth: booking_for === 'self' ? (date_of_birth || null) : null,
                     registration_date: new Date().toISOString()
                 }));
-            } else {
-                requester_id = Number(requester.id);
+                console.log(`Web Booking: Created new patient record ID ${requester_id} for ${full_name}`);
             }
 
             // 2. Determine who the actual Patient is
@@ -126,20 +147,39 @@ export const actions: Actions = {
             if (booking_for === 'self') {
                 target_patient_id = requester_id;
             } else {
-                // Booking for someone else
-                // Check if this specific secondary patient already exists under this requester
-                const existingSecondary = getSecondaryPatient(requester_id, patient_name, patient_dob || '');
+                // Booking for someone else (secondary patient)
+                // Normalize secondary patient name
+                const inputSecondaryName = patient_name?.toLowerCase().trim();
 
-                if (existingSecondary) {
-                    target_patient_id = Number((existingSecondary as any).id);
+                // Get all secondary patients for this requester
+                const secondaryPatients = db.prepare(`
+                    SELECT id, full_name, date_of_birth 
+                    FROM patients 
+                    WHERE primary_contract_id = ? AND is_archived = 0
+                `).all(requester_id) as any[];
+
+                const secondaryMatch = secondaryPatients.find(p => {
+                    const dbName = p.full_name?.toLowerCase().trim();
+                    return dbName === inputSecondaryName || (dbName && inputSecondaryName && (dbName.includes(inputSecondaryName) || inputSecondaryName.includes(dbName)));
+                });
+
+                if (secondaryMatch) {
+                    target_patient_id = Number(secondaryMatch.id);
+                    console.log(`Web Booking: Matched existing secondary patient ID ${target_patient_id} for ${patient_name}`);
+
+                    // Update DOB if provided now but was missing before
+                    if ((!secondaryMatch.date_of_birth || secondaryMatch.date_of_birth === '1900-01-01') && patient_dob) {
+                        db.prepare('UPDATE patients SET date_of_birth = ? WHERE id = ?').run(patient_dob, target_patient_id);
+                    }
                 } else {
                     target_patient_id = Number(createPatient({
                         full_name: patient_name,
-                        date_of_birth: patient_dob || '1900-01-01',
+                        date_of_birth: patient_dob || null,
                         primary_contract_id: requester_id,
                         relationship_to_primary: relationship,
                         registration_date: new Date().toISOString()
                     }));
+                    console.log(`Web Booking: Created new secondary patient record ID ${target_patient_id} for ${patient_name}`);
                 }
             }
 

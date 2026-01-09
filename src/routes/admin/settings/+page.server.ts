@@ -14,8 +14,9 @@ export const actions = {
         const formData = await request.formData();
         const currency = formData.get('currency') as string;
         const currencySymbol = formData.get('currencySymbol') as string;
+        const bookingMode = formData.get('bookingMode') as string;
 
-        if (!currency || !currencySymbol) {
+        if (!currency || !currencySymbol || !bookingMode) {
             return fail(400, { message: 'Missing required fields' });
         }
 
@@ -23,7 +24,8 @@ export const actions = {
 
         const newConfig = {
             currency,
-            currencySymbol
+            currencySymbol,
+            bookingMode
         };
 
         try {

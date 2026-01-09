@@ -63,13 +63,30 @@
         </button>
     </div>
 
-    <nav class="flex-1 px-4 py-8 space-y-2 overflow-y-auto">
+    <nav
+        class="flex-1 {isCollapsed
+            ? 'px-2'
+            : 'px-4'} py-8 space-y-2 overflow-y-auto"
+    >
         {#each items as item}
             {#if item.href}
                 <a
                     href={item.href}
-                    class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all {page.url.pathname.startsWith(
-                        item.href,
+                    class="flex items-center {isCollapsed
+                        ? 'justify-center'
+                        : 'gap-4 px-4'} py-3 rounded-xl transition-all {(
+                        item.href === '/admin' ||
+                        item.href === '/doctor/dashboard' ||
+                        item.href === '/assistant/dashboard'
+                            ? page.url.pathname === item.href
+                            : page.url.pathname.startsWith(item.href) &&
+                              !items.some(
+                                  (i) =>
+                                      i.href &&
+                                      i.href !== item.href &&
+                                      i.href.length > item.href.length &&
+                                      page.url.pathname.startsWith(i.href),
+                              )
                     )
                         ? 'bg-indigo-600 text-white shadow-lg'
                         : 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
@@ -95,7 +112,9 @@
             {:else}
                 <button
                     onclick={item.onClick}
-                    class="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all {activeId ===
+                    class="w-full flex items-center {isCollapsed
+                        ? 'justify-center'
+                        : 'gap-4 px-4'} py-3 rounded-xl transition-all {activeId ===
                     item.id
                         ? 'bg-indigo-600 text-white shadow-lg'
                         : 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
@@ -122,8 +141,16 @@
         {/each}
     </nav>
 
-    <div class="p-4 border-t border-gray-800 text-start">
-        <div class="flex items-center gap-3 mb-4">
+    <div
+        class="{isCollapsed
+            ? 'p-2'
+            : 'p-4'} border-t border-gray-800 text-start"
+    >
+        <div
+            class="flex items-center {isCollapsed
+                ? 'justify-center'
+                : 'gap-3'} mb-4"
+        >
             <div
                 class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white shadow-inner"
             >
@@ -151,7 +178,9 @@
         >
             <button
                 type="submit"
-                class="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-red-100 bg-red-500/10 hover:bg-red-500/20 transition-all border border-red-500/20"
+                class="w-full flex items-center {isCollapsed
+                    ? 'justify-center'
+                    : 'gap-4 px-4'} py-3 rounded-xl text-red-100 bg-red-500/10 hover:bg-red-500/20 transition-all border border-red-500/20"
             >
                 <span class="w-6 h-6">
                     <svg

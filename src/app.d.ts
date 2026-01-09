@@ -9,8 +9,15 @@ declare global {
 				username: string;
 				role: string;
 				full_name: string;
+				can_export_spending: number;
 			};
 			locale: string;
+			debug?: {
+				version: string;
+				loadTime: string;
+				dbSize: string;
+				memory: string;
+			};
 		}
 		// interface PageData {}
 		// interface PageState {}

@@ -1,4 +1,5 @@
 {
     "currency": "DZD",
-    "currencySymbol": "دج"
+    "currencySymbol": "دج",
+    "bookingMode": "availability"
 }

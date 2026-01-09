@@ -947,10 +947,18 @@
                                         >
                                             {$t(
                                                 `assistant.dashboard.appointment.type.${appt.appointment_type}`,
-                                            )} • {$t(
-                                                "assistant.dashboard.time.dr",
-                                            )}
-                                            {appt.doctor_name}
+                                            )} •
+                                            {#if appt.doctor_name}
+                                                {$t(
+                                                    "assistant.dashboard.time.dr",
+                                                )}
+                                                {appt.doctor_name}
+                                            {:else}
+                                                <span
+                                                    class="text-orange-600 font-bold"
+                                                    >⚠️ Unassigned</span
+                                                >
+                                            {/if}
                                         </p>
                                         {#if appt.relationship_to_primary && appt.booked_by_name}
                                             <p
@@ -1590,6 +1598,33 @@
                 </button>
             </div>
             <div class="p-6">
+                <!-- Stats Section -->
+                <div
+                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"
+                >
+                    <div
+                        class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between"
+                    >
+                        <div>
+                            <p
+                                class="text-xs text-gray-500 font-bold uppercase tracking-wider"
+                            >
+                                {$t(
+                                    "assistant.dashboard.tabs.patients.totalPatients",
+                                ) || "Total Patients"}
+                            </p>
+                            <p class="text-2xl font-bold text-indigo-900 mt-1">
+                                {patients.length}
+                            </p>
+                        </div>
+                        <div
+                            class="bg-indigo-50 p-3 rounded-lg text-indigo-600 font-bold text-xl"
+                        >
+                            👥
+                        </div>
+                    </div>
+                </div>
+
                 <div class="relative mb-6">
                     <span
                         class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"

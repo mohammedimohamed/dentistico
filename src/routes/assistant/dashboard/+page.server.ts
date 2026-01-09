@@ -234,10 +234,10 @@ export const actions: Actions = {
                 if (appt) {
                     // Notify the doctor
                     const appointmentDetails = db.prepare(`
-                      SELECT a.*, p.full_name as patient_name, d.id as doctor_id
+                      SELECT a.*, p.full_name as patient_name, d.id as doctor_id, d.full_name as doctor_name
                       FROM appointments a
                       JOIN patients p ON a.patient_id = p.id
-                      JOIN users d ON a.doctor_id = d.id
+                      LEFT JOIN users d ON a.doctor_id = d.id
                       WHERE a.id = ?
                     `).get(appointmentId) as any;
 

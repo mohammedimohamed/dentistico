@@ -16,12 +16,12 @@ export function createSession(userId: number): string {
 
 export function getSession(sessionId: string) {
     const stmt = db.prepare(`
-        SELECT s.*, u.username, u.role, u.full_name, u.id as user_id
+        SELECT s.*, u.username, u.role, u.full_name, u.id as user_id, u.can_export_spending
         FROM sessions s
         JOIN users u ON s.user_id = u.id
         WHERE s.id = ? AND s.expires_at > ?
     `);
-    return stmt.get(sessionId, new Date().toISOString()) as { id: string, user_id: number, username: string, role: string, full_name: string } | undefined;
+    return stmt.get(sessionId, new Date().toISOString()) as { id: string, user_id: number, username: string, role: string, full_name: string, can_export_spending: number } | undefined;
 }
 
 export function deleteSession(sessionId: string) {
@@ -33,7 +33,7 @@ export function setSessionCookie(cookies: Cookies, sessionId: string) {
     // Determine if we should use secure cookies (HTTPS only)
     // In production with HTTPS, use secure. In development/localhost, allow HTTP.
     const isSecure = process.env.NODE_ENV === 'production' && process.env.ORIGIN?.startsWith('https');
-    
+
     cookies.set('session_id', sessionId, {
         path: '/',
         httpOnly: true,
