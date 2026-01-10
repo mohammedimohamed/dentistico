@@ -325,6 +325,14 @@ export function init_db() {
             FOREIGN KEY (created_by_user_id) REFERENCES users(id)
         );
 
+        CREATE TABLE IF NOT EXISTS treatment_types (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
         CREATE INDEX IF NOT EXISTS idx_spending_date ON spending(spending_date);
         CREATE INDEX IF NOT EXISTS idx_spending_category ON spending(category_id);
 
@@ -337,20 +345,36 @@ export function init_db() {
         UPDATE appointments SET start_time = REPLACE(start_time, 'T', ' ') WHERE start_time LIKE '%T%';
         UPDATE appointments SET end_time = REPLACE(end_time, 'T', ' ') WHERE end_time LIKE '%T%';
 
+        CREATE TABLE IF NOT EXISTS cdt_codes (
+            code TEXT PRIMARY KEY,
+            category TEXT NOT NULL,
+            description TEXT NOT NULL,
+            default_fee REAL DEFAULT 0,
+            requires_surfaces INTEGER DEFAULT 0,
+            whole_tooth_only INTEGER DEFAULT 0,
+            valid_tooth_types TEXT,
+            color_code TEXT DEFAULT '#3B82F6',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
         CREATE TABLE IF NOT EXISTS dental_treatments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             patient_id INTEGER NOT NULL,
             tooth_number TEXT NOT NULL,
-            surface TEXT,
+            surfaces TEXT,
+            cdt_code TEXT,
             treatment_type TEXT NOT NULL,
             status TEXT NOT NULL CHECK(status IN ('existing', 'completed', 'planned')),
-            color TEXT NOT NULL,
+            fee REAL DEFAULT 0,
+            date_performed TEXT,
+            provider_id INTEGER,
+            diagnosis TEXT,
             notes TEXT,
-            treatment_date TEXT,
-            performed_by_user_id INTEGER,
+            color TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-            FOREIGN KEY (performed_by_user_id) REFERENCES users(id)
+            FOREIGN KEY (provider_id) REFERENCES users(id),
+            FOREIGN KEY (cdt_code) REFERENCES cdt_codes(code)
         );
 
         CREATE INDEX IF NOT EXISTS idx_dental_tooth ON dental_treatments(patient_id, tooth_number);
@@ -408,10 +432,14 @@ export function init_db() {
 
     // Check if seed needed
     const userCount = db.prepare('SELECT count(*) as count FROM users').get() as { count: number };
+    const treatmentTypeCount = db.prepare('SELECT count(*) as count FROM treatment_types').get() as { count: number };
 
     if (userCount.count === 0) {
         console.log('Seeding database...');
         seed_db();
+    } else if (treatmentTypeCount.count === 0) {
+        console.log('Seeding treatment types...');
+        seedTreatmentTypesOnly();
     }
 
     // Migration for existing databases
@@ -721,24 +749,101 @@ export function init_db() {
         console.error('Migration for nullable doctor_id failed:', e);
     }
 
-    // Migration for dental chart tables
+    // Migration for dental chart tables with CDT codes
     try {
+        const tableCheck = db.prepare("PRAGMA table_info(dental_treatments)").all() as any[];
+        const isOldSchema = tableCheck.length > 0 && tableCheck.some(c => c.name === 'surface');
+
+        if (isOldSchema) {
+            console.log('Upgrading dental_treatments table to new schema...');
+            db.exec(`
+                -- CDT Code reference table
+                CREATE TABLE IF NOT EXISTS cdt_codes (
+                    code TEXT PRIMARY KEY,
+                    category TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    default_fee REAL DEFAULT 0,
+                    requires_surfaces INTEGER DEFAULT 0,
+                    whole_tooth_only INTEGER DEFAULT 0,
+                    valid_tooth_types TEXT,
+                    color_code TEXT DEFAULT '#3B82F6',
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+
+                -- Update dental_treatments table
+                DROP TABLE IF EXISTS dental_treatments_old;
+                ALTER TABLE dental_treatments RENAME TO dental_treatments_old;
+
+                CREATE TABLE dental_treatments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    patient_id INTEGER NOT NULL,
+                    tooth_number TEXT NOT NULL,
+                    surfaces TEXT,
+                    cdt_code TEXT,
+                    treatment_type TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('existing', 'completed', 'planned')),
+                    fee REAL DEFAULT 0,
+                    date_performed TEXT,
+                    provider_id INTEGER,
+                    diagnosis TEXT,
+                    notes TEXT,
+                    color TEXT NOT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+                    FOREIGN KEY (provider_id) REFERENCES users(id),
+                    FOREIGN KEY (cdt_code) REFERENCES cdt_codes(code)
+                );
+
+                -- Copy old data
+                INSERT INTO dental_treatments (
+                    id, patient_id, tooth_number, surfaces, treatment_type, 
+                    status, notes, color, created_at
+                )
+                SELECT 
+                    id, patient_id, tooth_number, surface, treatment_type,
+                    status, notes, color, created_at
+                FROM dental_treatments_old;
+
+                DROP TABLE IF EXISTS dental_treatments_old;
+            `);
+        } else {
+            // Just ensure tables exist for fresh install
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS cdt_codes (
+                    code TEXT PRIMARY KEY,
+                    category TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    default_fee REAL DEFAULT 0,
+                    requires_surfaces INTEGER DEFAULT 0,
+                    whole_tooth_only INTEGER DEFAULT 0,
+                    valid_tooth_types TEXT,
+                    color_code TEXT DEFAULT '#3B82F6',
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS dental_treatments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    patient_id INTEGER NOT NULL,
+                    tooth_number TEXT NOT NULL,
+                    surfaces TEXT,
+                    cdt_code TEXT,
+                    treatment_type TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('existing', 'completed', 'planned')),
+                    fee REAL DEFAULT 0,
+                    date_performed TEXT,
+                    provider_id INTEGER,
+                    diagnosis TEXT,
+                    notes TEXT,
+                    color TEXT NOT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+                    FOREIGN KEY (provider_id) REFERENCES users(id),
+                    FOREIGN KEY (cdt_code) REFERENCES cdt_codes(code)
+                );
+            `);
+        }
+
         db.exec(`
-            CREATE TABLE IF NOT EXISTS dental_treatments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                patient_id INTEGER NOT NULL,
-                tooth_number TEXT NOT NULL,
-                surface TEXT,
-                treatment_type TEXT NOT NULL,
-                status TEXT NOT NULL CHECK(status IN ('existing', 'completed', 'planned')),
-                color TEXT NOT NULL,
-                notes TEXT,
-                treatment_date TEXT,
-                performed_by_user_id INTEGER,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-                FOREIGN KEY (performed_by_user_id) REFERENCES users(id)
-            );
             CREATE INDEX IF NOT EXISTS idx_dental_tooth ON dental_treatments(patient_id, tooth_number);
             
             CREATE TABLE IF NOT EXISTS tooth_status (
@@ -753,9 +858,161 @@ export function init_db() {
                 FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
             );
         `);
-        console.log('Dental chart tables verified/created');
+
+        // Seed basic CDT codes if empty
+        const count = db.prepare("SELECT COUNT(*) as count FROM cdt_codes").get() as { count: number };
+        if (count.count === 0) {
+            console.log('Seeding basic CDT codes...');
+            const basicCDTCodes = [
+                ['D0120', 'Diagnostic', 'Periodic Oral Evaluation', 50, 0, 1, 'all', '#6B7280'],
+                ['D0150', 'Diagnostic', 'Comprehensive Oral Evaluation', 75, 0, 1, 'all', '#6B7280'],
+                ['D1110', 'Preventive', 'Adult Prophylaxis (Cleaning)', 100, 0, 1, 'all', '#10B981'],
+                ['D1120', 'Preventive', 'Child Prophylaxis', 75, 0, 1, 'primary', '#10B981'],
+                ['D1206', 'Preventive', 'Fluoride Varnish', 35, 0, 1, 'all', '#10B981'],
+                ['D1351', 'Preventive', 'Sealant - Per Tooth', 45, 0, 1, 'posterior', '#10B981'],
+                ['D2330', 'Restorative', 'Anterior Composite - One Surface', 120, 1, 0, 'anterior', '#2563EB'],
+                ['D2331', 'Restorative', 'Anterior Composite - Two Surfaces', 150, 1, 0, 'anterior', '#2563EB'],
+                ['D2332', 'Restorative', 'Anterior Composite - Three Surfaces', 180, 1, 0, 'anterior', '#2563EB'],
+                ['D2391', 'Restorative', 'Posterior Composite - One Surface', 140, 1, 0, 'posterior', '#2563EB'],
+                ['D2392', 'Restorative', 'Posterior Composite - Two Surfaces', 180, 1, 0, 'posterior', '#2563EB'],
+                ['D2393', 'Restorative', 'Posterior Composite - Three Surfaces', 220, 1, 0, 'posterior', '#2563EB'],
+                ['D2394', 'Restorative', 'Posterior Composite - Four+ Surfaces', 260, 1, 0, 'posterior', '#2563EB'],
+                ['D2740', 'Crowns', 'Porcelain/Ceramic Crown', 1200, 0, 1, 'all', '#7C3AED'],
+                ['D2750', 'Crowns', 'Porcelain Fused to Metal Crown', 1100, 0, 1, 'all', '#7C3AED'],
+                ['D2751', 'Crowns', 'Porcelain Fused to Titanium Crown', 1150, 0, 1, 'all', '#7C3AED'],
+                ['D3310', 'Endodontics', 'Anterior Root Canal', 700, 0, 1, 'anterior', '#EA580C'],
+                ['D3320', 'Endodontics', 'Bicuspid Root Canal', 850, 0, 1, 'posterior', '#EA580C'],
+                ['D3330', 'Endodontics', 'Molar Root Canal', 1200, 0, 1, 'posterior', '#EA580C'],
+                ['D7140', 'Surgery', 'Extraction - Erupted Tooth', 150, 0, 1, 'all', '#DC2626'],
+                ['D7210', 'Surgery', 'Surgical Extraction - Erupted Tooth', 225, 0, 1, 'all', '#DC2626'],
+                ['D7220', 'Surgery', 'Surgical Extraction - Impacted Soft Tissue', 300, 0, 1, 'all', '#DC2626'],
+                ['D7230', 'Surgery', 'Surgical Extraction - Impacted Partial Bony', 375, 0, 1, 'all', '#DC2626'],
+                ['D7240', 'Surgery', 'Surgical Extraction - Impacted Complete Bony', 450, 0, 1, 'all', '#DC2626'],
+                ['D9110', 'Other', 'Palliative Treatment (Emergency)', 75, 0, 1, 'all', '#6B7280'],
+                ['D9430', 'Other', 'Office Visit - After Hours', 100, 0, 1, 'all', '#6B7280']
+            ];
+
+            const insertCDT = db.prepare(`
+                INSERT OR IGNORE INTO cdt_codes (
+                    code, category, description, default_fee, requires_surfaces, 
+                    whole_tooth_only, valid_tooth_types, color_code
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+
+            for (const code of basicCDTCodes) {
+                insertCDT.run(...code);
+            }
+        }
+
+        console.log('Dental chart tables verified/created/migrated');
     } catch (e) {
         console.error('Migration for dental chart tables failed:', e);
+    }
+}
+
+function seedTreatmentTypesOnly() {
+    try {
+        console.log('Seeding treatment types...');
+
+        // Seed Treatment Types - Comprehensive list of common dental procedures
+        const treatmentTypes = [
+            // Consultations
+            ['consultation', 'Consultation générale avec le patient'],
+            ['emergency_consultation', 'Consultation d\'urgence'],
+            ['follow_up', 'Consultation de suivi'],
+
+            // Preventive Care
+            ['cleaning', 'Nettoyage dentaire professionnel'],
+            ['deep_cleaning', 'Détartrage approfondi'],
+            ['polishing', 'Polissage dentaire'],
+            ['fluoride_treatment', 'Traitement au fluorure'],
+
+            // Restorative Dentistry
+            ['filling', 'Obturation dentaire'],
+            ['filling_amalgam', 'Obturation en amalgame'],
+            ['filling_composite', 'Obturation en composite'],
+            ['filling_glass_ionomer', 'Obturation en ionomère de verre'],
+            ['inlay', 'Inlay dentaire'],
+            ['onlay', 'Onlay dentaire'],
+
+            // Endodontics
+            ['root_canal', 'Traitement de canal radiculaire'],
+            ['root_canal_anterior', 'Traitement de canal dent antérieure'],
+            ['root_canal_posterior', 'Traitement de canal dent postérieure'],
+
+            // Oral Surgery
+            ['extraction', 'Extraction dentaire'],
+            ['extraction_simple', 'Extraction simple'],
+            ['extraction_surgical', 'Extraction chirurgicale'],
+            ['extraction_impacted', 'Extraction dent incluse'],
+
+            // Prosthodontics
+            ['crown', 'Pose de couronne'],
+            ['crown_porcelain', 'Couronne en porcelaine'],
+            ['crown_metal', 'Couronne métallique'],
+            ['crown_pfm', 'Couronne métal-porcelaine'],
+            ['crown_zirconia', 'Couronne en zircone'],
+            ['bridge', 'Pont dentaire'],
+            ['bridge_fixed', 'Pont fixe'],
+            ['bridge_maryland', 'Pont Maryland'],
+            ['denture', 'Prothèse dentaire'],
+            ['denture_complete', 'Prothèse complète'],
+            ['denture_partial', 'Prothèse partielle'],
+
+            // Implantology
+            ['implant', 'Implantation dentaire'],
+            ['implant_placement', 'Pose d\'implant'],
+            ['implant_crown', 'Couronne sur implant'],
+            ['bone_graft', 'Greffe osseuse'],
+            ['sinus_lift', 'Élévation du sinus'],
+
+            // Orthodontics
+            ['orthodontics', 'Traitement orthodontique'],
+            ['braces', 'Appareil orthodontique'],
+            ['retainer', 'Contention orthodontique'],
+
+            // Cosmetic Dentistry
+            ['whitening', 'Blanchiment dentaire'],
+            ['whitening_office', 'Blanchiment en cabinet'],
+            ['whitening_home', 'Blanchiment à domicile'],
+            ['veneer', 'Facette dentaire'],
+            ['veneer_porcelain', 'Facette en porcelaine'],
+            ['veneer_composite', 'Facette en composite'],
+
+            // Periodontics
+            ['periodontal', 'Traitement parodontal'],
+            ['scaling', 'Surfaçage radiculaire'],
+            ['gum_surgery', 'Chirurgie parodontale'],
+
+            // Radiology
+            ['x_ray', 'Radiographie dentaire'],
+            ['x_ray_intraoral', 'Radiographie intrabuccale'],
+            ['x_ray_panorama', 'Panoramique dentaire'],
+            ['x_ray_cbct', 'CBCT/Scanner'],
+
+            // Emergency & Other
+            ['emergency', 'Soins d\'urgence'],
+            ['pain_relief', 'Soulagement de la douleur'],
+            ['temporary_filling', 'Obturation temporaire'],
+            ['repair', 'Réparation de restauration'],
+            ['maintenance', 'Maintenance et contrôle']
+        ];
+
+        const insertTreatmentType = db.prepare('INSERT OR IGNORE INTO treatment_types (name, description) VALUES (?, ?)');
+
+        let insertedCount = 0;
+        for (const tt of treatmentTypes) {
+            const result = insertTreatmentType.run(...tt);
+            if (result.changes > 0) {
+                insertedCount++;
+            }
+        }
+
+        console.log(`Treatment types seeded successfully. Added ${insertedCount} new treatment types.`);
+
+    } catch (error) {
+        console.error('Error seeding treatment types:', error);
+        throw error;
     }
 }
 
@@ -867,6 +1124,9 @@ function seed_db() {
     for (const i of inventory) {
         insertInv.run(...i);
     }
+
+    // Seed treatment types as part of initial seeding
+    seedTreatmentTypesOnly();
 
     console.log('Extended database seeded successfully.');
 }
@@ -1581,6 +1841,36 @@ export function createSupplier(supplierData: any) {
     const columns = keys.join(', ');
     const placeholders = keys.map(() => '?').join(', ');
     return db.prepare(`INSERT INTO suppliers (${columns}) VALUES (${placeholders})`).run(...Object.values(supplierData)).lastInsertRowid;
+}
+
+// --- Treatment Types ---
+export function getAllTreatmentTypes() {
+    return db.prepare('SELECT * FROM treatment_types WHERE is_active = 1 ORDER BY name ASC').all();
+}
+
+export function getTreatmentTypeById(id: number) {
+    return db.prepare('SELECT * FROM treatment_types WHERE id = ?').get(id);
+}
+
+export function createTreatmentType(treatmentTypeData: any) {
+    const keys = Object.keys(treatmentTypeData);
+    const columns = keys.join(', ');
+    const placeholders = keys.map(() => '?').join(', ');
+    const stmt = db.prepare(`INSERT INTO treatment_types (${columns}) VALUES (${placeholders})`);
+    return stmt.run(...Object.values(treatmentTypeData)).lastInsertRowid;
+}
+
+export function updateTreatmentType(id: number, treatmentTypeData: any) {
+    const keys = Object.keys(treatmentTypeData);
+    const setClause = keys.map(key => `${key} = ?`).join(', ');
+    const values = [...Object.values(treatmentTypeData), id];
+
+    const stmt = db.prepare(`UPDATE treatment_types SET ${setClause} WHERE id = ?`);
+    return stmt.run(...values);
+}
+
+export function deleteTreatmentType(id: number) {
+    return db.prepare('UPDATE treatment_types SET is_active = 0 WHERE id = ?').run(id);
 }
 
 // Export db instance

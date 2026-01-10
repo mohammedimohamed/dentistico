@@ -14,7 +14,8 @@ import {
     createInvoice,
     markInvoiceAsPaid,
     archivePatient,
-    unarchivePatient
+    unarchivePatient,
+    getAllTreatmentTypes
 } from '$lib/server/db';
 import type { PageServerLoad, Actions } from './$types';
 
@@ -40,6 +41,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     const medications = getAllMedications();
     const prescriptions = getPrescriptionsByPatient(patientId);
     const invoices = (await import('$lib/server/db')).getInvoicesByPatient(patientId);
+    const treatmentTypes = getAllTreatmentTypes();
 
     return {
         patient,
@@ -50,6 +52,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         medications,
         prescriptions,
         invoices,
+        treatmentTypes,
         user: locals.user
     };
 };

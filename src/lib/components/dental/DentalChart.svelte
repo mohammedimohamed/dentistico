@@ -11,6 +11,9 @@
     } from "$lib/dental/tooth-data";
     import { t } from "svelte-i18n";
 
+    import SurfaceSelector from "./SurfaceSelector.svelte";
+    import QuickTreatmentPicker from "./QuickTreatmentPicker.svelte";
+
     interface Props {
         patientId: number;
         patientAge: number;
@@ -27,11 +30,44 @@
 
     // New treatment form
     let newTreatment = $state({
-        surface: "",
-        treatment_type: "",
+        surfaces: [] as string[],
+        cdt_code: "",
+        procedure_description: "",
+        fee: 0,
         status: "planned" as "existing" | "completed" | "planned",
+        date_performed: "",
+        provider_id: null as number | null,
+        diagnosis: "",
         notes: "",
+        color: "#3B82F6",
     });
+
+    let showSurfaceSelector = $state(false);
+    let requiresSurfaces = $state(false);
+
+    function handleCodeSelect(code: any) {
+        newTreatment.cdt_code = code.code;
+        newTreatment.procedure_description = code.description;
+        newTreatment.fee = code.default_fee;
+        newTreatment.color = code.color_code;
+        requiresSurfaces = code.requires_surfaces;
+        showSurfaceSelector = code.requires_surfaces;
+
+        // Clear surfaces if procedure doesn't require them
+        if (!code.requires_surfaces) {
+            newTreatment.surfaces = [];
+        }
+    }
+
+    function toggleSurface(surface: string) {
+        const index = newTreatment.surfaces.indexOf(surface);
+        if (index > -1) {
+            newTreatment.surfaces.splice(index, 1);
+        } else {
+            newTreatment.surfaces.push(surface);
+        }
+        newTreatment.surfaces = [...newTreatment.surfaces]; // Trigger reactivity
+    }
 
     // Determine initial dentition type
     onMount(async () => {
@@ -74,11 +110,23 @@
     }
 
     async function saveTreatment() {
-        if (!selectedTooth || !newTreatment.treatment_type) return;
+        if (!selectedTooth || !newTreatment.cdt_code) {
+            alert("Please select a procedure");
+            return;
+        }
 
-        const treatmentColor =
-            TREATMENT_TYPES.find((t) => t.id === newTreatment.treatment_type)
-                ?.color || "#000000";
+        if (requiresSurfaces && newTreatment.surfaces.length === 0) {
+            alert("This procedure requires selecting surfaces");
+            return;
+        }
+
+        if (
+            newTreatment.status === "completed" &&
+            !newTreatment.date_performed
+        ) {
+            alert("Please enter the date performed");
+            return;
+        }
 
         try {
             await fetch("/api/dental/treatments", {
@@ -87,23 +135,36 @@
                 body: JSON.stringify({
                     patient_id: patientId,
                     tooth_number: selectedTooth.toString(),
-                    surface: newTreatment.surface || null,
-                    treatment_type: newTreatment.treatment_type,
+                    surfaces: newTreatment.surfaces.join(","),
+                    cdt_code: newTreatment.cdt_code,
+                    treatment_type: newTreatment.procedure_description,
                     status: newTreatment.status,
-                    color: treatmentColor,
+                    fee: newTreatment.fee,
+                    date_performed: newTreatment.date_performed || null,
+                    provider_id: newTreatment.provider_id,
+                    diagnosis: newTreatment.diagnosis,
                     notes: newTreatment.notes,
+                    color: newTreatment.color,
                 }),
             });
 
-            // Reset form
+            // Reset
             newTreatment = {
-                surface: "",
-                treatment_type: "",
+                surfaces: [],
+                cdt_code: "",
+                procedure_description: "",
+                fee: 0,
                 status: "planned",
+                date_performed: "",
+                provider_id: null,
+                diagnosis: "",
                 notes: "",
+                color: "#3B82F6",
             };
 
             showTreatmentModal = false;
+            showSurfaceSelector = false;
+            requiresSurfaces = false;
             selectedTooth = null;
             await loadTreatments();
         } catch (e) {
@@ -291,9 +352,10 @@
                                     >{$t("dental.tooth")}
                                     {treatment.tooth_number}</span
                                 >
-                                {#if treatment.surface}
+                                {#if treatment.surfaces || treatment.surface}
                                     <span class="text-sm text-gray-600"
-                                        >({treatment.surface})</span
+                                        >({treatment.surfaces ||
+                                            treatment.surface})</span
                                     >
                                 {/if}
                                 <span class="ml-2 text-sm"
@@ -328,113 +390,160 @@
     </div>
 </div>
 
-<!-- Treatment Modal -->
+<!-- Replace the old modal with this NEW MODAL -->
 {#if showTreatmentModal && selectedTooth}
     <div class="modal-overlay" onclick={() => (showTreatmentModal = false)}>
-        <div class="modal-content" onclick={(e) => e.stopPropagation()}>
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold">
-                    {$t("dental.add_treatment")} - {$t("dental.tooth")}
-                    {selectedTooth}
-                </h3>
+        <div class="modal-content-large" onclick={(e) => e.stopPropagation()}>
+            <!-- Header -->
+            <div class="modal-header">
+                <div>
+                    <h3 class="text-2xl font-bold">Add Treatment</h3>
+                    <p class="text-gray-600 mt-1">Tooth #{selectedTooth}</p>
+                </div>
                 <button
                     onclick={() => (showTreatmentModal = false)}
-                    class="text-gray-400 hover:text-gray-600"
+                    class="close-button"
                 >
-                    <svg
-                        class="h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12"
-                        />
-                    </svg>
+                    ✕
                 </button>
             </div>
 
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1"
-                        >{$t("dental.surface")} ({$t("common.optional") ||
-                            "Optional"})</label
-                    >
-                    <select
-                        bind:value={newTreatment.surface}
-                        class="w-full border rounded px-3 py-2"
-                    >
-                        <option value="">{$t("dental.whole_tooth")}</option>
-                        {#each SURFACES as surface}
-                            <option value={surface}>{surface}</option>
-                        {/each}
-                    </select>
+            <!-- Two-Column Layout -->
+            <div class="modal-body">
+                <!-- LEFT COLUMN: Procedure Selection -->
+                <div class="left-column">
+                    <QuickTreatmentPicker
+                        selectedCode={newTreatment.cdt_code}
+                        onSelect={handleCodeSelect}
+                    />
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium mb-1"
-                        >{$t("dental.treatment_type")} *</label
-                    >
-                    <select
-                        bind:value={newTreatment.treatment_type}
-                        class="w-full border rounded px-3 py-2"
-                    >
-                        <option value=""
-                            >{$t("common.select") || "Select..."}</option
-                        >
-                        {#each TREATMENT_TYPES as type}
-                            <option value={type.id}>{type.label}</option>
-                        {/each}
-                    </select>
-                </div>
+                <!-- RIGHT COLUMN: Details -->
+                <div class="right-column">
+                    <!-- Surface Selector (if required) -->
+                    {#if showSurfaceSelector}
+                        <SurfaceSelector
+                            selectedSurfaces={newTreatment.surfaces}
+                            onToggle={toggleSurface}
+                        />
+                    {/if}
 
-                <div>
-                    <label class="block text-sm font-medium mb-1"
-                        >{$t("dental.status")} *</label
-                    >
-                    <select
-                        bind:value={newTreatment.status}
-                        class="w-full border rounded px-3 py-2"
-                    >
-                        <option value="existing">{$t("dental.existing")}</option
-                        >
-                        <option value="completed"
-                            >{$t("dental.completed")}</option
-                        >
-                        <option value="planned">{$t("dental.planned")}</option>
-                    </select>
-                </div>
+                    <!-- Selected Procedure Summary -->
+                    {#if newTreatment.cdt_code}
+                        <div class="selected-procedure">
+                            <div class="procedure-header">
+                                <span class="procedure-code"
+                                    >{newTreatment.cdt_code}</span
+                                >
+                                <span class="procedure-fee"
+                                    >${newTreatment.fee.toFixed(2)}</span
+                                >
+                            </div>
+                            <div class="procedure-desc">
+                                {newTreatment.procedure_description}
+                            </div>
+                        </div>
+                    {/if}
 
-                <div>
-                    <label class="block text-sm font-medium mb-1"
-                        >{$t("dental.notes")}</label
-                    >
-                    <textarea
-                        bind:value={newTreatment.notes}
-                        class="w-full border rounded px-3 py-2"
-                        rows="3"
-                        placeholder={$t("dental.notes_placeholder") ||
-                            "Additional clinical notes..."}
-                    ></textarea>
+                    <!-- Status Selection -->
+                    <div class="form-section">
+                        <label class="form-label">Status</label>
+                        <div class="status-buttons">
+                            <button
+                                type="button"
+                                class="status-btn"
+                                class:active={newTreatment.status ===
+                                    "existing"}
+                                onclick={() =>
+                                    (newTreatment.status = "existing")}
+                            >
+                                <span
+                                    class="status-dot"
+                                    style="background: #3B82F6"
+                                ></span>
+                                Existing
+                            </button>
+                            <button
+                                type="button"
+                                class="status-btn"
+                                class:active={newTreatment.status ===
+                                    "completed"}
+                                onclick={() =>
+                                    (newTreatment.status = "completed")}
+                            >
+                                <span
+                                    class="status-dot"
+                                    style="background: #10B981"
+                                ></span>
+                                Completed
+                            </button>
+                            <button
+                                type="button"
+                                class="status-btn"
+                                class:active={newTreatment.status === "planned"}
+                                onclick={() =>
+                                    (newTreatment.status = "planned")}
+                            >
+                                <span
+                                    class="status-dot"
+                                    style="background: #EF4444"
+                                ></span>
+                                Planned
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Date (if completed) -->
+                    {#if newTreatment.status === "completed"}
+                        <div class="form-section">
+                            <label class="form-label">Date Performed *</label>
+                            <input
+                                type="date"
+                                bind:value={newTreatment.date_performed}
+                                class="form-input"
+                                required
+                            />
+                        </div>
+                    {/if}
+
+                    <!-- Diagnosis -->
+                    <div class="form-section">
+                        <label class="form-label">Diagnosis (Optional)</label>
+                        <input
+                            type="text"
+                            bind:value={newTreatment.diagnosis}
+                            class="form-input"
+                            placeholder="e.g., Caries extending to DEJ"
+                        />
+                    </div>
+
+                    <!-- Clinical Notes -->
+                    <div class="form-section">
+                        <label class="form-label">Clinical Notes</label>
+                        <textarea
+                            bind:value={newTreatment.notes}
+                            class="form-textarea"
+                            rows="3"
+                            placeholder="Additional observations..."
+                        ></textarea>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex justify-end gap-2 mt-6">
+            <!-- Footer Actions -->
+            <div class="modal-footer">
                 <button
                     onclick={() => (showTreatmentModal = false)}
-                    class="px-4 py-2 border rounded hover:bg-gray-50"
+                    class="btn-secondary"
                 >
-                    {$t("dental.cancel")}
+                    Cancel
                 </button>
                 <button
                     onclick={saveTreatment}
-                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    disabled={!newTreatment.treatment_type}
+                    class="btn-primary"
+                    disabled={!newTreatment.cdt_code}
                 >
-                    {$t("dental.save_treatment")}
+                    💾 Save Treatment
                 </button>
             </div>
         </div>
@@ -563,13 +672,197 @@
         z-index: 50;
     }
 
-    .modal-content {
+    .modal-content-large {
         background: white;
-        border-radius: 0.5rem;
-        padding: 2rem;
-        width: 100%;
-        max-width: 500px;
+        border-radius: 1rem;
+        width: 95vw;
+        max-width: 1200px;
         max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        padding: 1.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .close-button {
+        font-size: 1.5rem;
+        width: 40px;
+        height: 40px;
+        border-radius: 0.5rem;
+        border: none;
+        background: #f3f4f6;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .close-button:hover {
+        background: #e5e7eb;
+    }
+
+    .modal-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        padding: 1.5rem;
         overflow-y: auto;
+        flex: 1;
+    }
+
+    .left-column,
+    .right-column {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .selected-procedure {
+        padding: 1rem;
+        background: #eff6ff;
+        border: 2px solid #3b82f6;
+        border-radius: 0.5rem;
+    }
+
+    .procedure-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .procedure-code {
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: #1e40af;
+    }
+
+    .procedure-fee {
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: #059669;
+    }
+
+    .procedure-desc {
+        font-size: 0.875rem;
+        color: #1f2937;
+    }
+
+    .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #374151;
+    }
+
+    .form-input,
+    .form-textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+    }
+
+    .form-input:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+    }
+
+    .status-buttons {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+
+    .status-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        border: 2px solid #d1d5db;
+        border-radius: 0.5rem;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+    }
+
+    .status-btn:hover {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+
+    .status-btn.active {
+        border-color: #3b82f6;
+        background: #dbeafe;
+        border-width: 3px;
+    }
+
+    .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding: 1.5rem;
+        border-top: 2px solid #e5e7eb;
+    }
+
+    .btn-secondary {
+        padding: 0.75rem 1.5rem;
+        border: 2px solid #d1d5db;
+        border-radius: 0.5rem;
+        background: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+        background: #f3f4f6;
+    }
+
+    .btn-primary {
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 0.5rem;
+        background: #3b82f6;
+        color: white;
+        font-weight: 600;
+        font-size: 1.125rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background: #2563eb;
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    @media (max-width: 768px) {
+        .modal-body {
+            grid-template-columns: 1fr;
+        }
     }
 </style>

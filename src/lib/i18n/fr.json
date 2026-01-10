@@ -600,6 +600,17 @@
                 "availability": "Basé sur la Disponibilité",
                 "help": "Le mode 'Disponibilité' affiche uniquement les créneaux horaires disponibles aux patients"
             },
+            "treatment_types": {
+                "title": "Types de Soins",
+                "description": "Gérez les types de soins disponibles dans les formulaires",
+                "add_button": "Ajouter un Type de Soin",
+                "create_title": "Nouveau Type de Soin",
+                "edit_title": "Modifier le Type de Soin",
+                "name_label": "Nom du Type",
+                "description_label": "Description",
+                "description_placeholder": "Description optionnelle du type de soin",
+                "confirm_delete": "Êtes-vous sûr de vouloir supprimer ce type de soin ?"
+            },
             "advanced": {
                 "title": "Paramètres Avancés",
                 "description": "Ces paramètres nécessitent des modifications du code",

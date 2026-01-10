@@ -1694,7 +1694,7 @@
             <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4">
                     <div
-                        class="relative w-full max-w-2xl transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all"
+                        class="relative w-full max-w-4xl transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all"
                     >
                         <form
                             method="POST"
@@ -1783,46 +1783,9 @@
                                             required
                                             class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border"
                                         >
-                                            <option value="consultation"
-                                                >{$t(
-                                                    "patient_details.consultation",
-                                                )}</option
-                                            >
-                                            <option value="cleaning"
-                                                >{$t(
-                                                    "patient_details.cleaning",
-                                                )}</option
-                                            >
-                                            <option value="filling"
-                                                >{$t(
-                                                    "patient_details.filling",
-                                                )}</option
-                                            >
-                                            <option value="root_canal"
-                                                >{$t(
-                                                    "patient_details.root_canal",
-                                                )}</option
-                                            >
-                                            <option value="extraction"
-                                                >{$t(
-                                                    "patient_details.extraction",
-                                                )}</option
-                                            >
-                                            <option value="crown"
-                                                >{$t(
-                                                    "patient_details.crown",
-                                                )}</option
-                                            >
-                                            <option value="whitening"
-                                                >{$t(
-                                                    "patient_details.whitening",
-                                                )}</option
-                                            >
-                                            <option value="x_ray"
-                                                >{$t(
-                                                    "patient_details.x_ray",
-                                                )}</option
-                                            >
+                                            {#each data.treatmentTypes as type}
+                                                <option value={type.name}>{type.name}</option>
+                                            {/each}
                                         </select>
                                     </div>
                                     <div class="col-span-2 md:col-span-1">

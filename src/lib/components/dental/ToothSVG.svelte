@@ -4,6 +4,7 @@
     interface Props {
         toothNumber: string | number;
         treatments?: Array<{
+            surfaces?: string;
             surface?: string;
             treatment_type: string;
             status: "existing" | "completed" | "planned";
@@ -22,18 +23,29 @@
 
     // Get treatment color for each surface
     function getSurfaceColor(surface: string): string {
-        const treatment = treatments.find((t) => t.surface === surface);
+        const treatment = treatments.find(
+            (t) =>
+                (t.surfaces && t.surfaces.split(",").includes(surface)) ||
+                t.surface === surface,
+        );
         return treatment ? treatment.color : "#FFFFFF";
     }
 
     // Get whole tooth color if no surface specified
     function getWholeToothColor(): string {
-        const wholeTreatment = treatments.find((t) => !t.surface);
+        const wholeTreatment = treatments.find(
+            (t) => !t.surfaces && !t.surface,
+        );
         return wholeTreatment ? wholeTreatment.color : "#FFFFFF";
     }
 
     // Check if tooth has any treatments
     const hasTreatments = treatments.length > 0;
+
+    // Check if any treatment has surfaces specified
+    const hasSurfaceTreatments = treatments.some(
+        (t) => t.surfaces || t.surface,
+    );
 </script>
 
 <svg
@@ -59,7 +71,7 @@
     />
 
     <!-- Surface divisions (only show if there are surface-level treatments) -->
-    {#if treatments.some((t) => t.surface)}
+    {#if hasSurfaceTreatments}
         <!-- Mesial (M) - Left side -->
         <rect
             x="5"

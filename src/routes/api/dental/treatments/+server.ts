@@ -29,19 +29,23 @@ export async function POST({ request, locals }: { request: Request, locals: any 
 
   const result = db.prepare(`
     INSERT INTO dental_treatments (
-      patient_id, tooth_number, surface, treatment_type, 
-      status, color, notes, performed_by_user_id
+      patient_id, tooth_number, surfaces, cdt_code, treatment_type, 
+      status, fee, date_performed, provider_id, diagnosis, notes, color
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     data.patient_id,
     data.tooth_number,
-    data.surface,
+    data.surfaces || null,
+    data.cdt_code,
     data.treatment_type,
     data.status,
-    data.color,
+    data.fee,
+    data.date_performed,
+    data.provider_id || locals.user.id,
+    data.diagnosis,
     data.notes,
-    locals.user.id
+    data.color
   );
 
   return json({ success: true, id: result.lastInsertRowid });

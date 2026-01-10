@@ -492,6 +492,26 @@ _________________________________________________________________
 **Issues Found:**
 _________________________________________________________________
 
+### Scenario 73: Fast Treatment Entry - Composite Filling
+**User Story:** Dr. Ahmed needs to record a multi-surface composite filling as quickly as possible.
+**Steps:**
+1. Open a patient profile -> **Dental Records**.
+2. Click on tooth **30**.
+3. In the new modal, click on the **'Restorative'** category icon.
+4. Click on **'D2393 - Posterior Composite - Three Surfaces'**.
+5. Notice the **Surface Selector** appears automatically because this code requires surfaces.
+6. Click **O**, **M**, and **D** on the visual tooth diagram.
+7. Click **'Completed'** status.
+8. Select today's date.
+9. Click **'Save Treatment'**.
+**Expected Results:**
+- Entry is saved in under 30 seconds with minimal typing.
+- Tooth 30 displays Blue surfaces for O, M, and D.
+- The correct CDT code (D2393) and fee ($220.00) are recorded in history.
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
 ---
 
 ## 📝 General Feedback & Bug Reports
