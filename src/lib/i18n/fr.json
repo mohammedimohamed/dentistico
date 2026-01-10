@@ -727,5 +727,30 @@
             "cosmetic": "Dentisterie Esthétique",
             "emergency": "Soins d'Urgence"
         }
+    },
+    "dental": {
+        "chart_title": "Carte Dentaire",
+        "adult": "Adulte (32)",
+        "pediatric": "Pédiatrique (20)",
+        "mixed": "Mixte",
+        "upper": "Supérieur",
+        "lower": "Inférieur",
+        "whole_tooth": "Dent Entière",
+        "surface": "Surface",
+        "treatment_type": "Type de Traitement",
+        "status": "Statut",
+        "notes": "Notes",
+        "add_treatment": "Ajouter un Traitement",
+        "save_treatment": "Enregistrer",
+        "delete_treatment": "Supprimer",
+        "delete_confirmation": "Supprimer ce traitement ?",
+        "existing": "Existant (ancien dentiste)",
+        "completed": "Terminé (fait ici)",
+        "planned": "Planifié (à faire)",
+        "no_treatments": "Aucun traitement enregistré",
+        "treatment_history": "Historique des Traitements",
+        "tooth": "Dent",
+        "cancel": "Annuler",
+        "notes_placeholder": "Notes cliniques supplémentaires..."
     }
 }

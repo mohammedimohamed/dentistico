@@ -419,6 +419,79 @@ _________________________________________________________________
 **Issues Found:**
 _________________________________________________________________
 
+### Scenario 68: Adding a Cavity to an Adult Tooth
+**User Story:** Dr. Ahmed records a cavity for an adult patient.
+**Steps:**
+1. Open an adult patient profile (age > 12).
+2. Go to "Dental Records".
+3. Click on tooth **14**.
+4. In the modal, select Surface: **O (Occlusal)**.
+5. Select Treatment Type: **Cavity**.
+6. Set Status: **Planned**.
+7. Click "Save".
+**Expected Results:**
+- Tooth 14 shows a red indicator on its center (Occlusal) surface.
+- A red treatment dot appears on the corner of the tooth.
+- Treatment appears in the "Treatment History" list.
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 69: Verifying Pediatric Chart Display
+**User Story:** Dr. Sophie views the chart of a 5-year-old child.
+**Steps:**
+1. View a patient profile with a date of birth making them 5 years old.
+2. Go to "Dental Records".
+**Expected Results:**
+- The chart automatically defaults to "Pediatric".
+- Teeth are labeled with letters (A-T) or pediatric FDI numbers.
+- Only 20 teeth are shown (10 upper, 10 lower).
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 70: Manual Dentition Switching (Mixed Dentition)
+**User Story:** A 9-year-old patient has both baby and adult teeth.
+**Steps:**
+1. View a 9-year-old patient profile.
+2. Go to "Dental Records".
+3. Toggle between "Adult", "Pediatric", and "Mixed" buttons.
+**Expected Results:**
+- "Mixed" view shows both primary and permanent teeth sets.
+- Switching to "Adult" shows only 32 teeth.
+- Clicking a tooth in one view persists its treatments in other views.
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 71: Surface-Level Treatment Tracking
+**User Story:** Dr. Ahmed records multiple treatments on different surfaces of the same tooth.
+**Steps:**
+1. Click on tooth **19**.
+2. Add "Filling" to surface **M (Mesial)**, status **Completed**.
+3. Click tooth **19** again.
+4. Add "Cavity" to surface **D (Distal)**, status **Planned**.
+**Expected Results:**
+- The left side (Mesial) of the tooth rectangle turns Blue.
+- The right side (Distal) of the tooth rectangle turns Red.
+- History shows two separate entries for tooth 19.
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
+### Scenario 72: Deleting a Treatment
+**User Story:** A treatment was added by mistake and needs removal.
+**Steps:**
+1. View the "Treatment History" list in the Dental Records tab.
+2. Click "Delete" next to a recent treatment.
+3. Confirm the deletion.
+**Expected Results:**
+- Treatment disappears from the history list.
+- The visual coloring on the tooth SVG is removed/updated.
+**Test Result:** [ ] Pass [ ] Fail
+**Issues Found:**
+_________________________________________________________________
+
 ---
 
 ## 📝 General Feedback & Bug Reports

@@ -50,7 +50,7 @@ export function init_db() {
     // db.exec('DROP TABLE IF EXISTS patients');
     // db.exec('DROP TABLE IF EXISTS sessions');
     // db.exec('DROP TABLE IF EXISTS users');
-    // db.exec('DROP VIEW IF EXISTS patient_balance');
+    db.exec('DROP VIEW IF EXISTS patient_balance');
 
     // We will rely on IF NOT EXISTS but given the major changes, it's safer to delete the db file manually 
     // or assume the user wants a migration. 
@@ -337,6 +337,36 @@ export function init_db() {
         UPDATE appointments SET start_time = REPLACE(start_time, 'T', ' ') WHERE start_time LIKE '%T%';
         UPDATE appointments SET end_time = REPLACE(end_time, 'T', ' ') WHERE end_time LIKE '%T%';
 
+        CREATE TABLE IF NOT EXISTS dental_treatments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            tooth_number TEXT NOT NULL,
+            surface TEXT,
+            treatment_type TEXT NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('existing', 'completed', 'planned')),
+            color TEXT NOT NULL,
+            notes TEXT,
+            treatment_date TEXT,
+            performed_by_user_id INTEGER,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+            FOREIGN KEY (performed_by_user_id) REFERENCES users(id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_dental_tooth ON dental_treatments(patient_id, tooth_number);
+
+        CREATE TABLE IF NOT EXISTS tooth_status (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            tooth_number TEXT NOT NULL,
+            is_primary INTEGER DEFAULT 1,
+            status TEXT DEFAULT 'present' CHECK(status IN ('present', 'missing', 'erupting', 'impacted')),
+            notes TEXT,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(patient_id, tooth_number),
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+        );
+
         DROP VIEW IF EXISTS patient_balance;
         CREATE VIEW patient_balance AS
         SELECT 
@@ -461,13 +491,14 @@ export function init_db() {
                 db.exec('DROP TABLE treatments_old');
 
                 db.exec(`
+                    DROP VIEW IF EXISTS patient_balance;
                     CREATE VIEW patient_balance AS
                     SELECT 
                         p.id as patient_id,
                         p.full_name,
-                        COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id), 0) as total_billed,
+                        COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) as total_billed,
                         COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as total_paid,
-                        COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id), 0) - 
+                        COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) - 
                         COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
                     FROM patients p;
                 `);
@@ -688,6 +719,43 @@ export function init_db() {
         }
     } catch (e) {
         console.error('Migration for nullable doctor_id failed:', e);
+    }
+
+    // Migration for dental chart tables
+    try {
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS dental_treatments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id INTEGER NOT NULL,
+                tooth_number TEXT NOT NULL,
+                surface TEXT,
+                treatment_type TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('existing', 'completed', 'planned')),
+                color TEXT NOT NULL,
+                notes TEXT,
+                treatment_date TEXT,
+                performed_by_user_id INTEGER,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+                FOREIGN KEY (performed_by_user_id) REFERENCES users(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_dental_tooth ON dental_treatments(patient_id, tooth_number);
+            
+            CREATE TABLE IF NOT EXISTS tooth_status (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id INTEGER NOT NULL,
+                tooth_number TEXT NOT NULL,
+                is_primary INTEGER DEFAULT 1,
+                status TEXT DEFAULT 'present' CHECK(status IN ('present', 'missing', 'erupting', 'impacted')),
+                notes TEXT,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(patient_id, tooth_number),
+                FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+            );
+        `);
+        console.log('Dental chart tables verified/created');
+    } catch (e) {
+        console.error('Migration for dental chart tables failed:', e);
     }
 }
 

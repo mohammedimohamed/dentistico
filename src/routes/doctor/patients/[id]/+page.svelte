@@ -22,7 +22,8 @@
 
     import PrescriptionBuilder from "$lib/components/PrescriptionBuilder.svelte";
     import ToothSelector from "$lib/components/ToothSelector.svelte";
-    import DentalChart from "$lib/components/DentalChart.svelte";
+    import DentalChart from "$lib/components/dental/DentalChart.svelte";
+    import { calculateAge } from "$lib/dental/tooth-data";
     let showPrescriptionBuilder = $state(false);
     let selectedTreatmentsForInvoice = $state<number[]>([]);
     let isInvoiceModalOpen = $state(false);
@@ -46,16 +47,12 @@
         }
     }
 
-    function calculateAge(dob: string) {
-        if (!dob) return "N/A";
-        const birthDate = new Date(dob);
-        const ageDifMs = Date.now() - birthDate.getTime();
-        const ageDate = new Date(ageDifMs);
-        return Math.abs(ageDate.getUTCFullYear() - 1970);
-    }
-
-    const age = $derived(calculateAge(data.patient.date_of_birth));
-    const isChild = $derived(typeof age === "number" && age < 18);
+    const age = $derived(
+        data.patient.date_of_birth
+            ? calculateAge(data.patient.date_of_birth)
+            : 0,
+    );
+    const isChild = $derived(age < 18);
 
     function openToothModal(toothNum: string) {
         selectedTooth = toothNum;
@@ -720,11 +717,9 @@
                         class="bg-gray-50 rounded-2xl p-6 border border-gray-100 overflow-x-auto"
                     >
                         <DentalChart
-                            teethData={JSON.parse(
-                                data.patient.teeth_treatments || "{}",
-                            )}
-                            isPediatric={isChild}
-                            onToothClick={openToothModal}
+                            patientId={data.patient.id}
+                            patientAge={age}
+                            readOnly={false}
                         />
                     </div>
                 </div>
@@ -1481,7 +1476,9 @@
                                             name="date_of_birth"
                                             value={data.patient.date_of_birth}
                                             required
-                                            max={new Date().toISOString().split('T')[0]}
+                                            max={new Date()
+                                                .toISOString()
+                                                .split("T")[0]}
                                             class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter"
                                         />
                                     </div>

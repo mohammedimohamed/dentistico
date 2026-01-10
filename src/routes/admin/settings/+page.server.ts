@@ -23,7 +23,7 @@ export const load = async () => {
 };
 
 export const actions = {
-    updateConfig: async ({ request }) => {
+    updateConfig: async ({ request }: { request: Request }) => {
         const formData = await request.formData();
         const currency = formData.get('currency') as string;
         const currencySymbol = formData.get('currencySymbol') as string;

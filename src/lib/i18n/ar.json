@@ -694,5 +694,30 @@
             "cosmetic": "تجميل الأسنان",
             "emergency": "علاج طوارئ"
         }
+    },
+    "dental": {
+        "chart_title": "مخطط الأسنان",
+        "adult": "بالغ (32)",
+        "pediatric": "أطفال (20)",
+        "mixed": "مختلط",
+        "upper": "علوي",
+        "lower": "سفلي",
+        "whole_tooth": "السن بالكامل",
+        "surface": "السطح",
+        "treatment_type": "نوع العلاج",
+        "status": "الحالة",
+        "notes": "ملاحظات",
+        "add_treatment": "إضافة علاج",
+        "save_treatment": "حفظ",
+        "delete_treatment": "حذف",
+        "delete_confirmation": "هل تريد حذف هذا العلاج؟",
+        "existing": "موجود (من طبيب سابق)",
+        "completed": "مكتمل (تم هنا)",
+        "planned": "مخطط (سيتم)",
+        "no_treatments": "لا توجد علاجات مسجلة",
+        "treatment_history": "سجل العلاجات",
+        "tooth": "سن",
+        "cancel": "إلغاء",
+        "notes_placeholder": "ملاحظات سريرية إضافية..."
     }
 }
