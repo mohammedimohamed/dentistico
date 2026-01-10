@@ -467,7 +467,7 @@
                                     <dd
                                         class="text-3xl font-black text-gray-900 tracking-tight"
                                     >
-                                        {APP_CONFIG.currencySymbol}{data.balance.total_billed.toFixed(
+                                        {data.appConfig.currencySymbol}{data.balance.total_billed.toFixed(
                                             2,
                                         )}
                                     </dd>
@@ -484,7 +484,7 @@
                                             ? 'text-red-600'
                                             : 'text-green-600'}"
                                     >
-                                        {APP_CONFIG.currencySymbol}{data.balance.balance_due.toFixed(
+                                        {data.appConfig.currencySymbol}{data.balance.balance_due.toFixed(
                                             2,
                                         )}
                                     </dd>
@@ -789,7 +789,7 @@
                                         >
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm font-black text-gray-900"
-                                            >{APP_CONFIG.currencySymbol}{treatment.cost.toFixed(
+                                            >{data.appConfig.currencySymbol}{treatment.cost.toFixed(
                                                 2,
                                             )}</td
                                         >
@@ -1070,7 +1070,7 @@
                                         >
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm font-black text-gray-900"
-                                            >{APP_CONFIG.currencySymbol}{invoice.total_amount.toFixed(
+                                            >{data.appConfig.currencySymbol}{invoice.total_amount.toFixed(
                                                 2,
                                             )}</td
                                         >
@@ -1176,7 +1176,7 @@
                                         >
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm font-black text-green-600"
-                                            >+{APP_CONFIG.currencySymbol}{payment.amount.toFixed(
+                                            >+{data.appConfig.currencySymbol}{payment.amount.toFixed(
                                                 2,
                                             )}</td
                                         >
@@ -1329,7 +1329,7 @@
                                                     </td>
                                                     <td
                                                         class="px-6 py-4 text-sm font-black text-gray-900 text-inline-end"
-                                                        >{APP_CONFIG.currencySymbol}{treatment.cost.toFixed(
+                                                        >{data.appConfig.currencySymbol}{treatment.cost.toFixed(
                                                             2,
                                                         )}</td
                                                     >
@@ -1373,7 +1373,7 @@
                                     <span
                                         class="text-2xl font-black text-indigo-600"
                                     >
-                                        {APP_CONFIG.currencySymbol}{data.treatments
+                                        {data.appConfig.currencySymbol}{data.treatments
                                             .filter((t) =>
                                                 selectedTreatmentsForInvoice.includes(
                                                     t.id,
@@ -1694,7 +1694,7 @@
             <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4">
                     <div
-                        class="relative w-full max-w-4xl transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all"
+                        class="relative w-full max-w-6xl transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all"
                     >
                         <form
                             method="POST"
@@ -1784,7 +1784,7 @@
                                             class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border"
                                         >
                                             {#each data.treatmentTypes as type}
-                                                <option value={type.name}>{type.name}</option>
+                                                <option value={type.name}>{$t(`patient_details.${type.name}`, { default: type.name })}</option>
                                             {/each}
                                         </select>
                                     </div>
@@ -1804,7 +1804,7 @@
                                     <div class="col-span-2 md:col-span-1">
                                         <label
                                             class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
-                                            >{$t("patient_details.cost")} ({APP_CONFIG.currencySymbol})</label
+                                            >{$t("patient_details.cost")} ({data.appConfig.currencySymbol})</label
                                         >
                                         <input
                                             type="number"
@@ -1949,7 +1949,7 @@
                                         >
                                             <span
                                                 class="text-gray-500 font-bold"
-                                                >{APP_CONFIG.currencySymbol}</span
+                                                >{data.appConfig.currencySymbol}</span
                                             >
                                         </div>
                                         <input

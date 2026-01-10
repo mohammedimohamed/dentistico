@@ -10,6 +10,7 @@
         SURFACES,
     } from "$lib/dental/tooth-data";
     import { t } from "svelte-i18n";
+    import { APP_CONFIG } from "$lib/config/app.config";
 
     import SurfaceSelector from "./SurfaceSelector.svelte";
     import QuickTreatmentPicker from "./QuickTreatmentPicker.svelte";
@@ -436,7 +437,7 @@
                                     >{newTreatment.cdt_code}</span
                                 >
                                 <span class="procedure-fee"
-                                    >${newTreatment.fee.toFixed(2)}</span
+                                    >{APP_CONFIG.currencySymbol}{newTreatment.fee.toFixed(2)}</span
                                 >
                             </div>
                             <div class="procedure-desc">
@@ -675,8 +676,8 @@
     .modal-content-large {
         background: white;
         border-radius: 1rem;
-        width: 95vw;
-        max-width: 1200px;
+        width: 98vw;
+        max-width: 1400px;  /* Changed from 1200px */
         max-height: 90vh;
         display: flex;
         flex-direction: column;

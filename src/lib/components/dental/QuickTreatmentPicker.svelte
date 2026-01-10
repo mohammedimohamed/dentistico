@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { APP_CONFIG } from "$lib/config/app.config";
 
     interface CDTCode {
         code: string;
@@ -109,7 +110,7 @@
                             style="color: {code.color_code}">{code.code}</span
                         >
                         <span class="code-fee"
-                            >${code.default_fee.toFixed(2)}</span
+                            >{APP_CONFIG.currencySymbol}{code.default_fee.toFixed(2)}</span
                         >
                     </div>
                     <div class="code-description">{code.description}</div>

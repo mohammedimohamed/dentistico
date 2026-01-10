@@ -1,4 +1,5 @@
 import { redirect, fail, error } from '@sveltejs/kit';
+import path from 'path';
 import {
     getPatientByIdFull,
     getTreatmentsByPatient,
@@ -18,6 +19,22 @@ import {
     getAllTreatmentTypes
 } from '$lib/server/db';
 import type { PageServerLoad, Actions } from './$types';
+
+function getAppConfig() {
+    const configPath = path.resolve('src/lib/config/app.config.json');
+    try {
+        const configData = fs.readFileSync(configPath, 'utf8');
+        return JSON.parse(configData);
+    } catch (e) {
+        console.error('Failed to read config:', e);
+        // Fallback or handle error
+        return {
+            currency: 'DZD',
+            currencySymbol: 'دج',
+            bookingMode: 'availability'
+        };
+    }
+}
 
 export const load: PageServerLoad = async ({ locals, params }) => {
     if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
@@ -43,6 +60,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     const invoices = (await import('$lib/server/db')).getInvoicesByPatient(patientId);
     const treatmentTypes = getAllTreatmentTypes();
 
+    const appConfig = getAppConfig();
+
     return {
         patient,
         treatments,
@@ -53,6 +72,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         prescriptions,
         invoices,
         treatmentTypes,
+        appConfig,
         user: locals.user
     };
 };

@@ -644,6 +644,61 @@
             "settings": "Paramètres",
             "inventory": "Inventaire"
         },
+        "cdt_codes": {
+            "title": "Codes de Procédures CDT",
+            "subtitle": "Gérer les codes de traitement et les tarifs",
+            "add_button": "+ Ajouter un Code CDT",
+            "loading": "Chargement...",
+            "table": {
+                "code": "Code",
+                "category": "Catégorie",
+                "description": "Description",
+                "fee": "Tarif",
+                "surfaces": "Surfaces",
+                "actions": "Actions",
+                "edit": "Modifier",
+                "delete": "Supprimer"
+            },
+            "modal": {
+                "add_title": "Ajouter un Nouveau Code CDT",
+                "edit_title": "Modifier le Code CDT",
+                "code_label": "Code *",
+                "code_placeholder": "D2391",
+                "category_label": "Catégorie *",
+                "description_label": "Description *",
+                "description_placeholder": "Composite Postérieur - Trois Surfaces",
+                "fee_label": "Tarif par Défaut *",
+                "fee_placeholder": "150.00",
+                "color_label": "Code Couleur",
+                "tooth_types_label": "Types de Dents Valides",
+                "requires_surfaces": "Nécessite une Sélection de Surfaces",
+                "whole_tooth_only": "Dent Complète Uniquement (pas de surfaces)",
+                "cancel": "Annuler",
+                "create": "Créer",
+                "update": "Mettre à Jour"
+            },
+            "tooth_types": {
+                "all": "Toutes les Dents",
+                "anterior": "Antérieures Uniquement (6-11, 22-27)",
+                "posterior": "Postérieures Uniquement (1-5, 12-21, 28-32)",
+                "primary": "Primaires Uniquement (A-T)"
+            },
+            "categories": {
+                "Diagnostic": "Diagnostique",
+                "Preventive": "Préventif",
+                "Restorative": "Restaurateur",
+                "Crowns": "Couronnes",
+                "Endodontics": "Endodontie",
+                "Periodontics": "Parodontie",
+                "Prosthodontics": "Prothodontie",
+                "Surgery": "Chirurgie",
+                "Orthodontics": "Orthodontie",
+                "Other": "Autre"
+            },
+            "confirm_delete": "Supprimer le code CDT {code} ?",
+            "yes": "Oui",
+            "no": "Non"
+        },
         "users": {
             "title": "Gestion des Utilisateurs",
             "description": "Configurez les comptes et les permissions du personnel.",
@@ -752,16 +807,44 @@
         "status": "Statut",
         "notes": "Notes",
         "add_treatment": "Ajouter un Traitement",
-        "save_treatment": "Enregistrer",
+        "tooth": "Dent",
+        "search_procedure": "Rechercher code ou description...",
+        "existing": "Existant",
+        "completed": "Terminé",
+        "planned": "Planifié",
+        "date_performed": "Date Réalisée",
+        "diagnosis_optional": "Diagnostic (Optionnel)",
+        "diagnosis_placeholder": "ex: Carie s'étendant à la DEJ",
+        "clinical_notes": "Notes Cliniques",
+        "notes_placeholder": "Observations supplémentaires...",
+        "cancel": "Annuler",
+        "save_treatment": "Enregistrer le Traitement",
+        "no_procedures": "Aucune procédure trouvée",
+        "loading_procedures": "Chargement des procédures...",
+        "requires_surfaces": "Nécessite des surfaces",
+        "select_surfaces": "Sélectionner les Surfaces (appuyer pour basculer)",
         "delete_treatment": "Supprimer",
         "delete_confirmation": "Supprimer ce traitement ?",
-        "existing": "Existant (ancien dentiste)",
-        "completed": "Terminé (fait ici)",
-        "planned": "Planifié (à faire)",
         "no_treatments": "Aucun traitement enregistré",
         "treatment_history": "Historique des Traitements",
-        "tooth": "Dent",
-        "cancel": "Annuler",
-        "notes_placeholder": "Notes cliniques supplémentaires..."
+
+        "categories": {
+            "all": "Tout",
+            "diagnostic": "Examen",
+            "preventive": "Nettoyage",
+            "restorative": "Plombages",
+            "crowns": "Couronnes",
+            "endodontics": "Canal Radiculaire",
+            "surgery": "Extraction",
+            "other": "Autre"
+        },
+
+        "surfaces": {
+            "mesial": "Mésial",
+            "distal": "Distal",
+            "occlusal": "Occlusal",
+            "buccal": "Vestibulaire",
+            "lingual": "Lingual"
+        }
     }
 }

@@ -1,5 +1,6 @@
 import { register, init, getLocaleFromNavigator } from 'svelte-i18n';
 
+register('en', () => import('./en.json'));
 register('fr', () => import('./fr.json'));
 register('ar', () => import('./ar.json'));
 register('fr-assistant', () => import('./translations/assistant.json'));

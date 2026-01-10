@@ -1,0 +1,820 @@
+{
+    "common": {
+        "dashboard": "Dashboard",
+        "patients": "Patients",
+        "inventory": "Inventory",
+        "settings": "Settings",
+        "logout": "Logout",
+        "admin": "Admin",
+        "assistant": "Assistant",
+        "doctor": "Doctor",
+        "user": "User",
+        "save": "Save",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "delete": "Delete",
+        "edit": "Edit",
+        "add": "Add",
+        "search": "Search",
+        "back": "Back",
+        "success": "Success",
+        "error": "Error",
+        "loading": "Loading...",
+        "none": "None",
+        "ref": "REF",
+        "portal": "Portal",
+        "reason": "Reason",
+        "comment": "Comment",
+        "unit": "Unit",
+        "quantity": "Quantity",
+        "status": "Status",
+        "actions": "Actions",
+        "category": "Category",
+        "article": "Article",
+        "email": "Email",
+        "select": "Select",
+        "minutes_short": "min",
+        "profile": "Profile",
+        "export": "Export",
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+    },
+    "inventory": {
+        "title": "Inventory & Stock",
+        "current_inventory": "Current Inventory",
+        "tracking": "Tracking consumables and supplies.",
+        "export_report": "Export Report",
+        "empty": "Inventory is empty.",
+        "reorder": "Reorder",
+        "exit": "Exit",
+        "add_stock": "Add Stock",
+        "record_exit": "Record Exit",
+        "low_stock": "Low Stock",
+        "ok": "OK",
+        "unit_cost": "Unit Cost",
+        "total_value": "Total Value",
+        "expiry_date": "Expiry Date",
+        "supplier": "Supplier",
+        "reason_placeholder_in": "ex: Order n°45",
+        "reason_placeholder_out": "ex: Surgery patient X",
+        "confirm_move": "Confirm"
+    },
+    "dashboard": {
+        "welcome": "Welcome, Dr. {name}",
+        "appointments_count": "You have {count} appointments today.",
+        "search_patients": "Search patients...",
+        "list": "List",
+        "calendar": "Calendar",
+        "today": "Today",
+        "upcoming": "Upcoming",
+        "no_appointments": "No appointments scheduled for {tab}.",
+        "no_results": "No appointments match your search.",
+        "click_to_view": "Click to view/edit",
+        "dob": "DOB",
+        "clinical_record": "Clinical Record & Appointments",
+        "patient_name": "Patient Name",
+        "full_history": "Full History",
+        "contact": "Contact",
+        "age_dob": "Age / DOB",
+        "email": "Email",
+        "no_phone": "No phone",
+        "appointment_status": "Appointment Status",
+        "clinical_notes": "Clinical Notes & Observations",
+        "notes_placeholder": "Enter conclusions, treatments discussed or reminders...",
+        "save_record": "Save Record",
+        "last_updated": "Last Updated",
+        "status_scheduled": "Scheduled",
+        "status_confirmed": "Confirmed",
+        "status_completed": "Completed",
+        "status_cancelled": "Cancelled"
+    },
+    "patients": {
+        "directory": "Patient Directory",
+        "archived_directory": "Archived Patients",
+        "back_to_active": "Back to Active Patients",
+        "view_archived": "View Archives",
+        "new_patient": "New Patient",
+        "search_placeholder": "Search by patient name...",
+        "no_patients": "No patients found.",
+        "no_archived_patients": "No archived patients found.",
+        "clear_search": "Clear Search",
+        "age": "Age",
+        "view_profile": "View Full Profile",
+        "add_new": "Add New Patient",
+        "personal_info": "Personal Information",
+        "patient_id": "Patient ID",
+        "full_name": "Full Name",
+        "date_of_birth": "Date of Birth",
+        "gender": "Gender",
+        "contact_info": "Contact Information",
+        "phone": "Phone",
+        "secondary_phone": "Secondary Phone",
+        "secondary_email": "Secondary Email",
+        "address": "Address",
+        "street_address": "Street Address",
+        "city": "City",
+        "postal_code": "Postal Code",
+        "emergency_contact": "Emergency Contact",
+        "relationship": "Relationship",
+        "insurance": "Insurance",
+        "provider": "Provider",
+        "policy_number": "Policy Number",
+        "create": "Create",
+        "male": "Male",
+        "female": "Female",
+        "other": "Other",
+        "prefer_not_to_say": "Prefer not to say",
+        "archived_on": "Archived on"
+    },
+    "patient_details": {
+        "overview": "Overview",
+        "medical_history": "Medical History",
+        "dental_records": "Dental Records",
+        "appointments": "Appointments",
+        "prescriptions": "Prescriptions",
+        "financial": "Financial",
+        "back_to_list": "Back to List",
+        "archived": "Archived",
+        "child": "Child",
+        "adult": "Adult",
+        "add_treatment": "Add Treatment",
+        "add_treatment_desc": "Add a new treatment to the patient's record.",
+        "edit_profile": "Edit Profile",
+        "unarchive": "Unarchive Patient",
+        "archive": "Archive Patient",
+        "archive_confirm": "Archive this patient? They must have a balance of 0 and no future appointments.",
+        "personal_info": "Personal Information",
+        "medical_alerts": "Medical Alerts",
+        "allergies": "Allergies",
+        "no_allergies": "No known allergies.",
+        "conditions": "Conditions",
+        "financial_snapshot": "Financial Snapshot",
+        "total_billed": "Total Billed",
+        "balance_due": "Balance Due",
+        "blood_type": "Blood Type",
+        "pregnancy_status": "Pregnancy Status",
+        "active": "Active",
+        "current_medications": "Current Medications",
+        "surgical_history": "Surgical History",
+        "family_history": "Family Medical History",
+        "oral_habits": "Oral Habits",
+        "substance_use": "Substance Use",
+        "dental_info": "Dental Information",
+        "previous_dentist": "Previous Dentist",
+        "last_visit": "Last Visit",
+        "dental_notes": "Dental Notes",
+        "odontogram": "Interactive Odontogram",
+        "treatment_history": "Treatment History",
+        "date": "Date",
+        "tooth": "Tooth",
+        "type": "Type",
+        "cost": "Cost",
+        "description": "Description",
+        "new_prescription": "New Prescription",
+        "print": "Print",
+        "no_prescriptions": "No prescriptions for this patient.",
+        "invoices": "Invoices",
+        "generate_invoice": "Generate Invoice",
+        "invoice_no": "Invoice No",
+        "pay": "Pay",
+        "encaissements": "Direct Payments",
+        "method": "Method",
+        "recorded_by": "Recorded by",
+        "no_invoices": "No invoices issued.",
+        "no_payments": "No payments recorded.",
+        "select_treatments_invoice": "Select treatments to include in this invoice.",
+        "total_selected": "Total Selected",
+        "visual_tooth_selector": "Visual Tooth Selector",
+        "short_description": "Short Description",
+        "record_payment": "Record Payment",
+        "payment_amount": "Payment Amount",
+        "cash": "Cash",
+        "card": "Card",
+        "check": "Check",
+        "bank_transfer": "Bank Transfer",
+        "confirm_payment": "Confirm Payment",
+        "edit_tooth": "Edit Tooth",
+        "treatments": "Treatments",
+        "comma_separated": "comma separated",
+        "display_color": "Display Color",
+        "odontogram_notes": "Odontogram Notes",
+        "occlusal_plane": "Occlusal Plane",
+        "legend_critical": "Critical / Extraction",
+        "legend_restoration": "Restoration / Filling",
+        "legend_prosthesis": "Prosthesis / Crown",
+        "legend_planned": "Planned",
+        "internal_notes_placeholder": "Internal notes for this tooth...",
+        "consultation": "Consultation",
+        "cleaning": "Cleaning",
+        "filling": "Filling",
+        "root_canal": "Root Canal",
+        "extraction": "Extraction",
+        "crown": "Crown",
+        "whitening": "Whitening",
+        "x_ray": "X-Ray",
+        "prescription_new_title": "New Prescription",
+        "prescription_search_meds": "Search medication",
+        "prescription_search_placeholder": "Type medication name...",
+        "prescription_add_custom": "Add \"{name}\" as custom medication",
+        "prescription_item_medication": "Medication",
+        "prescription_dosage": "Dosage",
+        "prescription_dosage_placeholder": "ex: 1 tablet 3x/day",
+        "prescription_duration": "Duration",
+        "prescription_duration_placeholder": "ex: 7 days",
+        "prescription_instructions": "Additional Instructions",
+        "prescription_instructions_placeholder": "ex: With meals",
+        "prescription_notes_label": "Notes (Optional)",
+        "prescription_notes_placeholder": "General prescription instructions...",
+        "prescription_generate_button": "Generate Prescription",
+        "prescription_empty_prompt": "Add medications to start prescription."
+    },
+    "medications": {
+        "title": "Medication Library",
+        "subtitle": "Manage your favorite medications and default dosages.",
+        "add_button": "Add Medication",
+        "empty_state": "No medications registered. Start by adding one.",
+        "table": {
+            "name": "Medication",
+            "dosage": "Default Dosage",
+            "instructions": "Instructions"
+        },
+        "modal": {
+            "title": "New Medication",
+            "name_label": "Medication Name",
+            "name_placeholder": "ex: Amoxicillin",
+            "dosage_label": "Default Dosage",
+            "dosage_placeholder": "ex: 1g",
+            "instructions_label": "Default Instructions",
+            "instructions_placeholder": "ex: 1 tablet morning and evening"
+        }
+    },
+    "assistant": {
+        "nav": {
+            "title": "Dentistico",
+            "userRole": "Clinic Assistant Mode",
+            "items": {
+                "schedule": "Schedule",
+                "inventory": "Stock",
+                "invoices": "Invoices"
+            }
+        },
+        "dashboard": {
+            "tabs": {
+                "schedule": {
+                    "label": "Schedule",
+                    "icon": "📅",
+                    "header": "Upcoming Appointments",
+                    "empty": "No appointments scheduled."
+                },
+                "patients": {
+                    "label": "Patients",
+                    "icon": "👥",
+                    "header": "Patient Management",
+                    "addButton": "Add Patient",
+                    "searchPlaceholder": "Search patients...",
+                    "scheduleVisit": "Schedule Visit",
+                    "patientId": "ID"
+                },
+                "payments": {
+                    "label": "Finance",
+                    "icon": "💰",
+                    "header": "Financial Tracking",
+                    "description": "Outstanding balances",
+                    "empty": "No pending payments found.",
+                    "collectPayment": "Collect Payment",
+                    "balanceDue": "Balance Due"
+                }
+            },
+            "buttons": {
+                "bookNew": "New Appointment",
+                "list": "List",
+                "calendar": "Calendar",
+                "showPast": "Show Past",
+                "hidePast": "Hide Past",
+                "scheduleAndClose": "Schedule & Close",
+                "scheduleAndNew": "Schedule & New"
+            },
+            "appointment": {
+                "status": {
+                    "scheduled": "Scheduled",
+                    "confirmed": "Confirmed",
+                    "cancelled": "Cancelled",
+                    "no_show": "No Show",
+                    "completed": "Completed"
+                },
+                "type": {
+                    "consultation": "Consultation",
+                    "checkup": "Checkup",
+                    "cleaning": "Cleaning",
+                    "emergency": "Emergency",
+                    "root_canal": "Root Canal"
+                },
+                "modals": {
+                    "new": "New Appointment",
+                    "edit": "Edit Appointment",
+                    "save": "Save Changes",
+                    "schedule": "Schedule",
+                    "cancel": "Cancel"
+                },
+                "fields": {
+                    "patient": "Patient",
+                    "doctor": "Doctor",
+                    "type": "Type",
+                    "startTime": "Start Time",
+                    "duration": "Duration",
+                    "status": "Status",
+                    "notes": "Notes",
+                    "additionalNotes": "Additional notes..."
+                },
+                "selectOptions": {
+                    "selectPatient": "Select patient...",
+                    "selectDoctor": "Select doctor..."
+                },
+                "newPatient": {
+                    "title": "New Patient",
+                    "searchPlaceholder": "Search patient by name, phone or date...",
+                    "createNew": "Create new patient",
+                    "noResults": "No patients found",
+                    "fullName": "Full Name",
+                    "phone": "Phone",
+                    "dob": "Date of Birth",
+                    "email": "Email",
+                    "generateCard": "Generate Patient Card"
+                }
+            },
+            "patient": {
+                "modals": {
+                    "new": "New Patient Registration",
+                    "register": "Register Patient",
+                    "cancel": "Cancel"
+                },
+                "fields": {
+                    "fullName": "Full Name",
+                    "phone": "Phone",
+                    "dob": "Date of Birth",
+                    "email": "Email",
+                    "namePlaceholder": "ex: John Doe",
+                    "phonePlaceholder": "06XXXXXXXX",
+                    "emailPlaceholder": "Optional"
+                }
+            },
+            "payment": {
+                "modal": {
+                    "title": "Record Payment",
+                    "totalDue": "Total Due",
+                    "confirm": "Confirm Collection"
+                },
+                "fields": {
+                    "amount": "Amount to Pay",
+                    "paymentMethod": "Payment Method"
+                },
+                "methods": {
+                    "cash": "Cash 💵",
+                    "card": "Card 💳",
+                    "insurance": "Insurance 🏥",
+                    "bank_transfer": "Bank Transfer 🏦"
+                }
+            },
+            "actions": {
+                "confirm": "Confirm",
+                "edit": "Edit",
+                "reset": "Reset"
+            },
+            "time": {
+                "dr": "Dr.",
+                "at": "at"
+            },
+            "search": {
+                "placeholder": "Search appointments..."
+            },
+            "errors": {
+                "general": "Error occurred",
+                "registration": "Registration failed"
+            }
+        },
+        "invoices": {
+            "title": "Billing History",
+            "description": "Review and export customer invoices",
+            "export": {
+                "button": "Export CSV",
+                "filename": "invoice_export"
+            },
+            "filters": {
+                "searchLabel": "Search Patient or Invoice Number",
+                "searchPlaceholder": "Ex: Alice Smith or FAC-2024-0001",
+                "fromDate": "From",
+                "toDate": "To",
+                "apply": "Apply Filters",
+                "reset": "Reset Filters"
+            },
+            "table": {
+                "headers": {
+                    "number": "Number",
+                    "patient": "Patient",
+                    "date": "Date",
+                    "amount": "Amount",
+                    "status": "Status",
+                    "actions": "Actions"
+                },
+                "status": {
+                    "paid": "Paid",
+                    "pending": "Pending"
+                },
+                "actions": {
+                    "print": "Print"
+                },
+                "empty": "No invoices found matching your selection."
+            }
+        }
+    },
+    "login": {
+        "subtitle": "Connect to your account",
+        "username": "Username",
+        "password": "Password",
+        "signIn": "Sign In",
+        "errors": {
+            "missing": "Please fill all fields.",
+            "incorrect": "Incorrect username or password."
+        }
+    },
+    "spending": {
+        "title": "Expense Management",
+        "menu": "Expenses",
+        "categories_menu": "Categories",
+        "subtitle": "Track clinic expenses",
+        "add_expense": "Add Expense",
+        "edit_expense": "Edit Expense",
+        "new_expense": "New Expense",
+        "export_csv": "Export CSV",
+        "total_spending": "Total Expenses",
+        "no_records": "No expense records found",
+        "loading": "Loading...",
+        "table": {
+            "date": "Date",
+            "category": "Category",
+            "description": "Description",
+            "amount": "Amount",
+            "payment": "Payment",
+            "receipt": "Receipt #",
+            "actions": "Actions",
+            "edit": "Edit",
+            "delete": "Delete"
+        },
+        "form": {
+            "category_required": "Category *",
+            "select_category": "Select Category",
+            "amount_required": "Amount *",
+            "amount_placeholder": "0.00",
+            "description_required": "Description *",
+            "description_placeholder": "ex: Monthly electricity bill",
+            "payment_method": "Payment Method",
+            "payment_cash": "Cash",
+            "payment_card": "Card",
+            "payment_transfer": "Bank Transfer",
+            "payment_check": "Check",
+            "receipt_number": "Receipt Number",
+            "receipt_optional": "Optional",
+            "date_required": "Date *",
+            "notes": "Notes",
+            "notes_placeholder": "Additional details...",
+            "cancel": "Cancel",
+            "save": "Save",
+            "update": "Update"
+        },
+        "filters": {
+            "start_date": "Start Date",
+            "end_date": "End Date",
+            "category": "Category",
+            "all_categories": "All Categories",
+            "apply": "Apply Filters"
+        },
+        "summary": {
+            "transactions": "transactions"
+        },
+        "categories": {
+            "title": "Expense Categories",
+            "subtitle": "Manage expense categories",
+            "add_category": "Add Category",
+            "edit_category": "Edit Category",
+            "new_category": "New Category",
+            "name_required": "Name *",
+            "name_placeholder": "ex: Office Rent",
+            "description": "Description",
+            "description_placeholder": "Optional description",
+            "color": "Color",
+            "delete_error": "Cannot delete category with existing expense records",
+            "delete_confirm": "Delete this category? This will fail if there are existing expense records.",
+            "defaults": {
+                "electricity": "Electricity",
+                "electricity_desc": "Monthly electricity bills",
+                "water": "Water",
+                "water_desc": "Monthly water bills",
+                "internet": "Internet & Phone",
+                "internet_desc": "Communication expenses",
+                "rent": "Rent",
+                "rent_desc": "Office/clinic rent",
+                "salaries": "Salaries",
+                "salaries_desc": "Staff salaries and wages",
+                "repair": "Equipment Repair",
+                "repair_desc": "Maintenance and repairs",
+                "cleaning": "Cleaning Services",
+                "cleaning_desc": "Janitorial and cleaning",
+                "supplies": "Office Supplies",
+                "supplies_desc": "Non-medical supplies",
+                "insurance": "Insurance",
+                "insurance_desc": "Business insurance premiums",
+                "marketing": "Marketing",
+                "marketing_desc": "Advertising and promotion",
+                "professional": "Professional Fees",
+                "professional_desc": "Accountant, lawyer fees",
+                "taxes": "Taxes",
+                "taxes_desc": "Taxes and business fees",
+                "other": "Other",
+                "other_desc": "Miscellaneous expenses"
+            }
+        },
+        "notifications": {
+            "new_expense": "New Expense Recorded",
+            "expense_added": "Expense added successfully",
+            "expense_updated": "Expense updated successfully",
+            "expense_deleted": "Expense deleted successfully",
+            "category_added": "Category created successfully",
+            "category_updated": "Category updated successfully",
+            "category_deleted": "Category deleted successfully"
+        },
+        "confirm": {
+            "delete_expense": "Delete this expense record?"
+        }
+    },
+    "notifications": {
+        "page_title": "All Notifications",
+        "title": "Notifications",
+        "mark_read": "Mark as Read",
+        "mark_all_read": "Mark All as Read",
+        "view_details": "View Details",
+        "view_all": "View All Notifications",
+        "dismiss": "Dismiss",
+        "loading": "Loading...",
+        "empty": "No notifications at this time",
+        "new_empty": "No new notifications",
+        "types": {
+            "New Expense Recorded": "New Expense Recorded",
+            "Low Stock Alert": "Low Stock Alert",
+            "Appointment Booked": "Appointment Booked",
+            "Appointment Cancelled": "Appointment Cancelled"
+        }
+    },
+    "admin": {
+        "settings": {
+            "title": "System Settings",
+            "description": "Configure global clinic settings",
+            "financial": {
+                "title": "Financial Configuration",
+                "description": "Manage currency and billing settings",
+                "currencyCode": "Currency Code",
+                "currencyPlaceholder": "ex: DZD, EUR, USD",
+                "currencyHelp": "ISO currency code (3 letters)",
+                "currencySymbol": "Currency Symbol",
+                "symbolPlaceholder": "ex: دج, €, $",
+                "symbolHelp": "Symbol displayed on invoices"
+            },
+            "booking": {
+                "mode": "Booking Mode",
+                "freeform": "Free Form (Current)",
+                "availability": "Based on Availability",
+                "help": "Availability mode shows only available time slots to patients"
+            },
+            "treatment_types": {
+                "title": "Treatment Types",
+                "description": "Manage available treatment types in forms",
+                "add_button": "Add Treatment Type",
+                "create_title": "New Treatment Type",
+                "edit_title": "Edit Treatment Type",
+                "name_label": "Type Name",
+                "description_label": "Description",
+                "description_placeholder": "Optional type description",
+                "confirm_delete": "Are you sure you want to delete this treatment type?"
+            },
+            "advanced": {
+                "title": "Advanced Settings",
+                "description": "These settings require code modifications",
+                "clinicName": "Clinic Name",
+                "bookingInterval": "Booking Interval",
+                "bookingValue": "30 minutes",
+                "workHours": "Work Hours",
+                "workHoursValue": "9:00 AM - 6:00 PM"
+            },
+            "saveButton": "Save Changes",
+            "success": "Settings saved successfully"
+        },
+        "dashboard": {
+            "title": "Admin Dashboard",
+            "stats": {
+                "totalUsers": "Total Users",
+                "systemStatus": "System Status",
+                "online": "Online",
+                "dbVersion": "DB Version"
+            },
+            "welcome": {
+                "title": "Welcome to Admin Panel",
+                "description": "Manage users, configure system settings, and monitor clinic operations.",
+                "userManagement": "User Management",
+                "systemSettings": "System Settings"
+            }
+        },
+        "nav": {
+            "dashboard": "Dashboard",
+            "users": "Users",
+            "settings": "Settings",
+            "inventory": "Inventory"
+        },
+        "cdt_codes": {
+            "title": "CDT Procedure Codes",
+            "subtitle": "Manage treatment codes and pricing",
+            "add_button": "+ Add CDT Code",
+            "loading": "Loading...",
+            "table": {
+                "code": "Code",
+                "category": "Category",
+                "description": "Description",
+                "fee": "Fee",
+                "surfaces": "Surfaces",
+                "actions": "Actions",
+                "edit": "Edit",
+                "delete": "Delete"
+            },
+            "modal": {
+                "add_title": "Add New CDT Code",
+                "edit_title": "Edit CDT Code",
+                "code_label": "Code *",
+                "code_placeholder": "D2391",
+                "category_label": "Category *",
+                "description_label": "Description *",
+                "description_placeholder": "Posterior Composite - Three Surfaces",
+                "fee_label": "Default Fee *",
+                "fee_placeholder": "150.00",
+                "color_label": "Color Code",
+                "tooth_types_label": "Valid Tooth Types",
+                "requires_surfaces": "Requires Surface Selection",
+                "whole_tooth_only": "Whole Tooth Only (no surfaces)",
+                "cancel": "Cancel",
+                "create": "Create",
+                "update": "Update"
+            },
+            "tooth_types": {
+                "all": "All Teeth",
+                "anterior": "Anterior Only (6-11, 22-27)",
+                "posterior": "Posterior Only (1-5, 12-21, 28-32)",
+                "primary": "Primary Only (A-T)"
+            },
+            "categories": {
+                "Diagnostic": "Diagnostic",
+                "Preventive": "Preventive",
+                "Restorative": "Restorative",
+                "Crowns": "Crowns",
+                "Endodontics": "Endodontics",
+                "Periodontics": "Periodontics",
+                "Prosthodontics": "Prosthodontics",
+                "Surgery": "Surgery",
+                "Orthodontics": "Orthodontics",
+                "Other": "Other"
+            },
+            "confirm_delete": "Delete CDT code {code}?",
+            "yes": "Yes",
+            "no": "No"
+        },
+        "users": {
+            "title": "User Management",
+            "description": "Configure staff accounts and permissions.",
+            "createButton": "Create User",
+            "table": {
+                "name": "Full Name",
+                "username": "Username / Email",
+                "role": "Role",
+                "created": "Created On",
+                "actions": "Actions",
+                "spending_export": "Export Expenses"
+            },
+            "modal": {
+                "title": "New User",
+                "fullName": "Full Name",
+                "fullNamePlaceholder": "ex: John Doe",
+                "phone": "Phone",
+                "phonePlaceholder": "ex: 0612345678",
+                "username": "Username / Email",
+                "usernamePlaceholder": "email@clinic.com",
+                "password": "Password",
+                "passwordPlaceholder": "••••••••",
+                "confirmPassword": "Confirm Password",
+                "confirmPasswordPlaceholder": "••••••••",
+                "role": "Account Role",
+                "roles": {
+                    "doctor": "Doctor",
+                    "assistant": "Assistant",
+                    "admin": "Administrator"
+                },
+                "createButton": "Create Account"
+            }
+        }
+    },
+    "booking": {
+        "title": "Book Your Appointment",
+        "subtitle": "Take the first step towards a healthier, brighter smile.",
+        "who_booking_for": "Who are you booking for?",
+        "myself": "Myself",
+        "someone_else": "Someone else",
+        "personal_details": "Personal Details",
+        "your_info": "Your Information (Requester)",
+        "patient_info": "Patient Information",
+        "full_name": "Full Name",
+        "full_name_placeholder": "Enter your full name",
+        "email": "Email Address",
+        "phone": "Phone Number",
+        "dob": "Date of Birth",
+        "patient_name": "Patient Full Name",
+        "patient_name_placeholder": "Patient name",
+        "patient_dob": "Patient Date of Birth",
+        "relationship": "Relationship",
+        "schedule": "Scheduling",
+        "specialist": "Choose Specialist (Optional)",
+        "doctor_placeholder": "Choose doctor...",
+        "service_type": "Service Type",
+        "datetime": "Preferred Date and Time",
+        "notes": "Additional Notes (Optional)",
+        "notes_placeholder": "Reason for visit...",
+        "confirm": "Confirm Booking",
+        "processing": "Processing...",
+        "success_title": "Request Received!",
+        "success_message": "Thank you for choosing Dentistico. Our team will review your request and contact you shortly to confirm the appointment.",
+        "back_home": "Back to Home",
+        "terms": "By booking, you agree to our terms of use and privacy policy.",
+        "call_us": "Call Us",
+        "email_us": "Email Us",
+        "emergency": "Emergency",
+        "support_line": "24/7 Support Line",
+        "select_date": "Select Appointment Date",
+        "available_slots_for": "Available slots for {date}",
+        "loading_slots": "Checking availability...",
+        "fully_booked": "Fully Booked",
+        "select_another_date": "Please select another date from the calendar",
+        "pick_date_to_begin": "Choose a date to begin",
+        "select_preferred_day": "Select your preferred day from the calendar above",
+        "status_available": "Available",
+        "status_pending": "Pending",
+        "status_booked": "Booked",
+        "select_time_for": "Select time for {date}",
+        "relationships": {
+            "child": "Child",
+            "spouse": "Spouse",
+            "parent": "Parent",
+            "friend": "Friend",
+            "other": "Other"
+        },
+        "services": {
+            "consultation": "Initial Consultation",
+            "checkup": "Routine Checkup",
+            "cleaning": "Dental Cleaning",
+            "cosmetic": "Cosmetic Dentistry",
+            "emergency": "Emergency Care"
+        }
+    },
+    "dental": {
+        "add_treatment": "Add Treatment",
+        "tooth": "Tooth",
+        "search_procedure": "Search code or description...",
+        "status": "Status",
+        "existing": "Existing",
+        "completed": "Completed",
+        "planned": "Planned",
+        "date_performed": "Date Performed",
+        "diagnosis_optional": "Diagnosis (Optional)",
+        "diagnosis_placeholder": "e.g., Caries extending to DEJ",
+        "clinical_notes": "Clinical Notes",
+        "notes_placeholder": "Additional observations...",
+        "cancel": "Cancel",
+        "save_treatment": "Save Treatment",
+        "no_procedures": "No procedures found",
+        "loading_procedures": "Loading procedures...",
+        "requires_surfaces": "Requires surfaces",
+        "select_surfaces": "Select Surfaces (tap to toggle)",
+
+        "categories": {
+            "all": "All",
+            "diagnostic": "Exam",
+            "preventive": "Cleaning",
+            "restorative": "Fillings",
+            "crowns": "Crowns",
+            "endodontics": "Root Canal",
+            "surgery": "Extraction",
+            "other": "Other"
+        },
+
+        "surfaces": {
+            "mesial": "Mesial",
+            "distal": "Distal",
+            "occlusal": "Occlusal",
+            "buccal": "Buccal",
+            "lingual": "Lingual"
+        }
+    }
+}
