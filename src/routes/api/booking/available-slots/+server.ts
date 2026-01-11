@@ -1,63 +1,80 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import db from '$lib/server/db';
+import { db } from '$lib/server/db';
+import { getClinicSettings, isClinicOpen, getWorkingHours } from '$lib/server/clinic-settings';
 
-export const GET: RequestHandler = async ({ url }) => {
+export async function GET({ url }) {
     const date = url.searchParams.get('date');
+    const doctorId = url.searchParams.get('doctor_id');
 
     if (!date) {
-        return json({ error: 'Date parameter is required' }, { status: 400 });
+        return json({ error: 'Date required' }, { status: 400 });
     }
 
-    // Get all appointments for the specified date with status
-    const appointments = db.prepare(`
-        SELECT TIME(start_time) as appointment_time, doctor_id, status
-        FROM appointments
-        WHERE DATE(start_time) = DATE(?)
-        AND status != 'cancelled'
-    `).all(date) as Array<{ appointment_time: string; doctor_id: number; status: string }>;
+    // CRITICAL CHECK: Verify clinic is open
+    if (!isClinicOpen(date)) {
+        return json({
+            slots: [],
+            error: 'Clinic is closed on this date',
+            message: 'The clinic is closed on this date. Please select another date.'
+        });
+    }
 
-    // Get all doctors
-    const doctors = db.prepare(`
-        SELECT id, full_name
-        FROM users
-        WHERE role = 'doctor'
-    `).all() as Array<{ id: number; full_name: string }>;
+    const settings = getClinicSettings();
+    const dayOfWeek = new Date(date).getDay();
+    const hours = getWorkingHours(dayOfWeek);
 
-    // Working hours: 9:00 AM to 6:00 PM
-    const startHour = 9;
-    const endHour = 18;
-    const intervalMinutes = 30;
+    // If this day has no working hours, return empty
+    if (!hours.start || !hours.end) {
+        return json({
+            slots: [],
+            error: 'No working hours configured',
+            message: 'The clinic is not open on this day of the week.'
+        });
+    }
 
-    // Generate all time slots with status
+    const bookingInterval = settings.booking_interval_minutes;
+
+    // Generate time slots 
     const slots = [];
-    for (let hour = startHour; hour < endHour; hour++) {
-        for (let minute = 0; minute < 60; minute += intervalMinutes) {
-            const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            const timeWithSeconds = timeStr + ':00';
+    const [startHour, startMin] = hours.start.split(':').map(Number);
+    const [endHour, endMin] = hours.end.split(':').map(Number);
 
-            const slotAppointments = appointments.filter(a => a.appointment_time === timeWithSeconds);
+    let currentTime = startHour * 60 + startMin;
+    const endTime = endHour * 60 + endMin;
 
-            let status = 'available';
-            if (slotAppointments.length > 0) {
-                if (slotAppointments.some(a => a.status === 'confirmed')) {
-                    status = 'booked';
-                } else {
-                    status = 'pending';
-                }
-            }
+    while (currentTime < endTime) {
+        const hour = Math.floor(currentTime / 60);
+        const min = currentTime % 60;
+        const timeStr = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
 
-            // Optional: If we want to support multi-doctor availability properly:
-            // If there's at least one free doctor, it could be 'available' or 'pending'.
-            // But the user's request was specific about "if there is an appointment".
+        // Check if slot is available
+        let query = `
+      SELECT id, status FROM appointments 
+      WHERE date(start_time) = ?
+      AND strftime('%H:%M', start_time) = ?
+    `;
+        const params: any[] = [date, timeStr];
 
-            slots.push({ time: timeStr, status });
+        if (doctorId) {
+            query += ' AND doctor_id = ?';
+            params.push(doctorId);
         }
+
+        const existingAppts = db.prepare(query).all(...params) as any[];
+
+        if (existingAppts.length === 0) {
+            slots.push({ time: timeStr, status: 'available' });
+        } else {
+            const isBooked = existingAppts.some(a => a.status === 'confirmed' || a.status === 'scheduled');
+            if (isBooked) {
+                slots.push({ time: timeStr, status: 'booked' });
+            } else {
+                slots.push({ time: timeStr, status: 'pending' });
+            }
+        }
+
+        currentTime += bookingInterval;
     }
 
-    return json({
-        date,
-        slots,
-        totalDoctors: doctors.length
-    });
-};
+    return json({ slots });
+}

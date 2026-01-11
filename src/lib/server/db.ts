@@ -60,6 +60,55 @@ export function init_db() {
     // actually, let's just use IF NOT EXISTS and assume a fresh start or compatible state.
 
     db.exec(`
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+
+        -- Clinic global settings (single row table)
+        CREATE TABLE IF NOT EXISTS clinic_settings (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          clinic_name TEXT NOT NULL DEFAULT 'Dentistico Clinic',
+          booking_interval_minutes INTEGER DEFAULT 30 CHECK(booking_interval_minutes IN (15, 30, 45, 60)),
+          work_start_time TEXT DEFAULT '09:00',
+          work_end_time TEXT DEFAULT '18:00',
+          timezone TEXT DEFAULT 'UTC',
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        -- Working days configuration
+        CREATE TABLE IF NOT EXISTS clinic_working_days (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          day_of_week INTEGER NOT NULL CHECK(day_of_week BETWEEN 0 AND 6),
+          is_working INTEGER DEFAULT 1,
+          custom_start_time TEXT,
+          custom_end_time TEXT,
+          UNIQUE(day_of_week)
+        );
+
+        -- Clinic closures (holidays, vacations)
+        CREATE TABLE IF NOT EXISTS clinic_closures (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          closure_date TEXT NOT NULL UNIQUE,
+          reason TEXT NOT NULL,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        -- Insert default settings
+        INSERT OR IGNORE INTO clinic_settings (id, clinic_name, booking_interval_minutes, work_start_time, work_end_time)
+        VALUES (1, 'Dentistico Clinic', 30, '09:00', '18:00');
+
+        -- Insert default working days (Monday=1 to Sunday=0)
+        INSERT OR IGNORE INTO clinic_working_days (day_of_week, is_working) VALUES
+          (1, 1), -- Monday
+          (2, 1), -- Tuesday
+          (3, 1), -- Wednesday
+          (4, 1), -- Thursday
+          (5, 1), -- Friday
+          (6, 0), -- Saturday (not working)
+          (0, 0); -- Sunday (not working)
+
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
@@ -428,6 +477,22 @@ export function init_db() {
 
     for (const [name, desc, color] of defaultCategories) {
         insertCategory.run(name, desc, color);
+    }
+
+    // Insert default settings
+    const defaultSettings = [
+        ['clinic_name', 'Dentistico Clinic'],
+        ['booking_interval', '30'],
+        ['work_hours', '9h00 - 18h00']
+    ];
+
+    const insertSetting = db.prepare(`
+        INSERT OR IGNORE INTO settings (key, value)
+        VALUES (?, ?)
+    `);
+
+    for (const [key, value] of defaultSettings) {
+        insertSetting.run(key, value);
     }
 
     // Check if seed needed
@@ -1871,6 +1936,77 @@ export function updateTreatmentType(id: number, treatmentTypeData: any) {
 
 export function deleteTreatmentType(id: number) {
     return db.prepare('UPDATE treatment_types SET is_active = 0 WHERE id = ?').run(id);
+}
+
+// --- Settings ---
+export function getSetting(key: string, defaultValue?: string) {
+    try {
+        const res = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+        return res ? res.value : defaultValue;
+    } catch (e) {
+        return defaultValue;
+    }
+}
+
+export function getAllSettings() {
+    try {
+        const res = db.prepare('SELECT key, value FROM settings').all() as { key: string; value: string }[];
+        const settings: Record<string, string> = {};
+        for (const { key, value } of res) {
+            settings[key] = value;
+        }
+        return settings;
+    } catch (e) {
+        return {};
+    }
+}
+
+export function getServerConfig() {
+    const configPath = path.resolve('src/lib/config/app.config.json');
+    let fileConfig: any = {};
+    try {
+        const configData = fs.readFileSync(configPath, 'utf8');
+        fileConfig = JSON.parse(configData);
+    } catch (e) {
+        // Fallback
+        fileConfig = {
+            currency: 'DZD',
+            currencySymbol: 'دج',
+            bookingMode: 'availability'
+        };
+    }
+
+    const dbSettings = getAllSettings();
+    let clinicSettings: any = {};
+    try {
+        clinicSettings = db.prepare('SELECT * FROM clinic_settings WHERE id = 1').get() || {};
+    } catch (e) {
+        console.error("Clinic settings table might not be ready yet");
+    }
+
+    return {
+        ...fileConfig,
+        ...dbSettings,
+        ...clinicSettings,
+        // Map db keys to frontend keys if they differ (Backwards compatibility)
+        clinicName: clinicSettings.clinic_name || dbSettings.clinic_name || 'Dentistico Clinic',
+        bookingInterval: clinicSettings.booking_interval_minutes || parseInt(dbSettings.booking_interval || '30'),
+        workHours: clinicSettings.work_start_time ? `${clinicSettings.work_start_time} - ${clinicSettings.work_end_time}` : (dbSettings.work_hours || '9h00 - 18h00')
+    };
+}
+
+export function updateSetting(key: string, value: string) {
+    return db.prepare('INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime(\'now\')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at').run(key, value);
+}
+
+export function updateMultipleSettings(settings: Record<string, string>) {
+    const stmt = db.prepare('INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime(\'now\')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at');
+    const txn = db.transaction((data) => {
+        for (const [key, value] of Object.entries(data)) {
+            stmt.run(key, value);
+        }
+    });
+    txn(settings);
 }
 
 // Export db instance

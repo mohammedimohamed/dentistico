@@ -14,6 +14,7 @@
 
 <PortalShell
     {navItems}
+    sidebarTitle={data.config?.clinicName || "Dentistico"}
     userName={data?.user?.full_name || "Assistant"}
     headerTitle={currentTitle}
     roleLabel="common.assistant"

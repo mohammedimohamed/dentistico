@@ -596,13 +596,13 @@
                 "confirm_delete": "Are you sure you want to delete this treatment type?"
             },
             "advanced": {
-                "title": "Advanced Settings",
-                "description": "These settings require code modifications",
+                "title": "Clinic Settings",
+                "description": "Configure basic information and scheduling parameters",
                 "clinicName": "Clinic Name",
                 "bookingInterval": "Booking Interval",
-                "bookingValue": "30 minutes",
+                "bookingValue": "Value in minutes (e.g., 30)",
                 "workHours": "Work Hours",
-                "workHoursValue": "9:00 AM - 6:00 PM"
+                "workHoursValue": "Text format (e.g., 9:00 AM - 6:00 PM)"
             },
             "saveButton": "Save Changes",
             "success": "Settings saved successfully"
@@ -745,7 +745,7 @@
         "confirm": "Confirm Booking",
         "processing": "Processing...",
         "success_title": "Request Received!",
-        "success_message": "Thank you for choosing Dentistico. Our team will review your request and contact you shortly to confirm the appointment.",
+        "success_message": "Thank you for choosing {{clinicName}}. Our team will review your request and contact you shortly to confirm the appointment.",
         "back_home": "Back to Home",
         "terms": "By booking, you agree to our terms of use and privacy policy.",
         "call_us": "Call Us",
@@ -797,7 +797,6 @@
         "loading_procedures": "Loading procedures...",
         "requires_surfaces": "Requires surfaces",
         "select_surfaces": "Select Surfaces (tap to toggle)",
-
         "categories": {
             "all": "All",
             "diagnostic": "Exam",
@@ -808,7 +807,6 @@
             "surgery": "Extraction",
             "other": "Other"
         },
-
         "surfaces": {
             "mesial": "Mesial",
             "distal": "Distal",

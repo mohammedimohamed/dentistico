@@ -4,11 +4,10 @@
     import SmartDateTimePicker from "$lib/components/SmartDateTimePicker.svelte";
     import FreeformDateTimePicker from "$lib/components/FreeformDateTimePicker.svelte";
     import { t, locale } from "svelte-i18n";
-    import flatpickr from "flatpickr";
-    import "flatpickr/dist/flatpickr.css";
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
 
+    let selectedDoctorId = $state("");
     let loading = $state(false);
     let bookingFor = $state("self");
     let selectedDate = $state("");
@@ -21,7 +20,9 @@
     const maxDateOfBirth = new Date().toISOString().split("T")[0];
 
     // Check if availability mode is enabled
-    const isAvailabilityMode = data.config?.bookingMode === "availability";
+    const isAvailabilityMode = $derived(
+        data.config?.bookingMode === "availability",
+    );
 
     async function setLanguage(lang: string) {
         document.cookie = `lang=${lang}; path=/; max-age=31536000`;
@@ -88,7 +89,7 @@
             <a
                 href="/"
                 class="text-3xl font-extrabold tracking-tight text-teal-700 inline-block mb-4"
-                >Dentistico</a
+                >{data.config?.clinicName || "Dentistico"}</a
             >
             <h1
                 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight"
@@ -114,7 +115,12 @@
                         {$t("booking.success_title")}
                     </h2>
                     <p class="text-lg text-slate-600 mb-10 leading-relaxed">
-                        {$t("booking.success_message")}
+                        {$t("booking.success_message", {
+                            values: {
+                                clinicName:
+                                    data.config?.clinicName || "Dentistico",
+                            },
+                        })}
                     </p>
                     <a
                         href="/"
@@ -128,7 +134,7 @@
                     method="POST"
                     use:enhance={() => {
                         loading = true;
-                        return async ({ update }) => {
+                        return async ({ update }: { update: any }) => {
                             loading = false;
                             update();
                         };
@@ -143,6 +149,85 @@
                             {form.error}
                         </div>
                     {/if}
+
+                    <!-- Legend / Information Box -->
+                    <div
+                        class="mb-10 bg-teal-50 border-2 border-teal-100 rounded-[2rem] p-8 shadow-sm"
+                    >
+                        <h3
+                            class="text-teal-900 font-black text-xl mb-4 flex items-center gap-2"
+                        >
+                            <span>ℹ️</span> Informations de Réservation
+                        </h3>
+                        <ul class="space-y-3 text-slate-700 font-medium">
+                            <li class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-teal-500"
+                                ></span>
+                                Heures de travail:
+                                <span class="font-black text-teal-800"
+                                    >{data.config?.workHours ||
+                                        "09:00 - 18:00"}</span
+                                >
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-teal-500"
+                                ></span>
+                                Fermé les:
+                                <span class="font-black text-teal-800">
+                                    {#if data.workingDays}
+                                        {data.workingDays
+                                            .filter(
+                                                (d: any) => d.is_working === 0,
+                                            )
+                                            .map((d: any) => {
+                                                const days = [
+                                                    "Dimanche",
+                                                    "Lundi",
+                                                    "Mardi",
+                                                    "Mercredi",
+                                                    "Jeudi",
+                                                    "Vendredi",
+                                                    "Samedi",
+                                                ];
+                                                return days[d.day_of_week];
+                                            })
+                                            .join(", ")}
+                                    {:else}
+                                        Samedi & Dimanche
+                                    {/if}
+                                </span>
+                            </li>
+                            {#if data.closures && data.closures.length > 0}
+                                <li class="flex items-start gap-2">
+                                    <span
+                                        class="w-2 h-2 rounded-full bg-teal-500 mt-2"
+                                    ></span>
+                                    <span>
+                                        Prochaines fermetures:
+                                        <span class="font-black text-teal-800">
+                                            {data.closures
+                                                .slice(0, 3)
+                                                .map((c: any) => {
+                                                    const d = new Date(
+                                                        c.closure_date,
+                                                    );
+                                                    return d.toLocaleDateString(
+                                                        "fr-FR",
+                                                        {
+                                                            day: "numeric",
+                                                            month: "long",
+                                                        },
+                                                    );
+                                                })
+                                                .join(", ")}
+                                            {#if data.closures.length > 3}
+                                                et {data.closures.length - 3} autres{/if}
+                                        </span>
+                                    </span>
+                                </li>
+                            {/if}
+                        </ul>
+                    </div>
 
                     <!-- Booking For Toggle -->
                     <div
@@ -391,6 +476,7 @@
                                     <select
                                         name="doctor_id"
                                         id="doctor_id"
+                                        bind:value={selectedDoctorId}
                                         class="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-lg font-black focus:bg-white focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none transition-all appearance-none cursor-pointer"
                                         style="background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27 fill=%27none%27 viewBox=%270%200%2020%2020%27%3E%3Cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27m6%208%204%204%204-4%27%2F%3E%3C%2Fsvg%3E'); background-position: right 1.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 3.5rem;"
                                     >
@@ -399,7 +485,7 @@
                                                 "booking.doctor_placeholder",
                                             )}</option
                                         >
-                                        {#each data.doctors as doctor}
+                                        {#each data.doctors as any[] as doctor}
                                             <option value={doctor.id}
                                                 >{doctor.full_name}</option
                                             >
@@ -463,6 +549,7 @@
                                             <SmartDateTimePicker
                                                 {selectedDate}
                                                 {selectedTime}
+                                                doctorId={selectedDoctorId}
                                                 onDateChange={(date) =>
                                                     (selectedDate = date)}
                                                 onTimeChange={(time) =>

@@ -612,13 +612,13 @@
                 "confirm_delete": "Êtes-vous sûr de vouloir supprimer ce type de soin ?"
             },
             "advanced": {
-                "title": "Paramètres Avancés",
-                "description": "Ces paramètres nécessitent des modifications du code",
+                "title": "Paramètres de la Clinique",
+                "description": "Configurez les informations de base et les paramètres de planification",
                 "clinicName": "Nom de la Clinique",
                 "bookingInterval": "Intervalle de Réservation",
-                "bookingValue": "30 minutes",
+                "bookingValue": "Valeur en minutes (ex: 30)",
                 "workHours": "Heures de Travail",
-                "workHoursValue": "9h00 - 18h00"
+                "workHoursValue": "Format texte (ex: 9h00 - 18h00)"
             },
             "saveButton": "Enregistrer les Modifications",
             "success": "Paramètres enregistrés avec succès"
@@ -645,7 +645,7 @@
             "inventory": "Inventaire"
         },
         "cdt_codes": {
-            "title": "Codes de Procédures CDT",
+            "title": "Procédures CDT",
             "subtitle": "Gérer les codes de traitement et les tarifs",
             "add_button": "+ Ajouter un Code CDT",
             "loading": "Chargement...",
@@ -761,7 +761,7 @@
         "confirm": "Confirmer la Demande",
         "processing": "Traitement...",
         "success_title": "Demande Reçue !",
-        "success_message": "Merci d'avoir choisi Dentistico. Notre équipe examinera votre demande et vous contactera sous peu pour confirmer le rendez-vous.",
+        "success_message": "Merci d'avoir choisi {{clinicName}}. Notre équipe examinera votre demande et vous contactera sous peu pour confirmer le rendez-vous.",
         "back_home": "Retour à l'Accueil",
         "terms": "En réservant, vous acceptez nos conditions d'utilisation et notre politique de confidentialité.",
         "call_us": "Appelez-nous",
@@ -827,7 +827,6 @@
         "delete_confirmation": "Supprimer ce traitement ?",
         "no_treatments": "Aucun traitement enregistré",
         "treatment_history": "Historique des Traitements",
-
         "categories": {
             "all": "Tout",
             "diagnostic": "Examen",
@@ -838,7 +837,6 @@
             "surgery": "Extraction",
             "other": "Autre"
         },
-
         "surfaces": {
             "mesial": "Mésial",
             "distal": "Distal",

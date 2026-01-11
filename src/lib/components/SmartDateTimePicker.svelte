@@ -7,6 +7,7 @@
     interface Props {
         selectedDate: string;
         selectedTime: string;
+        doctorId?: string | number;
         onDateChange: (date: string) => void;
         onTimeChange: (time: string) => void;
     }
@@ -14,6 +15,7 @@
     let {
         selectedDate = "",
         selectedTime = "",
+        doctorId = "",
         onDateChange,
         onTimeChange,
     }: Props = $props();
@@ -26,8 +28,14 @@
     let datepickerContainer: HTMLElement;
     let fp: any;
 
-    // Fetch available slots when date changes
-    async function fetchAvailableSlots(date: string) {
+    // Fetch available slots when parameters change
+    $effect(() => {
+        if (selectedDate) {
+            fetchAvailableSlots(selectedDate, doctorId);
+        }
+    });
+
+    async function fetchAvailableSlots(date: string, docId?: string | number) {
         if (!date) {
             timeSlots = [];
             return;
@@ -37,9 +45,14 @@
         error = "";
 
         try {
-            const response = await fetch(
-                `/api/booking/available-slots?date=${date}`,
+            const url = new URL(
+                "/api/booking/available-slots",
+                window.location.origin,
             );
+            url.searchParams.append("date", date);
+            if (docId) url.searchParams.append("doctor_id", docId.toString());
+
+            const response = await fetch(url);
             const data = await response.json();
 
             if (response.ok) {
@@ -64,6 +77,40 @@
         onTimeChange(dateTime);
     }
 
+    let unavailableDates = $state<string[]>([]);
+    let nonWorkingDays = $state<number[]>([]);
+
+    async function loadUnavailableDates() {
+        const today = new Date();
+        const threeMonthsLater = new Date();
+        threeMonthsLater.setMonth(today.getMonth() + 3);
+
+        try {
+            const res = await fetch(
+                `/api/booking/unavailable-dates?start_date=${today.toISOString().split("T")[0]}&end_date=${threeMonthsLater.toISOString().split("T")[0]}`,
+            );
+            const data = await res.json();
+
+            unavailableDates = data.closureDates || [];
+            nonWorkingDays = data.nonWorkingDays || [];
+
+            if (fp) {
+                fp.set("disable", [
+                    function (date: Date) {
+                        // Disable non-working days
+                        if (nonWorkingDays.includes(date.getDay())) return true;
+                        // Disable closures
+                        const dateStr = date.toISOString().split("T")[0];
+                        if (unavailableDates.includes(dateStr)) return true;
+                        return false;
+                    },
+                ]);
+            }
+        } catch (e) {
+            console.error("Failed to load unavailable dates:", e);
+        }
+    }
+
     onMount(() => {
         // Initialize flatpickr
         fp = flatpickr(datepickerContainer as HTMLElement, {
@@ -71,18 +118,26 @@
             minDate: "today",
             dateFormat: "Y-m-d",
             defaultDate: selectedDate || undefined,
-            onChange: (selectedDates, dateStr) => {
+            disable: [
+                function (date: Date) {
+                    // Initial disable logic (will be updated after loadUnavailableDates)
+                    return false;
+                },
+            ],
+            onChange: (selectedDates: Date[], dateStr: string) => {
                 selectedDate = dateStr; // Update internal state
                 onDateChange(dateStr);
                 selectedTime = ""; // Reset internal time state
                 onTimeChange(""); // Reset time when date changes
-                fetchAvailableSlots(dateStr);
+                fetchAvailableSlots(dateStr, doctorId);
             },
         });
 
+        loadUnavailableDates();
+
         // If there's an initial selected date, fetch slots
         if (selectedDate) {
-            fetchAvailableSlots(selectedDate);
+            fetchAvailableSlots(selectedDate, doctorId);
         }
 
         return () => {

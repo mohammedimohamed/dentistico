@@ -55,7 +55,45 @@
         }
     });
 
-    onMount(() => {
+    let clinicSettings = $state<any>(null);
+    let workStartHour = $state(9);
+    let workEndHour = $state(18);
+
+    async function loadClinicSettings() {
+        try {
+            const res = await fetch("/api/admin/clinic-settings");
+            const data = await res.json();
+            if (data.settings) {
+                clinicSettings = data.settings;
+                workStartHour = parseInt(
+                    data.settings.work_start_time.split(":")[0],
+                );
+                workEndHour = parseInt(
+                    data.settings.work_end_time.split(":")[0],
+                );
+
+                if (calendar) {
+                    calendar.setOption(
+                        "slotMinTime",
+                        `${workStartHour.toString().padStart(2, "0")}:00:00`,
+                    );
+                    calendar.setOption(
+                        "slotMaxTime",
+                        `${workEndHour.toString().padStart(2, "0")}:00:00`,
+                    );
+                    calendar.setOption("businessHours", {
+                        daysOfWeek: [1, 2, 3, 4, 5],
+                        startTime: data.settings.work_start_time,
+                        endTime: data.settings.work_end_time,
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load clinic settings in calendar:", e);
+        }
+    }
+
+    onMount(async () => {
         calendar = new Calendar(calendarEl, {
             plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
             initialView,
@@ -81,17 +119,18 @@
             },
             height: "auto",
             nowIndicator: true,
-            slotMinTime: "00:00:00",
-            slotMaxTime: "24:00:00",
+            slotMinTime: `${workStartHour.toString().padStart(2, "0")}:00:00`,
+            slotMaxTime: `${workEndHour.toString().padStart(2, "0")}:00:00`,
             allDaySlot: false,
             businessHours: {
-                daysOfWeek: [1, 2, 3, 4, 5, 6], // Monday - Saturday
-                startTime: "08:30",
-                endTime: "19:30",
+                daysOfWeek: [1, 2, 3, 4, 5],
+                startTime: "09:00",
+                endTime: "18:00",
             },
         });
 
         calendar.render();
+        await loadClinicSettings();
     });
 
     onDestroy(() => {

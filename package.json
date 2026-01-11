@@ -24,6 +24,7 @@
 		"@types/bcrypt": "^6.0.0",
 		"@types/better-sqlite3": "^7.6.13",
 		"@types/cookie": "^0.6.0",
+		"@types/flatpickr": "^3.0.2",
 		"autoprefixer": "^10.4.23",
 		"bcrypt": "^6.0.0",
 		"better-sqlite3": "^12.5.0",

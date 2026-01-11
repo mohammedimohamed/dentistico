@@ -3,7 +3,7 @@
     import type { ActionData } from "./$types";
     import { t, locale } from "svelte-i18n";
 
-    let { form }: { form: ActionData } = $props();
+    let { form, data }: { form: ActionData; data: any } = $props();
 
     let isLoading = $state(false);
     let seconds = $state(0);
@@ -86,7 +86,7 @@
                     <h2
                         class="text-3xl font-black text-slate-900 tracking-tight"
                     >
-                        Dentistico
+                        {data.config?.clinicName || "Dentistico"}
                     </h2>
                     <p class="mt-3 text-slate-500 font-medium">
                         {$t("login.subtitle")}

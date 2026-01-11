@@ -5,6 +5,7 @@
     import Calendar from "$lib/components/Calendar.svelte";
     import { t } from "svelte-i18n";
 
+    import { onMount } from "svelte";
     import { page } from "$app/stores";
     import { goto, invalidateAll } from "$app/navigation";
 
@@ -58,6 +59,38 @@
     let selectedPatient = $state<any>(null);
     let isNewPatient = $state(false);
     let patientCardUrl = $state<string | null>(null);
+
+    // Manual booking validation
+    let unavailableDates = $state<string[]>([]);
+    let nonWorkingDays = $state<number[]>([]);
+
+    async function loadUnavailableDates() {
+        try {
+            const res = await fetch("/api/booking/unavailable-dates");
+            const data = await res.json();
+            unavailableDates = data.closureDates || [];
+            nonWorkingDays = data.nonWorkingDays || [];
+        } catch (e) {
+            console.error("Failed to load unavailable dates:", e);
+        }
+    }
+
+    function isDateDisabled(dateString: string): boolean {
+        if (!dateString) return false;
+        // datetime-local gives YYYY-MM-DDTHH:MM
+        const justDate = dateString.split("T")[0];
+        if (unavailableDates.includes(justDate)) return true;
+
+        const date = new Date(justDate);
+        const dayOfWeek = date.getDay();
+        if (nonWorkingDays.includes(dayOfWeek)) return true;
+
+        return false;
+    }
+
+    onMount(() => {
+        loadUnavailableDates();
+    });
 
     // Table view state
     let tableSortColumn = $state<string | null>(null);
@@ -466,7 +499,8 @@
             // Footer
             doc.write('<div class="footer">');
             doc.write(
-                '<span class="clinic-name">Dentistico</span> - ' + currentDate,
+                `<span class="clinic-name">${data.config?.clinicName || "Dentistico"}</span> - ` +
+                    currentDate,
             );
             doc.write("</div>"); // footer
 
@@ -1722,7 +1756,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
-                        {#each data.pendingPayments as p}
+                        {#each data.pendingPayments as p: any}
                             <tr class="hover:bg-gray-50/50">
                                 <td class="px-6 py-4">
                                     <p class="text-sm font-bold text-gray-900">
@@ -1883,7 +1917,13 @@
                             : "?/createAppointment"}
                         use:enhance={() => {
                             errorMessage = "";
-                            return async ({ result, update }) => {
+                            return async ({
+                                result,
+                                update,
+                            }: {
+                                result: any;
+                                update: any;
+                            }) => {
                                 if (result.type === "success") {
                                     const resultData = result.data as any;
 
@@ -2349,7 +2389,25 @@
                                                       .toISOString()
                                                       .slice(0, 16)
                                                 : ""}
+                                            onchange={(e) => {
+                                                const val =
+                                                    e.currentTarget.value;
+                                                if (isDateDisabled(val)) {
+                                                    alert(
+                                                        "Impossible de planifier le rendez-vous: La clinique est fermée ou c'est un jour non-ouvré à cette date.",
+                                                    );
+                                                    e.currentTarget.value = "";
+                                                }
+                                            }}
                                         />
+                                        {#if selectedAppointment?.start_time && isDateDisabled(selectedAppointment.start_time)}
+                                            <p
+                                                class="text-xs text-red-500 mt-1 font-bold"
+                                            >
+                                                ⚠️ Attention: La clinique est
+                                                fermée à cette date.
+                                            </p>
+                                        {/if}
                                     </div>
                                     <div>
                                         <label

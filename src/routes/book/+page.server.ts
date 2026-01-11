@@ -1,9 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { getDoctors, getPatientByPhoneOrEmail, createPatient, createAppointment, getSecondaryPatient, getUserByUsername } from '$lib/server/db';
+import { getDoctors, getPatientByPhoneOrEmail, createPatient, createAppointment, getSecondaryPatient, getUserByUsername, getServerConfig } from '$lib/server/db';
 import db from '$lib/server/db';
 import { createNotification, getAllAssistantIds } from '$lib/server/notifications';
-import { APP_CONFIG } from '$lib/config/app.config';
 
 // Helper function to validate date of birth is not in the future
 function validateDateOfBirth(dob: string | null | undefined): string | null {
@@ -32,11 +31,19 @@ function validateDateOfBirth(dob: string | null | undefined): string | null {
     return normalizedDob;
 }
 
+import { getWorkingDays, getClosures, isClinicOpen, getWorkingHours } from '$lib/server/clinic-settings';
+
 export const load: PageServerLoad = async () => {
     const doctors = getDoctors();
+    const config = getServerConfig();
+    const workingDays = getWorkingDays();
+    const closures = getClosures();
+
     return {
         doctors,
-        config: APP_CONFIG
+        config,
+        workingDays,
+        closures
     };
 };
 
@@ -78,6 +85,31 @@ export const actions: Actions = {
         if (!full_name || !phone || !start_time) {
             return fail(400, { error: 'Missing required fields' });
         }
+
+        // --- CRITICAL VALIDATION: Check if clinic is open ---
+        const appointmentDateStr = start_time.split('T')[0];
+        if (!isClinicOpen(appointmentDateStr)) {
+            return fail(400, { error: 'La clinique est fermée à cette date (week-end ou jour férié).' });
+        }
+
+        const dateObj = new Date(start_time);
+        const dayOfWeek = dateObj.getDay();
+        const workingHours = getWorkingHours(dayOfWeek);
+
+        if (!workingHours.start || !workingHours.end) {
+            return fail(400, { error: 'La clinique n\'est pas ouverte ce jour de la semaine.' });
+        }
+
+        const apptTimeMinutes = dateObj.getHours() * 60 + dateObj.getMinutes();
+        const [startH, startM] = workingHours.start.split(':').map(Number);
+        const [endH, endM] = workingHours.end.split(':').map(Number);
+        const startMinutes = startH * 60 + startM;
+        const endMinutes = endH * 60 + endM;
+
+        if (apptTimeMinutes < startMinutes || apptTimeMinutes >= endMinutes) {
+            return fail(400, { error: 'L\'heure sélectionnée est en dehors des heures de travail de la clinique.' });
+        }
+        // ----------------------------------------------------
 
         try {
             // 1. Find or create the Requester (Primary Patient)
@@ -184,9 +216,11 @@ export const actions: Actions = {
             }
 
             // 3. Create appointment
+            const config = getServerConfig();
+            const interval = config.bookingInterval || 30;
             const dbStartTime = start_time.replace('T', ' ') + ':00';
             const startDate = new Date(start_time);
-            const endDate = new Date(startDate.getTime() + 30 * 60000);
+            const endDate = new Date(startDate.getTime() + interval * 60000);
 
             // Fix end time timezone issue
             const tzOffset = endDate.getTimezoneOffset() * 60000;
@@ -204,7 +238,7 @@ export const actions: Actions = {
                 booked_by_id: requester_id,
                 start_time: dbStartTime,
                 end_time: dbEndTime,
-                duration_minutes: 30,
+                duration_minutes: interval,
                 appointment_type: appointment_type || 'consultation',
                 status: 'scheduled',
                 notes: finalNotes

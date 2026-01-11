@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import fs from 'fs';
 import path from 'path';
-import { getAllTreatmentTypes, createTreatmentType, updateTreatmentType, deleteTreatmentType } from '$lib/server/db';
+import { getAllTreatmentTypes, createTreatmentType, updateTreatmentType, deleteTreatmentType, getAllSettings, updateMultipleSettings } from '$lib/server/db';
 
 export const load = async () => {
     const configPath = path.resolve('src/lib/config/app.config.json');
@@ -20,9 +20,13 @@ export const load = async () => {
     }
 
     const treatmentTypes = getAllTreatmentTypes();
+    const dbSettings = getAllSettings();
 
     return {
-        config,
+        config: {
+            ...config,
+            ...dbSettings
+        },
         treatmentTypes
     };
 };
@@ -35,22 +39,24 @@ export const actions = {
         const bookingMode = formData.get('bookingMode') as string;
 
         if (!currency || !currencySymbol || !bookingMode) {
-            return fail(400, { message: 'Missing required fields' });
+            return fail(400, { message: 'Missing required configuration fields' });
         }
 
         const configPath = path.resolve('src/lib/config/app.config.json');
 
-        const newConfig = {
+        const newJsonConfig = {
             currency,
             currencySymbol,
             bookingMode
         };
 
         try {
-            fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 4));
+            // Update JSON config
+            fs.writeFileSync(configPath, JSON.stringify(newJsonConfig, null, 4));
+
             return {
                 success: true,
-                config: newConfig // Return it so form can use it if needed
+                config: newJsonConfig
             };
         } catch (e) {
             console.error('Failed to update config:', e);

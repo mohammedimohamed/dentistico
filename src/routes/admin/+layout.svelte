@@ -15,7 +15,9 @@
 
 <PortalShell
     {navItems}
-    sidebarTitle="Dentistico Admin"
+    sidebarTitle={data.config?.clinicName
+        ? `${data.config.clinicName} Admin`
+        : "Dentistico Admin"}
     userName={data?.user?.full_name || "Admin"}
     headerTitle={currentTitle}
     roleLabel="common.admin"
