@@ -17,14 +17,12 @@ dist/
 !.env.example
 
 # Database
-dental_clinic.db
-dental_clinic.db-journal
-dental_clinic.db-shm
-dental_clinic.db-wal
 *.db
-*.db-journal
-*.db-shm
-*.db-wal
+*.db-*
+*.sqlite
+*.sqlite-*
+database.sqlite
+
 
 # Logs
 logs/
@@ -64,7 +62,7 @@ temp/
 
 # Local Utility Scripts
 fix_emojis*
-database.sqlite
 
 # Temporary Testing Docs
 testing - rs.md
+
