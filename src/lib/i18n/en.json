@@ -434,7 +434,8 @@
         "signIn": "Sign In",
         "errors": {
             "missing": "Please fill all fields.",
-            "incorrect": "Incorrect username or password."
+            "incorrect": "Incorrect username or password.",
+            "back_to_portal": "Back to Portal"
         }
     },
     "spending": {

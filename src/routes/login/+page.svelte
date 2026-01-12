@@ -179,14 +179,25 @@
             </div>
 
             <div
-                class="bg-slate-50/50 p-6 border-t border-slate-50 text-center"
+                class="bg-slate-50/50 p-6 border-t border-slate-50 text-center space-y-4"
             >
+                <a
+                    href="/"
+                    class="inline-flex items-center text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors group"
+                >
+                    <span
+                        class="mr-2 group-hover:-translate-x-1 transition-transform"
+                        >←</span
+                    >
+                    {$t("login.back_to_portal") || "Back to Portal"}
+                </a>
                 <p
                     class="text-xs text-slate-400 font-medium uppercase tracking-tight"
                 >
                     Secure Clinical Access Node v2.0
                 </p>
             </div>
+
         </div>
     </div>
 </div>
