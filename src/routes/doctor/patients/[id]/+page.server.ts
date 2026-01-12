@@ -16,8 +16,13 @@ import {
     markInvoiceAsPaid,
     archivePatient,
     unarchivePatient,
-    getAllTreatmentTypes
+    getAllTreatmentTypes,
+    getAttachmentsByPatient,
+    createAttachment,
+    getAttachmentById,
+    deleteAttachment
 } from '$lib/server/db';
+import fs from 'fs';
 import type { PageServerLoad, Actions } from './$types';
 
 function getAppConfig() {
@@ -59,6 +64,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     const prescriptions = getPrescriptionsByPatient(patientId);
     const invoices = (await import('$lib/server/db')).getInvoicesByPatient(patientId);
     const treatmentTypes = getAllTreatmentTypes();
+    const attachments = getAttachmentsByPatient(patientId);
 
     const appConfig = getAppConfig();
 
@@ -72,6 +78,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         prescriptions,
         invoices,
         treatmentTypes,
+        attachments,
         appConfig,
         user: locals.user
     };
@@ -161,7 +168,7 @@ export const actions: Actions = {
             treatment_notes: formData.get('treatment_notes'),
             cost: parseFloat(formData.get('cost') as string) || 0,
             paid_amount: 0, // Initially 0
-            status: formData.get('status') || 'pending'
+            status: formData.get('status') || 'completed'
         };
 
         if (!treatmentData.treatment_type || treatmentData.cost < 0) {
@@ -169,7 +176,11 @@ export const actions: Actions = {
         }
 
         try {
-            createTreatment(treatmentData);
+            // Wrap in transaction for atomicity
+            const txn = (await import('$lib/server/db')).db.transaction(() => {
+                createTreatment(treatmentData);
+            });
+            txn();
             return { success: true, message: 'Treatment added successfully' };
         } catch (e) {
             console.error(e);
@@ -186,6 +197,7 @@ export const actions: Actions = {
         const formData = await request.formData();
         const itemsJson = formData.get('items') as string;
         const notes = formData.get('notes') as string;
+        const type = formData.get('type') as string || 'Standard';
 
         if (!itemsJson) {
             return fail(400, { error: 'No items in prescription' });
@@ -197,7 +209,7 @@ export const actions: Actions = {
                 return fail(400, { error: 'Prescription must have at least one item' });
             }
 
-            createPrescription(patientId, locals.user.id, items, notes);
+            createPrescription(patientId, locals.user.id, items, notes, type);
             return { success: true, message: 'Prescription created successfully' };
         } catch (e) {
             console.error(e);
@@ -321,6 +333,87 @@ export const actions: Actions = {
         } catch (e) {
             console.error(e);
             return fail(500, { error: 'Failed to update dental chart' });
+        }
+    },
+
+    uploadAttachment: async ({ request, params, locals }) => {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const patientId = parseInt(params.id);
+        const formData = await request.formData();
+        const file = formData.get('file') as File;
+        const category = formData.get('category') as string || 'General';
+
+        if (!file || file.size === 0) {
+            return fail(400, { error: 'No file uploaded' });
+        }
+
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            return fail(400, { error: 'File too large (Max 10MB)' });
+        }
+
+        try {
+            const uploadDir = path.resolve('static/uploads/attachments');
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+            }
+
+            const timestamp = Date.now();
+            const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const fileName = `patient_${patientId}_${timestamp}_${safeName}`;
+            const filePath = path.join(uploadDir, fileName);
+
+            // Convert File to Buffer
+            const arrayBuffer = await file.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+
+            fs.writeFileSync(filePath, buffer);
+
+            createAttachment({
+                patient_id: patientId,
+                file_name: file.name,
+                file_path: `/uploads/attachments/${fileName}`,
+                file_type: file.type,
+                category: category
+            });
+
+            return { success: true };
+        } catch (e: any) {
+            console.error('Upload failed:', e);
+            return fail(500, { error: 'Upload failed: ' + e.message });
+        }
+    },
+
+    deleteAttachment: async ({ request, locals }) => {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const attachmentId = parseInt(formData.get('id') as string);
+
+        try {
+            const attachment = getAttachmentById(attachmentId);
+            if (attachment) {
+                // Remove file from disk
+                // attachment.file_path is like /uploads/attachments/filename
+                // detailed path is static + file_path
+                const fullPath = path.resolve('static' + attachment.file_path);
+                if (fs.existsSync(fullPath)) {
+                    try {
+                        fs.unlinkSync(fullPath);
+                    } catch (err) {
+                        console.error('Failed to delete file from disk, but removing DB entry:', err);
+                    }
+                }
+                deleteAttachment(attachmentId);
+            }
+            return { success: true };
+        } catch (e) {
+            console.error('Delete attachment failed:', e);
+            return fail(500, { error: 'Failed to delete attachment' });
         }
     }
 };

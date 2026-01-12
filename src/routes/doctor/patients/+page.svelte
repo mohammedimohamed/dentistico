@@ -109,17 +109,50 @@
                     <div class="px-6 py-6">
                         <div class="flex items-start justify-between mb-4">
                             <h3
-                                class="text-lg leading-6 font-bold text-gray-900 group-hover:text-indigo-600 transition-colors truncate text-start"
+                                class="text-lg leading-6 font-bold text-gray-900 group-hover:text-indigo-600 transition-colors truncate text-start flex items-center gap-2"
                             >
+                                {#if patient.gender === "Male"}
+                                    <span
+                                        class="text-blue-500 text-base"
+                                        title={$t("patients.male")}>♂️</span
+                                    >
+                                {:else if patient.gender === "Female"}
+                                    <span
+                                        class="text-pink-500 text-base"
+                                        title={$t("patients.female")}>♀️</span
+                                    >
+                                {:else if patient.gender === "Other"}
+                                    <span
+                                        class="text-purple-500 text-base"
+                                        title={$t("patients.other")}>⚧️</span
+                                    >
+                                {/if}
                                 {patient.full_name}
                             </h3>
-                            <span
-                                class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 uppercase tracking-wider"
-                            >
-                                {$t("patients.age")}: {calculateAge(
-                                    patient.date_of_birth,
-                                )}
-                            </span>
+                            <div class="flex flex-col items-end gap-1">
+                                <span
+                                    class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 uppercase tracking-wider"
+                                >
+                                    {$t("patients.age")}: {calculateAge(
+                                        patient.date_of_birth,
+                                    )}
+                                </span>
+                                {#if calculateAge(patient.date_of_birth) !== "N/A"}
+                                    <span
+                                        class="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter {Number(
+                                            calculateAge(patient.date_of_birth),
+                                        ) < 18
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : 'bg-emerald-100 text-emerald-700'}"
+                                    >
+                                        {Number(
+                                            calculateAge(patient.date_of_birth),
+                                        ) < 18
+                                            ? $t("patient_details.child")
+                                            : $t("patient_details.adult")}
+                                    </span>
+                                {/if}
+                            </div>
                         </div>
                         <div class="text-sm text-gray-500 space-y-3 text-start">
                             <p class="flex items-center font-medium">
@@ -135,6 +168,16 @@
                                 <span class="truncate"
                                     >{patient.email || "N/A"}</span
                                 >
+                            </p>
+                            <p class="flex items-center font-medium">
+                                <span class="margin-inline-end-3 text-lg"
+                                    >🚻</span
+                                >
+                                {patient.gender
+                                    ? $t(
+                                          `patients.${patient.gender.toLowerCase()}`,
+                                      )
+                                    : $t("common.none")}
                             </p>
                         </div>
                         <div class="mt-6 flex gap-3">

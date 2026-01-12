@@ -176,6 +176,17 @@ export function init_db() {
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
         );
 
+        CREATE TABLE IF NOT EXISTS attachments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            file_name TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            file_type TEXT,
+            category TEXT DEFAULT 'General',
+            upload_date TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+        );
+
         CREATE TABLE IF NOT EXISTS patient_history_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             patient_id INTEGER NOT NULL,
@@ -445,10 +456,23 @@ export function init_db() {
         SELECT 
             p.id as patient_id,
             p.full_name,
-            -- Update balance to use invoices for billing
-            COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) as total_billed,
+            -- Total Billed = Invoices + Completed Uninvoiced Treatments
+            COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) 
+            +
+            COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
+            +
+            COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
+            as total_billed,
+            
             COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as total_paid,
-            COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) - 
+            
+            (
+                COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) 
+                +
+                COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
+                +
+                COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
+            ) - 
             COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
         FROM patients p;
     `);
@@ -589,9 +613,23 @@ export function init_db() {
                     SELECT 
                         p.id as patient_id,
                         p.full_name,
-                        COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) as total_billed,
+                        -- Total Billed = Invoices + Completed Uninvoiced Treatments
+                        COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) 
+                        +
+                        COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
+                        +
+                        COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
+                        as total_billed,
+                        
                         COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as total_paid,
-                        COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) - 
+                        
+                        (
+                            COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) 
+                            +
+                            COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
+                            +
+                            COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
+                        ) - 
                         COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
                     FROM patients p;
                 `);
@@ -735,6 +773,56 @@ export function init_db() {
         }
     } catch (e) {
         console.error('Migration for is_active on users failed:', e);
+    }
+
+    // Migration for enhanced prescriptions
+    try {
+        const prescrCols = db.prepare("PRAGMA table_info(prescriptions)").all() as any[];
+        const colNames = prescrCols.map(c => c.name);
+        if (!colNames.includes('prescription_number')) {
+            db.exec('ALTER TABLE prescriptions ADD COLUMN prescription_number TEXT');
+            console.log('Added prescription_number to prescriptions');
+        }
+        if (!colNames.includes('prescription_type')) {
+            db.exec("ALTER TABLE prescriptions ADD COLUMN prescription_type TEXT DEFAULT 'Standard'");
+            console.log('Added prescription_type to prescriptions');
+        }
+
+        // Add unique index for prescription numbers to prevent duplicates at DB level
+        db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_prescr_num ON prescriptions(prescription_number) WHERE prescription_number IS NOT NULL");
+    } catch (e) {
+        console.error('Migration for enhanced prescriptions failed:', e);
+    }
+
+    // Migration for doctor specialties
+    try {
+        const userCols = db.prepare("PRAGMA table_info(users)").all() as any[];
+        if (!userCols.find(c => c.name === 'specialties')) {
+            db.exec('ALTER TABLE users ADD COLUMN specialties TEXT');
+            console.log('Added specialties column to users');
+        }
+    } catch (e) {
+        console.error('Migration for specialties on users failed:', e);
+    }
+
+    // Migration for enhanced clinic settings
+    try {
+        const clinicCols = db.prepare("PRAGMA table_info(clinic_settings)").all() as any[];
+        const colNames = clinicCols.map(c => c.name);
+        if (!colNames.includes('phone')) {
+            db.exec('ALTER TABLE clinic_settings ADD COLUMN phone TEXT');
+        }
+        if (!colNames.includes('email')) {
+            db.exec('ALTER TABLE clinic_settings ADD COLUMN email TEXT');
+        }
+        if (!colNames.includes('address')) {
+            db.exec('ALTER TABLE clinic_settings ADD COLUMN address TEXT');
+        }
+        if (!colNames.includes('logo_url')) {
+            db.exec('ALTER TABLE clinic_settings ADD COLUMN logo_url TEXT');
+        }
+    } catch (e) {
+        console.error('Migration for enhanced clinic settings failed:', e);
     }
 
     // Migration for permissions on users
@@ -1100,17 +1188,16 @@ function seed_db() {
     // Patients
     const insertPatient = db.prepare(`
         INSERT INTO patients (
-            full_name, phone, email, date_of_birth, address, city, postal_code, 
+            full_name, phone, email, date_of_birth, gender, address, city, postal_code, 
             allergies, current_medications, medical_conditions, blood_type, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const patientsData = [
-        ['Alice Smith', '555-0101', 'alice@example.com', '1985-04-12', '123 Maple St', 'Paris', '75001', 'Penicillin', 'None', 'None', 'A+', assistant.id],
-        ['Bob Jones', '555-0102', 'bob@example.com', '1978-09-30', '456 Oak Ave', 'Paris', '75002', null, 'Lisinopril', 'Hypertension', 'O-', assistant.id],
-        ['Charlie Day', '555-0103', 'charlie@example.com', '1990-11-05', '789 Pine Rd', 'Paris', '75003', 'Peanuts', 'None', 'Asthma', 'B+', assistant.id],
-        ['Diana Prince', '555-0104', 'diana@example.com', '1982-06-20', '321 Elm St', 'Paris', '75004', null, null, null, 'O+', assistant.id],
-        ['Evan Wright', '555-0105', 'evan@example.com', '1995-02-15', '654 Birch Ln', 'Lyon', '69001', 'Latex', null, null, 'AB+', assistant.id]
+        ['Mohamed Al Arabi', '555-0106', 'mohamed@example.com', '1992-03-10', 'Male', 'Boulevard Zerktouni', 'Casablanca', '20000', null, null, null, 'O+', assistant.id],
+        ['Layla Ouloui', '555-0107', 'layla@example.com', '1998-11-25', 'Female', 'Hay Riad', 'Rabat', '10000', 'Aspirin', null, null, 'A-', assistant.id],
+        ['Yassine Bennani', '555-0108', 'yassine@example.com', '2012-08-15', 'Male', 'Gauthier', 'Casablanca', '20600', null, null, 'Asthma', 'B+', assistant.id], // Teenager (~13 years)
+        ['Omar Faouzi', '555-0109', 'omar@example.com', '2020-05-20', 'Male', 'Maarif', 'Casablanca', '20100', null, null, null, 'O+', assistant.id]         // Kid (~5 years)
     ];
 
     for (const p of patientsData) {
@@ -1118,8 +1205,8 @@ function seed_db() {
     }
 
     // Appointments
-    const p1 = db.prepare("SELECT id FROM patients WHERE full_name = 'Alice Smith'").get() as { id: number };
-    const p2 = db.prepare("SELECT id FROM patients WHERE full_name = 'Bob Jones'").get() as { id: number };
+    const p1 = db.prepare("SELECT id FROM patients WHERE full_name = 'Mohamed Al Arabi'").get() as { id: number };
+    const p2 = db.prepare("SELECT id FROM patients WHERE full_name = 'Layla Ouloui'").get() as { id: number };
 
     const insertAppointment = db.prepare(`
         INSERT INTO appointments (patient_id, doctor_id, start_time, end_time, duration_minutes, status, appointment_type, notes) 
@@ -1128,22 +1215,22 @@ function seed_db() {
 
     const today = new Date().toISOString().split('T')[0];
 
-    // Alice: Checkup today
+    // Mohamed: Checkup today
     insertAppointment.run(p1.id, doctor.id, `${today} 09:00:00`, `${today} 09:30:00`, 30, 'scheduled', 'consultation', 'Routine checkup');
 
-    // Bob: Root canal today
+    // Layla: Root canal today
     insertAppointment.run(p2.id, doctor.id, `${today} 10:00:00`, `${today} 11:00:00`, 60, 'confirmed', 'root_canal', 'Complain of pain in upper left');
 
-    // Treatments (for Bob)
-    const bobAppt = db.prepare("SELECT id FROM appointments WHERE patient_id = ? AND start_time LIKE ?").get(p2.id, `${today}%`) as { id: number };
+    // Treatments (for Layla)
+    const laylaAppt = db.prepare("SELECT id FROM appointments WHERE patient_id = ? AND start_time LIKE ?").get(p2.id, `${today}%`) as { id: number };
 
     // If appointment exists (it should), add treatment
-    if (bobAppt) {
+    if (laylaAppt) {
         const insertTreatment = db.prepare(`
             INSERT INTO treatments (appointment_id, patient_id, doctor_id, treatment_date, tooth_number, treatment_type, description, cost, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        insertTreatment.run(bobAppt.id, p2.id, doctor.id, today, '26', 'root_canal', 'Root canal therapy on tooth 26', 450.00, 'in_progress');
+        insertTreatment.run(laylaAppt.id, p2.id, doctor.id, today, '26', 'root_canal', 'Root canal therapy on tooth 26', 450.00, 'in_progress');
     }
 
     // Seed Medications
@@ -1341,7 +1428,7 @@ export function unarchivePatient(id: number) {
 export function getAllPatientsLimited() {
     return db.prepare(`
         SELECT 
-            p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth,
+            p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth, p.gender,
             p.relationship_to_primary,
             parent.full_name as parent_name, parent.phone as parent_phone
         FROM patients p
@@ -1355,7 +1442,7 @@ export function getAllPatientsLimited() {
 export function searchPatientsByNameLimited(searchTerm: string) {
     return db.prepare(`
         SELECT 
-            p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth,
+            p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth, p.gender,
             p.relationship_to_primary,
             parent.full_name as parent_name, parent.phone as parent_phone
         FROM patients p
@@ -1416,7 +1503,7 @@ export function getDoctorAppointmentsToday(doctorId: number) {
         SELECT 
             a.id, a.start_time, a.end_time, a.duration_minutes, 
             a.status, a.appointment_type, a.notes,
-            p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone, p.date_of_birth as patient_dob
+            p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone, p.date_of_birth as patient_dob, p.gender as patient_gender
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         WHERE a.doctor_id = ? 
@@ -1447,7 +1534,7 @@ export function getDoctorUpcomingAppointments(doctorId: number) {
             a.id, a.start_time, a.end_time, a.duration_minutes, 
             a.status, a.appointment_type, a.notes,
             p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone, 
-            p.email as patient_email, p.date_of_birth as patient_dob,
+            p.email as patient_email, p.date_of_birth as patient_dob, p.gender as patient_gender,
             p.secondary_phone, p.secondary_email
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
@@ -1625,7 +1712,41 @@ export function updateTreatment(id: number, treatmentData: any) {
 }
 
 export function getTreatmentsByPatient(patientId: number) {
-    return db.prepare('SELECT * FROM treatments WHERE patient_id = ? ORDER BY treatment_date DESC').all(patientId);
+    return db.prepare(`
+        SELECT 
+            id, 
+            treatment_date, 
+            tooth_number, 
+            treatment_type, 
+            description, 
+            cost, 
+            status,
+            'general' as source,
+            NULL as surfaces,
+            '#6B7280' as color, -- Default gray for general acts
+            diagnosis
+        FROM treatments 
+        WHERE patient_id = ? 
+        
+        UNION ALL
+        
+        SELECT 
+            id, 
+            COALESCE(date_performed, created_at) as treatment_date, 
+            tooth_number, 
+            treatment_type, 
+            notes as description, 
+            fee as cost, 
+            status,
+            'dental' as source,
+            surfaces,
+            color,
+            diagnosis
+        FROM dental_treatments 
+        WHERE patient_id = ?
+        
+        ORDER BY treatment_date DESC
+    `).all(patientId, patientId);
 }
 
 export function getTreatmentById(id: number) {
@@ -1683,12 +1804,34 @@ export function deleteMedication(id: number) {
 }
 
 // --- Prescriptions ---
-export function createPrescription(patientId: number, doctorId: number, items: any[], notes?: string) {
+export function getNextPrescriptionNumber() {
+    const year = new Date().getFullYear();
+    // Use an atomic query to find the max current number for this year
+    const lastPrescr = db.prepare(`
+        SELECT prescription_number 
+        FROM prescriptions 
+        WHERE prescription_number LIKE ? 
+        ORDER BY CAST(SUBSTR(prescription_number, 1, INSTR(prescription_number, '-') - 1) AS INTEGER) DESC 
+        LIMIT 1
+    `).get(`%-${year}`) as { prescription_number: string };
+
+    let nextNum = 1;
+    if (lastPrescr && lastPrescr.prescription_number) {
+        const parts = lastPrescr.prescription_number.split('-');
+        nextNum = parseInt(parts[0]) + 1;
+    }
+
+    return `${nextNum.toString().padStart(3, '0')}-${year}`;
+}
+
+export function createPrescription(patientId: number, doctorId: number, items: any[], notes?: string, type: string = 'Standard') {
+    // Transaction ensures isolation for getNextPrescriptionNumber
     const txn = db.transaction(() => {
+        const prescriptionNumber = getNextPrescriptionNumber();
         const prescriptionId = db.prepare(`
-            INSERT INTO prescriptions (patient_id, doctor_id, notes) 
-            VALUES (?, ?, ?)
-        `).run(patientId, doctorId, notes || null).lastInsertRowid;
+            INSERT INTO prescriptions (patient_id, doctor_id, notes, prescription_number, prescription_type) 
+            VALUES (?, ?, ?, ?, ?)
+        `).run(patientId, doctorId, notes || null, prescriptionNumber, type).lastInsertRowid;
 
         const insertItem = db.prepare(`
             INSERT INTO prescription_items (prescription_id, medication_id, medication_name, dosage, duration, instructions)
@@ -1712,7 +1855,10 @@ export function createPrescription(patientId: number, doctorId: number, items: a
 
 export function getPrescriptionsByPatient(patientId: number) {
     return db.prepare(`
-        SELECT p.*, u.full_name as doctor_name 
+        SELECT 
+            p.*, 
+            u.full_name as doctor_name,
+            (SELECT GROUP_CONCAT(medication_name, ', ') FROM prescription_items WHERE prescription_id = p.id) as meds_summary
         FROM prescriptions p
         JOIN users u ON p.doctor_id = u.id
         WHERE p.patient_id = ?
@@ -1722,7 +1868,7 @@ export function getPrescriptionsByPatient(patientId: number) {
 
 export function getPrescriptionById(id: number) {
     const prescription = db.prepare(`
-        SELECT p.*, u.full_name as doctor_name, pat.full_name as patient_name, pat.address as patient_address
+        SELECT p.*, u.full_name as doctor_name, u.specialties as doctor_specialties, pat.full_name as patient_name, pat.address as patient_address, pat.date_of_birth as patient_dob
         FROM prescriptions p
         JOIN users u ON p.doctor_id = u.id
         JOIN patients pat ON p.patient_id = pat.id
@@ -2007,6 +2153,37 @@ export function updateMultipleSettings(settings: Record<string, string>) {
         }
     });
     txn(settings);
+}
+
+export function updateClinicSettings(settings: any) {
+    const keys = Object.keys(settings);
+    const setClause = keys.map(key => `${key} = ?`).join(', ');
+    const values = [...Object.values(settings)];
+
+    return db.prepare(`UPDATE clinic_settings SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = 1`).run(...values);
+}
+
+// --- Attachments ---
+export function createAttachment(data: any) {
+    const keys = Object.keys(data);
+    const columns = keys.join(', ');
+    const placeholders = keys.map(() => '?').join(', ');
+    const values = Object.values(data);
+
+    const stmt = db.prepare(`INSERT INTO attachments (${columns}) VALUES (${placeholders})`);
+    return stmt.run(...values).lastInsertRowid;
+}
+
+export function getAttachmentsByPatient(patientId: number) {
+    return db.prepare('SELECT * FROM attachments WHERE patient_id = ? ORDER BY upload_date DESC').all(patientId);
+}
+
+export function getAttachmentById(id: number) {
+    return db.prepare('SELECT * FROM attachments WHERE id = ?').get(id);
+}
+
+export function deleteAttachment(id: number) {
+    return db.prepare('DELETE FROM attachments WHERE id = ?').run(id);
 }
 
 // Export db instance

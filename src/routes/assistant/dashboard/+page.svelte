@@ -10,6 +10,14 @@
     import { goto, invalidateAll } from "$app/navigation";
 
     let { data }: { data: any } = $props();
+
+    function calculateAge(dob: string) {
+        if (!dob) return "N/A";
+        const birthDate = new Date(dob);
+        const ageDifMs = Date.now() - birthDate.getTime();
+        const ageDate = new Date(ageDifMs);
+        return Math.abs(ageDate.getUTCFullYear() - 1970);
+    }
     const patients = $derived(data.patients as any[]);
     const patientSearch = $derived((data.patientSearch as string) || "");
 
@@ -1468,6 +1476,28 @@
                                                 <span class="font-semibold"
                                                     >{appt.patient_name}</span
                                                 >
+                                                {#if appt.gender === "Male"}
+                                                    <span
+                                                        class="text-blue-500 text-xs"
+                                                        title={$t(
+                                                            "patients.male",
+                                                        )}>♂️</span
+                                                    >
+                                                {:else if appt.gender === "Female"}
+                                                    <span
+                                                        class="text-pink-500 text-xs"
+                                                        title={$t(
+                                                            "patients.female",
+                                                        )}>♀️</span
+                                                    >
+                                                {:else if appt.gender === "Other"}
+                                                    <span
+                                                        class="text-purple-500 text-xs"
+                                                        title={$t(
+                                                            "patients.other",
+                                                        )}>⚧️</span
+                                                    >
+                                                {/if}
                                             </div>
                                             {#if appt.date_of_birth}
                                                 {@const birth = new Date(
@@ -1681,9 +1711,29 @@
                             class="p-4 border border-gray-100 rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all group bg-white"
                         >
                             <p
-                                class="font-bold text-gray-900 group-hover:text-indigo-600 flex justify-between"
+                                class="font-bold text-gray-900 group-hover:text-indigo-600 flex justify-between items-center"
                             >
-                                {patient.full_name}
+                                <span class="flex items-center gap-2">
+                                    {#if patient.gender === "Male"}
+                                        <span
+                                            class="text-blue-500 text-xs"
+                                            title={$t("patients.male")}>♂️</span
+                                        >
+                                    {:else if patient.gender === "Female"}
+                                        <span
+                                            class="text-pink-500 text-xs"
+                                            title={$t("patients.female")}
+                                            >♀️</span
+                                        >
+                                    {:else if patient.gender === "Other"}
+                                        <span
+                                            class="text-purple-500 text-xs"
+                                            title={$t("patients.other")}
+                                            >⚧️</span
+                                        >
+                                    {/if}
+                                    {patient.full_name}
+                                </span>
                                 <span class="text-[10px] text-gray-300"
                                     >#{$t(
                                         "assistant.dashboard.tabs.patients.patientId",
@@ -1698,10 +1748,31 @@
                                     {patient.phone || "-"}
                                 </p>
                                 <p
-                                    class="text-sm text-gray-600 flex items-center gap-2"
+                                    class="text-sm text-gray-600 flex items-center justify-between"
                                 >
-                                    <span class="opacity-50">🎂</span>
-                                    {patient.date_of_birth}
+                                    <span class="flex items-center gap-2">
+                                        <span class="opacity-50">🎂</span>
+                                        {patient.date_of_birth}
+                                    </span>
+                                    {#if calculateAge(patient.date_of_birth) !== "N/A"}
+                                        <span
+                                            class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter {Number(
+                                                calculateAge(
+                                                    patient.date_of_birth,
+                                                ),
+                                            ) < 18
+                                                ? 'bg-amber-100 text-amber-700'
+                                                : 'bg-emerald-100 text-emerald-700'}"
+                                        >
+                                            {Number(
+                                                calculateAge(
+                                                    patient.date_of_birth,
+                                                ),
+                                            ) < 18
+                                                ? $t("patient_details.child")
+                                                : $t("patient_details.adult")}
+                                        </span>
+                                    {/if}
                                 </p>
                             </div>
                             <button

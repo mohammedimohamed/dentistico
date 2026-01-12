@@ -17,6 +17,7 @@
         { id: "dental", label: $t("patient_details.dental_records") },
         { id: "appointments", label: $t("patient_details.appointments") },
         { id: "prescriptions", label: $t("patient_details.prescriptions") },
+        { id: "documents", label: "Documents & Imagerie" },
         { id: "financial", label: $t("patient_details.financial") },
     ]);
 
@@ -29,6 +30,7 @@
     let isInvoiceModalOpen = $state(false);
     let isPaymentModalOpen = $state(false);
     let selectedInvoice = $state<any>(null);
+    let previewFile = $state<any>(null);
 
     let isToothModalOpen = $state(false);
     let selectedTooth = $state<string | null>(null);
@@ -89,7 +91,25 @@
                     </a>
                 </div>
                 <div class="flex items-center gap-3 mt-4">
-                    <h1 class="text-3xl font-bold text-gray-900">
+                    <h1
+                        class="text-3xl font-bold text-gray-900 flex items-center gap-2"
+                    >
+                        {#if data.patient.gender === "Male"}
+                            <span
+                                class="text-blue-500"
+                                title={$t("patients.male")}>♂️</span
+                            >
+                        {:else if data.patient.gender === "Female"}
+                            <span
+                                class="text-pink-500"
+                                title={$t("patients.female")}>♀️</span
+                            >
+                        {:else if data.patient.gender === "Other"}
+                            <span
+                                class="text-purple-500"
+                                title={$t("patients.other")}>⚧️</span
+                            >
+                        {/if}
                         {data.patient.full_name}
                     </h1>
                     {#if data.patient.is_archived}
@@ -121,7 +141,7 @@
                     onclick={() => (isTreatmentModalOpen = true)}
                     class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-100 transition-all text-sm"
                 >
-                    + {$t("patient_details.add_treatment")}
+                    + Acte Général
                 </button>
                 <button
                     onclick={() => (isEditModalOpen = true)}
@@ -467,7 +487,8 @@
                                     <dd
                                         class="text-3xl font-black text-gray-900 tracking-tight"
                                     >
-                                        {data.appConfig.currencySymbol}{data.balance.total_billed.toFixed(
+                                        {data.appConfig
+                                            .currencySymbol}{data.balance.total_billed.toFixed(
                                             2,
                                         )}
                                     </dd>
@@ -484,7 +505,8 @@
                                             ? 'text-red-600'
                                             : 'text-green-600'}"
                                     >
-                                        {data.appConfig.currencySymbol}{data.balance.balance_due.toFixed(
+                                        {data.appConfig
+                                            .currencySymbol}{data.balance.balance_due.toFixed(
                                             2,
                                         )}
                                     </dd>
@@ -775,7 +797,10 @@
                                         >
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600"
-                                            >{treatment.tooth_number || "-"}</td
+                                            >{treatment.source === "general"
+                                                ? "Général"
+                                                : treatment.tooth_number ||
+                                                  "-"}</td
                                         >
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700 capitalize"
@@ -789,7 +814,8 @@
                                         >
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm font-black text-gray-900"
-                                            >{data.appConfig.currencySymbol}{treatment.cost.toFixed(
+                                            >{data.appConfig
+                                                .currencySymbol}{treatment.cost.toFixed(
                                                 2,
                                             )}</td
                                         >
@@ -799,7 +825,13 @@
                                                 {treatment.status ===
                                                 'completed'
                                                     ? 'bg-green-100 text-green-700'
-                                                    : 'bg-amber-100 text-amber-700'}"
+                                                    : treatment.status ===
+                                                        'planned'
+                                                      ? 'bg-blue-100 text-blue-700'
+                                                      : treatment.status ===
+                                                          'existing'
+                                                        ? 'bg-gray-100 text-gray-700'
+                                                        : 'bg-amber-100 text-amber-700'}"
                                             >
                                                 {$t(
                                                     `dashboard.status_${treatment.status}`,
@@ -873,9 +905,21 @@
                                         <p
                                             class="flex items-center text-sm text-gray-500 font-medium"
                                         >
-                                            <span class="margin-inline-end-2"
-                                                >ðŸ¥</span
-                                            >
+                                            <span class="margin-inline-end-2">
+                                                <svg
+                                                    class="h-4 w-4 text-gray-400"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                    />
+                                                </svg>
+                                            </span>
                                             {appt.appointment_type} ({appt.duration_minutes}
                                             {$t("common.minutes_short")}) {$t(
                                                 "common.doctor",
@@ -947,6 +991,14 @@
                                 >
                                 <th
                                     class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest"
+                                    >Type</th
+                                >
+                                <th
+                                    class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest"
+                                    >Médicaments</th
+                                >
+                                <th
+                                    class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest"
                                     >{$t("patient_details.recorded_by")}</th
                                 >
                                 <th
@@ -963,9 +1015,38 @@
                                     <td
                                         class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900"
                                     >
-                                        {new Date(
-                                            prescription.prescription_date,
-                                        ).toLocaleDateString()}
+                                        <div class="flex flex-col">
+                                            <span
+                                                >{new Date(
+                                                    prescription.prescription_date,
+                                                ).toLocaleDateString()}</span
+                                            >
+                                            <span
+                                                class="text-[10px] text-gray-400 font-mono"
+                                                >{prescription.prescription_number}</span
+                                            >
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span
+                                            class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider {prescription.prescription_type ===
+                                            'Urgent'
+                                                ? 'bg-red-50 text-red-600'
+                                                : prescription.prescription_type ===
+                                                    'Chronic'
+                                                  ? 'bg-blue-50 text-blue-600'
+                                                  : 'bg-gray-50 text-gray-600'}"
+                                        >
+                                            {prescription.prescription_type}
+                                        </span>
+                                    </td>
+                                    <td
+                                        class="px-6 py-4 text-sm text-gray-600 max-w-[200px] truncate font-medium"
+                                        title={prescription.meds_summary}
+                                    >
+                                        <div class="truncate">
+                                            {prescription.meds_summary || "---"}
+                                        </div>
                                     </td>
                                     <td
                                         class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500"
@@ -980,7 +1061,19 @@
                                             target="_blank"
                                             class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-bold hover:bg-indigo-100 transition-colors"
                                         >
-                                            <span>ðŸ–¨ï¸</span>
+                                            <svg
+                                                class="h-4 w-4"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 012-2H5a2 2 0 012 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                                                />
+                                            </svg>
                                             {$t("patient_details.print")}
                                         </a>
                                     </td>
@@ -991,8 +1084,22 @@
                                         colspan="3"
                                         class="px-6 py-24 text-center text-sm font-bold text-gray-400"
                                     >
-                                        <p class="mb-2 text-2xl opacity-20">
-                                            💊
+                                        <p
+                                            class="mb-2 opacity-20 flex justify-center"
+                                        >
+                                            <svg
+                                                class="w-12 h-12 text-gray-400"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="1.5"
+                                                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L5.605 15.13a2 2 0 00-1.022.547l-2.387 2.387a2 2 0 000 2.828l.647.646a2 2 0 002.828 0l2.387-2.387a2 2 0 011.022-.547l2.387-.477a6 6 0 013.86-.517l.318-.158a6 6 0 003.86-.517l2.387-.477a2 2 0 011.022.547l2.387 2.387a2 2 0 010 2.828l-.647.646a2 2 0 01-2.828 0l-2.387-2.387z"
+                                                />
+                                            </svg>
                                         </p>
                                         {$t("patient_details.no_prescriptions")}
                                     </td>
@@ -1002,6 +1109,270 @@
                     </table>
                 </div>
             </div>
+        {/if}
+
+        <!-- DOCUMENTS TAB -->
+        {#if activeTab === "documents"}
+            <div class="space-y-8">
+                <!-- Upload Area -->
+                <div
+                    class="bg-white p-8 rounded-3xl border border-dashed border-gray-300 text-center hover:border-indigo-500 transition-colors group relative"
+                >
+                    <form
+                        method="POST"
+                        action="?/uploadAttachment"
+                        enctype="multipart/form-data"
+                        use:enhance={() => {
+                            return async ({ update }) => {
+                                await update();
+                            };
+                        }}
+                        class="flex flex-col items-center justify-center gap-4 cursor-pointer"
+                    >
+                        <div
+                            class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center group-hover:bg-indigo-50 transition-colors"
+                        >
+                            <svg
+                                class="w-8 h-8 text-gray-400 group-hover:text-indigo-600 transition-colors"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                                ></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-lg font-bold text-gray-900">
+                                Click to upload or drag and drop
+                            </p>
+                            <p class="text-sm text-gray-500">
+                                SVG, PNG, JPG, PDF up to 10MB
+                            </p>
+                        </div>
+                        <input
+                            type="file"
+                            name="file"
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            onchange={(e) =>
+                                e.currentTarget.form?.requestSubmit()}
+                            accept=".jpg,.jpeg,.png,.gif,.pdf,.svg"
+                        />
+                    </form>
+                </div>
+
+                <!-- Gallery -->
+                {#if data.attachments && data.attachments.length > 0}
+                    <div
+                        class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6"
+                    >
+                        {#each data.attachments as file}
+                            <div
+                                class="group relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden aspect-square flex flex-col"
+                            >
+                                <!-- Preview/Thumbnail -->
+                                <!-- Preview/Thumbnail -->
+                                <div
+                                    class="flex-1 w-full flex items-center justify-center bg-gray-50 overflow-hidden relative"
+                                >
+                                    {#if file.file_type?.startsWith("image/")}
+                                        <img
+                                            src={file.file_path}
+                                            alt={file.file_name}
+                                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                    {:else}
+                                        <div class="flex flex-col items-center">
+                                            <svg
+                                                class="w-12 h-12 text-gray-400"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                                ></path>
+                                            </svg>
+                                            <span
+                                                class="text-xs font-bold text-gray-500 mt-2 uppercase"
+                                                >{file.file_type?.split(
+                                                    "/",
+                                                )[1] || "FILE"}</span
+                                            >
+                                        </div>
+                                    {/if}
+
+                                    <!-- Clickable Preview Layer (Z-10) -->
+                                    <button
+                                        type="button"
+                                        class="absolute inset-0 w-full h-full cursor-pointer focus:outline-none z-10"
+                                        aria-label="Preview file"
+                                        onclick={() => {
+                                            if (
+                                                file.file_type?.startsWith(
+                                                    "image/",
+                                                )
+                                            ) {
+                                                previewFile = file;
+                                            } else {
+                                                window.open(
+                                                    file.file_path,
+                                                    "_blank",
+                                                );
+                                            }
+                                        }}
+                                    ></button>
+
+                                    <!-- Actions Overlay (Z-20) -->
+                                    <div
+                                        class="absolute inset-0 pointer-events-none z-20 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
+                                    >
+                                        <a
+                                            href={file.file_path}
+                                            download
+                                            class="pointer-events-auto p-2 bg-white rounded-full text-gray-700 hover:text-indigo-600 transition-colors shadow-sm"
+                                            title="Download"
+                                        >
+                                            <svg
+                                                class="w-5 h-5"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                                ><path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                                ></path></svg
+                                            >
+                                        </a>
+
+                                        <form
+                                            method="POST"
+                                            action="?/deleteAttachment"
+                                            use:enhance
+                                            class="pointer-events-auto"
+                                        >
+                                            <input
+                                                type="hidden"
+                                                name="id"
+                                                value={file.id}
+                                            />
+                                            <button
+                                                type="submit"
+                                                class="p-2 bg-white rounded-full text-gray-700 hover:text-red-600 transition-colors shadow-sm"
+                                                title="Delete"
+                                            >
+                                                <svg
+                                                    class="w-5 h-5"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                    ><path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                    ></path></svg
+                                                >
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <!-- Footer -->
+                                <div class="p-3 bg-white relative z-10">
+                                    <p
+                                        class="text-sm font-bold text-gray-900 truncate"
+                                        title={file.file_name}
+                                    >
+                                        {file.file_name}
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        {new Date(
+                                            file.upload_date,
+                                        ).toLocaleDateString()}
+                                    </p>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                {:else}
+                    <div class="text-center py-12">
+                        <div
+                            class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4"
+                        >
+                            <svg
+                                class="w-8 h-8 text-gray-300"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                ><path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                ></path></svg
+                            >
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            No documents yet
+                        </h3>
+                        <p class="text-gray-500 max-w-sm mx-auto mt-1">
+                            Upload X-rays, medical records, or other documents
+                            to keep them organized.
+                        </p>
+                    </div>
+                {/if}
+            </div>
+
+            <!-- Image Preview Modal -->
+            {#if previewFile}
+                <div
+                    class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                    onclick={() => (previewFile = null)}
+                >
+                    <div
+                        class="relative max-w-5xl max-h-[90vh] w-full bg-transparent flex flex-col items-center"
+                        onclick={(e) => e.stopPropagation()}
+                    >
+                        <img
+                            src={previewFile.file_path}
+                            alt={previewFile.file_name}
+                            class="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
+                        />
+                        <button
+                            class="absolute -top-12 right-0 text-white/70 hover:text-white"
+                            onclick={() => (previewFile = null)}
+                        >
+                            <svg
+                                class="w-8 h-8"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                ><path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                ></path></svg
+                            >
+                        </button>
+                        <div class="mt-4 text-center">
+                            <p class="text-white font-bold text-lg">
+                                {previewFile.file_name}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {/if}
         {/if}
 
         <!-- FINANCIAL TAB -->
@@ -1070,7 +1441,8 @@
                                         >
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm font-black text-gray-900"
-                                            >{data.appConfig.currencySymbol}{invoice.total_amount.toFixed(
+                                            >{data.appConfig
+                                                .currencySymbol}{invoice.total_amount.toFixed(
                                                 2,
                                             )}</td
                                         >
@@ -1120,8 +1492,22 @@
                                             colspan="5"
                                             class="px-6 py-24 text-center text-sm font-bold text-gray-400"
                                         >
-                                            <p class="mb-2 text-2xl opacity-20">
-                                                📄
+                                            <p
+                                                class="mb-2 opacity-20 flex justify-center"
+                                            >
+                                                <svg
+                                                    class="w-12 h-12 text-gray-400"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="1.5"
+                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                                    />
+                                                </svg>
                                             </p>
                                             {$t("patient_details.no_invoices")}
                                         </td>
@@ -1176,7 +1562,8 @@
                                         >
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm font-black text-green-600"
-                                            >+{data.appConfig.currencySymbol}{payment.amount.toFixed(
+                                            >+{data.appConfig
+                                                .currencySymbol}{payment.amount.toFixed(
                                                 2,
                                             )}</td
                                         >
@@ -1329,7 +1716,8 @@
                                                     </td>
                                                     <td
                                                         class="px-6 py-4 text-sm font-black text-gray-900 text-inline-end"
-                                                        >{data.appConfig.currencySymbol}{treatment.cost.toFixed(
+                                                        >{data.appConfig
+                                                            .currencySymbol}{treatment.cost.toFixed(
                                                             2,
                                                         )}</td
                                                     >
@@ -1373,7 +1761,8 @@
                                     <span
                                         class="text-2xl font-black text-indigo-600"
                                     >
-                                        {data.appConfig.currencySymbol}{data.treatments
+                                        {data.appConfig
+                                            .currencySymbol}{data.treatments
                                             .filter((t) =>
                                                 selectedTreatmentsForInvoice.includes(
                                                     t.id,
@@ -1784,7 +2173,12 @@
                                             class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border"
                                         >
                                             {#each data.treatmentTypes as type}
-                                                <option value={type.name}>{$t(`patient_details.${type.name}`, { default: type.name })}</option>
+                                                <option value={type.name}
+                                                    >{$t(
+                                                        `patient_details.${type.name}`,
+                                                        { default: type.name },
+                                                    )}</option
+                                                >
                                             {/each}
                                         </select>
                                     </div>
@@ -1804,7 +2198,9 @@
                                     <div class="col-span-2 md:col-span-1">
                                         <label
                                             class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
-                                            >{$t("patient_details.cost")} ({data.appConfig.currencySymbol})</label
+                                            >{$t("patient_details.cost")} ({data
+                                                .appConfig
+                                                .currencySymbol})</label
                                         >
                                         <input
                                             type="number"
@@ -1873,7 +2269,7 @@
                                     type="submit"
                                     class="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
                                 >
-                                    {$t("patient_details.add_treatment")}
+                                    Ajouter Acte Général
                                 </button>
                                 <button
                                     type="button"
@@ -1949,7 +2345,8 @@
                                         >
                                             <span
                                                 class="text-gray-500 font-bold"
-                                                >{data.appConfig.currencySymbol}</span
+                                                >{data.appConfig
+                                                    .currencySymbol}</span
                                             >
                                         </div>
                                         <input

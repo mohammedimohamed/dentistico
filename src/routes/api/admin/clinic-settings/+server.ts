@@ -36,6 +36,10 @@ export async function PUT({ request, locals }) {
       work_start_time = ?,
       work_end_time = ?,
       timezone = ?,
+      address = ?,
+      phone = ?,
+      email = ?,
+      logo_url = ?,
       updated_at = datetime('now')
     WHERE id = 1
   `).run(
@@ -43,7 +47,11 @@ export async function PUT({ request, locals }) {
         data.booking_interval_minutes,
         data.work_start_time,
         data.work_end_time,
-        data.timezone || 'UTC'
+        data.timezone || 'UTC',
+        data.address || null,
+        data.phone || null,
+        data.email || null,
+        data.logo_url || null
     );
 
     return json({ success: true });

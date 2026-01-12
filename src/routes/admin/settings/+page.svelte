@@ -223,6 +223,139 @@
                             </div>
                         </div>
 
+                        <div>
+                            <label
+                                class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
+                                >Clinic Address</label
+                            >
+                            <input
+                                type="text"
+                                bind:value={settings.address}
+                                placeholder="123 Rue de la Santé, 75000 Paris"
+                                class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
+                                    >Phone Number</label
+                                >
+                                <input
+                                    type="text"
+                                    bind:value={settings.phone}
+                                    placeholder="+33 1 23 45 67 89"
+                                    class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
+                                    >Clinic Email</label
+                                >
+                                <input
+                                    type="email"
+                                    bind:value={settings.email}
+                                    placeholder="contact@clinic.com"
+                                    class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
+                                >Clinic Logo</label
+                            >
+                            <div class="flex items-center gap-6">
+                                <div
+                                    class="w-24 h-24 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-center overflow-hidden shrink-0"
+                                >
+                                    {#if settings.logo_url}
+                                        <img
+                                            src={settings.logo_url}
+                                            alt="Clinic Logo"
+                                            class="w-full h-full object-contain"
+                                        />
+                                    {:else}
+                                        <span class="text-3xl text-gray-300"
+                                            >🏢</span
+                                        >
+                                    {/if}
+                                </div>
+                                <div class="flex-grow">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onchange={(e) => {
+                                            const file =
+                                                e.currentTarget.files?.[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onload = (re) => {
+                                                    const img = new Image();
+                                                    img.onload = () => {
+                                                        const canvas =
+                                                            document.createElement(
+                                                                "canvas",
+                                                            );
+                                                        const MAX_WIDTH = 400;
+                                                        let width = img.width;
+                                                        let height = img.height;
+
+                                                        if (width > MAX_WIDTH) {
+                                                            height *=
+                                                                MAX_WIDTH /
+                                                                width;
+                                                            width = MAX_WIDTH;
+                                                        }
+
+                                                        canvas.width = width;
+                                                        canvas.height = height;
+                                                        const ctx =
+                                                            canvas.getContext(
+                                                                "2d",
+                                                            );
+                                                        ctx?.drawImage(
+                                                            img,
+                                                            0,
+                                                            0,
+                                                            width,
+                                                            height,
+                                                        );
+                                                        settings.logo_url =
+                                                            canvas.toDataURL(
+                                                                "image/png",
+                                                            );
+                                                    };
+                                                    img.src = re.target
+                                                        ?.result as string;
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-all cursor-pointer"
+                                    />
+                                    <p
+                                        class="mt-2 text-[10px] text-gray-400 font-bold uppercase tracking-widest"
+                                    >
+                                        Recommended: Square PNG. Optimized to
+                                        max 400px wide.
+                                    </p>
+                                </div>
+                                {#if settings.logo_url}
+                                    <button
+                                        onclick={() =>
+                                            (settings.logo_url = null)}
+                                        class="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-100 transition-all"
+                                    >
+                                        Remove
+                                    </button>
+                                {/if}
+                            </div>
+                        </div>
+
                         <div class="flex justify-end pt-4">
                             <button
                                 onclick={saveClinicSettings}
@@ -564,6 +697,55 @@
                             </div>
                         </div>
                     {/each}
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Management -->
+        <div
+            class="bg-white shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden border border-gray-100"
+        >
+            <div class="px-8 py-6 bg-gray-50/50 border-b border-gray-100">
+                <h2
+                    class="text-xl font-bold text-gray-900 flex items-center gap-2"
+                >
+                    <span>💾</span> Data & Backup
+                </h2>
+            </div>
+            <div class="p-8">
+                <div
+                    class="flex items-center justify-between p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex-wrap gap-4"
+                >
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            Export Clinic Data
+                        </h3>
+                        <p class="text-sm text-gray-500 mt-1 max-w-lg">
+                            Download a complete backup of your data, including
+                            the database and all uploaded files (documents,
+                            images).
+                        </p>
+                    </div>
+                    <form action="/api/admin/export" method="GET">
+                        <button
+                            type="submit"
+                            class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-200 active:scale-95 flex items-center gap-2"
+                        >
+                            <svg
+                                class="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                ><path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                ></path></svg
+                            >
+                            Download Full Backup
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

@@ -1,4 +1,4 @@
-import { getPrescriptionById } from '$lib/server/db';
+import { getPrescriptionById, getServerConfig } from '$lib/server/db';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
@@ -14,8 +14,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         throw error(404, 'Prescription not found');
     }
 
+    const config = getServerConfig();
+
     return {
         prescription,
+        config,
         user: locals.user
     };
 };

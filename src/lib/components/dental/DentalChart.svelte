@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { invalidateAll } from "$app/navigation";
     import ToothSVG from "./ToothSVG.svelte";
     import {
         ADULT_TEETH_UNIVERSAL,
@@ -35,8 +36,8 @@
         cdt_code: "",
         procedure_description: "",
         fee: 0,
-        status: "planned" as "existing" | "completed" | "planned",
-        date_performed: "",
+        status: "completed" as "existing" | "completed" | "planned",
+        date_performed: new Date().toISOString().split("T")[0],
         provider_id: null as number | null,
         diagnosis: "",
         notes: "",
@@ -155,8 +156,8 @@
                 cdt_code: "",
                 procedure_description: "",
                 fee: 0,
-                status: "planned",
-                date_performed: "",
+                status: "completed",
+                date_performed: new Date().toISOString().split("T")[0],
                 provider_id: null,
                 diagnosis: "",
                 notes: "",
@@ -168,6 +169,7 @@
             requiresSurfaces = false;
             selectedTooth = null;
             await loadTreatments();
+            await invalidateAll();
         } catch (e) {
             console.error("Failed to save treatment:", e);
         }
@@ -334,58 +336,171 @@
     {/if}
 
     <!-- Treatment History List -->
-    <div class="treatment-history">
-        <h3 class="text-lg font-semibold mb-2">
+    <div class="treatment-history mt-8 border-t border-gray-100 pt-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4 px-1">
             {$t("dental.treatment_history")}
         </h3>
+
         {#if treatments.length === 0}
-            <p class="text-gray-500 text-sm">{$t("dental.no_treatments")}</p>
+            <div
+                class="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200"
+            >
+                <p class="text-gray-400 font-medium">
+                    {$t("dental.no_treatments")}
+                </p>
+            </div>
         {:else}
-            <div class="space-y-2">
-                {#each treatments as treatment}
-                    <div
-                        class="treatment-item"
-                        style="border-left-color: {treatment.color}"
-                    >
-                        <div class="flex items-start justify-between">
-                            <div>
-                                <span class="font-semibold"
-                                    >{$t("dental.tooth")}
-                                    {treatment.tooth_number}</span
-                                >
-                                {#if treatment.surfaces || treatment.surface}
-                                    <span class="text-sm text-gray-600"
-                                        >({treatment.surfaces ||
-                                            treatment.surface})</span
-                                    >
-                                {/if}
-                                <span class="ml-2 text-sm"
-                                    >{treatment.treatment_type}</span
-                                >
-                                <span
-                                    class="ml-2 text-xs px-2 py-1 rounded"
-                                    style="background: {treatment.color}; color: white;"
-                                >
-                                    {$t(`dental.${treatment.status}`)}
-                                </span>
-                            </div>
+            <div
+                class="overflow-hidden border border-gray-200 rounded-xl shadow-sm"
+            >
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th
+                                scope="col"
+                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"
+                                >Date</th
+                            >
+                            <th
+                                scope="col"
+                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"
+                                >Ctx</th
+                            >
+                            <th
+                                scope="col"
+                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-full"
+                                >Description</th
+                            >
+                            <th
+                                scope="col"
+                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"
+                                >Status</th
+                            >
+                            <th
+                                scope="col"
+                                class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider"
+                                >Amount</th
+                            >
                             {#if !readOnly}
-                                <button
-                                    onclick={() =>
-                                        deleteTreatment(treatment.id)}
-                                    class="text-red-600 text-sm hover:underline"
-                                >
-                                    {$t("dental.delete_treatment")}
-                                </button>
+                                <th scope="col" class="relative px-4 py-3"></th>
                             {/if}
-                        </div>
-                        {#if treatment.notes}
-                            <p class="text-sm text-gray-600 mt-1">
-                                {treatment.notes}
-                            </p>
-                        {/if}
-                    </div>
-                {/each}
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        {#each treatments as treatment}
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <!-- Date -->
+                                <td
+                                    class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900"
+                                >
+                                    {treatment.treatment_date
+                                        ? new Date(
+                                              treatment.treatment_date,
+                                          ).toLocaleDateString()
+                                        : "---"}
+                                </td>
+
+                                <!-- Context (Tooth or General) -->
+                                <td
+                                    class="px-4 py-3 whitespace-nowrap text-sm font-bold text-indigo-600"
+                                >
+                                    {#if treatment.source === "general"}
+                                        <span
+                                            class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-xs"
+                                            >Général</span
+                                        >
+                                    {:else}
+                                        <span
+                                            class="px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs"
+                                            >#{treatment.tooth_number}</span
+                                        >
+                                    {/if}
+                                </td>
+
+                                <!-- Description -->
+                                <td class="px-4 py-3 text-sm text-gray-600">
+                                    <div class="font-medium text-gray-900">
+                                        {treatment.treatment_type || "---"}
+                                    </div>
+                                    {#if treatment.description || treatment.notes}
+                                        <div
+                                            class="text-xs text-gray-500 mt-0.5"
+                                        >
+                                            {treatment.description ||
+                                                treatment.notes}
+                                        </div>
+                                    {/if}
+                                    {#if treatment.surfaces}
+                                        <div
+                                            class="text-xs text-gray-400 mt-0.5 font-mono"
+                                        >
+                                            Surf: {treatment.surfaces}
+                                        </div>
+                                    {/if}
+                                </td>
+
+                                <!-- Status Badge -->
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span
+                                        class="px-2.5 py-1 inline-flex text-[10px] leading-4 font-bold rounded-full uppercase tracking-wider
+                                        {treatment.status === 'completed'
+                                            ? 'bg-green-100 text-green-700'
+                                            : treatment.status === 'existing'
+                                              ? 'bg-gray-100 text-gray-600'
+                                              : 'bg-blue-100 text-blue-700'}"
+                                    >
+                                        {$t(`dental.${treatment.status}`) ||
+                                            treatment.status}
+                                    </span>
+                                </td>
+
+                                <!-- Amount -->
+                                <td
+                                    class="px-4 py-3 whitespace-nowrap text-sm font-black text-gray-900 text-right"
+                                >
+                                    {APP_CONFIG.currencySymbol}{(
+                                        treatment.cost ||
+                                        treatment.fee ||
+                                        0
+                                    ).toFixed(2)}
+                                </td>
+
+                                <!-- Actions -->
+                                {#if !readOnly}
+                                    <td
+                                        class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium"
+                                    >
+                                        {#if treatment.source === "dental"}
+                                            <button
+                                                onclick={() =>
+                                                    deleteTreatment(
+                                                        treatment.id,
+                                                    )}
+                                                class="text-red-400 hover:text-red-600 transition-colors"
+                                                title={$t(
+                                                    "dental.delete_treatment",
+                                                )}
+                                            >
+                                                <svg
+                                                    class="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                    ><path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                    ></path></svg
+                                                >
+                                            </button>
+                                        {/if}
+                                    </td>
+                                {/if}
+                            </tr>
+                        {/each}
+                    </tbody>
+                </table>
             </div>
         {/if}
     </div>
@@ -437,7 +552,9 @@
                                     >{newTreatment.cdt_code}</span
                                 >
                                 <span class="procedure-fee"
-                                    >{APP_CONFIG.currencySymbol}{newTreatment.fee.toFixed(2)}</span
+                                    >{APP_CONFIG.currencySymbol}{newTreatment.fee.toFixed(
+                                        2,
+                                    )}</span
                                 >
                             </div>
                             <div class="procedure-desc">
@@ -677,7 +794,7 @@
         background: white;
         border-radius: 1rem;
         width: 98vw;
-        max-width: 1400px;  /* Changed from 1200px */
+        max-width: 1400px; /* Changed from 1200px */
         max-height: 90vh;
         display: flex;
         flex-direction: column;
