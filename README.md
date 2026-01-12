@@ -18,49 +18,39 @@
 
 ## 🌟 Premium Features
 
-### ⚙️ Admin System Control (The "God Mode")
+### ⚙️ Admin System Control ("God Mode")
 Ultimate oversight for clinical directors and owners.
-- **Global Access**: Admins can seamlessly access Doctor and Assistant portals to monitor clinical activity and administrative queues.
-- **User Management**: Create and manage accounts for all staff; toggle active/inactive status and reset passwords.
-- **Website Configuration**: Real-time control over landing page content, services, and branding via the JSON CMS.
-- **Global Settings UI**: Manage system-wide parameters like currency codes, symbols, and clinic hours.
-- **Spending Analytics**: Monitor high-level financial health with revenue vs. expenses tracking.
-- **Categorized Spending Rules**: Define custom expense categories (e.g., Salaries, Rent, Utilities) with unique visual identifiers.
-
-### 👩‍💼 Clinic Assistant Portal (Management & Ops)
-A high-efficiency command center for administrative staff.
-- **Advanced Schedule Hub**: Multi-view dashboard including **List, Calendar, and Table** views for flexible management.
-- **Family-Friendly Booking**: Support for "Book for Someone Else" flow, allowing parents or guardians to manage appointments for dependents.
-- **Automated Conflict Prevention**: Intelligent system detects and blocks doctor scheduling conflicts across both online and manual bookings.
-- **Patient Lifecycle Management**: 
-    - **Archiving**: Safely archive inactive patients with balance validation.
-    - **Medical History Audits**: Detailed logs of patient record updates and changes.
-- **Financial Reconciliation**: Generate professional itemized invoices and record multi-method payments (Cash, Card, Insurance).
-- **Spending Management**: Dedicated portal to track clinic-side expenses with category-based filtering.
-- **Printable Patient Cards**: Generate and print professional appointment summaries and patient info sheets.
-- **Real-Time Notification Center**: Instant alerts for new web bookings, payment receipts, and low stock warnings.
+- **Unified User Management**: Control accounts for all staff with role-based access, password overrides, and account status toggles.
+- **Zero-Code CMS**: Instantly update landing page content, home services, and staff bios via the robust JSON-based management system.
+- **CDT Standardized Procedures**: Configure and manage the internal library of CDT codes, standardized fees, and procedure colors.
+- **Global Clinic Identity**: Manage system-wide parameters including multi-currency symbols, branding, and operational hours.
+- **Full-Spectrum Analytics**: Monitor high-level financial health with clinical revenue vs. operational spending (Net Profit/Loss).
 
 ### 👨‍⚕️ Doctor’s Clinical Command (Patient Care)
-Designed for focus, speed, and clinical accuracy.
-- **State-of-the-Art Dental Charting (Svelte 5)**:
-    - **FDI Numbering**: International standard tooth numbering.
-    - **Smart Logic**: Automatic switch between Adult (32 teeth) and Pediatric (20 deciduous teeth) charts based on patient age.
-    - **Visual Mapping**: Color-coded tooth status (Red for cavities, Blue/Green for treatments) with per-tooth history.
-- **Prescription Builder**: 
-    - Intelligent library of common medications and dosages.
-    - Quick-generate professional PDFs for patients.
-- **Clinical History**: longitudinal access to treatment notes, allergies (hidden from non-clinical staff), and previous dental work.
-- **Daily Agendas**: Specific views for current doctor's appointments to minimize cognitive load.
+Precision tools focused on clinical speed, accuracy, and patient safety.
+- **State-of-the-Art Dental Charting (Svelte 5 Runes)**:
+    - **Intelligent Surface Mapping**: Individual tooth surface selection (Occlusal, Mesial, Distal, etc.) with real-time visual updates.
+    - **Age-Aware Charts**: Automated switch between Adult (32 teeth) and Pediatric (20 teeth) dentition based on patient DOB.
+    - **Clinical Color Coding**: Distinct visual identifiers for existing work, completed treatments, and planned procedures.
+- **Standardized Treatment Entry**: Ultra-fast (under 30s) entry using the Quick Picker and CDT-integrated logic.
+- **Advanced Medical Audits**: Deep-dive into patient history, including confidential surgical records, substance use, and familial genetic history.
+- **Digital Prescription Hub**: Searchable medication library with dosage automation and high-quality PDF generation for patient discharge.
+- **Daily Focus Agendas**: Role-specific dashboards to minimize cognitive load and focus on the day's procedures.
+
+### 👩‍💼 Clinic Assistant Portal (Operations & Finance)
+A high-efficiency command center for patient onboarding and financial reconciliation.
+- **Advanced Operation Hub**: Tri-view dashboard (Calendar, List, Table) for flexible schedule management with drag-and-drop rescheduling.
+- **Patient Resume Generator (Fiche Patient)**: One-click print for professional patient cards containing personal summaries and upcoming appointments.
+- **Smart Booking Flow**: Family-friendly logic supporting account-linked bookings for dependents and secondary contacts.
+- **Automated Conflict Guard**: Real-time logic prevents doctor scheduling conflicts while respecting varying doctor availability.
+- **Financial Reconciliation Hub**: Generate split or consolidated invoices linked to clinical treatments with multi-method payment recording (Cash, Card, Insurance, Check).
+- **Stock & Supply Chain**: Inventory management with low-stock visual alerts, movement audit logs, and a centralized supplier directory.
 
 ### 🌍 Internationalization (Global Ready)
-- **Multi-language Support**: Fully translated into **French** and **Arabic**.
-- **RTL Optimization**: Complete Right-to-Left layout switching for Arabic users, ensuring a native feel.
-- **Standardized i18n**: Built on `svelte-i18n` for robust localization.
+- **Native Multi-language**: Fully translated into **French**, **Arabic**, and **English**.
+- **Dynamic RTL Layouts**: Complete Right-to-Left (RTL) mirroring for Arabic users, ensuring visual balance and usability.
+- **Universal Standard**: Built on `svelte-i18n` with support for local date/time formatting and currency localization.
 
-### 📦 Logistics & Inventory (Smart Supply Chain)
-- **Low Stock Visual Alerts**: Color-coded thresholds and automated staff notifications.
-- **Movement Audit Logs**: Detailed "Stock In/Out" tracking with user attribution and reason logging.
-- **Supplier Directory**: Manage contacts and supply chain relations directly from the inventory hub.
 
 ---
 
