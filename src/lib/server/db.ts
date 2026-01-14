@@ -20,7 +20,7 @@ function normalizeDate(dateStr: string) {
     return res;
 }
 
-const DB_PATH = 'dental_clinic.db';
+const DB_PATH = process.env.TEST_DB_PATH || 'dental_clinic.db';
 export const db = new Database(DB_PATH, { verbose: console.log });
 
 export const VERSION = '1.2.5-debug';
@@ -1182,22 +1182,27 @@ function seed_db() {
     const adminHash = bcrypt.hashSync('admin123', 10);
     insertUser.run('admin', adminHash, 'System Administrator', 'admin');
 
+    // Add a patient user for portal/booking testing
+    const patientHash = bcrypt.hashSync('patient123', 10);
+    insertUser.run('patient1', patientHash, 'Mohamed Al Arabi', 'patient');
+
     const doctor = db.prepare("SELECT id FROM users WHERE role = 'doctor' LIMIT 1").get() as { id: number };
     const assistant = db.prepare("SELECT id FROM users WHERE role = 'assistant' LIMIT 1").get() as { id: number };
+    const patientUser = db.prepare("SELECT id FROM users WHERE role = 'patient' LIMIT 1").get() as { id: number };
 
     // Patients
     const insertPatient = db.prepare(`
         INSERT INTO patients (
             full_name, phone, email, date_of_birth, gender, address, city, postal_code, 
-            allergies, current_medications, medical_conditions, blood_type, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            allergies, current_medications, medical_conditions, blood_type, created_by, user_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const patientsData = [
-        ['Mohamed Al Arabi', '555-0106', 'mohamed@example.com', '1992-03-10', 'Male', 'Boulevard Zerktouni', 'Casablanca', '20000', null, null, null, 'O+', assistant.id],
-        ['Layla Ouloui', '555-0107', 'layla@example.com', '1998-11-25', 'Female', 'Hay Riad', 'Rabat', '10000', 'Aspirin', null, null, 'A-', assistant.id],
-        ['Yassine Bennani', '555-0108', 'yassine@example.com', '2012-08-15', 'Male', 'Gauthier', 'Casablanca', '20600', null, null, 'Asthma', 'B+', assistant.id], // Teenager (~13 years)
-        ['Omar Faouzi', '555-0109', 'omar@example.com', '2020-05-20', 'Male', 'Maarif', 'Casablanca', '20100', null, null, null, 'O+', assistant.id]         // Kid (~5 years)
+        ['Mohamed Al Arabi', '555-0106', 'mohamed@example.com', '1992-03-10', 'Male', 'Boulevard Zerktouni', 'Casablanca', '20000', null, null, null, 'O+', assistant.id, patientUser.id], // Linked to patient1 user
+        ['Layla Ouloui', '555-0107', 'layla@example.com', '1998-11-25', 'Female', 'Hay Riad', 'Rabat', '10000', 'Aspirin', null, null, 'A-', assistant.id, null],
+        ['Yassine Bennani', '555-0108', 'yassine@example.com', '2012-08-15', 'Male', 'Gauthier', 'Casablanca', '20600', null, null, 'Asthma', 'B+', assistant.id, null], // Teenager (~13 years)
+        ['Omar Faouzi', '555-0109', 'omar@example.com', '2020-05-20', 'Male', 'Maarif', 'Casablanca', '20100', null, null, null, 'O+', assistant.id, null]         // Kid (~5 years)
     ];
 
     for (const p of patientsData) {
