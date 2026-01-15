@@ -233,9 +233,13 @@
         "subtitle": "Manage your favorite medications and default dosages.",
         "add_button": "Add Medication",
         "empty_state": "No medications registered. Start by adding one.",
+        "download_template": "Download Excel Template",
+        "import_label": "Import List (Excel)",
+        "import_success": "{count} medications imported successfully",
         "table": {
             "name": "Medication",
             "dosage": "Default Dosage",
+            "forme": "Form",
             "instructions": "Instructions"
         },
         "modal": {
@@ -244,6 +248,8 @@
             "name_placeholder": "ex: Amoxicillin",
             "dosage_label": "Default Dosage",
             "dosage_placeholder": "ex: 1g",
+            "forme_label": "Form (ex: Capsule, Syrup)",
+            "forme_placeholder": "ex: Capsule",
             "instructions_label": "Default Instructions",
             "instructions_placeholder": "ex: 1 tablet morning and evening"
         }
@@ -797,6 +803,10 @@
         "no_procedures": "No procedures found",
         "loading_procedures": "Loading procedures...",
         "requires_surfaces": "Requires surfaces",
+        "custom_treatment": "Other / Custom Treatment",
+        "custom_name_label": "Treatment Name",
+        "custom_price_label": "Price (DZD)",
+        "custom_disclaimer": "This treatment will be added only to this patient file.",
         "select_surfaces": "Select Surfaces (tap to toggle)",
         "categories": {
             "all": "All",

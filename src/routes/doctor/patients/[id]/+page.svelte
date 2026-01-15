@@ -31,6 +31,16 @@
     let isPaymentModalOpen = $state(false);
     let selectedInvoice = $state<any>(null);
     let previewFile = $state<any>(null);
+    let previewDicom = $state<any>(null);
+    let DicomViewer = $state<any>(null);
+
+    async function openDicom(file: any) {
+        if (!DicomViewer) {
+            const module = await import("$lib/components/DicomViewer.svelte");
+            DicomViewer = module.default;
+        }
+        previewDicom = file;
+    }
 
     let isToothModalOpen = $state(false);
     let selectedTooth = $state<string | null>(null);
@@ -1160,7 +1170,7 @@
                             class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                             onchange={(e) =>
                                 e.currentTarget.form?.requestSubmit()}
-                            accept=".jpg,.jpeg,.png,.gif,.pdf,.svg"
+                            accept=".jpg,.jpeg,.png,.gif,.pdf,.svg,.dcm"
                         />
                     </form>
                 </div>
@@ -1185,6 +1195,36 @@
                                             alt={file.file_name}
                                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                         />
+                                    {:else if file.file_name
+                                        ?.toLowerCase()
+                                        .endsWith(".dcm")}
+                                        <div
+                                            class="flex flex-col items-center bg-gray-900 w-full h-full justify-center"
+                                        >
+                                            <div class="relative">
+                                                <svg
+                                                    class="w-16 h-16 text-indigo-500"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="1.5"
+                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                                    ></path>
+                                                </svg>
+                                                <span
+                                                    class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] font-black text-white bg-indigo-600 px-1 rounded"
+                                                    >DICOM</span
+                                                >
+                                            </div>
+                                            <span
+                                                class="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-tight"
+                                                >Medical Imaging</span
+                                            >
+                                        </div>
                                     {:else}
                                         <div class="flex flex-col items-center">
                                             <svg
@@ -1221,6 +1261,12 @@
                                                 )
                                             ) {
                                                 previewFile = file;
+                                            } else if (
+                                                file.file_name
+                                                    ?.toLowerCase()
+                                                    .endsWith(".dcm")
+                                            ) {
+                                                openDicom(file);
                                             } else {
                                                 window.open(
                                                     file.file_path,
@@ -1372,6 +1418,15 @@
                         </div>
                     </div>
                 </div>
+            {/if}
+
+            <!-- DICOM Viewer Overlay -->
+            {#if previewDicom && DicomViewer}
+                <DicomViewer
+                    fileUrl={previewDicom.file_path}
+                    fileName={previewDicom.file_name}
+                    onClose={() => (previewDicom = null)}
+                />
             {/if}
         {/if}
 

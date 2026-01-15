@@ -265,6 +265,7 @@ export function init_db() {
             name TEXT NOT NULL,
             default_dosage TEXT,
             instructions TEXT,
+            forme TEXT,
             created_at TEXT DEFAULT (datetime('now'))
         );
 
@@ -431,6 +432,7 @@ export function init_db() {
             diagnosis TEXT,
             notes TEXT,
             color TEXT NOT NULL,
+            is_custom INTEGER DEFAULT 0,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
             FOREIGN KEY (provider_id) REFERENCES users(id),
@@ -803,6 +805,28 @@ export function init_db() {
         }
     } catch (e) {
         console.error('Migration for specialties on users failed:', e);
+    }
+
+    // Migration for medications 'forme' column
+    try {
+        const medCols = db.prepare("PRAGMA table_info(medications)").all() as any[];
+        if (!medCols.find(c => c.name === 'forme')) {
+            db.exec('ALTER TABLE medications ADD COLUMN forme TEXT');
+            console.log('Added forme column to medications');
+        }
+    } catch (e) {
+        console.error('Migration for forme on medications failed:', e);
+    }
+
+    // Migration for dental_treatments 'is_custom' column
+    try {
+        const dentalCols = db.prepare("PRAGMA table_info(dental_treatments)").all() as any[];
+        if (!dentalCols.find(c => c.name === 'is_custom')) {
+            db.exec('ALTER TABLE dental_treatments ADD COLUMN is_custom INTEGER DEFAULT 0');
+            console.log('Added is_custom column to dental_treatments');
+        }
+    } catch (e) {
+        console.error('Migration for is_custom on dental_treatments failed:', e);
     }
 
     // Migration for enhanced clinic settings
@@ -1806,6 +1830,21 @@ export function createMedication(medData: any) {
 
 export function deleteMedication(id: number) {
     return db.prepare('DELETE FROM medications WHERE id = ?').run(id);
+}
+
+export function bulkUpsertMedications(medications: any[]) {
+    const txn = db.transaction((items) => {
+        for (const item of items) {
+            const existing = db.prepare('SELECT id FROM medications WHERE name = ? AND (default_dosage = ? OR (default_dosage IS NULL AND ? IS NULL))').get(item.name, item.default_dosage, item.default_dosage) as { id: number } | undefined;
+            if (existing) {
+                db.prepare('UPDATE medications SET instructions = ?, forme = ?, created_at = datetime(\'now\') WHERE id = ?').run(item.instructions, item.forme, existing.id);
+            } else {
+                db.prepare('INSERT INTO medications (name, default_dosage, instructions, forme) VALUES (?, ?, ?, ?)').run(item.name, item.default_dosage, item.instructions, item.forme);
+            }
+        }
+    });
+
+    return txn(medications);
 }
 
 // --- Prescriptions ---

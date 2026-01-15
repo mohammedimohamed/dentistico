@@ -10,5 +10,8 @@ export default defineConfig({
 	preview: {
 		port: 10000,
 		strictPort: false
+	},
+	worker: {
+		format: 'es'
 	}
 });

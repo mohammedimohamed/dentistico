@@ -306,9 +306,13 @@
         "subtitle": "إدارة أدويتك المفضلة والجرعات الافتراضية.",
         "add_button": "إضافة دواء",
         "empty_state": "لا توجد أدوية مسجلة. ابدأ بإضافة دواء.",
+        "download_template": "تحميل نموذج Excel",
+        "import_label": "استيراد قائمة (Excel)",
+        "import_success": "تم استيراد {count} دواء بنجاح",
         "table": {
             "name": "الدواء",
             "dosage": "الجرعة الافتراضية",
+            "forme": "الشكل",
             "instructions": "التعليمات"
         },
         "modal": {
@@ -317,6 +321,8 @@
             "name_placeholder": "مثال: أموكسيسيلين",
             "dosage_label": "الجرعة الافتراضية",
             "dosage_placeholder": "مثال: 1 غرام",
+            "forme_label": "الشكل (مثال: كبسولة، شراب)",
+            "forme_placeholder": "مثال: كبسولة",
             "instructions_label": "التعليمات الافتراضية",
             "instructions_placeholder": "مثال: قرص واحد صباحاً ومساءً"
         }
@@ -780,12 +786,15 @@
         "no_procedures": "لم يتم العثور على إجراءات",
         "loading_procedures": "جاري تحميل الإجراءات...",
         "requires_surfaces": "يتطلب أسطح",
+        "custom_treatment": "آخر / علاج مخصص",
+        "custom_name_label": "اسم العلاج",
+        "custom_price_label": "السعر (دج)",
+        "custom_disclaimer": "سيتم إضافة هذا العلاج فقط لهذا المريض.",
         "select_surfaces": "اختر الأسطح (اضغط للتبديل)",
         "delete_treatment": "حذف",
         "delete_confirmation": "هل تريد حذف هذا العلاج؟",
         "no_treatments": "لا توجد علاجات مسجلة",
         "treatment_history": "سجل العلاجات",
-
         "categories": {
             "all": "الكل",
             "diagnostic": "فحص",
@@ -796,7 +805,6 @@
             "surgery": "خلع",
             "other": "أخرى"
         },
-
         "surfaces": {
             "mesial": "وسطي",
             "distal": "بعيد",

@@ -1,10 +1,20 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
-    import { page } from "$app/state";
     import { t } from "svelte-i18n";
+    import type { PageData, ActionData } from "./$types";
 
-    let { data } = $props();
+    let { data, form }: { data: any; form: ActionData } = $props();
     let showAddModal = $state(false);
+    let importStatus = $state<{ success: boolean; count: number } | null>(null);
+
+    $effect(() => {
+        if (form?.success && form?.importedCount) {
+            importStatus = { success: true, count: form.importedCount };
+            setTimeout(() => {
+                importStatus = null;
+            }, 5000);
+        }
+    });
 </script>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -17,27 +27,116 @@
                 {$t("medications.subtitle")}
             </p>
         </div>
-        <button
-            onclick={() => (showAddModal = true)}
-            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-            <svg
-                class="-ml-1 mr-2 h-5 w-5"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+        <div class="flex space-x-3">
+            <a
+                href="medications/download"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 4v16m8-8H4"
+                <svg
+                    class="-ml-1 mr-2 h-5 w-5 text-gray-500"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                </svg>
+                {$t("medications.download_template")}
+            </a>
+
+            <form
+                action="?/importMedications"
+                method="POST"
+                enctype="multipart/form-data"
+                use:enhance
+                class="relative"
+            >
+                <label
+                    for="file-upload"
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer"
+                >
+                    <svg
+                        class="-ml-1 mr-2 h-5 w-5 text-gray-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                        />
+                    </svg>
+                    {$t("medications.import_label")}
+                </label>
+                <input
+                    id="file-upload"
+                    name="file"
+                    type="file"
+                    accept=".xlsx"
+                    class="sr-only"
+                    onchange={(e) => e.currentTarget.form?.requestSubmit()}
                 />
-            </svg>
-            {$t("medications.add_button")}
-        </button>
+            </form>
+
+            <button
+                onclick={() => (showAddModal = true)}
+                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+                <svg
+                    class="-ml-1 mr-2 h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 4v16m8-8H4"
+                    />
+                </svg>
+                {$t("medications.add_button")}
+            </button>
+        </div>
     </div>
+
+    {#if importStatus}
+        <div
+            class="mb-6 bg-green-50 border-l-4 border-green-400 p-4 rounded shadow-sm animate-in fade-in slide-in-from-top-4"
+        >
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg
+                        class="h-5 w-5 text-green-400"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                    >
+                        <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"
+                        />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-green-700">
+                        {$t("medications.import_success", {
+                            values: { count: importStatus.count },
+                        })}
+                    </p>
+                </div>
+            </div>
+        </div>
+    {/if}
 
     <div class="bg-white shadow overflow-hidden sm:rounded-lg">
         <table class="min-w-full divide-y divide-gray-200">
@@ -52,6 +151,11 @@
                         scope="col"
                         class="px-6 py-3 text-inline-start text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >{$t("medications.table.dosage")}</th
+                    >
+                    <th
+                        scope="col"
+                        class="px-6 py-3 text-inline-start text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >{$t("medications.table.forme")}</th
                     >
                     <th
                         scope="col"
@@ -74,6 +178,11 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-500">
                                 {medication.default_dosage || "-"}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-500">
+                                {medication.forme || "-"}
                             </div>
                         </td>
                         <td class="px-6 py-4">
@@ -212,6 +321,22 @@
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                 placeholder={$t(
                                     "medications.modal.dosage_placeholder",
+                                )}
+                            />
+                        </div>
+                        <div>
+                            <label
+                                for="forme"
+                                class="block text-sm font-medium text-gray-700"
+                                >{$t("medications.modal.forme_label")}</label
+                            >
+                            <input
+                                type="text"
+                                name="forme"
+                                id="forme"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                placeholder={$t(
+                                    "medications.modal.forme_placeholder",
                                 )}
                             />
                         </div>

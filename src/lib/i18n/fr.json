@@ -249,9 +249,13 @@
         "subtitle": "Gérez vos médicaments favoris et posologies par défaut.",
         "add_button": "Ajouter un médicament",
         "empty_state": "Aucun médicament enregistré. Commencez par en ajouter un.",
+        "download_template": "Télécharger le Modèle Excel",
+        "import_label": "Importer une liste (Excel)",
+        "import_success": "{count} médicaments importés avec succès",
         "table": {
             "name": "Médicament",
             "dosage": "Dosage par défaut",
+            "forme": "Forme",
             "instructions": "Instructions"
         },
         "modal": {
@@ -260,6 +264,8 @@
             "name_placeholder": "ex: Amoxicilline",
             "dosage_label": "Dosage par défaut",
             "dosage_placeholder": "ex: 1g",
+            "forme_label": "Forme (ex: Gélule, Sirop)",
+            "forme_placeholder": "ex: Gélule",
             "instructions_label": "Instructions par défaut",
             "instructions_placeholder": "ex: 1 comprimé matin et soir"
         }
@@ -822,6 +828,10 @@
         "no_procedures": "Aucune procédure trouvée",
         "loading_procedures": "Chargement des procédures...",
         "requires_surfaces": "Nécessite des surfaces",
+        "custom_treatment": "Autre / Soin Personnalisé",
+        "custom_name_label": "Nom du Soin",
+        "custom_price_label": "Prix (DZD)",
+        "custom_disclaimer": "Ce soin sera ajouté uniquement à ce dossier patient.",
         "select_surfaces": "Sélectionner les Surfaces (appuyer pour basculer)",
         "delete_treatment": "Supprimer",
         "delete_confirmation": "Supprimer ce traitement ?",

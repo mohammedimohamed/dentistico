@@ -42,6 +42,7 @@
         diagnosis: "",
         notes: "",
         color: "#3B82F6",
+        isCustom: false,
     });
 
     let showSurfaceSelector = $state(false);
@@ -147,6 +148,7 @@
                     diagnosis: newTreatment.diagnosis,
                     notes: newTreatment.notes,
                     color: newTreatment.color,
+                    is_custom: newTreatment.isCustom,
                 }),
             });
 
@@ -162,6 +164,7 @@
                 diagnosis: "",
                 notes: "",
                 color: "#3B82F6",
+                isCustom: false,
             };
 
             showTreatmentModal = false;
@@ -528,10 +531,84 @@
             <div class="modal-body">
                 <!-- LEFT COLUMN: Procedure Selection -->
                 <div class="left-column">
-                    <QuickTreatmentPicker
-                        selectedCode={newTreatment.cdt_code}
-                        onSelect={handleCodeSelect}
-                    />
+                    <div class="mb-4">
+                        <button
+                            type="button"
+                            class="w-full py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 font-bold {newTreatment.isCustom
+                                ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                                : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-300'}"
+                            onclick={() => {
+                                newTreatment.isCustom = !newTreatment.isCustom;
+                                if (newTreatment.isCustom) {
+                                    newTreatment.cdt_code = "CUSTOM";
+                                    newTreatment.procedure_description = "";
+                                    newTreatment.fee = 0;
+                                    newTreatment.color = "#6366F1"; // Indigo for custom
+                                } else {
+                                    newTreatment.cdt_code = "";
+                                    newTreatment.procedure_description = "";
+                                    newTreatment.fee = 0;
+                                }
+                            }}
+                        >
+                            <span>✨</span>
+                            {$t("dental.custom_treatment")}
+                        </button>
+                    </div>
+
+                    {#if !newTreatment.isCustom}
+                        <QuickTreatmentPicker
+                            selectedCode={newTreatment.cdt_code}
+                            onSelect={handleCodeSelect}
+                        />
+                    {:else}
+                        <div
+                            class="bg-indigo-50 p-6 rounded-xl border border-indigo-100"
+                        >
+                            <h4
+                                class="text-indigo-900 font-bold mb-4 flex items-center gap-2"
+                            >
+                                📝 {$t("dental.custom_treatment")}
+                            </h4>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <label
+                                        class="block text-sm font-bold text-indigo-700 mb-1"
+                                    >
+                                        {$t("dental.custom_name_label")}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        bind:value={
+                                            newTreatment.procedure_description
+                                        }
+                                        placeholder="e.g., Couronne provisoire impression 3D"
+                                        class="w-full px-4 py-2 rounded-lg border-2 border-indigo-200 focus:border-indigo-500 focus:outline-none bg-white"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label
+                                        class="block text-sm font-bold text-indigo-700 mb-1"
+                                    >
+                                        {$t("dental.custom_price_label")}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        bind:value={newTreatment.fee}
+                                        class="w-full px-4 py-2 rounded-lg border-2 border-indigo-200 focus:border-indigo-500 focus:outline-none bg-white font-mono"
+                                    />
+                                </div>
+
+                                <p
+                                    class="text-xs text-indigo-600 italic mt-4 bg-white/50 p-2 rounded border border-indigo-100/50"
+                                >
+                                    ℹ️ {$t("dental.custom_disclaimer")}
+                                </p>
+                            </div>
+                        </div>
+                    {/if}
                 </div>
 
                 <!-- RIGHT COLUMN: Details -->
@@ -659,7 +736,9 @@
                 <button
                     onclick={saveTreatment}
                     class="btn-primary"
-                    disabled={!newTreatment.cdt_code}
+                    disabled={!newTreatment.cdt_code ||
+                        (newTreatment.isCustom &&
+                            !newTreatment.procedure_description)}
                 >
                     💾 Save Treatment
                 </button>

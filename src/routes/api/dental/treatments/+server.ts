@@ -29,9 +29,9 @@ export async function POST({ request, locals }: { request: Request, locals: any 
       return db.prepare(`
         INSERT INTO dental_treatments (
             patient_id, tooth_number, surfaces, cdt_code, treatment_type, 
-            status, fee, date_performed, provider_id, diagnosis, notes, color
+            status, fee, date_performed, provider_id, diagnosis, notes, color, is_custom
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
         data.patient_id,
         data.tooth_number,
@@ -44,7 +44,8 @@ export async function POST({ request, locals }: { request: Request, locals: any 
         data.provider_id || locals.user.id,
         data.diagnosis,
         data.notes,
-        data.color
+        data.color,
+        data.is_custom ? 1 : 0
       );
     });
     return fn();
