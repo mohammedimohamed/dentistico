@@ -1,6 +1,8 @@
 <script lang="ts">
     import type { PageData } from "./$types";
     import { enhance } from "$app/forms";
+    import { page as pageStore } from "$app/stores";
+    import { goto } from "$app/navigation";
     import { t } from "svelte-i18n";
 
     let { data }: { data: PageData } = $props();
@@ -27,6 +29,43 @@
     const currentPage = $derived(data.page as number);
     const totalPatients = $derived(data.totalPatients as number);
     const searchQuery = $derived(data.searchQuery as string);
+    const currentFilter = $derived(data.filter as string);
+
+    function applyFilter(filter: string) {
+        const url = new URL($pageStore.url);
+        if (filter) {
+            url.searchParams.set("filter", filter);
+        } else {
+            url.searchParams.delete("filter");
+        }
+        url.searchParams.set("page", "1");
+        goto(url.toString(), { keepFocus: true, noScroll: true });
+    }
+
+    function formatCurrency(amount: number) {
+        return new Intl.NumberFormat("fr-DZ", {
+            style: "currency",
+            currency: "DZD",
+        }).format(Math.abs(amount));
+    }
+
+    function formatRelativeDate(dateStr: string) {
+        if (!dateStr) return null;
+        const date = new Date(dateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const diffDays = Math.ceil(
+            (date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+        );
+
+        if (date.toDateString() === today.toDateString()) return "Aujourd'hui";
+        if (date.toDateString() === tomorrow.toDateString()) return "Demain";
+        if (diffDays > 0 && diffDays <= 7) return `Dans ${diffDays}j`;
+        return date.toLocaleDateString("fr-FR");
+    }
 </script>
 
 <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -55,8 +94,8 @@
         </div>
     </div>
 
-    <!-- Search -->
-    <div class="mb-10 px-4 sm:px-0">
+    <!-- Search & Filters -->
+    <div class="mb-10 px-4 sm:px-0 space-y-6">
         <form
             action="/doctor/patients"
             method="GET"
@@ -74,6 +113,9 @@
                 class="block w-full ps-12 pe-4 py-4 sm:text-sm border-gray-200 rounded-s-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all font-medium"
                 placeholder={$t("patients.search_placeholder")}
             />
+            {#if currentFilter}
+                <input type="hidden" name="filter" value={currentFilter} />
+            {/if}
             <button
                 type="submit"
                 class="inline-flex items-center px-6 py-4 bg-gray-900 hover:bg-black text-white rounded-e-2xl text-sm font-bold transition-all border-none"
@@ -81,6 +123,89 @@
                 {$t("common.search")}
             </button>
         </form>
+
+        <!-- Quick Filters -->
+        <div class="flex flex-wrap items-center gap-2">
+            <span
+                class="text-xs font-bold text-gray-400 uppercase tracking-widest mr-2"
+                >Filters:</span
+            >
+            <button
+                onclick={() => applyFilter("")}
+                class="px-4 py-2 rounded-full text-xs font-bold transition-all {!currentFilter
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            >
+                Tous
+            </button>
+            <div class="h-4 w-px bg-gray-200 mx-1"></div>
+            <button
+                onclick={() => applyFilter("child")}
+                class="px-4 py-2 rounded-full text-xs font-bold transition-all {currentFilter ===
+                'child'
+                    ? 'bg-amber-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            >
+                Enfants
+            </button>
+            <button
+                onclick={() => applyFilter("adult")}
+                class="px-4 py-2 rounded-full text-xs font-bold transition-all {currentFilter ===
+                'adult'
+                    ? 'bg-emerald-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            >
+                Adultes
+            </button>
+            <div class="h-4 w-px bg-gray-200 mx-1"></div>
+            <button
+                onclick={() => applyFilter("debt")}
+                class="px-4 py-2 rounded-full text-xs font-bold transition-all {currentFilter ===
+                'debt'
+                    ? 'bg-red-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            >
+                En Dette
+            </button>
+            <button
+                onclick={() => applyFilter("credit")}
+                class="px-4 py-2 rounded-full text-xs font-bold transition-all {currentFilter ===
+                'credit'
+                    ? 'bg-green-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            >
+                Créditeur
+            </button>
+            <div class="h-4 w-px bg-gray-200 mx-1"></div>
+            <button
+                onclick={() => applyFilter("upcoming")}
+                class="px-4 py-2 rounded-full text-xs font-bold transition-all {currentFilter ===
+                'upcoming'
+                    ? 'bg-indigo-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            >
+                Futurs RDV
+            </button>
+            <div class="h-4 w-px bg-gray-200 mx-1"></div>
+            <button
+                onclick={() => applyFilter("male")}
+                class="px-4 py-2 rounded-full text-xs font-bold transition-all {currentFilter ===
+                'male'
+                    ? 'bg-blue-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            >
+                Hommes
+            </button>
+            <button
+                onclick={() => applyFilter("female")}
+                class="px-4 py-2 rounded-full text-xs font-bold transition-all {currentFilter ===
+                'female'
+                    ? 'bg-pink-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            >
+                Femmes
+            </button>
+        </div>
     </div>
 
     {#if patients.length === 0}
@@ -133,26 +258,61 @@
                                 <span
                                     class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 uppercase tracking-wider"
                                 >
-                                    {$t("patients.age")}: {calculateAge(
-                                        patient.date_of_birth,
-                                    )}
+                                    {$t("patients.age")}: {patient.age ??
+                                        calculateAge(patient.date_of_birth)}
                                 </span>
-                                {#if calculateAge(patient.date_of_birth) !== "N/A"}
+                                {#if patient.is_child !== undefined || calculateAge(patient.date_of_birth) !== "N/A"}
                                     <span
-                                        class="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter {Number(
+                                        class="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter {(patient.is_child ??
+                                        Number(
                                             calculateAge(patient.date_of_birth),
-                                        ) < 18
+                                        ) < 16)
                                             ? 'bg-amber-100 text-amber-700'
                                             : 'bg-emerald-100 text-emerald-700'}"
                                     >
-                                        {Number(
+                                        {(patient.is_child ??
+                                        Number(
                                             calculateAge(patient.date_of_birth),
-                                        ) < 18
+                                        ) < 16)
                                             ? $t("patient_details.child")
                                             : $t("patient_details.adult")}
                                     </span>
                                 {/if}
                             </div>
+                        </div>
+
+                        <!-- Financial & Appointment Indicators -->
+                        <div class="flex items-center gap-3 mb-4">
+                            {#if patient.net_balance !== undefined && patient.net_balance !== 0}
+                                <span
+                                    class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-bold {patient.net_balance <
+                                    0
+                                        ? 'bg-red-100 text-red-700'
+                                        : 'bg-green-100 text-green-700'}"
+                                >
+                                    {patient.net_balance < 0 ? "−" : "+"}
+                                    {formatCurrency(patient.net_balance)}
+                                </span>
+                            {:else if patient.net_balance === 0}
+                                <span
+                                    class="text-[10px] font-bold text-gray-300"
+                                    >0 DZD</span
+                                >
+                            {/if}
+
+                            {#if patient.next_appointment}
+                                <div
+                                    class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-100"
+                                >
+                                    <span class="text-[10px]">📅</span>
+                                    <span
+                                        class="text-[10px] font-bold whitespace-nowrap"
+                                        >{formatRelativeDate(
+                                            patient.next_appointment,
+                                        )}</span
+                                    >
+                                </div>
+                            {/if}
                         </div>
                         <div class="text-sm text-gray-500 space-y-3 text-start">
                             <p class="flex items-center font-medium">

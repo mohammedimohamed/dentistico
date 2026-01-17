@@ -1349,21 +1349,98 @@ export function getDoctors() {
 }
 
 // --- Patients ---
-// Full access for Doctors
-export function getAllPatientsFull() {
-    return db.prepare('SELECT * FROM patients WHERE is_archived = 0 ORDER BY full_name ASC LIMIT 1000').all();
-}
+export function getPatientsEnhanced({
+    searchTerm = '',
+    filter = '',
+    limit = 24,
+    offset = 0,
+    isLimited = false
+}: {
+    searchTerm?: string,
+    filter?: string,
+    limit?: number,
+    offset?: number,
+    isLimited?: boolean
+}) {
+    let whereClause = 'p.is_archived = 0';
+    const params: any[] = [];
 
-export function getAllPatientsFullPaginated(limit: number, offset: number) {
-    return db.prepare('SELECT * FROM patients WHERE is_archived = 0 ORDER BY full_name ASC LIMIT ? OFFSET ?').all(limit, offset);
-}
-
-export function getPatientsCount(searchTerm?: string) {
     if (searchTerm) {
-        const res = db.prepare('SELECT COUNT(*) as count FROM patients WHERE full_name LIKE ? AND is_archived = 0').get(`%${searchTerm}%`) as { count: number };
-        return res.count;
+        whereClause += ' AND p.full_name LIKE ?';
+        params.push(`%${searchTerm}%`);
     }
-    const res = db.prepare('SELECT COUNT(*) as count FROM patients WHERE is_archived = 0').get() as { count: number };
+
+    const ageExpr = `((strftime('%Y', 'now') - strftime('%Y', p.date_of_birth)) - (strftime('%m-%d', 'now') < strftime('%m-%d', p.date_of_birth)))`;
+    const netBalanceExpr = `(COALESCE(pb.total_paid, 0) - COALESCE(pb.total_billed, 0))`;
+    const nextApptExpr = `(SELECT MIN(start_time) FROM appointments WHERE patient_id = p.id AND start_time >= datetime('now', 'localtime') AND status != 'cancelled')`;
+
+    if (filter) {
+        switch (filter) {
+            case 'child': whereClause += ` AND ${ageExpr} < 16`; break;
+            case 'adult': whereClause += ` AND ${ageExpr} >= 16`; break;
+            case 'debt': whereClause += ` AND ${netBalanceExpr} < 0`; break;
+            case 'credit': whereClause += ` AND ${netBalanceExpr} > 0`; break;
+            case 'upcoming': whereClause += ` AND ${nextApptExpr} IS NOT NULL`; break;
+            case 'male': whereClause += ` AND p.gender = 'Male'`; break;
+            case 'female': whereClause += ` AND p.gender = 'Female'`; break;
+        }
+    }
+
+    const selectFields = isLimited
+        ? `p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth, p.gender, p.relationship_to_primary`
+        : `p.*`;
+
+    const sql = `
+        SELECT 
+            ${selectFields},
+            ${netBalanceExpr} as net_balance,
+            ${nextApptExpr} as next_appointment,
+            (${ageExpr} < 16) as is_child,
+            ${ageExpr} as age
+        FROM patients p
+        LEFT JOIN patient_balance pb ON p.id = pb.patient_id
+        WHERE ${whereClause}
+        ORDER BY p.full_name ASC
+        LIMIT ? OFFSET ?
+    `;
+
+    params.push(limit, offset);
+    return db.prepare(sql).all(...params);
+}
+
+export function getPatientsCount(searchTerm?: string, filter?: string) {
+    let whereClause = 'p.is_archived = 0';
+    const params: any[] = [];
+
+    if (searchTerm) {
+        whereClause += ' AND p.full_name LIKE ?';
+        params.push(`%${searchTerm}%`);
+    }
+
+    if (filter) {
+        const ageExpr = `((strftime('%Y', 'now') - strftime('%Y', p.date_of_birth)) - (strftime('%m-%d', 'now') < strftime('%m-%d', p.date_of_birth)))`;
+        const netBalanceExpr = `(COALESCE(pb.total_paid, 0) - COALESCE(pb.total_billed, 0))`;
+        const nextApptExpr = `(SELECT MIN(start_time) FROM appointments WHERE patient_id = p.id AND start_time >= datetime('now', 'localtime') AND status != 'cancelled')`;
+
+        switch (filter) {
+            case 'child': whereClause += ` AND ${ageExpr} < 16`; break;
+            case 'adult': whereClause += ` AND ${ageExpr} >= 16`; break;
+            case 'debt': whereClause += ` AND ${netBalanceExpr} < 0`; break;
+            case 'credit': whereClause += ` AND ${netBalanceExpr} > 0`; break;
+            case 'upcoming': whereClause += ` AND ${nextApptExpr} IS NOT NULL`; break;
+            case 'male': whereClause += ` AND p.gender = 'Male'`; break;
+            case 'female': whereClause += ` AND p.gender = 'Female'`; break;
+        }
+    }
+
+    const sql = `
+        SELECT COUNT(*) as count 
+        FROM patients p
+        LEFT JOIN patient_balance pb ON p.id = pb.patient_id
+        WHERE ${whereClause}
+    `;
+
+    const res = db.prepare(sql).get(...params) as { count: number };
     return res.count;
 }
 
@@ -1375,13 +1452,6 @@ export function getPatientByIdFull(id: number) {
     return db.prepare('SELECT * FROM patients WHERE id = ?').get(id);
 }
 
-export function searchPatientsByName(searchTerm: string) {
-    return db.prepare('SELECT * FROM patients WHERE full_name LIKE ? AND is_archived = 0 ORDER BY full_name ASC').all(`%${searchTerm}%`);
-}
-
-export function searchPatientsByNamePaginated(searchTerm: string, limit: number, offset: number) {
-    return db.prepare('SELECT * FROM patients WHERE full_name LIKE ? AND is_archived = 0 ORDER BY full_name ASC LIMIT ? OFFSET ?').all(`%${searchTerm}%`, limit, offset);
-}
 
 export function createPatient(patientData: any) {
     const keys = Object.keys(patientData);

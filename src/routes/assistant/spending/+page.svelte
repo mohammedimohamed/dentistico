@@ -102,7 +102,7 @@
     onMount(loadAll);
 </script>
 
-<div class="p-8">
+<div>
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">{$t("spending.title")}</h1>
         <div class="flex gap-2">

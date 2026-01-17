@@ -1,8 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import {
     getAllUpcomingAppointments,
-    getAllPatientsLimited,
-    searchPatientsByNameLimited,
+    getPatientsEnhanced,
     getDoctors,
     getPendingPayments,
     createPatient,
@@ -27,10 +26,16 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     }
 
     const patientSearch = url.searchParams.get('patientSearch') || '';
+    const patientFilter = url.searchParams.get('patientFilter') || '';
 
     // Safety: only fetch all if no search, but even then getAllPatientsLimited has a 1000 limit now
     const appointments = getAllUpcomingAppointments();
-    const patients = patientSearch ? searchPatientsByNameLimited(patientSearch) : getAllPatientsLimited();
+    const patients = getPatientsEnhanced({
+        searchTerm: patientSearch,
+        filter: patientFilter,
+        isLimited: true,
+        limit: 1000
+    });
     const doctors = getDoctors();
     const pendingPayments = getPendingPayments();
 
@@ -40,6 +45,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         doctors,
         pendingPayments,
         patientSearch,
+        patientFilter,
         user: locals.user
     };
 };

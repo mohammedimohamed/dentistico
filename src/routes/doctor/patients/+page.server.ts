@@ -1,5 +1,5 @@
 import { redirect, fail } from '@sveltejs/kit';
-import { getAllPatientsFullPaginated, searchPatientsByNamePaginated, getPatientsCount, createPatient } from '$lib/server/db';
+import { getPatientsEnhanced, getPatientsCount, createPatient } from '$lib/server/db';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -8,24 +8,18 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     }
 
     const searchQuery = url.searchParams.get('search') || '';
+    const filter = url.searchParams.get('filter') || '';
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = 24;
     const offset = (page - 1) * limit;
 
-    let patients;
-    let totalPatients;
-
-    if (searchQuery) {
-        patients = searchPatientsByNamePaginated(searchQuery, limit, offset);
-        totalPatients = getPatientsCount(searchQuery);
-    } else {
-        patients = getAllPatientsFullPaginated(limit, offset);
-        totalPatients = getPatientsCount();
-    }
+    const patients = getPatientsEnhanced({ searchTerm: searchQuery, filter, limit, offset });
+    const totalPatients = getPatientsCount(searchQuery, filter);
 
     return {
         patients,
         searchQuery,
+        filter,
         totalPatients,
         page,
         totalPages: Math.ceil(totalPatients / limit),

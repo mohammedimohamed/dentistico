@@ -352,7 +352,8 @@
                     "addButton": "إضافة مريض",
                     "searchPlaceholder": "البحث في المرضى...",
                     "scheduleVisit": "جدولة زيارة",
-                    "patientId": "المعرف"
+                    "patientId": "المعرف",
+                    "totalPatients": "إجمالي المرضى"
                 },
                 "payments": {
                     "label": "الماليات",

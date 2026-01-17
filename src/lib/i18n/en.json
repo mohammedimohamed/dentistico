@@ -279,7 +279,8 @@
                     "addButton": "Add Patient",
                     "searchPlaceholder": "Search patients...",
                     "scheduleVisit": "Schedule Visit",
-                    "patientId": "ID"
+                    "patientId": "ID",
+                    "totalPatients": "Total Patients"
                 },
                 "payments": {
                     "label": "Finance",

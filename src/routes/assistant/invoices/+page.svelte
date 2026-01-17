@@ -44,7 +44,7 @@
     }
 </script>
 
-<div class="p-4 sm:p-6 lg:p-8">
+<div>
     <div class="flex justify-between items-center mb-8">
         <div>
             <h2 class="text-2xl font-black text-gray-900">

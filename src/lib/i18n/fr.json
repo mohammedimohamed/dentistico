@@ -295,7 +295,8 @@
                     "addButton": "Ajouter Patient",
                     "searchPlaceholder": "Rechercher patients...",
                     "scheduleVisit": "Programmer Visite",
-                    "patientId": "ID"
+                    "patientId": "ID",
+                    "totalPatients": "Total Patients"
                 },
                 "payments": {
                     "label": "Finances",
