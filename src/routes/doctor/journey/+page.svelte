@@ -156,7 +156,7 @@
                             <span class="status-tag {appt.status}"
                                 >{appt.status}</span
                             >
-                            {#if appt.actual_start_time}
+                            {#if appt.actual_start_time && !appt.actual_end_time}
                                 <span class="visit-status"
                                     >Visite en cours...</span
                                 >

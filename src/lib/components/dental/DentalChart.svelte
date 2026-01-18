@@ -1090,7 +1090,7 @@
         display: flex;
         gap: 0.15rem;
         justify-content: center;
-        padding: 0.5rem;
+        padding: 1.5rem 1rem; /* Increased vertical padding for labels */
     }
 
     .occlusal-plane-gap {

@@ -6,29 +6,82 @@
     import DentalChart from "$lib/components/dental/DentalChart.svelte";
     import { calculateAge } from "$lib/dental/tooth-data";
     import { quintOut } from "svelte/easing";
+    import SmartDateTimePicker from "$lib/components/SmartDateTimePicker.svelte";
 
     let { data } = $props();
 
     let chart: any = $state();
     let showNotesModal = $state(false);
     let clinicalNote = $state("");
+    let noteImportance = $state("low");
+
+    let showRescheduleModal = $state(false);
+    let rescheduleDate = $state("");
+    let rescheduleTime = $state("");
 
     let visitTimer = $state(0);
     let timerInterval: any;
 
-    onMount(() => {
-        if (
-            data.appointment.actual_start_time &&
-            !data.appointment.actual_end_time
-        ) {
+    const avgDurationSeconds = $derived((data.config?.avgDuration || 20) * 60);
+    const timerStatus = $derived.by(() => {
+        if (visitTimer < avgDurationSeconds) return "green";
+        if (visitTimer < avgDurationSeconds + 600) return "orange";
+        return "red";
+    });
+
+    // Derived values
+    const plannedActs = $derived((data.plannedActs || []) as any[]);
+    const labTrackingItems = $derived((data.labTracking || []) as any[]);
+    const highPriorityNotes = $derived((data.clinicalNotes || []) as any[]); // Use all notes for sidebar logic
+
+    let isNotesSidebarOpen = $state(false);
+
+    // Smart Notification Logic
+    const notesStatus = $derived.by(() => {
+        const notes = (data.clinicalNotes || []) as any[];
+        if (notes.some((n: any) => n.importance === "critical"))
+            return "critical";
+        if (notes.some((n: any) => n.importance === "high")) return "high";
+        if (notes.length > 0) return "normal";
+        return "empty";
+    });
+
+    const notesSummary = $derived.by(() => {
+        const notes = (data.clinicalNotes || []) as any[];
+        if (notes.length === 0) return "Aucune note";
+        const critical = notes.filter(
+            (n: any) => n.importance === "critical",
+        ).length;
+        const urgent = notes.filter((n: any) => n.importance === "high").length;
+        return `${notes.length} Notes: ${critical > 0 ? critical + " Crities, " : ""}${urgent > 0 ? urgent + " Urgentes" : ""}`;
+    });
+
+    const isSessionActive = $derived(
+        !!data.appointment.actual_start_time &&
+            !data.appointment.actual_end_time,
+    );
+
+    // Reactive timer effect
+    $effect(() => {
+        if (isSessionActive) {
             const start = new Date(
                 data.appointment.actual_start_time,
             ).getTime();
+            // Immediate update
+            visitTimer = Math.floor((Date.now() - start) / 1000);
+
+            // Clear any existing interval to prevent duplicates
+            if (timerInterval) clearInterval(timerInterval);
+
             timerInterval = setInterval(() => {
                 visitTimer = Math.floor((Date.now() - start) / 1000);
             }, 1000);
+        } else {
+            if (timerInterval) clearInterval(timerInterval);
         }
-        return () => clearInterval(timerInterval);
+        return () => {
+            if (timerInterval) clearInterval(timerInterval);
+        };
     });
 
     function formatTime(seconds: number) {
@@ -38,7 +91,7 @@
         return `${h > 0 ? h + ":" : ""}${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     }
 
-    const patientAge = calculateAge(data.patient.date_of_birth);
+    const patientAge = $derived(calculateAge(data.patient.date_of_birth));
 </script>
 
 <div
@@ -46,181 +99,486 @@
 >
     <!-- 1. Header Identity Bar -->
     <header
-        class="identity-bar h-20 bg-white border-b border-slate-200 flex items-center px-8 justify-between z-20 shadow-sm"
+        class="identity-bar h-24 bg-white border-b-2 border-slate-200 flex items-center px-8 justify-between z-20 shadow-md shrink-0"
     >
         <div class="flex items-center gap-6">
             <a href="/doctor/journey" class="btn-back"> ← </a>
             <div class="patient-id-card">
-                <h2 class="text-xl font-bold text-slate-900">
+                <h2
+                    class="text-2xl font-black text-slate-900 leading-none mb-1"
+                >
                     {data.patient.full_name}
                 </h2>
-                <div class="flex gap-3 text-sm text-slate-500 font-medium">
-                    <span
-                        >{patientAge} ANS ({data.patient.gender === "F"
-                            ? "Femme"
-                            : "Homme"})</span
-                    >
+                <div
+                    class="flex gap-3 text-sm text-slate-500 font-bold uppercase tracking-wider"
+                >
+                    <span>{patientAge} ANS</span>
                     <span class="text-slate-300">|</span>
-                    <span>{data.patient.phone}</span>
+                    <span
+                        >{data.patient.gender === "F" ? "Femme" : "Homme"}</span
+                    >
                 </div>
             </div>
         </div>
 
-        <div class="flex items-center gap-6">
-            <!-- Critical Info -->
-            <div class="flex gap-4">
-                {#if data.patient.allergies}
-                    <div
-                        class="info-pill bg-rose-50 text-rose-600 border border-rose-100"
+        <!-- Center: Intelligent Timer -->
+        <div class="flex flex-col items-center">
+            {#if isSessionActive}
+                <div class="timer-display {timerStatus}" in:scale>
+                    <span
+                        class="time font-mono text-4xl font-black tracking-tight"
+                        >{formatTime(visitTimer)}</span
                     >
-                        <span class="font-bold"
-                            >⚠️ {$t("journey.allergies")}:</span
-                        >
-                        {data.patient.allergies}
+                </div>
+            {:else if data.appointment.status === "completed"}
+                <div
+                    class="px-6 py-2 bg-slate-100 rounded-2xl border-2 border-slate-200"
+                >
+                    <span
+                        class="text-xl font-black text-slate-400 tracking-tighter uppercase"
+                        >{$t("journey.completed")}</span
+                    >
+                </div>
+            {:else}
+                <div
+                    class="px-6 py-2 bg-indigo-50 rounded-2xl border-2 border-indigo-100 animate-pulse"
+                >
+                    <span
+                        class="text-xl font-black text-indigo-400 tracking-tighter uppercase"
+                        >{$t("journey.waiting")}</span
+                    >
+                </div>
+            {/if}
+        </div>
+
+        <div class="flex items-center gap-6">
+            <!-- Critical Info & Balance (High Visibility) -->
+            <div class="flex gap-3">
+                {#if data.patient.allergies}
+                    <div class="alert-box critical">
+                        <span class="icon">⚠️</span>
+                        <div class="flex flex-col">
+                            <span class="label">{$t("journey.allergies")}</span>
+                            <span class="value">{data.patient.allergies}</span>
+                        </div>
                     </div>
                 {/if}
                 {#if data.patient.medical_conditions}
-                    <div
-                        class="info-pill bg-amber-50 text-amber-600 border border-amber-100"
-                    >
-                        <span class="font-bold"
-                            >🩺 {$t("journey.medical_conditions")}:</span
-                        >
-                        {data.patient.medical_conditions}
+                    <div class="alert-box warning">
+                        <span class="icon">🩺</span>
+                        <div class="flex flex-col">
+                            <span class="label"
+                                >{$t("journey.medical_conditions")}</span
+                            >
+                            <span class="value"
+                                >{data.patient.medical_conditions}</span
+                            >
+                        </div>
                     </div>
                 {/if}
-            </div>
-
-            <div class="balance-badge">
-                <span class="label">{$t("journey.solde")}</span>
-                <span
-                    class="value"
-                    class:positive={data.patient.balance_due <= 0}
+                <div
+                    class="alert-box balance"
                     class:negative={data.patient.balance_due > 0}
                 >
-                    {data.patient.balance_due.toLocaleString()} دج
-                </span>
+                    <span class="icon">💰</span>
+                    <div class="flex flex-col">
+                        <span class="label">{$t("journey.solde")}</span>
+                        <span class="value"
+                            >{data.patient.balance_due.toLocaleString()} دج</span
+                        >
+                    </div>
+                </div>
             </div>
 
             <!-- Visit Control -->
-            {#if !data.appointment.actual_start_time}
-                <form action="?/startVisit" method="POST" use:enhance>
-                    <button class="btn-commencer">
-                        🚀 {$t("journey.start_visit")}
-                    </button>
-                </form>
-            {:else if !data.appointment.actual_end_time}
-                <div class="flex items-center gap-4">
-                    <div class="timer">
-                        <span class="icon">⏱️</span>
-                        <span class="time">{formatTime(visitTimer)}</span>
-                    </div>
+            <div class="flex items-center gap-3">
+                {#if !data.appointment.actual_start_time}
+                    <form action="?/startVisit" method="POST" use:enhance>
+                        <button class="btn-commencer">
+                            🚀 {$t("journey.start_visit")}
+                        </button>
+                    </form>
+                {:else if !data.appointment.actual_end_time}
                     <form action="?/endVisit" method="POST" use:enhance>
                         <button class="btn-terminer">
                             {$t("journey.end_visit")}
                         </button>
                     </form>
-                </div>
-            {/if}
+                {/if}
+            </div>
         </div>
     </header>
 
-    <!-- 2. Main Content Grid -->
-    <main class="flex-1 grid grid-cols-12 gap-0 overflow-hidden">
-        <!-- Left Section: Action Grid -->
+    <!-- 2. Main Content Grid - Dynamic Collapsible Layout -->
+    <main
+        class="flex-1 grid gap-0 overflow-hidden transition-all duration-300 ease-out"
+        style="grid-template-columns: 350px 1fr {isNotesSidebarOpen
+            ? '350px'
+            : '5rem'};"
+    >
+        <!-- Left Section: Action Grid & Clinical Intelligence (Fixed 350px) -->
         <section
-            class="col-span-4 p-6 bg-slate-100/50 border-r border-slate-200 overflow-y-auto"
+            class="p-6 bg-slate-50 border-r-2 border-slate-200 overflow-y-auto flex flex-col gap-6"
         >
-            <h3
-                class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6"
-            >
-                Action Grid
-            </h3>
-            <div class="action-grid">
-                <button
-                    class="pos-btn"
-                    style="--color: #6366f1"
-                    onclick={() => chart?.openGeneralTreatment()}
-                >
-                    <span class="icon">🦷</span>
-                    <span class="label">{$t("journey.acte_general")}</span>
-                </button>
-                <button class="pos-btn" style="--color: #10b981">
-                    <span class="icon">💳</span>
-                    <span class="label">{$t("journey.paiement")}</span>
-                </button>
-                <button class="pos-btn" style="--color: #8b5cf6">
-                    <span class="icon">📜</span>
-                    <span class="label">{$t("journey.ordonnance")}</span>
-                </button>
-                <button class="pos-btn" style="--color: #3b82f6">
-                    <span class="icon">📑</span>
-                    <span class="label">{$t("journey.facture")}</span>
-                </button>
-                <button class="pos-btn" style="--color: #f59e0b">
-                    <span class="icon">📅</span>
-                    <span class="label">{$t("journey.prochain_rdv")}</span>
-                </button>
-                <button
-                    class="pos-btn"
-                    style="--color: #64748b"
-                    onclick={() => (showNotesModal = true)}
-                >
-                    <span class="icon">📝</span>
-                    <span class="label">{$t("journey.note_clinique")}</span>
-                </button>
+            <!-- 1. Planned Acts Notification -->
+            {#if plannedActs.length > 0}
+                <div class="planned-acts-alert animate-bounce-subtle" in:slide>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-xl">📅</span>
+                        <h4 class="font-black text-indigo-900 leading-none">
+                            {$t("journey.planned_today")}
+                        </h4>
+                    </div>
+                    <ul class="space-y-1">
+                        {#each plannedActs as act}
+                            <li
+                                class="text-indigo-700 text-sm font-bold flex items-center gap-2"
+                            >
+                                <span
+                                    class="w-1.5 h-1.5 rounded-full bg-indigo-400"
+                                ></span>
+                                {act.treatment_type}
+                            </li>
+                        {/each}
+                    </ul>
+                </div>
+            {/if}
+
+            <!-- 2. Main Actions -->
+            <div class="action-group">
+                <h3 class="group-title">{$t("journey.clinical_actions")}</h3>
+                <div class="action-grid">
+                    <button
+                        class="pos-btn"
+                        style="--color: #6366f1"
+                        onclick={() => chart?.openGeneralTreatment()}
+                    >
+                        <span class="icon">🦷</span>
+                        <span class="label">{$t("journey.acte_general")}</span>
+                    </button>
+                    <button class="pos-btn" style="--color: #10b981">
+                        <span class="icon">💳</span>
+                        <span class="label">{$t("journey.paiement")}</span>
+                    </button>
+                    <button class="pos-btn" style="--color: #8b5cf6">
+                        <span class="icon">📜</span>
+                        <span class="label">{$t("journey.ordonnance")}</span>
+                    </button>
+                    <button class="pos-btn" style="--color: #3b82f6">
+                        <span class="icon">📑</span>
+                        <span class="label">{$t("journey.facture")}</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. Exception Handling (Quick Status) -->
+            <div class="action-group">
+                <h3 class="group-title">
+                    {$t("journey.appointment_management")}
+                </h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <form
+                        action="?/updateStatus"
+                        method="POST"
+                        use:enhance
+                        class="contents"
+                    >
+                        <input type="hidden" name="status" value="scheduled" />
+                        <button
+                            class="status-action-btn postponed"
+                            disabled={isSessionActive}
+                        >
+                            {$t("journey.postpone")}
+                        </button>
+                    </form>
+                    <form
+                        action="?/updateStatus"
+                        method="POST"
+                        use:enhance
+                        class="contents"
+                    >
+                        <input type="hidden" name="status" value="cancelled" />
+                        <button
+                            class="status-action-btn cancelled"
+                            disabled={isSessionActive}
+                        >
+                            {$t("journey.cancel")}
+                        </button>
+                    </form>
+                    <button
+                        class="status-action-btn reschedule col-span-2"
+                        disabled={isSessionActive}
+                        onclick={() => (showRescheduleModal = true)}
+                    >
+                        {$t("journey.reschedule")}
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. Lab Tracking -->
+            <div class="action-group">
+                <h3 class="group-title">{$t("journey.lab_tracking")}</h3>
+                <div class="lab-tracking-container">
+                    {#if labTrackingItems.length > 0}
+                        {#each labTrackingItems as item}
+                            <div class="lab-item {item.status}">
+                                <div
+                                    class="flex justify-between items-start mb-1"
+                                >
+                                    <span
+                                        class="lab-name font-bold text-slate-700"
+                                        >{item.description}</span
+                                    >
+                                    <span class="status-pill"
+                                        >{item.status}</span
+                                    >
+                                </div>
+                                <span
+                                    class="text-[10px] text-slate-400 font-bold uppercase"
+                                    >{new Date(
+                                        item.updated_at,
+                                    ).toLocaleDateString()}</span
+                                >
+                            </div>
+                        {/each}
+                    {:else}
+                        <div class="empty-lab-state">
+                            <span class="text-sm font-medium text-slate-400"
+                                >{$t("journey.no_prosthesis")}</span
+                            >
+                        </div>
+                    {/if}
+                </div>
             </div>
         </section>
 
-        <!-- Right Section: Interactive Odontogram -->
-        <section class="col-span-8 flex flex-col bg-white">
-            <div
-                class="flex-1 overflow-auto flex items-center justify-center p-8"
-            >
-                <DentalChart
-                    bind:this={chart}
-                    patientId={data.patient.id}
-                    {patientAge}
-                />
-            </div>
+        <!-- Center Section: Interactive Odontogram (Flexible) -->
+        <section
+            class="bg-white overflow-auto flex items-center justify-center p-4 relative border-r-2 border-slate-100"
+        >
+            <DentalChart
+                bind:this={chart}
+                patientId={data.patient.id}
+                {patientAge}
+            />
+        </section>
+
+        <!-- Right Section: Collapsible Clinical Sidebar -->
+        <section
+            class="bg-slate-50/50 flex flex-col border-l-2 border-slate-100 h-full overflow-hidden relative transition-all duration-300"
+        >
+            {#if !isNotesSidebarOpen}
+                <!-- COLLAPSED: Toggle Handle with Smart Indicators -->
+                <button
+                    class="h-full w-full flex flex-col items-center py-6 gap-6 hover:bg-slate-100 transition-colors group cursor-pointer"
+                    onclick={() => (isNotesSidebarOpen = true)}
+                    title={notesSummary}
+                >
+                    <!-- Status Badge -->
+                    <div class="relative">
+                        <div
+                            class="w-12 h-12 rounded-2xl flex items-center justify-center border-2 shadow-sm transition-all group-hover:scale-110 {notesStatus ===
+                            'critical'
+                                ? 'bg-red-50 border-red-200 text-red-500 animate-pulse'
+                                : notesStatus === 'high'
+                                  ? 'bg-orange-50 border-orange-200 text-orange-500'
+                                  : notesStatus === 'normal'
+                                    ? 'bg-blue-50 border-blue-200 text-blue-500'
+                                    : 'bg-white border-slate-200 text-slate-300'}"
+                        >
+                            <span class="text-xl font-black">
+                                {notesStatus === "empty" ? "📝" : "i"}
+                            </span>
+                        </div>
+                        {#if notesStatus !== "empty"}
+                            <div
+                                class="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white {notesStatus ===
+                                'critical'
+                                    ? 'bg-red-500'
+                                    : notesStatus === 'high'
+                                      ? 'bg-orange-500'
+                                      : 'bg-blue-500'}"
+                            ></div>
+                        {/if}
+                    </div>
+
+                    <!-- Vertical Label -->
+                    <div
+                        class="writing-vertical-rl rotate-180 flex items-center gap-4 py-4"
+                    >
+                        <span
+                            class="font-black text-slate-400 text-xs tracking-[0.3em] uppercase whitespace-nowrap group-hover:text-indigo-500 transition-colors"
+                        >
+                            {$t("journey.clinical_notes")}
+                        </span>
+                    </div>
+                </button>
+            {:else}
+                <!-- EXPANDED: Full Note Panel -->
+                <div
+                    class="absolute inset-0 flex flex-col"
+                    in:slide={{ axis: "x", duration: 300 }}
+                >
+                    <div
+                        class="p-6 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 flex justify-between items-center"
+                    >
+                        <div class="flex items-center gap-3">
+                            <button
+                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors"
+                                onclick={() => (isNotesSidebarOpen = false)}
+                            >
+                                →
+                            </button>
+                            <h3
+                                class="font-black text-slate-800 uppercase tracking-wider text-sm"
+                            >
+                                {$t("journey.clinical_notes")}
+                            </h3>
+                        </div>
+                        <button
+                            class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                            onclick={() => (showNotesModal = true)}
+                        >
+                            <span class="text-lg leading-none pb-1">+</span>
+                        </button>
+                    </div>
+
+                    <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-4">
+                        {#if highPriorityNotes.length === 0}
+                            <div class="text-center py-10 opacity-50">
+                                <span class="text-4xl block mb-2">📝</span>
+                                <span
+                                    class="text-xs font-bold text-slate-400 uppercase"
+                                    >{$t("journey.no_notes")}</span
+                                >
+                            </div>
+                        {/if}
+
+                        {#each highPriorityNotes as note}
+                            <div
+                                class="post-it {note.importance} pointer-events-auto"
+                                in:slide
+                            >
+                                <div
+                                    class="flex items-center justify-between mb-2"
+                                >
+                                    <span class="importance-badge"
+                                        >{note.importance}</span
+                                    >
+                                    <span
+                                        class="text-[10px] font-bold text-slate-400"
+                                        >{new Date(
+                                            note.created_at,
+                                        ).toLocaleDateString()}</span
+                                    >
+                                </div>
+                                <p class="note-text">{note.content}</p>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            {/if}
         </section>
     </main>
 
     {#if showNotesModal}
         <div
-            class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm"
+            class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
             transition:fade
         >
             <div
-                class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden"
+                class="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl overflow-hidden border-4 border-white"
                 in:scale={{ start: 0.9, duration: 400, easing: quintOut }}
             >
-                <div
-                    class="p-8 border-b border-slate-100 flex justify-between items-center"
+                <form
+                    action="?/saveNote"
+                    method="POST"
+                    use:enhance={() => {
+                        return async ({ update }) => {
+                            await update();
+                            showNotesModal = false;
+                            clinicalNote = "";
+                        };
+                    }}
                 >
-                    <h3 class="text-2xl font-black text-slate-800">
-                        {$t("journey.note_clinique")}
-                    </h3>
-                    <button
-                        class="text-slate-400 hover:text-slate-600"
-                        onclick={() => (showNotesModal = false)}>✕</button
+                    <div
+                        class="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50"
                     >
-                </div>
-                <div class="p-8">
-                    <textarea
-                        bind:value={clinicalNote}
-                        placeholder="Saisissez vos notes ici..."
-                        class="w-full h-64 p-6 bg-slate-50 border-2 border-slate-100 rounded-3xl focus:border-indigo-500 focus:bg-white transition-all text-lg font-medium outline-none resize-none"
-                    ></textarea>
-                </div>
-                <div class="p-8 bg-slate-50 flex gap-4">
-                    <button
-                        class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all"
-                        onclick={() => (showNotesModal = false)}
-                    >
-                        {$t("common.save")}
-                    </button>
-                </div>
+                        <div class="flex flex-col">
+                            <h3
+                                class="text-3xl font-black text-slate-800 tracking-tighter"
+                            >
+                                {$t("journey.note_clinique")}
+                            </h3>
+                            <p
+                                class="text-slate-400 font-bold text-sm uppercase tracking-wider"
+                            >
+                                {$t("journey.evolved_notes")}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white shadow-sm text-slate-400 hover:text-rose-500 transition-all border border-slate-100"
+                            onclick={() => (showNotesModal = false)}>✕</button
+                        >
+                    </div>
+
+                    <div class="p-10 space-y-8">
+                        <!-- Importance Trigger -->
+                        <div class="flex flex-col gap-3">
+                            <label
+                                class="text-xs font-black text-slate-400 uppercase tracking-widest"
+                                for="importance"
+                            >
+                                {$t("journey.importance_level")}
+                            </label>
+                            <div class="grid grid-cols-3 gap-4">
+                                {#each ["low", "high", "critical"] as level}
+                                    <label
+                                        class="importance-selector {level}"
+                                        class:active={noteImportance === level}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="importance"
+                                            value={level}
+                                            bind:group={noteImportance}
+                                            class="hidden"
+                                        />
+                                        <span
+                                            class="capitalize font-black text-sm"
+                                            >{level}</span
+                                        >
+                                    </label>
+                                {/each}
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-3">
+                            <label
+                                class="text-xs font-black text-slate-400 uppercase tracking-widest"
+                                for="content"
+                            >
+                                {$t("journey.note_content")}
+                            </label>
+                            <textarea
+                                name="content"
+                                bind:value={clinicalNote}
+                                placeholder="Saisissez vos notes cliniques ici..."
+                                class="w-full h-48 p-8 bg-slate-50 border-2 border-slate-100 rounded-[2rem] focus:border-indigo-500 focus:bg-white transition-all text-xl font-medium outline-none resize-none shadow-inner"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <div class="p-10 bg-slate-50 flex gap-4">
+                        <button
+                            type="submit"
+                            class="flex-1 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-xl hover:bg-indigo-700 hover:scale-[1.02] transition-all shadow-xl shadow-indigo-200"
+                        >
+                            {$t("common.save")}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     {/if}
@@ -228,138 +586,334 @@
 
 <style>
     .journey-workspace {
-        font-family: "Inter", sans-serif;
+        font-family: "Outfit", "Inter", sans-serif;
     }
 
-    .btn-back {
-        width: 40px;
-        height: 40px;
+    /* 1. Identity Bar & Alerts */
+    .identity-bar {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+    }
+
+    .alert-box {
         display: flex;
         align-items: center;
-        justify-content: center;
-        background: #f1f5f9;
-        border-radius: 12px;
+        gap: 0.75rem;
+        padding: 0.75rem 1.25rem;
+        border-radius: 1.25rem;
+        border: 2px solid transparent;
+        min-width: 140px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .alert-box .icon {
+        font-size: 1.5rem;
+    }
+    .alert-box .label {
+        font-size: 0.6rem;
         font-weight: 900;
-        color: #64748b;
-        transition: all 0.2s;
-        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        opacity: 0.8;
+    }
+    .alert-box .value {
+        font-weight: 900;
+        font-size: 1.1rem;
+        line-height: 1;
+        letter-spacing: -0.02em;
     }
 
-    .btn-back:hover {
-        background: #e2e8f0;
-        color: #1e293b;
+    .alert-box.critical {
+        background: #fff1f2;
+        border-color: #fecdd3;
+        color: #e11d48;
     }
 
-    .info-pill {
-        padding: 0.5rem 1rem;
+    .alert-box.warning {
+        background: #fffbeb;
+        border-color: #fef3c7;
+        color: #d97706;
+    }
+
+    .alert-box.balance {
+        background: #f0fdf4;
+        border-color: #dcfce7;
+        color: #16a34a;
+    }
+
+    .alert-box.balance.negative {
+        background: #fef2f2;
+        border-color: #fee2e2;
+        color: #dc2626;
+    }
+
+    /* 2. Intelligent Timer */
+    .timer-display {
+        background: #0f172a;
+        color: white;
+        padding: 0.5rem 2rem;
         border-radius: 2rem;
-        font-size: 0.75rem;
+        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.4);
+        border: 3px solid #1e293b;
+        transition: all 0.5s ease;
     }
 
-    .balance-badge {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        background: #f8fafc;
-        padding: 0.5rem 1.25rem;
-        border-radius: 1rem;
-        border: 1px solid #e2e8f0;
+    .timer-display.green {
+        border-color: #10b981;
+        color: #10b981;
+    }
+    .timer-display.orange {
+        border-color: #f59e0b;
+        color: #f59e0b;
+    }
+    .timer-display.red {
+        border-color: #ef4444;
+        color: #ef4444;
+        animation: pulse-red 2s infinite;
     }
 
-    .balance-badge .label {
-        font-size: 0.65rem;
-        font-weight: 800;
+    @keyframes pulse-red {
+        0% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        }
+    }
+
+    /* 3. Action Grid & Group */
+    .group-title {
+        font-size: 0.7rem;
+        font-weight: 900;
         text-transform: uppercase;
         color: #94a3b8;
-    }
-
-    .balance-badge .value {
-        font-weight: 900;
-        font-size: 1.125rem;
-    }
-
-    .value.negative {
-        color: #ef4444;
-    }
-    .value.positive {
-        color: #10b981;
-    }
-
-    .btn-commencer {
-        background: #6366f1;
-        color: white;
-        padding: 0.75rem 1.5rem;
-        border-radius: 1rem;
-        font-weight: 800;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        transition: all 0.2s;
-        border: none;
-    }
-
-    .btn-commencer:hover {
-        transform: scale(1.05);
-        box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
-    }
-
-    .timer {
-        background: #0f172a;
-        color: #10b981;
-        padding: 0.5rem 1rem;
-        border-radius: 0.75rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-family: "JetBrains Mono", monospace;
-        font-weight: 700;
-    }
-
-    .btn-terminer {
-        background: #fee2e2;
-        color: #ef4444;
-        padding: 0.75rem 1.5rem;
-        border-radius: 1rem;
-        font-weight: 800;
-        border: none;
-    }
-
-    .btn-terminer:hover {
-        background: #fecaca;
+        letter-spacing: 0.15em;
+        margin-bottom: 1rem;
     }
 
     .action-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 1.25rem;
+        gap: 1rem;
     }
 
     .pos-btn {
-        aspect-ratio: 1;
+        height: 100px;
         background: white;
-        border: 2px solid transparent;
+        border: 2px solid #f1f5f9;
         border-radius: 1.5rem;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 1rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        gap: 0.5rem;
         transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .pos-btn:hover {
-        transform: translateY(-5px);
+        transform: translateY(-4px);
         border-color: var(--color);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1);
     }
 
     .pos-btn .icon {
-        font-size: 2.5rem;
+        font-size: 2rem;
     }
-
     .pos-btn .label {
         font-weight: 800;
-        font-size: 0.875rem;
-        color: #1e293b;
+        font-size: 0.75rem;
+        color: #475569;
+    }
+
+    /* 4. Status Actions (Exceptions) */
+    .status-action-btn {
+        padding: 0.75rem;
+        border-radius: 1rem;
+        font-weight: 900;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .status-action-btn.postponed {
+        background: #f8fafc;
+        color: #64748b;
+        border-color: #e2e8f0;
+    }
+    .status-action-btn.cancelled {
+        background: #fff1f2;
+        color: #e11d48;
+        border-color: #fecdd3;
+    }
+    .status-action-btn.reschedule {
+        background: #eef2ff;
+        color: #4f46e5;
+        border-color: #c7d2fe;
+    }
+
+    .status-action-btn:hover:not(:disabled) {
+        filter: brightness(0.95);
+        transform: translateY(-2px);
+    }
+
+    .status-action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        filter: grayscale(0.5);
+    }
+
+    /* 5. Lab Tracking */
+    .lab-tracking-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .lab-item {
+        background: white;
+        padding: 1rem;
+        border-radius: 1.25rem;
+        border: 2px solid #f1f5f9;
+        transition: all 0.2s;
+    }
+
+    .lab-item.received {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+    .lab-item.ordered {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+
+    .status-pill {
+        font-size: 0.6rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.5rem;
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    /* 6. Post-it Notes */
+    .post-it {
+        padding: 1.5rem;
+        border-radius: 1.5rem;
+        box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+        transform: rotate(1deg);
+        transition: all 0.3s;
+    }
+
+    .post-it:nth-child(even) {
+        transform: rotate(-1.5deg);
+    }
+    .post-it:hover {
+        transform: scale(1.05) rotate(0deg);
+        z-index: 40;
+    }
+
+    .post-it.critical {
+        background: #fee2e2;
+        border-left: 8px solid #ef4444;
+        color: #991b1b;
+    }
+    .post-it.high {
+        background: #fef3c7;
+        border-left: 8px solid #f59e0b;
+        color: #92400e;
+    }
+    .post-it.low {
+        background: #f0f9ff;
+        border-left: 8px solid #0ea5e9;
+        color: #075985;
+    }
+
+    .importance-badge {
+        font-size: 0.6rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        padding: 0.2rem 0.6rem;
+        border-radius: 0.5rem;
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    .note-text {
+        font-weight: 600;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .btn-add-note-floating {
+        background: #1e293b;
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 800;
+        transition: all 0.2s;
+    }
+
+    .btn-add-note-floating:hover {
+        background: #0f172a;
+        transform: scale(1.05);
+    }
+
+    /* 7. Modal & Forms */
+    .importance-selector {
+        padding: 1rem;
+        border-radius: 1.25rem;
         text-align: center;
+        border: 3px solid #f1f5f9;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #f8fafc;
+    }
+
+    .importance-selector.active {
+        transform: scale(1.05);
+        border-color: currentColor;
+    }
+    .importance-selector.low {
+        color: #0ea5e9;
+    }
+    .importance-selector.high {
+        color: #f59e0b;
+    }
+    .importance-selector.critical {
+        color: #ef4444;
+    }
+
+    .writing-vertical-rl {
+        writing-mode: vertical-rl;
+    }
+
+    /* Planned Acts Alert */
+    .planned-acts-alert {
+        background: #eef2ff;
+        border: 2px solid #c7d2fe;
+        padding: 1.25rem;
+        border-radius: 1.5rem;
+    }
+
+    @keyframes bounce-subtle {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    .animate-bounce-subtle {
+        animation: bounce-subtle 4s infinite ease-in-out;
     }
 </style>

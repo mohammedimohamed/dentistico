@@ -465,6 +465,34 @@ export function init_db() {
             FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS clinical_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            doctor_id INTEGER NOT NULL,
+            appointment_id INTEGER,
+            content TEXT NOT NULL,
+            importance TEXT DEFAULT 'low' CHECK(importance IN ('low', 'high', 'critical')),
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+            FOREIGN KEY (doctor_id) REFERENCES users(id),
+            FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE SET NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS lab_tracking (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            doctor_id INTEGER NOT NULL,
+            treatment_id INTEGER,
+            description TEXT NOT NULL,
+            status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'ordered', 'received')),
+            notes TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+            FOREIGN KEY (doctor_id) REFERENCES users(id),
+            FOREIGN KEY (treatment_id) REFERENCES treatments(id) ON DELETE SET NULL
+        );
+
         DROP VIEW IF EXISTS patient_balance;
         CREATE VIEW patient_balance AS
         SELECT 
@@ -521,7 +549,8 @@ export function init_db() {
     const defaultSettings = [
         ['clinic_name', 'Dentistico Clinic'],
         ['booking_interval', '30'],
-        ['work_hours', '9h00 - 18h00']
+        ['work_hours', '9h00 - 18h00'],
+        ['avg_consultation_duration', '20']
     ];
 
     const insertSetting = db.prepare(`
@@ -1661,7 +1690,7 @@ export function getDoctorUpcomingAppointments(doctorId: number) {
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         WHERE a.doctor_id = ? 
-          AND a.start_time >= date('now')
+          AND a.start_time >= date('now', '+1 day')
         ORDER BY a.start_time ASC
         LIMIT 100
     `).all(doctorId);
@@ -2362,6 +2391,66 @@ export function updateAppointmentVisit(id: number, data: { actual_start_time?: s
     const setClause = keys.map(key => `${key} = ?`).join(', ');
     const values = [...Object.values(data), id];
     return db.prepare(`UPDATE appointments SET ${setClause}, updated_at = datetime('now') WHERE id = ?`).run(...values);
+}
+
+// --- Clinical intelligence & Lab tracking ---
+export function getClinicalNotes(patientId: number) {
+    return db.prepare('SELECT * FROM clinical_notes WHERE patient_id = ? ORDER BY created_at DESC').all(patientId);
+}
+
+export function addClinicalNote(patientId: number, doctorId: number, appointmentId: number | null, content: string, importance: string) {
+    return db.prepare(`
+        INSERT INTO clinical_notes (patient_id, doctor_id, appointment_id, content, importance)
+        VALUES (?, ?, ?, ?, ?)
+    `).run(patientId, doctorId, appointmentId, content, importance);
+}
+
+export function getLabTracking(patientId: number) {
+    return db.prepare('SELECT * FROM lab_tracking WHERE patient_id = ? ORDER BY updated_at DESC').all(patientId);
+}
+
+export function addLabTracking(data: any) {
+    const { patient_id, doctor_id, treatment_id, description, status, notes } = data;
+    return db.prepare(`
+        INSERT INTO lab_tracking (patient_id, doctor_id, treatment_id, description, status, notes)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `).run(patient_id, doctor_id, treatment_id, description, status, notes);
+}
+
+export function updateLabStatus(id: number, status: string) {
+    return db.prepare('UPDATE lab_tracking SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').run(status, id);
+}
+
+export function getPlannedActsForToday(patientId: number) {
+    const today = new Date().toISOString().split('T')[0];
+    return db.prepare(`
+        SELECT * FROM dental_treatments 
+        WHERE patient_id = ? AND status = 'planned' AND date(date_performed) = date(?)
+    `).all(patientId, today);
+}
+
+export function getAppSetting(key: string) {
+    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+    return row?.value;
+}
+
+export function autoClosePreviousSessions(doctorId: number, currentApptId: number) {
+    const now = new Date().toISOString();
+    // Close any other in_progress appointments for this doctor
+    db.prepare(`
+        UPDATE appointments 
+        SET status = 'completed', actual_end_time = ? 
+        WHERE doctor_id = ? AND status = 'in_progress' AND id != ?
+    `).run(now, doctorId, currentApptId);
+}
+
+// --- Appointment Actions ---
+export function updateAppointmentStatus(id: number, status: string) {
+    return db.prepare('UPDATE appointments SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').run(status, id);
+}
+
+export function updateAppointmentTime(id: number, startTime: string) {
+    return db.prepare('UPDATE appointments SET start_time = ?, updated_at = datetime(\'now\') WHERE id = ?').run(startTime, id);
 }
 
 // Export db instance

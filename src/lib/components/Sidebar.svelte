@@ -24,6 +24,12 @@
             !page.url.pathname.endsWith("/journey"),
     );
 
+    $effect(() => {
+        isCollapsed =
+            page.url.pathname.includes("/journey/") &&
+            !page.url.pathname.endsWith("/journey");
+    });
+
     const icons = {
         activity:
             '<path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 0012.12 6.16a14.98 14.98 0 00-6.16 12.12 14.98 14.98 0 0012.12-6.16zm-5.84 2.58l-5.84-5.84a14.98 14.98 0 006.16 12.12A14.98 14.98 0 0012.12 2.25 14.98 14.98 0 006.16 14.37a14.98 14.98 0 0012.12-6.16l-5.84 5.84z" />',
