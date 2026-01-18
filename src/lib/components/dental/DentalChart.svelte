@@ -3,12 +3,11 @@
     import { invalidateAll } from "$app/navigation";
     import ToothSVG from "./ToothSVG.svelte";
     import {
-        ADULT_TEETH_UNIVERSAL,
-        PEDIATRIC_TEETH_UNIVERSAL,
+        ADULT_TEETH_FDI,
+        PEDIATRIC_TEETH_FDI,
         calculateAge,
         getDefaultDentitionType,
-        TREATMENT_TYPES,
-        SURFACES,
+        STATUS_COLORS,
     } from "$lib/dental/tooth-data";
     import { t } from "svelte-i18n";
     import { APP_CONFIG } from "$lib/config/app.config";
@@ -94,11 +93,29 @@
     }
 
     function getTeethList() {
-        if (dentitionType === "adult") return ADULT_TEETH_UNIVERSAL;
-        if (dentitionType === "pediatric") return PEDIATRIC_TEETH_UNIVERSAL;
-        // Mixed: show both
-        return [...PEDIATRIC_TEETH_UNIVERSAL, ...ADULT_TEETH_UNIVERSAL];
+        if (dentitionType === "adult") return ADULT_TEETH_FDI;
+        if (dentitionType === "pediatric") return PEDIATRIC_TEETH_FDI;
+        return ADULT_TEETH_FDI;
     }
+
+    const quadrants = $derived({
+        adult: {
+            upperRight: ADULT_TEETH_FDI.slice(0, 8), // 18-11
+            upperLeft: ADULT_TEETH_FDI.slice(8, 16), // 21-28
+            lowerRight: ADULT_TEETH_FDI.slice(24, 32), // 48-41
+            lowerLeft: ADULT_TEETH_FDI.slice(16, 24), // 38-31
+        },
+        pediatric: {
+            upperRight: PEDIATRIC_TEETH_FDI.slice(0, 5), // 55-51
+            upperLeft: PEDIATRIC_TEETH_FDI.slice(5, 10), // 61-65
+            lowerRight: PEDIATRIC_TEETH_FDI.slice(15, 20), // 85-81
+            lowerLeft: PEDIATRIC_TEETH_FDI.slice(10, 15), // 75-71
+        },
+    });
+
+    const activeQuadrants = $derived(
+        dentitionType === "pediatric" ? quadrants.pediatric : quadrants.adult,
+    );
 
     function getTreatmentsForTooth(toothNumber: string | number) {
         return treatments.filter(
@@ -178,6 +195,11 @@
         }
     }
 
+    export function openGeneralTreatment() {
+        selectedTooth = "G";
+        showTreatmentModal = true;
+    }
+
     async function deleteTreatment(id: number) {
         if (
             !confirm(
@@ -229,9 +251,9 @@
         <div class="legend-container mt-4">
             <div class="legend text-xs font-medium text-gray-700">
                 <span
-                    class="legend-item bg-blue-50 px-2 py-1 rounded border border-blue-100"
+                    class="legend-item bg-gray-50 px-2 py-1 rounded border border-gray-100"
                 >
-                    <span class="legend-dot" style="background: #3B82F6"></span>
+                    <span class="legend-dot" style="background: #9CA3AF"></span>
                     {$t("dental.existing")}
                 </span>
                 <span
@@ -241,9 +263,12 @@
                     {$t("dental.completed")}
                 </span>
                 <span
-                    class="legend-item bg-red-50 px-2 py-1 rounded border border-red-100"
+                    class="legend-item bg-blue-50 px-2 py-1 rounded border border-blue-100"
                 >
-                    <span class="legend-dot" style="background: #EF4444"></span>
+                    <span
+                        class="legend-dot"
+                        style="background: #3B82F6; border: 1px solid #EF4444"
+                    ></span>
                     {$t("dental.planned")}
                 </span>
             </div>
@@ -252,89 +277,261 @@
 
     {#if loading}
         <div class="loading">{$t("common.loading") || "Loading chart..."}</div>
-    {:else if dentitionType === "mixed"}
-        <!-- Upper Mixed -->
-        <div class="arch upper-arch">
-            <div class="arch-label">
-                {$t("dental.upper")} ({$t("dental.adult")})
-            </div>
-            <div class="teeth-row">
-                {#each ADULT_TEETH_UNIVERSAL.slice(0, 16) as tooth}
-                    <ToothSVG
-                        toothNumber={tooth}
-                        treatments={getTreatmentsForTooth(tooth)}
-                        onClick={() => handleToothClick(tooth)}
-                        selected={selectedTooth === tooth}
-                    />
-                {/each}
-            </div>
-            <div class="teeth-row mt-2 pediatric-row">
-                {#each PEDIATRIC_TEETH_UNIVERSAL.slice(0, 10) as tooth}
-                    <ToothSVG
-                        toothNumber={tooth}
-                        treatments={getTreatmentsForTooth(tooth)}
-                        onClick={() => handleToothClick(tooth)}
-                        selected={selectedTooth === tooth}
-                    />
-                {/each}
-            </div>
-        </div>
-
-        <!-- Lower Mixed -->
-        <div class="arch lower-arch">
-            <div class="arch-label">
-                {$t("dental.lower")} ({$t("dental.adult")})
-            </div>
-            <div class="teeth-row">
-                {#each ADULT_TEETH_UNIVERSAL.slice(16) as tooth}
-                    <ToothSVG
-                        toothNumber={tooth}
-                        treatments={getTreatmentsForTooth(tooth)}
-                        onClick={() => handleToothClick(tooth)}
-                        selected={selectedTooth === tooth}
-                    />
-                {/each}
-            </div>
-            <div class="teeth-row mt-2 pediatric-row">
-                {#each PEDIATRIC_TEETH_UNIVERSAL.slice(10) as tooth}
-                    <ToothSVG
-                        toothNumber={tooth}
-                        treatments={getTreatmentsForTooth(tooth)}
-                        onClick={() => handleToothClick(tooth)}
-                        selected={selectedTooth === tooth}
-                    />
-                {/each}
-            </div>
-        </div>
     {:else}
-        <!-- Upper Arch -->
-        <div class="arch upper-arch">
-            <div class="arch-label">{$t("dental.upper")}</div>
-            <div class="teeth-row">
-                {#each getTeethList().slice(0, dentitionType === "pediatric" ? 10 : 16) as tooth}
-                    <ToothSVG
-                        toothNumber={tooth}
-                        treatments={getTreatmentsForTooth(tooth)}
-                        onClick={() => handleToothClick(tooth)}
-                        selected={selectedTooth === tooth}
-                    />
-                {/each}
-            </div>
-        </div>
+        <div
+            class="dentition-container"
+            class:mixed-mode={dentitionType === "mixed"}
+        >
+            {#if dentitionType === "mixed"}
+                <!-- ROW 1: ADULT SUPERIOR (18-11, 21-28) -->
+                <div class="arch adult-superior">
+                    <div class="arch-label">
+                        {$t("dental.adult_upper") || "Adult Superior"}
+                    </div>
+                    <div class="quadrants-row">
+                        <div class="quadrant">
+                            <div class="teeth-row">
+                                {#each quadrants.adult.upperRight as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="upper"
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                        <div class="quadrant-divider"></div>
+                        <div class="quadrant">
+                            <div class="teeth-row">
+                                {#each quadrants.adult.upperLeft as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="upper"
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- Lower Arch -->
-        <div class="arch lower-arch">
-            <div class="arch-label">{$t("dental.lower")}</div>
-            <div class="teeth-row">
-                {#each getTeethList().slice(dentitionType === "pediatric" ? 10 : 16) as tooth}
-                    <ToothSVG
-                        toothNumber={tooth}
-                        treatments={getTreatmentsForTooth(tooth)}
-                        onClick={() => handleToothClick(tooth)}
-                        selected={selectedTooth === tooth}
-                    />
-                {/each}
-            </div>
+                <!-- ROW 2: CHILD SUPERIOR (55-51, 61-65) -->
+                <div class="arch child-superior">
+                    <div class="arch-label">
+                        {$t("dental.child_upper") || "Child Superior"}
+                    </div>
+                    <div class="quadrants-row">
+                        <div class="quadrant">
+                            <div class="teeth-row centered-row">
+                                {#each quadrants.pediatric.upperRight as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="upper"
+                                        scale={0.75}
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                        <div class="quadrant-divider mini"></div>
+                        <div class="quadrant">
+                            <div class="teeth-row centered-row">
+                                {#each quadrants.pediatric.upperLeft as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="upper"
+                                        scale={0.75}
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="occlusal-plane-gap"></div>
+
+                <!-- ROW 3: CHILD INFERIOR (85-81, 71-75) -->
+                <div class="arch child-inferior">
+                    <div class="quadrants-row">
+                        <div class="quadrant">
+                            <div class="teeth-row centered-row">
+                                {#each quadrants.pediatric.lowerRight as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="lower"
+                                        scale={0.75}
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                        <div class="quadrant-divider mini"></div>
+                        <div class="quadrant">
+                            <div class="teeth-row centered-row">
+                                {#each quadrants.pediatric.lowerLeft as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="lower"
+                                        scale={0.75}
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="arch-label mt-2">
+                        {$t("dental.child_lower") || "Child Inferior"}
+                    </div>
+                </div>
+
+                <!-- ROW 4: ADULT INFERIOR (48-41, 31-38) -->
+                <div class="arch adult-inferior">
+                    <div class="quadrants-row">
+                        <div class="quadrant">
+                            <div class="teeth-row">
+                                {#each quadrants.adult.lowerRight as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="lower"
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                        <div class="quadrant-divider"></div>
+                        <div class="quadrant">
+                            <div class="teeth-row">
+                                {#each quadrants.adult.lowerLeft as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="lower"
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="arch-label mt-4">
+                        {$t("dental.adult_lower") || "Adult Inferior"}
+                    </div>
+                </div>
+            {:else}
+                <!-- NORMAL ADULT OR PEDIATRIC VIEW -->
+                <!-- UPPER ARCH -->
+                <div class="arch upper-arch">
+                    <div class="arch-label">{$t("dental.upper")}</div>
+                    <div class="quadrants-row">
+                        <!-- Upper Right -->
+                        <div class="quadrant">
+                            <div class="teeth-row">
+                                {#each activeQuadrants.upperRight as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="upper"
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                        <div class="quadrant-divider"></div>
+                        <!-- Upper Left -->
+                        <div class="quadrant">
+                            <div class="teeth-row">
+                                {#each activeQuadrants.upperLeft as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="upper"
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arch-divider"></div>
+
+                <!-- LOWER ARCH -->
+                <div class="arch lower-arch">
+                    <div class="quadrants-row">
+                        <!-- Lower Right -->
+                        <div class="quadrant">
+                            <div class="teeth-row">
+                                {#each activeQuadrants.lowerRight as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="lower"
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                        <div class="quadrant-divider"></div>
+                        <!-- Lower Left -->
+                        <div class="quadrant">
+                            <div class="teeth-row">
+                                {#each activeQuadrants.lowerLeft as tooth}
+                                    <ToothSVG
+                                        toothNumber={tooth}
+                                        treatments={getTreatmentsForTooth(
+                                            tooth,
+                                        )}
+                                        onClick={() => handleToothClick(tooth)}
+                                        selected={selectedTooth === tooth}
+                                        position="lower"
+                                    />
+                                {/each}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="arch-label mt-4">{$t("dental.lower")}</div>
+                </div>
+            {/if}
         </div>
     {/if}
 
@@ -511,8 +708,21 @@
 
 <!-- Replace the old modal with this NEW MODAL -->
 {#if showTreatmentModal && selectedTooth}
-    <div class="modal-overlay" onclick={() => (showTreatmentModal = false)}>
-        <div class="modal-content-large" onclick={(e) => e.stopPropagation()}>
+    <div
+        class="modal-overlay"
+        onclick={() => (showTreatmentModal = false)}
+        onkeydown={(e) => {
+            if (e.key === "Escape") showTreatmentModal = false;
+        }}
+        role="button"
+        tabindex="-1"
+    >
+        <div
+            class="modal-content-large"
+            onclick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+        >
             <!-- Header -->
             <div class="modal-header">
                 <div>
@@ -572,14 +782,16 @@
                             </h4>
 
                             <div class="space-y-4">
-                                <div>
+                                <div class="form-section">
                                     <label
+                                        for="custom-name"
                                         class="block text-sm font-bold text-indigo-700 mb-1"
                                     >
                                         {$t("dental.custom_name_label")}
                                     </label>
                                     <input
                                         type="text"
+                                        id="custom-name"
                                         bind:value={
                                             newTreatment.procedure_description
                                         }
@@ -588,14 +800,16 @@
                                     />
                                 </div>
 
-                                <div>
+                                <div class="form-section">
                                     <label
+                                        for="custom-price"
                                         class="block text-sm font-bold text-indigo-700 mb-1"
                                     >
                                         {$t("dental.custom_price_label")}
                                     </label>
                                     <input
                                         type="number"
+                                        id="custom-price"
                                         bind:value={newTreatment.fee}
                                         class="w-full px-4 py-2 rounded-lg border-2 border-indigo-200 focus:border-indigo-500 focus:outline-none bg-white font-mono"
                                     />
@@ -642,7 +856,7 @@
 
                     <!-- Status Selection -->
                     <div class="form-section">
-                        <label class="form-label">Status</label>
+                        <span class="form-label">Status</span>
                         <div class="status-buttons">
                             <button
                                 type="button"
@@ -691,9 +905,12 @@
                     <!-- Date (if completed) -->
                     {#if newTreatment.status === "completed"}
                         <div class="form-section">
-                            <label class="form-label">Date Performed *</label>
+                            <label for="date-performed" class="form-label"
+                                >Date Performed *</label
+                            >
                             <input
                                 type="date"
+                                id="date-performed"
                                 bind:value={newTreatment.date_performed}
                                 class="form-input"
                                 required
@@ -703,9 +920,12 @@
 
                     <!-- Diagnosis -->
                     <div class="form-section">
-                        <label class="form-label">Diagnosis (Optional)</label>
+                        <label for="diagnosis" class="form-label"
+                            >Diagnosis (Optional)</label
+                        >
                         <input
                             type="text"
+                            id="diagnosis"
                             bind:value={newTreatment.diagnosis}
                             class="form-input"
                             placeholder="e.g., Caries extending to DEJ"
@@ -714,8 +934,11 @@
 
                     <!-- Clinical Notes -->
                     <div class="form-section">
-                        <label class="form-label">Clinical Notes</label>
+                        <label for="clinical-notes" class="form-label"
+                            >Clinical Notes</label
+                        >
                         <textarea
+                            id="clinical-notes"
                             bind:value={newTreatment.notes}
                             class="form-textarea"
                             rows="3"
@@ -815,48 +1038,132 @@
         flex-shrink: 0;
     }
 
-    .arch {
-        margin-bottom: 2rem;
+    .dentition-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 1rem;
     }
 
-    .arch-label {
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        color: #4b5563;
+    .dentition-container.mixed-mode {
+        gap: 0;
+        padding: 0.5rem;
+    }
+
+    .arch {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    .quadrants-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .quadrant {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .quadrant-divider {
+        width: 2px;
+        height: 120px;
+        background: #f1f5f9;
+        margin: 0 0.5rem;
+    }
+
+    .arch-divider {
+        height: 2px;
+        width: 100%;
+        background: #f1f5f9;
+        margin: 0.8rem 0;
     }
 
     .teeth-row {
         display: flex;
-        gap: 0.25rem;
-        flex-wrap: wrap;
+        gap: 0.15rem;
         justify-content: center;
-        padding: 0.75rem;
-        background: #f9fafb;
-        border-radius: 0.5rem;
+        padding: 0.5rem;
     }
 
-    .pediatric-row {
-        background: #fffafa;
-        border: 1px dashed #fee2e2;
+    .occlusal-plane-gap {
+        height: 2.5rem;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .occlusal-plane-gap::after {
+        content: "";
+        position: absolute;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: repeating-linear-gradient(
+            to right,
+            #f1f5f9,
+            #f1f5f9 10px,
+            transparent 10px,
+            transparent 20px
+        );
+    }
+
+    .centered-row {
+        justify-content: center;
+        align-items: flex-end; /* Align to bottom for upper child teeth */
+        padding-top: 0;
+    }
+
+    .child-superior .centered-row {
+        align-items: flex-end;
+    }
+
+    .child-inferior .centered-row {
+        align-items: flex-start;
+    }
+
+    .quadrant-divider.mini {
+        height: 80px;
+    }
+
+    .arch-label {
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 0.65rem;
+        color: #94a3b8;
+        margin-bottom: 0.5rem;
+    }
+
+    .adult-superior .arch-label,
+    .child-superior .arch-label {
+        margin-bottom: 0.25rem;
+    }
+
+    .child-inferior .arch-label,
+    .adult-inferior .arch-label {
+        margin-top: 0.25rem;
     }
 
     .loading {
         text-align: center;
         padding: 3rem;
-        color: #6b7280;
+        color: #64748b;
     }
 
     .treatment-history {
         margin-top: 2rem;
         padding-top: 2rem;
         border-top: 2px solid #e5e7eb;
-    }
-
-    .treatment-item {
-        padding: 0.75rem;
-        background: #f9fafb;
-        border-radius: 0.375rem;
-        border-left: 4px solid #3b82f6;
     }
 
     .modal-overlay {

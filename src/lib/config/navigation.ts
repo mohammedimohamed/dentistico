@@ -1,6 +1,7 @@
 export const NAVIGATION = {
     doctor: [
         { label: "common.dashboard", href: "/doctor/dashboard", icon: "dashboard" },
+        { label: "common.journey", href: "/doctor/journey", icon: "activity" },
         { label: "common.patients", href: "/doctor/patients", icon: "patients" },
         { label: "common.inventory", href: "/inventory", icon: "inventory" },
         { label: "medications.title", href: "/doctor/settings/medications", icon: "medications" },

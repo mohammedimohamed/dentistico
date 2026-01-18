@@ -208,11 +208,23 @@ export function init_db() {
             appointment_type TEXT DEFAULT 'consultation',
             status TEXT DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show', 'in_progress')),
             notes TEXT,
+            actual_start_time TEXT,
+            actual_end_time TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
             FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (booked_by_id) REFERENCES patients(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS daily_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            doctor_id INTEGER NOT NULL,
+            session_date TEXT NOT NULL,
+            start_time TEXT NOT NULL,
+            end_time TEXT,
+            FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(doctor_id, session_date)
         );
 
 
@@ -552,6 +564,14 @@ export function init_db() {
         console.log('Added phone column to users table');
     } catch (e) {
         // Column might already exist
+    }
+
+    try {
+        db.exec('ALTER TABLE appointments ADD COLUMN actual_start_time TEXT');
+        db.exec('ALTER TABLE appointments ADD COLUMN actual_end_time TEXT');
+        console.log('Added actual_start/end_time columns to appointments table');
+    } catch (e) {
+        // Columns might already exist
     }
 
     // Migration for treatments TABLE to make appointment_id nullable if it was strictly NOT NULL
@@ -1186,11 +1206,14 @@ function seedTreatmentTypesOnly() {
         }
 
         console.log(`Treatment types seeded successfully. Added ${insertedCount} new treatment types.`);
-
     } catch (error) {
         console.error('Error seeding treatment types:', error);
         throw error;
     }
+}
+
+export function getAllCDTCodes() {
+    return db.prepare('SELECT * FROM cdt_codes ORDER BY category, code').all();
 }
 
 function seed_db() {
@@ -2298,6 +2321,47 @@ export function getAttachmentById(id: number) {
 
 export function deleteAttachment(id: number) {
     return db.prepare('DELETE FROM attachments WHERE id = ?').run(id);
+}
+
+// --- The Journey (Clinical POS) Helpers ---
+export function getDailySession(doctorId: number, date: string) {
+    return db.prepare('SELECT * FROM daily_sessions WHERE doctor_id = ? AND session_date = ?').get(doctorId, date);
+}
+
+export function startDailySession(doctorId: number, date: string, startTime: string) {
+    return db.prepare('INSERT OR REPLACE INTO daily_sessions (doctor_id, session_date, start_time) VALUES (?, ?, ?)').run(doctorId, date, startTime);
+}
+
+export function endDailySession(doctorId: number, date: string, endTime: string) {
+    return db.prepare('UPDATE daily_sessions SET end_time = ? WHERE doctor_id = ? AND session_date = ?').run(endTime, doctorId, date);
+}
+
+export function getAppointmentsForDate(doctorId: number, date: string) {
+    // date: YYYY-MM-DD
+    return db.prepare(`
+        SELECT a.*, p.full_name as patient_name, p.phone as patient_phone
+        FROM appointments a
+        JOIN patients p ON a.patient_id = p.id
+        WHERE a.doctor_id = ? AND date(a.start_time) = date(?)
+        ORDER BY a.start_time ASC
+    `).all(doctorId, date);
+}
+
+export function getPatientJourneySummary(patientId: number) {
+    const patient = db.prepare('SELECT * FROM patients WHERE id = ?').get(patientId) as any;
+    const balance = db.prepare('SELECT balance_due FROM patient_balance WHERE patient_id = ?').get(patientId) as { balance_due: number } | undefined;
+
+    return {
+        ...patient,
+        balance_due: balance?.balance_due || 0
+    };
+}
+
+export function updateAppointmentVisit(id: number, data: { actual_start_time?: string; actual_end_time?: string; status?: string }) {
+    const keys = Object.keys(data);
+    const setClause = keys.map(key => `${key} = ?`).join(', ');
+    const values = [...Object.values(data), id];
+    return db.prepare(`UPDATE appointments SET ${setClause}, updated_at = datetime('now') WHERE id = ?`).run(...values);
 }
 
 // Export db instance

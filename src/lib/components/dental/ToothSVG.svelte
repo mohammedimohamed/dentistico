@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { SURFACES, STATUS_COLORS } from "$lib/dental/tooth-data";
+    import { STATUS_COLORS } from "$lib/dental/tooth-data";
 
     interface Props {
         toothNumber: string | number;
@@ -12,6 +12,8 @@
         }>;
         onClick?: () => void;
         selected?: boolean;
+        position?: "upper" | "lower";
+        scale?: number;
     }
 
     let {
@@ -19,153 +21,163 @@
         treatments = [],
         onClick,
         selected = false,
+        position = "upper",
+        scale = 1,
     }: Props = $props();
 
-    // Get treatment color for each surface
-    function getSurfaceColor(surface: string): string {
-        const treatment = treatments.find(
-            (t) =>
-                (t.surfaces && t.surfaces.split(",").includes(surface)) ||
-                t.surface === surface,
-        );
-        return treatment ? treatment.color : "#FFFFFF";
+    const tNum = parseInt(toothNumber.toString());
+
+    // Determine tooth type
+    function getToothType(
+        num: number,
+    ): "incisor" | "canine" | "premolar" | "molar" {
+        const lastDigit = num % 10;
+        if (lastDigit === 1 || lastDigit === 2) return "incisor";
+        if (lastDigit === 3) return "canine";
+        if (lastDigit === 4 || lastDigit === 5) {
+            // Pediatric 4 and 5 are molars
+            if (num >= 50 && num <= 85) return "molar";
+            return "premolar";
+        }
+        return "molar";
     }
 
-    // Get whole tooth color if no surface specified
-    function getWholeToothColor(): string {
-        const wholeTreatment = treatments.find(
-            (t) => !t.surfaces && !t.surface,
-        );
-        return wholeTreatment ? wholeTreatment.color : "#FFFFFF";
-    }
+    const type = getToothType(tNum);
 
-    // Check if tooth has any treatments
-    const hasTreatments = treatments.length > 0;
+    // Anatomical Paths (Simplified)
+    const paths = {
+        incisor: "M10,10 L50,10 L45,40 Q40,70 30,75 Q20,70 15,40 Z",
+        canine: "M15,10 L45,10 L42,35 Q40,55 30,75 Q20,55 18,35 Z",
+        premolar:
+            "M12,10 Q10,10 8,15 L8,35 Q10,60 30,75 Q50,60 52,35 L52,15 Q50,10 48,10 Z",
+        molar: "M5,10 L55,10 L55,30 Q55,50 45,70 L30,75 L15,70 Q5,50 5,30 Z",
+    };
 
-    // Check if any treatment has surfaces specified
-    const hasSurfaceTreatments = treatments.some(
-        (t) => t.surfaces || t.surface,
+    // Tooth State Logic
+    const mostRecentTreatment = $derived([...treatments].reverse()[0]);
+    const status = $derived(mostRecentTreatment?.status);
+
+    const fillColor = $derived.by(() => {
+        if (status === "completed") return "#10B981"; // Green
+        if (status === "existing") return "#9CA3AF"; // Gray
+        if (status === "planned") return "#3B82F6"; // Blue
+        return "#FFFFFF"; // Empty
+    });
+
+    const strokeColor = $derived.by(() => {
+        if (selected) return "#6366F1";
+        if (status === "planned") return "#EF4444"; // Red border for planned
+        return "#D1D5DB";
+    });
+
+    const strokeWidth = $derived(
+        selected ? "3" : status === "planned" ? "2.5" : "1.5",
     );
 </script>
 
-<svg
-    width="60"
-    height="80"
-    viewBox="0 0 60 80"
-    class="tooth-svg"
-    class:selected
+<div
+    class="tooth-container {position}"
     onclick={onClick}
     role="button"
     tabindex="0"
+    aria-label="Tooth {toothNumber}"
+    onkeydown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick?.();
+        }
+    }}
+    style="--tooth-scale: {scale};"
 >
-    <!-- Tooth outline -->
-    <rect
-        x="5"
-        y="10"
-        width="50"
-        height="60"
-        rx="8"
-        fill={getWholeToothColor()}
-        stroke={selected ? "#3B82F6" : "#1F2937"}
-        stroke-width={selected ? "3" : "1.5"}
-    />
-
-    <!-- Surface divisions (only show if there are surface-level treatments) -->
-    {#if hasSurfaceTreatments}
-        <!-- Mesial (M) - Left side -->
-        <rect
-            x="5"
-            y="10"
-            width="10"
-            height="60"
-            fill={getSurfaceColor("M")}
-            opacity="0.9"
-        />
-
-        <!-- Distal (D) - Right side -->
-        <rect
-            x="45"
-            y="10"
-            width="10"
-            height="60"
-            fill={getSurfaceColor("D")}
-            opacity="0.9"
-        />
-
-        <!-- Occlusal (O) - Top middle -->
-        <rect
-            x="15"
-            y="10"
-            width="30"
-            height="15"
-            fill={getSurfaceColor("O")}
-            opacity="0.9"
-        />
-
-        <!-- Buccal (B) - Front middle (represented as center-front) -->
-        <rect
-            x="15"
-            y="25"
-            width="15"
-            height="30"
-            fill={getSurfaceColor("B")}
-            opacity="0.9"
-        />
-
-        <!-- Lingual (L) - Back middle (represented as center-back) -->
-        <rect
-            x="30"
-            y="25"
-            width="15"
-            height="30"
-            fill={getSurfaceColor("L")}
-            opacity="0.9"
-        />
-
-        <!-- Surface labels (tiny) -->
-        <text x="8" y="45" font-size="6" fill="#fff" opacity="0.7">M</text>
-        <text x="48" y="45" font-size="6" fill="#fff" opacity="0.7">D</text>
-        <text x="28" y="20" font-size="6" fill="#fff" opacity="0.7">O</text>
-        <text x="20" y="42" font-size="6" fill="#fff" opacity="0.7">B</text>
-        <text x="35" y="42" font-size="6" fill="#fff" opacity="0.7">L</text>
+    {#if position === "upper"}
+        <span class="tooth-label above" style="font-size: {0.65 * scale}rem"
+            >{toothNumber}</span
+        >
     {/if}
 
-    <!-- Tooth number label -->
-    <text
-        x="30"
-        y="78"
-        text-anchor="middle"
-        font-size="12"
-        font-weight="bold"
-        fill="#1F2937"
+    <svg
+        width={45 * scale}
+        height={65 * scale}
+        viewBox="0 0 60 80"
+        class="tooth-svg"
+        class:selected
+        class:lower={position === "lower"}
     >
-        {toothNumber}
-    </text>
-
-    <!-- Treatment indicator dot -->
-    {#if hasTreatments}
-        <circle
-            cx="52"
-            cy="12"
-            r="4"
-            fill="#EF4444"
-            stroke="#fff"
-            stroke-width="1"
+        <path
+            d={paths[type]}
+            fill={fillColor}
+            stroke={strokeColor}
+            stroke-width={strokeWidth}
+            class="anatomical-path"
         />
+
+        <!-- Surface overlays (Small) -->
+        {#if treatments.some((t) => t.surfaces || t.surface)}
+            <circle
+                cx="30"
+                cy="30"
+                r="12"
+                fill="white"
+                opacity="0.3"
+                stroke="#000"
+                stroke-width="0.5"
+            />
+        {/if}
+    </svg>
+
+    {#if position === "lower"}
+        <span class="tooth-label below" style="font-size: {0.65 * scale}rem"
+            >{toothNumber}</span
+        >
     {/if}
-</svg>
+</div>
 
 <style>
-    .tooth-svg {
+    .tooth-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         cursor: pointer;
         transition: transform 0.2s;
+        padding: 4px;
+        border-radius: 8px;
     }
 
-    .tooth-svg:hover {
-        transform: scale(1.1);
+    .tooth-container:hover {
+        background: #f8fafc;
+        transform: scale(1.05);
     }
 
-    .tooth-svg.selected {
-        filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+    .upper:hover {
+        transform: translateY(-4px) scale(1.05);
+    }
+
+    .lower:hover {
+        transform: translateY(4px) scale(1.05);
+    }
+
+    .tooth-svg {
+        transition: all 0.2s;
+    }
+
+    .tooth-svg.lower {
+        transform: rotate(180deg);
+    }
+
+    .tooth-label {
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: #64748b;
+        margin: 2px 0;
+    }
+
+    .anatomical-path {
+        transition:
+            fill 0.3s,
+            stroke 0.3s;
+    }
+
+    .selected .anatomical-path {
+        filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.4));
     }
 </style>
