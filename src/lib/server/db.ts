@@ -603,7 +603,49 @@ export function init_db() {
         // Columns might already exist
     }
 
-    // Migration for treatments TABLE to make appointment_id nullable if it was strictly NOT NULL
+
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS clinical_standards (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category TEXT,
+            treatment_name TEXT,
+            min_duration INTEGER,
+            max_duration INTEGER,
+            typical_sessions INTEGER,
+            complexity INTEGER,
+            gap_days_min INTEGER,
+            gap_days_max INTEGER,
+            workflow_steps TEXT
+        );
+    `);
+
+    // Check if standards exist, if not seed them
+    const standardsCount = db.prepare('SELECT count(*) as count FROM clinical_standards').get() as { count: number };
+    if (standardsCount.count === 0) {
+        const insertStandard = db.prepare(`
+                INSERT INTO clinical_standards (category, treatment_name, min_duration, max_duration, typical_sessions, complexity, gap_days_min, gap_days_max, workflow_steps)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+
+        const standards = [
+            ['Consultation', 'Diagnostic / Urgence', 15, 30, 1, 1, 0, 0, 'Examen + radio + diagnostic ± traitement urgence'],
+            ['Prévention', 'Détartrage / Surfaçage', 30, 60, 2, 1, 180, 180, 'Bilan + détartrage complet; (opt) polissage'],
+            ['Soins conservateurs', 'Obturation simple', 30, 90, 1, 2, 0, 0, 'Anesthésie + préparation + composite'],
+            ['Soins conservateurs', 'Obturation complexe', 30, 90, 1, 3, 7, 21, 'Anesthésie + préparation + composite; finition'],
+            ['Endodontie', 'Dévitalisation (pulpite)', 60, 120, 4, 3, 7, 90, 'Ouverture + dévitalisation + nettoyage + obturation'],
+            ['Prothèse fixe', 'Couronne unitaire', 60, 150, 5, 4, 10, 21, 'Préparation + empreinte + provisoires; Pose'],
+            ['Prothèse fixe', 'Bridge (3 éléments)', 60, 150, 5, 4, 14, 35, 'Préparations + empreinte + provisoires; Pose'],
+            ['Extraction', 'Extraction simple', 20, 90, 1, 3, 7, 10, 'Anesthésie + extraction + suture si besoin'],
+            ['Extraction', 'Chirurgicale / Incluse', 20, 90, 3, 4, 7, 180, 'Radio 3D + chirurgie + contrôle + fils'],
+            ['Implantologie', 'Implant standard', 45, 180, 8, 5, 90, 180, 'Chirurgie + scan + pilier + couronne provisoire/déf'],
+            ['Prothèse amovible', 'Complète (Dentier)', 60, 120, 8, 4, 28, 84, 'Empreintes + essayages cire/dents + occlusion']
+        ];
+
+        for (const s of standards) {
+            insertStandard.run(...s);
+        }
+        console.log('Seeded clinical_standards table.');
+    }
     try {
         // Recovery: if treatments is missing but treatments_old exists, we had a failure
         const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as any[];
@@ -2451,6 +2493,15 @@ export function updateAppointmentStatus(id: number, status: string) {
 
 export function updateAppointmentTime(id: number, startTime: string) {
     return db.prepare('UPDATE appointments SET start_time = ?, updated_at = datetime(\'now\') WHERE id = ?').run(startTime, id);
+}
+
+// --- Clinical Standards ---
+export function getAllClinicalStandards() {
+    return db.prepare('SELECT * FROM clinical_standards ORDER BY category, treatment_name').all();
+}
+
+export function getClinicalStandardByName(name: string) {
+    return db.prepare('SELECT * FROM clinical_standards WHERE treatment_name = ?').get(name);
 }
 
 // Export db instance

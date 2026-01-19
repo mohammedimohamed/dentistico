@@ -11,7 +11,8 @@ import {
     getAppSetting,
     autoClosePreviousSessions,
     addClinicalNote,
-    updateAppointmentStatus
+    updateAppointmentStatus,
+    getAllClinicalStandards
 } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -38,6 +39,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     const labTracking = getLabTracking(appointment.patient_id);
     const plannedActs = getPlannedActsForToday(appointment.patient_id);
     const avgDuration = getAppSetting('avg_consultation_duration') || '20';
+    const clinicalStandards = getAllClinicalStandards();
 
     return {
         appointment,
@@ -46,6 +48,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         clinicalNotes,
         labTracking,
         plannedActs,
+        clinicalStandards,
         config: {
             avgDuration: parseInt(avgDuration)
         }

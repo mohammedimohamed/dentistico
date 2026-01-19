@@ -23,10 +23,63 @@
     let timerInterval: any;
 
     const avgDurationSeconds = $derived((data.config?.avgDuration || 20) * 60);
+
+    // Clinical Standard Intelligence
+    const targetStandard = $derived.by(() => {
+        if (!data.clinicalStandards) return null;
+        // 1. Try exact match on appointment type (assuming snake_case to Title Case or similar)
+        // Since we don't know exact db format of appointment_type vs standard names, we try fuzzy
+        const type = data.appointment.appointment_type
+            ?.toLowerCase()
+            .replace(/_/g, " ");
+        const std =
+            data.clinicalStandards.find(
+                (s: any) => s.treatment_name.toLowerCase() === type,
+            ) ||
+            data.clinicalStandards.find((s: any) =>
+                type?.includes(s.treatment_name.toLowerCase()),
+            ) ||
+            data.clinicalStandards.find(
+                (s: any) => s.category.toLowerCase() === "consultation",
+            ); // Fallback
+        return std;
+    });
+
+    const maxDurationSeconds = $derived(
+        targetStandard ? targetStandard.max_duration * 60 : avgDurationSeconds,
+    );
+
     const timerStatus = $derived.by(() => {
-        if (visitTimer < avgDurationSeconds) return "green";
-        if (visitTimer < avgDurationSeconds + 600) return "orange";
+        const padding = 600; // 10 mins tolerance
+        if (visitTimer < maxDurationSeconds) return "green";
+        if (visitTimer < maxDurationSeconds + padding) return "orange";
         return "red";
+    });
+
+    // Rescheduling Intelligence
+    let recommendedRescheduleDate = $state("");
+    $effect(() => {
+        if (
+            showRescheduleModal &&
+            targetStandard &&
+            targetStandard.gap_days_min > 0
+        ) {
+            const d = new Date();
+            d.setDate(d.getDate() + targetStandard.gap_days_min);
+            recommendedRescheduleDate = d.toISOString().split("T")[0];
+            rescheduleDate = recommendedRescheduleDate; // Auto-set
+        }
+    });
+
+    // Lab Warning
+    const hasPendingProsthesis = $derived.by(() => {
+        if (
+            targetStandard?.category.includes("Prothèse") ||
+            data.appointment.appointment_type?.includes("prosthesis")
+        ) {
+            return !data.labTracking?.some((l: any) => l.status === "received");
+        }
+        return false;
     });
 
     // Derived values
@@ -104,11 +157,23 @@
         <div class="flex items-center gap-6">
             <a href="/doctor/journey" class="btn-back"> ← </a>
             <div class="patient-id-card">
-                <h2
-                    class="text-2xl font-black text-slate-900 leading-none mb-1"
-                >
-                    {data.patient.full_name}
-                </h2>
+                <div class="flex items-center gap-2">
+                    <h2
+                        class="text-2xl font-black text-slate-900 leading-none mb-1"
+                    >
+                        {data.patient.full_name}
+                    </h2>
+                    {#if targetStandard?.complexity}
+                        <div
+                            class="flex gap-0.5"
+                            title="Complexité: {targetStandard.complexity}/5"
+                        >
+                            {#each Array(targetStandard.complexity) as _}
+                                <span class="text-yellow-400 text-sm">★</span>
+                            {/each}
+                        </div>
+                    {/if}
+                </div>
                 <div
                     class="flex gap-3 text-sm text-slate-500 font-bold uppercase tracking-wider"
                 >
@@ -117,6 +182,13 @@
                     <span
                         >{data.patient.gender === "F" ? "Femme" : "Homme"}</span
                     >
+                    {#if targetStandard?.typical_sessions > 1}
+                        <span
+                            class="text-indigo-500 border-l border-slate-200 pl-3"
+                        >
+                            Séance 1 / {targetStandard.typical_sessions}
+                        </span>
+                    {/if}
                 </div>
             </div>
         </div>
@@ -129,6 +201,12 @@
                         class="time font-mono text-4xl font-black tracking-tight"
                         >{formatTime(visitTimer)}</span
                     >
+                    {#if timerStatus !== "green"}
+                        <span
+                            class="absolute -bottom-6 text-[10px] font-bold uppercase tracking-widest text-red-500 animate-pulse"
+                            >Dépassement</span
+                        >
+                    {/if}
                 </div>
             {:else if data.appointment.status === "completed"}
                 <div
@@ -138,6 +216,21 @@
                         class="text-xl font-black text-slate-400 tracking-tighter uppercase"
                         >{$t("journey.completed")}</span
                     >
+                </div>
+            {:else if hasPendingProsthesis}
+                <div class="flex flex-col items-center animate-bounce">
+                    <span
+                        class="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded mb-1"
+                        >⚠️ Prothèse non reçue</span
+                    >
+                    <div
+                        class="px-6 py-2 bg-red-50 rounded-2xl border-2 border-red-200 opacity-50 cursor-not-allowed"
+                    >
+                        <span
+                            class="text-xl font-black text-red-300 tracking-tighter uppercase"
+                            >Bloqué</span
+                        >
+                    </div>
                 </div>
             {:else}
                 <div
@@ -193,9 +286,26 @@
             <!-- Visit Control -->
             <div class="flex items-center gap-3">
                 {#if !data.appointment.actual_start_time}
-                    <form action="?/startVisit" method="POST" use:enhance>
-                        <button class="btn-commencer">
-                            🚀 {$t("journey.start_visit")}
+                    <form
+                        action="?/startVisit"
+                        method="POST"
+                        use:enhance
+                        onsubmit={(e) => {
+                            if (
+                                hasPendingProsthesis &&
+                                !confirm(
+                                    "La prothèse n'est pas reçue. Continuer quand même ?",
+                                )
+                            )
+                                e.preventDefault();
+                        }}
+                    >
+                        <button
+                            class="btn-commencer"
+                            class:warning={hasPendingProsthesis}
+                        >
+                            {hasPendingProsthesis ? "⚠️" : "🚀"}
+                            {$t("journey.start_visit")}
                         </button>
                     </form>
                 {:else if !data.appointment.actual_end_time}
@@ -576,6 +686,114 @@
                             class="flex-1 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-xl hover:bg-indigo-700 hover:scale-[1.02] transition-all shadow-xl shadow-indigo-200"
                         >
                             {$t("common.save")}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {/if}
+
+    {#if showRescheduleModal}
+        <div
+            class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
+            transition:fade
+        >
+            <div
+                class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden border-4 border-white"
+                in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
+            >
+                <form
+                    action="?/reschedule"
+                    method="POST"
+                    use:enhance={() => {
+                        return async ({ update }) => {
+                            await update();
+                            showRescheduleModal = false;
+                        };
+                    }}
+                >
+                    <div
+                        class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50"
+                    >
+                        <h3
+                            class="text-2xl font-black text-slate-800 tracking-tight"
+                        >
+                            {$t("journey.reschedule")}
+                        </h3>
+                        <button
+                            type="button"
+                            class="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm text-slate-400 hover:text-rose-500 transition-all border border-slate-100"
+                            onclick={() => (showRescheduleModal = false)}
+                            >✕</button
+                        >
+                    </div>
+
+                    <div class="p-8 space-y-6">
+                        {#if targetStandard && targetStandard.gap_days_min > 0}
+                            <div
+                                class="bg-indigo-50 border-2 border-indigo-100 p-5 rounded-2xl flex items-start gap-4"
+                            >
+                                <span class="text-2xl">ℹ️</span>
+                                <div>
+                                    <p
+                                        class="font-black text-indigo-900 text-xs uppercase tracking-widest mb-1"
+                                    >
+                                        Standard Clinique
+                                    </p>
+                                    <p
+                                        class="font-bold text-indigo-600 text-sm"
+                                    >
+                                        Délai médical conseillé : {targetStandard.gap_days_min}
+                                        jours.
+                                    </p>
+                                </div>
+                            </div>
+                        {/if}
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="flex flex-col gap-2">
+                                <label
+                                    class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                >
+                                    Date
+                                </label>
+                                <input
+                                    type="date"
+                                    bind:value={rescheduleDate}
+                                    min={recommendedRescheduleDate}
+                                    class="p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 font-bold text-slate-700 focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                                    required
+                                />
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label
+                                    class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                >
+                                    Heure
+                                </label>
+                                <input
+                                    type="time"
+                                    bind:value={rescheduleTime}
+                                    class="p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 font-bold text-slate-700 focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Hidden concatenated input for server -->
+                        <input
+                            type="hidden"
+                            name="start_time"
+                            value="{rescheduleDate}T{rescheduleTime || '09:00'}"
+                        />
+                    </div>
+
+                    <div class="p-8 bg-slate-50">
+                        <button
+                            type="submit"
+                            class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 hover:scale-[1.02] transition-all shadow-lg shadow-indigo-200"
+                        >
+                            {$t("common.confirm")}
                         </button>
                     </div>
                 </form>
