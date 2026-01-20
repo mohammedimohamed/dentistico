@@ -8,6 +8,8 @@
     import { quintOut } from "svelte/easing";
     import SmartDateTimePicker from "$lib/components/SmartDateTimePicker.svelte";
 
+    import ResponsiveShield from "$lib/components/common/ResponsiveShield.svelte";
+
     let { data } = $props();
 
     let chart: any = $state();
@@ -24,8 +26,53 @@
 
     const avgDurationSeconds = $derived((data.config?.avgDuration || 20) * 60);
 
+    // Keyboard Shortcuts
+    function handleKeydown(e: KeyboardEvent) {
+        // Ignore if typing in an input
+        const target = e.target as HTMLElement;
+        if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) {
+            if (e.key === "Escape") {
+                target.blur();
+            }
+            return;
+        }
+
+        switch (e.key.toLowerCase()) {
+            case "n":
+                e.preventDefault();
+                showNotesModal = true;
+                break;
+            case "a":
+                e.preventDefault();
+                chart?.openGeneralTreatment();
+                break;
+            case "p":
+                e.preventDefault();
+                // TODO: Open Payment Modal
+                console.log("Open Payment");
+                break;
+            case "escape":
+                showNotesModal = false;
+                showRescheduleModal = false;
+                // chart component handles its own escape usually, or we can add a method
+                break;
+        }
+    }
+
+    interface ClinicalStandard {
+        id: number;
+        category: string;
+        treatment_name: string;
+        min_duration: number;
+        max_duration: number;
+        gap_days_min: number;
+        gap_days_max: number;
+        typical_sessions: number;
+        complexity: number;
+    }
+
     // Clinical Standard Intelligence
-    const targetStandard = $derived.by(() => {
+    const targetStandard = $derived.by((): ClinicalStandard | null => {
         if (!data.clinicalStandards) return null;
         // 1. Try exact match on appointment type (assuming snake_case to Title Case or similar)
         // Since we don't know exact db format of appointment_type vs standard names, we try fuzzy

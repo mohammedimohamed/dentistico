@@ -11,6 +11,7 @@
     } from "$lib/dental/tooth-data";
     import { t } from "svelte-i18n";
     import { APP_CONFIG } from "$lib/config/app.config";
+    import { getToothName } from "$lib/dental/tooth-naming";
 
     import SurfaceSelector from "./SurfaceSelector.svelte";
     import QuickTreatmentPicker from "./QuickTreatmentPicker.svelte";
@@ -26,6 +27,7 @@
     let dentitionType = $state<"adult" | "pediatric" | "mixed">("adult");
     let selectedTooth = $state<string | number | null>(null);
     let treatments = $state<any[]>([]);
+    let saveSuccess = $state(false);
     let loading = $state(true);
     let showTreatmentModal = $state(false);
 
@@ -190,6 +192,11 @@
             selectedTooth = null;
             await loadTreatments();
             await invalidateAll();
+
+            saveSuccess = true;
+            setTimeout(() => {
+                saveSuccess = false;
+            }, 2000); // Hide after 2 seconds
         } catch (e) {
             console.error("Failed to save treatment:", e);
         }
@@ -197,6 +204,19 @@
 
     export function openGeneralTreatment() {
         selectedTooth = "G";
+        newTreatment = {
+            cdt_code: "",
+            procedure_description: "general", // Changed from treatment_type to procedure_description
+            fee: 0, // Changed from cost to fee
+            status: "planned",
+            surfaces: [],
+            date_performed: new Date().toISOString().split("T")[0], // Added date_performed
+            provider_id: null, // Added provider_id
+            diagnosis: "",
+            notes: "",
+            color: "#3B82F6", // Added color
+            isCustom: false,
+        };
         showTreatmentModal = true;
     }
 
@@ -726,8 +746,19 @@
             <!-- Header -->
             <div class="modal-header">
                 <div>
-                    <h3 class="text-2xl font-bold">Add Treatment</h3>
-                    <p class="text-gray-600 mt-1">Tooth #{selectedTooth}</p>
+                    <h3 class="text-2xl font-bold">Ajouter un traitement</h3>
+                    <div class="flex flex-col mt-1">
+                        <span
+                            class="text-3xl font-black text-slate-800 tracking-tight"
+                        >
+                            #{selectedTooth}
+                        </span>
+                        <span
+                            class="text-sm font-medium text-slate-500 uppercase tracking-wide"
+                        >
+                            {getToothName(selectedTooth || "")}
+                        </span>
+                    </div>
                 </div>
                 <button
                     onclick={() => (showTreatmentModal = false)}
@@ -836,27 +867,44 @@
                     {/if}
 
                     <!-- Selected Procedure Summary -->
-                    {#if newTreatment.cdt_code}
+                    {#if newTreatment.cdt_code && !newTreatment.isCustom}
                         <div class="selected-procedure">
                             <div class="procedure-header">
                                 <span class="procedure-code"
                                     >{newTreatment.cdt_code}</span
                                 >
-                                <span class="procedure-fee"
-                                    >{APP_CONFIG.currencySymbol}{newTreatment.fee.toFixed(
-                                        2,
-                                    )}</span
-                                >
                             </div>
-                            <div class="procedure-desc">
+                            <div class="procedure-desc mb-3">
                                 {newTreatment.procedure_description}
+                            </div>
+
+                            <div class="pt-3 border-t border-blue-200">
+                                <label
+                                    for="honoraires-input"
+                                    class="block text-[10px] font-bold text-blue-700 uppercase mb-1"
+                                >
+                                    Honoraires ({APP_CONFIG.currencySymbol})
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        id="honoraires-input"
+                                        bind:value={newTreatment.fee}
+                                        class="w-full px-3 py-2 rounded border border-blue-300 focus:border-blue-500 focus:outline-none font-bold text-xl text-emerald-700 bg-white"
+                                    />
+                                </div>
+                                <p
+                                    class="text-[10px] text-blue-500 mt-1 italic"
+                                >
+                                    * Modifiez le prix si nécessaire
+                                </p>
                             </div>
                         </div>
                     {/if}
 
                     <!-- Status Selection -->
                     <div class="form-section">
-                        <span class="form-label">Status</span>
+                        <span class="form-label">Statut</span>
                         <div class="status-buttons">
                             <button
                                 type="button"
@@ -870,7 +918,7 @@
                                     class="status-dot"
                                     style="background: #3B82F6"
                                 ></span>
-                                Existing
+                                Existant
                             </button>
                             <button
                                 type="button"
@@ -884,7 +932,7 @@
                                     class="status-dot"
                                     style="background: #10B981"
                                 ></span>
-                                Completed
+                                Terminé
                             </button>
                             <button
                                 type="button"
@@ -897,7 +945,7 @@
                                     class="status-dot"
                                     style="background: #EF4444"
                                 ></span>
-                                Planned
+                                Planifié
                             </button>
                         </div>
                     </div>
@@ -906,7 +954,7 @@
                     {#if newTreatment.status === "completed"}
                         <div class="form-section">
                             <label for="date-performed" class="form-label"
-                                >Date Performed *</label
+                                >Date de réalisation *</label
                             >
                             <input
                                 type="date"
@@ -921,28 +969,28 @@
                     <!-- Diagnosis -->
                     <div class="form-section">
                         <label for="diagnosis" class="form-label"
-                            >Diagnosis (Optional)</label
+                            >Diagnostic (Optionnel)</label
                         >
                         <input
                             type="text"
                             id="diagnosis"
                             bind:value={newTreatment.diagnosis}
                             class="form-input"
-                            placeholder="e.g., Caries extending to DEJ"
+                            placeholder="ex: Carie atteignant la jonction DES"
                         />
                     </div>
 
                     <!-- Clinical Notes -->
                     <div class="form-section">
                         <label for="clinical-notes" class="form-label"
-                            >Clinical Notes</label
+                            >Notes cliniques</label
                         >
                         <textarea
                             id="clinical-notes"
                             bind:value={newTreatment.notes}
                             class="form-textarea"
                             rows="3"
-                            placeholder="Additional observations..."
+                            placeholder="Observations supplémentaires..."
                         ></textarea>
                     </div>
                 </div>
@@ -954,7 +1002,7 @@
                     onclick={() => (showTreatmentModal = false)}
                     class="btn-secondary"
                 >
-                    Cancel
+                    Annuler
                 </button>
                 <button
                     onclick={saveTreatment}
@@ -963,9 +1011,34 @@
                         (newTreatment.isCustom &&
                             !newTreatment.procedure_description)}
                 >
-                    💾 Save Treatment
+                    💾 Enregistrer
                 </button>
             </div>
+        </div>
+    </div>
+{/if}
+
+{#if saveSuccess}
+    <div
+        class="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none"
+    >
+        <div
+            class="bg-green-500 text-white rounded-full p-6 shadow-2xl animate-bounce"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-16 w-16"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="3"
+                    d="M5 13l4 4L19 7"
+                />
+            </svg>
         </div>
     </div>
 {/if}
@@ -1165,65 +1238,93 @@
         padding-top: 2rem;
         border-top: 2px solid #e5e7eb;
     }
-
+    /* Modal Styles */
     .modal-overlay {
         position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.5);
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 50;
+        z-index: 1000;
+        padding: 1rem;
     }
 
     .modal-content-large {
-        background: white;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow:
+            0 20px 25px -5px rgba(0, 0, 0, 0.1),
+            0 10px 10px -5px rgba(0, 0, 0, 0.04);
         border-radius: 1rem;
-        width: 98vw;
-        max-width: 1400px; /* Changed from 1200px */
+        width: 100%;
+        max-width: 1000px;
         max-height: 90vh;
+        overflow-y: auto;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalSlideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
     }
 
     .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
         display: flex;
         justify-content: space-between;
-        align-items: start;
-        padding: 1.5rem;
-        border-bottom: 2px solid #e5e7eb;
-    }
-
-    .close-button {
-        font-size: 1.5rem;
-        width: 40px;
-        height: 40px;
-        border-radius: 0.5rem;
-        border: none;
-        background: #f3f4f6;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .close-button:hover {
-        background: #e5e7eb;
+        align-items: flex-start;
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(10px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
     }
 
     .modal-body {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1.2fr 1fr;
         gap: 2rem;
         padding: 1.5rem;
-        overflow-y: auto;
+        overflow: hidden;
         flex: 1;
+        min-height: 0; /* Important for flex scroll */
     }
 
-    .left-column,
+    .left-column {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        overflow: hidden;
+        min-height: 0;
+    }
+
+    .left-column > :global(.treatment-picker) {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-height: 0;
+    }
+
     .right-column {
         display: flex;
         flex-direction: column;
         gap: 1rem;
+        overflow-y: auto;
     }
 
     .selected-procedure {

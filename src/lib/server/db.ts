@@ -430,6 +430,10 @@ export function init_db() {
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
+        INSERT OR IGNORE INTO cdt_codes (code, category, description, requires_surfaces, default_fee, color_code)
+        VALUES ('CUSTOM', 'General', 'Custom Treatment', 0, 0, '#6366F1');
+
+
         CREATE TABLE IF NOT EXISTS dental_treatments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             patient_id INTEGER NOT NULL,
@@ -569,9 +573,10 @@ export function init_db() {
     if (userCount.count === 0) {
         console.log('Seeding database...');
         seed_db();
-    } else if (treatmentTypeCount.count === 0) {
-        console.log('Seeding treatment types...');
+    } else {
+        // Update treatment definitions on every start to ensure translations are consistent
         seedTreatmentTypesOnly();
+        seedAlgerianCDTCodes(); // Also ensure CDT codes are up to date
     }
 
     // Migration for existing databases
@@ -1182,91 +1187,95 @@ function seedTreatmentTypesOnly() {
     try {
         console.log('Seeding treatment types...');
 
-        // Seed Treatment Types - Comprehensive list of common dental procedures
+        // Seed Treatment Types - Comprehensive list of common dental procedures (Algerian specific)
         const treatmentTypes = [
             // Consultations
-            ['consultation', 'Consultation générale avec le patient'],
+            ['consultation', 'Consultation générale'],
             ['emergency_consultation', 'Consultation d\'urgence'],
-            ['follow_up', 'Consultation de suivi'],
+            ['follow_up', 'Contrôle / Suivi de traitement'],
 
-            // Preventive Care
-            ['cleaning', 'Nettoyage dentaire professionnel'],
-            ['deep_cleaning', 'Détartrage approfondi'],
-            ['polishing', 'Polissage dentaire'],
-            ['fluoride_treatment', 'Traitement au fluorure'],
+            // Hygiène & Prophylaxie
+            ['cleaning', 'Détartrage simple'],
+            ['deep_cleaning', 'Détartrage sous-gingival'],
+            ['polishing', 'Polissage'],
+            ['fluoride_treatment', 'Application de fluor (Prophylaxie)'],
 
-            // Restorative Dentistry
-            ['filling', 'Obturation dentaire'],
-            ['filling_amalgam', 'Obturation en amalgame'],
-            ['filling_composite', 'Obturation en composite'],
-            ['filling_glass_ionomer', 'Obturation en ionomère de verre'],
-            ['inlay', 'Inlay dentaire'],
-            ['onlay', 'Onlay dentaire'],
+            // Odontologie (Soins/Plombages)
+            ['filling', 'Obturation (Soins de carie)'],
+            ['filling_amalgam', 'Obturation à l\'amalgame (Plombage gris)'],
+            ['filling_composite', 'Obturation au composite (Plombage blanc)'],
+            ['filling_glass_ionomer', 'Obturation au CVI (Verre ionomère)'],
+            ['inlay', 'Inlay'],
+            ['onlay', 'Onlay'],
+            ['temporary_filling', 'Pansement dentaire (Obturation provisoire)'],
 
-            // Endodontics
-            ['root_canal', 'Traitement de canal radiculaire'],
-            ['root_canal_anterior', 'Traitement de canal dent antérieure'],
-            ['root_canal_posterior', 'Traitement de canal dent postérieure'],
+            // Endodontie (Dévitalisation)
+            ['root_canal', 'Traitement de canal (Dévitalisation)'],
+            ['root_canal_anterior', 'Traitement de canal (Dent monoradiculée)'],
+            ['root_canal_posterior', 'Traitement de canal (Dent pluriradiculée)'],
 
-            // Oral Surgery
+            // Chirurgie & Extractions
             ['extraction', 'Extraction dentaire'],
             ['extraction_simple', 'Extraction simple'],
-            ['extraction_surgical', 'Extraction chirurgicale'],
-            ['extraction_impacted', 'Extraction dent incluse'],
+            ['extraction_surgical', 'Extraction chirurgicale (Alvéolectomie)'],
+            ['extraction_impacted', 'Extraction de dent incluse (ex: Dent de sagesse)'],
 
-            // Prosthodontics
+            // Prothèses Fixes
             ['crown', 'Pose de couronne'],
-            ['crown_porcelain', 'Couronne en porcelaine'],
+            ['crown_porcelain', 'Couronne céramique'],
             ['crown_metal', 'Couronne métallique'],
-            ['crown_pfm', 'Couronne métal-porcelaine'],
-            ['crown_zirconia', 'Couronne en zircone'],
-            ['bridge', 'Pont dentaire'],
-            ['bridge_fixed', 'Pont fixe'],
-            ['bridge_maryland', 'Pont Maryland'],
-            ['denture', 'Prothèse dentaire'],
-            ['denture_complete', 'Prothèse complète'],
-            ['denture_partial', 'Prothèse partielle'],
+            ['crown_pfm', 'Couronne Céramo-métallique (CCM)'],
+            ['crown_zirconia', 'Couronne Zircone'],
+            ['bridge', 'Bridge dentaire'],
+            ['bridge_fixed', 'Bridge fixe'],
+            ['bridge_maryland', 'Bridge collé (Maryland)'],
 
-            // Implantology
-            ['implant', 'Implantation dentaire'],
+            // Prothèses Amovibles
+            ['denture', 'Prothèse dentaire (Appareil)'],
+            ['denture_complete', 'Prothèse totale (Dentier)'],
+            ['denture_partial', 'Prothèse partielle (Stellite ou Résine)'],
+
+            // Implantologie
+            ['implant', 'Implantologie'],
             ['implant_placement', 'Pose d\'implant'],
             ['implant_crown', 'Couronne sur implant'],
             ['bone_graft', 'Greffe osseuse'],
-            ['sinus_lift', 'Élévation du sinus'],
+            ['sinus_lift', 'Sinus Lift (Élévation de sinus)'],
 
-            // Orthodontics
-            ['orthodontics', 'Traitement orthodontique'],
-            ['braces', 'Appareil orthodontique'],
-            ['retainer', 'Contention orthodontique'],
-
-            // Cosmetic Dentistry
+            // Orthodontie & Esthétique
+            ['orthodontics', 'Traitement ODF (Orthodontie)'],
+            ['braces', 'Appareil multi-attaches (Bagues)'],
+            ['retainer', 'Appareil de contention'],
             ['whitening', 'Blanchiment dentaire'],
-            ['whitening_office', 'Blanchiment en cabinet'],
+            ['whitening_office', 'Blanchiment au fauteuil'],
             ['whitening_home', 'Blanchiment à domicile'],
             ['veneer', 'Facette dentaire'],
-            ['veneer_porcelain', 'Facette en porcelaine'],
-            ['veneer_composite', 'Facette en composite'],
+            ['veneer_porcelain', 'Facette céramique'],
+            ['veneer_composite', 'Facette composite'],
 
-            // Periodontics
-            ['periodontal', 'Traitement parodontal'],
+            // Parodontologie
+            ['periodontal', 'Traitement parodontal (Soins des gencives)'],
             ['scaling', 'Surfaçage radiculaire'],
             ['gum_surgery', 'Chirurgie parodontale'],
 
-            // Radiology
-            ['x_ray', 'Radiographie dentaire'],
-            ['x_ray_intraoral', 'Radiographie intrabuccale'],
-            ['x_ray_panorama', 'Panoramique dentaire'],
-            ['x_ray_cbct', 'CBCT/Scanner'],
+            // Imagerie
+            ['x_ray', 'Radiographie'],
+            ['x_ray_intraoral', 'Radio intra-orale (Rétro-alvéolaire)'],
+            ['x_ray_panorama', 'Radio Panoramique'],
+            ['x_ray_cbct', 'Scanner dentaire (CBCT)'],
 
-            // Emergency & Other
+            // Divers
             ['emergency', 'Soins d\'urgence'],
-            ['pain_relief', 'Soulagement de la douleur'],
-            ['temporary_filling', 'Obturation temporaire'],
-            ['repair', 'Réparation de restauration'],
-            ['maintenance', 'Maintenance et contrôle']
+            ['pain_relief', 'Traitement sédatif (Soulagement douleur)'],
+            ['repair', 'Réparation de prothèse / restauration'],
+            ['maintenance', 'Maintenance et contrôle périodique']
         ];
 
-        const insertTreatmentType = db.prepare('INSERT OR IGNORE INTO treatment_types (name, description) VALUES (?, ?)');
+        const insertTreatmentType = db.prepare(`
+            INSERT INTO treatment_types (name, description) 
+            VALUES (?, ?) 
+            ON CONFLICT(name) DO UPDATE SET description = excluded.description
+        `);
 
         let insertedCount = 0;
         for (const tt of treatmentTypes) {
@@ -1276,7 +1285,7 @@ function seedTreatmentTypesOnly() {
             }
         }
 
-        console.log(`Treatment types seeded successfully. Added ${insertedCount} new treatment types.`);
+        console.log(`Treatment types seeded/updated successfully.`);
     } catch (error) {
         console.error('Error seeding treatment types:', error);
         throw error;
@@ -1402,8 +1411,102 @@ function seed_db() {
 
     // Seed treatment types as part of initial seeding
     seedTreatmentTypesOnly();
+    seedAlgerianCDTCodes(); // Add this line
 
     console.log('Extended database seeded successfully.');
+}
+
+function seedAlgerianCDTCodes() {
+    try {
+        console.log('Seeding Algerian CDT Codes...');
+
+        // Define categories for QuickTreatmentPicker mapping
+        // Mapping specific codes to categories used in frontend or adding new ones
+        const codes = [
+            // DIAGNOSTICS (Consultations)
+            { code: 'CONS', cat: 'Diagnostic', desc: 'Consultation générale', fee: 1500, color: '#6B7280' },
+            { code: 'URG', cat: 'Diagnostic', desc: 'Consultation d\'urgence', fee: 2000, color: '#EF4444' },
+            { code: 'SUIVI', cat: 'Diagnostic', desc: 'Contrôle / Suivi', fee: 1000, color: '#6B7280' },
+            { code: 'RADIO', cat: 'Diagnostic', desc: 'Radio intra-orale', fee: 500, color: '#6B7280' },
+            { code: 'PAN', cat: 'Diagnostic', desc: 'Radio Panoramique', fee: 2500, color: '#6B7280' },
+
+            // PREVENTIVE (Hygiène)
+            { code: 'DET', cat: 'Preventive', desc: 'Détartrage simple', fee: 4000, color: '#10B981' },
+            { code: 'SURF', cat: 'Preventive', desc: 'Détartrage sous-gingival', fee: 6000, color: '#10B981' },
+            { code: 'POLI', cat: 'Preventive', desc: 'Polissage', fee: 1500, color: '#10B981' },
+            { code: 'FLUOR', cat: 'Preventive', desc: 'Application de fluor', fee: 2000, color: '#10B981' },
+
+            // RESTORATIVE (Soins)
+            { code: 'OBT', cat: 'Restorative', desc: 'Obturation (Carie)', fee: 4000, color: '#3B82F6', reqSurf: 1 },
+            { code: 'AMAL', cat: 'Restorative', desc: 'Obturation Amalgame', fee: 3500, color: '#6B7280', reqSurf: 1 },
+            { code: 'COMP', cat: 'Restorative', desc: 'Obturation Composite', fee: 4500, color: '#3B82F6', reqSurf: 1 },
+            { code: 'CVI', cat: 'Restorative', desc: 'Obturation CVI', fee: 3000, color: '#3B82F6', reqSurf: 1 },
+            { code: 'C-PROV', cat: 'Restorative', desc: 'Pansement provisoire', fee: 1500, color: '#9CA3AF' },
+            { code: 'INLAY', cat: 'Restorative', desc: 'Inlay', fee: 15000, color: '#7C3AED', reqSurf: 1 },
+            { code: 'ONLAY', cat: 'Restorative', desc: 'Onlay', fee: 18000, color: '#7C3AED', reqSurf: 1 },
+
+            // ENDODONTICS
+            { code: 'ENDO1', cat: 'Endodontics', desc: 'Dévitalisation (Monoradiculée)', fee: 8000, color: '#EA580C' },
+            { code: 'ENDO2', cat: 'Endodontics', desc: 'Dévitalisation (Pluriradiculée)', fee: 12000, color: '#EA580C' },
+            { code: 'RE-ENDO', cat: 'Endodontics', desc: 'Retraitement canalaire', fee: 15000, color: '#EA580C' },
+
+            // SURGERY (Chirurgie)
+            { code: 'EXT', cat: 'Surgery', desc: 'Extraction simple', fee: 3000, color: '#DC2626' },
+            { code: 'EXT-CHIR', cat: 'Surgery', desc: 'Extraction chirurgicale', fee: 6000, color: '#DC2626' },
+            { code: 'DDS', cat: 'Surgery', desc: 'Dent de sagesse incluse', fee: 15000, color: '#DC2626' },
+            { code: 'GREFFE', cat: 'Surgery', desc: 'Greffe osseuse', fee: 25000, color: '#DC2626' },
+            { code: 'SINUS', cat: 'Surgery', desc: 'Sinus Lift', fee: 40000, color: '#DC2626' },
+
+            // CROWNS (Prothèses)
+            { code: 'CCM', cat: 'Crowns', desc: 'Couronne Céramo-Métallique', fee: 18000, color: '#7C3AED' },
+            { code: 'ZIR', cat: 'Crowns', desc: 'Couronne Zircone', fee: 25000, color: '#7C3AED' },
+            { code: 'CC', cat: 'Crowns', desc: 'Couronne Céramique', fee: 22000, color: '#7C3AED' },
+            { code: 'CM', cat: 'Crowns', desc: 'Couronne Métallique', fee: 12000, color: '#F59E0B' },
+            { code: 'BRIDGE', cat: 'Crowns', desc: 'Bridge (par élément)', fee: 18000, color: '#7C3AED' },
+
+            // PROSTHETICS (Movibles - mapped to 'Crowns' or 'Restorative' for now, or new cat)
+            // Let's use 'Restorative' or just 'Prosthetics' if frontend supports it. 
+            // QuickTreatmentPicker has: Diagnostic, Preventive, Restorative, Crowns, Endodontics, Surgery
+            // I'll add 'Prosthetics' in the frontend.
+            { code: 'COMPL', cat: 'Prosthetics', desc: 'Prothèse Totale', fee: 40000, color: '#8B5CF6' },
+            { code: 'PART', cat: 'Prosthetics', desc: 'Prothèse Partielle', fee: 25000, color: '#8B5CF6' },
+            { code: 'REP', cat: 'Prosthetics', desc: 'Réparation Prothèse', fee: 3000, color: '#8B5CF6' },
+
+            // IMPLANTS
+            { code: 'IMP', cat: 'Implants', desc: 'Pose d\'implant', fee: 60000, color: '#059669' },
+            { code: 'C-IMP', cat: 'Implants', desc: 'Couronne sur implant', fee: 25000, color: '#059669' },
+
+            // ORTHO
+            { code: 'ORTHO', cat: 'Orthodontics', desc: 'Consultation ODF', fee: 2000, color: '#DB2777' },
+            { code: 'BAGUES', cat: 'Orthodontics', desc: 'Traitement Multi-attaches', fee: 150000, color: '#DB2777' },
+
+            // ESTHETIC
+            { code: 'BLANCH', cat: 'Esthetic', desc: 'Blanchiment', fee: 20000, color: '#F472B6' },
+            { code: 'FACIG', cat: 'Esthetic', desc: 'Facette', fee: 30000, color: '#F472B6' },
+
+            // CUSTOM
+            { code: 'CUSTOM', cat: 'General', desc: 'Autre / Txt Libre', fee: 0, color: '#6366F1' }
+        ];
+
+        const insert = db.prepare(`
+            INSERT INTO cdt_codes (code, category, description, default_fee, color_code, requires_surfaces)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(code) DO UPDATE SET 
+                category = excluded.category,
+                description = excluded.description,
+                default_fee = excluded.default_fee,
+                color_code = excluded.color_code,
+                requires_surfaces = excluded.requires_surfaces
+        `);
+
+        for (const c of codes) {
+            insert.run(c.code, c.cat, c.desc, c.fee, c.color, c.reqSurf ? 1 : 0);
+        }
+        console.log('Algerian CDT Codes seeded.');
+
+    } catch (e) {
+        console.error('Error seeding Algerian codes:', e);
+    }
 }
 
 // -----------------------------------------------------------------------------
