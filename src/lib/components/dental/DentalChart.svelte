@@ -48,6 +48,35 @@
 
     let showSurfaceSelector = $state(false);
     let requiresSurfaces = $state(false);
+    let editingTreatmentId = $state<number | null>(null);
+
+    function editTreatment(treatment: any) {
+        if (readOnly || treatment.source !== "dental") return;
+
+        editingTreatmentId = treatment.id;
+        selectedTooth = treatment.tooth_number;
+
+        newTreatment = {
+            surfaces: treatment.surfaces ? treatment.surfaces.split(",") : [],
+            cdt_code: treatment.cdt_code || "",
+            procedure_description:
+                treatment.description || treatment.treatment_type,
+            fee: treatment.fee || treatment.cost || 0,
+            status: treatment.status,
+            date_performed: treatment.treatment_date
+                ? new Date(treatment.treatment_date).toISOString().split("T")[0]
+                : new Date().toISOString().split("T")[0],
+            provider_id: treatment.provider_id || null,
+            diagnosis: treatment.diagnosis || "",
+            notes: treatment.notes || "",
+            color: treatment.color || "#3B82F6",
+            isCustom: treatment.cdt_code === "CUSTOM",
+        };
+
+        requiresSurfaces = !!treatment.surfaces;
+        showSurfaceSelector = requiresSurfaces;
+        showTreatmentModal = true;
+    }
 
     function handleCodeSelect(code: any) {
         newTreatment.cdt_code = code.code;
@@ -151,8 +180,13 @@
         }
 
         try {
-            await fetch("/api/dental/treatments", {
-                method: "POST",
+            const url = editingTreatmentId
+                ? `/api/dental/treatments/${editingTreatmentId}`
+                : "/api/dental/treatments";
+            const method = editingTreatmentId ? "PUT" : "POST";
+
+            await fetch(url, {
+                method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     patient_id: patientId,
@@ -190,6 +224,7 @@
             showSurfaceSelector = false;
             requiresSurfaces = false;
             selectedTooth = null;
+            editingTreatmentId = null;
             await loadTreatments();
             await invalidateAll();
 
@@ -608,10 +643,29 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-100">
                         {#each treatments as treatment}
-                            <tr class="hover:bg-gray-50 transition-colors">
+                            <tr
+                                class="hover:bg-blue-50/50 transition-colors cursor-pointer group relative"
+                                title="Cliquez pour modifier ce traitement"
+                                onclick={() => editTreatment(treatment)}
+                                onkeydown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        editTreatment(treatment);
+                                    }
+                                }}
+                                tabindex="0"
+                                role="button"
+                                aria-label="Modifier le traitement"
+                            >
+                                <!-- Color bar decoration -->
+                                <td
+                                    class="w-1.5 p-0 absolute left-0 top-0 bottom-0"
+                                    style="background-color: {treatment.color ||
+                                        '#e5e7eb'}"
+                                ></td>
                                 <!-- Date -->
                                 <td
-                                    class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900"
+                                    class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
                                 >
                                     {treatment.treatment_date
                                         ? new Date(
@@ -621,24 +675,31 @@
                                 </td>
 
                                 <!-- Context (Tooth or General) -->
-                                <td
-                                    class="px-4 py-3 whitespace-nowrap text-sm font-bold text-indigo-600"
-                                >
+                                <td class="px-4 py-4 whitespace-nowrap text-sm">
                                     {#if treatment.source === "general"}
                                         <span
-                                            class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-xs"
+                                            class="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-wider"
                                             >Général</span
                                         >
                                     {:else}
-                                        <span
-                                            class="px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs"
-                                            >#{treatment.tooth_number}</span
-                                        >
+                                        <div class="flex flex-col">
+                                            <span
+                                                class="font-bold text-indigo-600"
+                                                >#{treatment.tooth_number}</span
+                                            >
+                                            <span
+                                                class="text-[10px] text-gray-400 font-medium truncate max-w-[80px]"
+                                            >
+                                                {getToothName(
+                                                    treatment.tooth_number,
+                                                )}
+                                            </span>
+                                        </div>
                                     {/if}
                                 </td>
 
                                 <!-- Description -->
-                                <td class="px-4 py-3 text-sm text-gray-600">
+                                <td class="px-4 py-4 text-sm text-gray-600">
                                     <div class="font-medium text-gray-900">
                                         {treatment.treatment_type || "---"}
                                     </div>
@@ -660,7 +721,7 @@
                                 </td>
 
                                 <!-- Status Badge -->
-                                <td class="px-4 py-3 whitespace-nowrap">
+                                <td class="px-4 py-4 whitespace-nowrap">
                                     <span
                                         class="px-2.5 py-1 inline-flex text-[10px] leading-4 font-bold rounded-full uppercase tracking-wider
                                         {treatment.status === 'completed'
@@ -676,7 +737,7 @@
 
                                 <!-- Amount -->
                                 <td
-                                    class="px-4 py-3 whitespace-nowrap text-sm font-black text-gray-900 text-right"
+                                    class="px-4 py-4 whitespace-nowrap text-sm font-black text-gray-900 text-right"
                                 >
                                     {APP_CONFIG.currencySymbol}{(
                                         treatment.cost ||
@@ -688,33 +749,60 @@
                                 <!-- Actions -->
                                 {#if !readOnly}
                                     <td
-                                        class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium"
+                                        class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium"
                                     >
-                                        {#if treatment.source === "dental"}
-                                            <button
-                                                onclick={() =>
-                                                    deleteTreatment(
-                                                        treatment.id,
-                                                    )}
-                                                class="text-red-400 hover:text-red-600 transition-colors"
-                                                title={$t(
-                                                    "dental.delete_treatment",
-                                                )}
-                                            >
-                                                <svg
-                                                    class="w-4 h-4"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                    ><path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                    ></path></svg
+                                        <div class="flex justify-end gap-2">
+                                            {#if treatment.source === "dental"}
+                                                <button
+                                                    onclick={(e) => {
+                                                        e.stopPropagation();
+                                                        editTreatment(
+                                                            treatment,
+                                                        );
+                                                    }}
+                                                    class="text-indigo-400 hover:text-indigo-600 p-1 rounded-full hover:bg-indigo-50 transition-all"
+                                                    title="Modifier"
                                                 >
-                                            </button>
-                                        {/if}
+                                                    <svg
+                                                        class="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                        ><path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                                        ></path></svg
+                                                    >
+                                                </button>
+                                                <button
+                                                    onclick={(e) => {
+                                                        e.stopPropagation();
+                                                        deleteTreatment(
+                                                            treatment.id,
+                                                        );
+                                                    }}
+                                                    class="text-red-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-all"
+                                                    title={$t(
+                                                        "dental.delete_treatment",
+                                                    )}
+                                                >
+                                                    <svg
+                                                        class="w-4 h-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                        ><path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                        ></path></svg
+                                                    >
+                                                </button>
+                                            {/if}
+                                        </div>
                                     </td>
                                 {/if}
                             </tr>
@@ -742,11 +830,16 @@
             onclick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
+            tabindex="-1"
         >
             <!-- Header -->
             <div class="modal-header">
                 <div>
-                    <h3 class="text-2xl font-bold">Ajouter un traitement</h3>
+                    <h3 class="text-2xl font-bold">
+                        {editingTreatmentId
+                            ? "Modifier le traitement"
+                            : "Ajouter un traitement"}
+                    </h3>
                     <div class="flex flex-col mt-1">
                         <span
                             class="text-3xl font-black text-slate-800 tracking-tight"
@@ -999,7 +1092,26 @@
             <!-- Footer Actions -->
             <div class="modal-footer">
                 <button
-                    onclick={() => (showTreatmentModal = false)}
+                    onclick={() => {
+                        showTreatmentModal = false;
+                        editingTreatmentId = null;
+                        // Reset form
+                        newTreatment = {
+                            surfaces: [],
+                            cdt_code: "",
+                            procedure_description: "",
+                            fee: 0,
+                            status: "completed",
+                            date_performed: new Date()
+                                .toISOString()
+                                .split("T")[0],
+                            provider_id: null,
+                            diagnosis: "",
+                            notes: "",
+                            color: "#3B82F6",
+                            isCustom: false,
+                        };
+                    }}
                     class="btn-secondary"
                 >
                     Annuler
@@ -1339,18 +1451,6 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 0.5rem;
-    }
-
-    .procedure-code {
-        font-weight: 700;
-        font-size: 1.25rem;
-        color: #1e40af;
-    }
-
-    .procedure-fee {
-        font-weight: 700;
-        font-size: 1.25rem;
-        color: #059669;
     }
 
     .procedure-desc {
