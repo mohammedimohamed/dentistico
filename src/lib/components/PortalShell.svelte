@@ -12,6 +12,7 @@
         roleLabel: string;
         children: Snippet;
         headerChildren?: Snippet;
+        noPadding?: boolean;
     }
 
     let {
@@ -22,6 +23,7 @@
         roleLabel,
         children,
         headerChildren,
+        noPadding = false,
     }: Props = $props();
 
     let clientLoadTime = $state(0);
@@ -53,7 +55,11 @@
         <main
             class="flex-1 overflow-y-auto overflow-x-hidden focus:outline-none flex flex-col"
         >
-            <div class="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 flex-1 w-full">
+            <div
+                class="mx-auto flex-1 w-full {noPadding
+                    ? 'p-0 max-w-none'
+                    : 'max-w-[1600px] p-4 sm:p-6 lg:p-8'}"
+            >
                 {@render children()}
             </div>
 

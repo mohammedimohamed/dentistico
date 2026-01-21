@@ -20,9 +20,15 @@
         patientId: number;
         patientAge: number;
         readOnly?: boolean;
+        onTreatmentAdded?: () => void;
     }
 
-    let { patientId, patientAge, readOnly = false }: Props = $props();
+    let {
+        patientId,
+        patientAge,
+        readOnly = false,
+        onTreatmentAdded,
+    }: Props = $props();
 
     let dentitionType = $state<"adult" | "pediatric" | "mixed">("adult");
     let selectedTooth = $state<string | number | null>(null);
@@ -49,6 +55,13 @@
     let showSurfaceSelector = $state(false);
     let requiresSurfaces = $state(false);
     let editingTreatmentId = $state<number | null>(null);
+
+    // Auto-set fee to 0 when status is "existing"
+    $effect(() => {
+        if (newTreatment.status === "existing") {
+            newTreatment.fee = 0;
+        }
+    });
 
     function editTreatment(treatment: any) {
         if (readOnly || treatment.source !== "dental") return;
@@ -232,6 +245,7 @@
             setTimeout(() => {
                 saveSuccess = false;
             }, 2000); // Hide after 2 seconds
+            if (onTreatmentAdded) onTreatmentAdded();
         } catch (e) {
             console.error("Failed to save treatment:", e);
         }
@@ -271,6 +285,32 @@
         }
     }
 </script>
+
+<svelte:window
+    onkeydown={(e) => {
+        if (e.key === "Escape" && showTreatmentModal) {
+            showTreatmentModal = false;
+            // Reset state
+            newTreatment = {
+                surfaces: [],
+                cdt_code: "",
+                procedure_description: "",
+                fee: 0,
+                status: "completed",
+                date_performed: new Date().toISOString().split("T")[0],
+                provider_id: null,
+                diagnosis: "",
+                notes: "",
+                color: "#3B82F6",
+                isCustom: false,
+            };
+            showSurfaceSelector = false;
+            requiresSurfaces = false;
+            selectedTooth = null;
+            editingTreatmentId = null;
+        }
+    }}
+/>
 
 <div class="dental-chart">
     <!-- Header Controls -->
@@ -331,7 +371,9 @@
     </div>
 
     {#if loading}
-        <div class="loading">{$t("common.loading") || "Loading chart..."}</div>
+        <div class="loading">
+            {$t("common.loading") || "Loading chart..."}
+        </div>
     {:else}
         <div
             class="dentition-container"
@@ -591,9 +633,9 @@
     {/if}
 
     <!-- Treatment History List -->
-    <div class="treatment-history mt-8 border-t border-gray-100 pt-6">
+    <div class="treatment-history mt-4 pt-4">
         <h3 class="text-lg font-bold text-gray-900 mb-4 px-1">
-            {$t("dental.treatment_history")}
+            {$t("dental.treatment_history")} ({treatments.length})
         </h3>
 
         {#if treatments.length === 0}
@@ -611,29 +653,41 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
+                            <th class="w-1.5 p-0 bg-transparent border-none"
+                            ></th>
                             <th
                                 scope="col"
-                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"
+                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-32"
                                 >Date</th
                             >
                             <th
                                 scope="col"
-                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"
+                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-16"
                                 >Ctx</th
                             >
                             <th
                                 scope="col"
-                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-full"
+                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3"
                                 >Description</th
                             >
                             <th
                                 scope="col"
-                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"
+                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-48"
+                                >Diagnostic</th
+                            >
+                            <th
+                                scope="col"
+                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-48"
+                                >Note</th
+                            >
+                            <th
+                                scope="col"
+                                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-32"
                                 >Status</th
                             >
                             <th
                                 scope="col"
-                                class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider"
+                                class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-32"
                                 >Amount</th
                             >
                             {#if !readOnly}
@@ -665,7 +719,7 @@
                                 ></td>
                                 <!-- Date -->
                                 <td
-                                    class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                                    class="px-4 py-4 whitespace-nowrap text-base font-bold text-gray-900"
                                 >
                                     {treatment.treatment_date
                                         ? new Date(
@@ -699,8 +753,10 @@
                                 </td>
 
                                 <!-- Description -->
-                                <td class="px-4 py-4 text-sm text-gray-600">
-                                    <div class="font-medium text-gray-900">
+                                <td class="px-4 py-4 text-base text-gray-800">
+                                    <div
+                                        class="font-bold text-gray-900 text-lg"
+                                    >
                                         {treatment.treatment_type || "---"}
                                     </div>
                                     {#if treatment.description || treatment.notes}
@@ -717,6 +773,33 @@
                                         >
                                             Surf: {treatment.surfaces}
                                         </div>
+                                    {/if}
+                                </td>
+
+                                <!-- Diagnosis -->
+                                <td
+                                    class="px-4 py-4 text-sm text-gray-700 font-medium max-w-[150px] truncate"
+                                >
+                                    {#if treatment.diagnosis}
+                                        <span
+                                            class="text-rose-600 font-semibold"
+                                            >{treatment.diagnosis}</span
+                                        >
+                                    {:else}
+                                        <span class="text-gray-300">-</span>
+                                    {/if}
+                                </td>
+
+                                <!-- Clinical Note -->
+                                <td
+                                    class="px-4 py-4 text-sm text-gray-600 max-w-[200px] truncate"
+                                >
+                                    {#if treatment.notes}
+                                        <span class="italic text-slate-600"
+                                            >{treatment.notes}</span
+                                        >
+                                    {:else}
+                                        <span class="text-gray-300">-</span>
                                     {/if}
                                 </td>
 
@@ -737,13 +820,34 @@
 
                                 <!-- Amount -->
                                 <td
-                                    class="px-4 py-4 whitespace-nowrap text-sm font-black text-gray-900 text-right"
+                                    class="px-4 py-4 whitespace-nowrap text-sm text-right"
                                 >
-                                    {APP_CONFIG.currencySymbol}{(
-                                        treatment.cost ||
-                                        treatment.fee ||
-                                        0
-                                    ).toFixed(2)}
+                                    {#if treatment.status === "existing"}
+                                        <div class="flex flex-col items-end">
+                                            <span
+                                                class="text-gray-400 line-through text-xs"
+                                            >
+                                                {APP_CONFIG.currencySymbol}{(
+                                                    treatment.cost ||
+                                                    treatment.fee ||
+                                                    0
+                                                ).toFixed(2)}
+                                            </span>
+                                            <span
+                                                class="font-black text-gray-900"
+                                            >
+                                                {APP_CONFIG.currencySymbol}0.00
+                                            </span>
+                                        </div>
+                                    {:else}
+                                        <span class="font-black text-gray-900">
+                                            {APP_CONFIG.currencySymbol}{(
+                                                treatment.cost ||
+                                                treatment.fee ||
+                                                0
+                                            ).toFixed(2)}
+                                        </span>
+                                    {/if}
                                 </td>
 
                                 <!-- Actions -->
@@ -818,12 +922,12 @@
 {#if showTreatmentModal && selectedTooth}
     <div
         class="modal-overlay"
+        role="button"
+        tabindex="0"
         onclick={() => (showTreatmentModal = false)}
         onkeydown={(e) => {
             if (e.key === "Escape") showTreatmentModal = false;
         }}
-        role="button"
-        tabindex="-1"
     >
         <div
             class="modal-content-large"
@@ -983,13 +1087,23 @@
                                         type="number"
                                         id="honoraires-input"
                                         bind:value={newTreatment.fee}
-                                        class="w-full px-3 py-2 rounded border border-blue-300 focus:border-blue-500 focus:outline-none font-bold text-xl text-emerald-700 bg-white"
+                                        readonly={newTreatment.status ===
+                                            "existing"}
+                                        class="w-full px-3 py-2 rounded border border-blue-300 focus:border-blue-500 focus:outline-none font-bold text-xl text-emerald-700 {newTreatment.status ===
+                                        'existing'
+                                            ? 'bg-gray-100 cursor-not-allowed'
+                                            : 'bg-white'}"
                                     />
                                 </div>
                                 <p
-                                    class="text-[10px] text-blue-500 mt-1 italic"
+                                    class="text-[10px] {newTreatment.status ===
+                                    'existing'
+                                        ? 'text-gray-500'
+                                        : 'text-blue-500'} mt-1 italic"
                                 >
-                                    * Modifiez le prix si nécessaire
+                                    {newTreatment.status === "existing"
+                                        ? "✓ Traitement existant - Aucun honoraire"
+                                        : "* Modifiez le prix si nécessaire"}
                                 </p>
                             </div>
                         </div>
@@ -1160,14 +1274,17 @@
         background: white;
         border-radius: 8px;
         padding: 1.5rem;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
     }
 
     .chart-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
         border-bottom: 2px solid #e5e7eb;
         flex-wrap: wrap;
     }
@@ -1196,7 +1313,7 @@
     .legend-container {
         display: flex;
         justify-content: center;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
     }
 
     .legend {
@@ -1339,6 +1456,64 @@
         margin-top: 0.25rem;
     }
 
+    /* COMPACT MODE for 1351x617 screens (and similar) */
+    @media (max-height: 750px) {
+        .dental-chart {
+            padding: 0.75rem 1rem;
+        }
+
+        .chart-header {
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            gap: 0.5rem;
+        }
+
+        .chart-header h2 {
+            font-size: 1.125rem;
+        }
+
+        .legend-container {
+            margin-bottom: 0.75rem;
+            margin-top: 0.5rem !important;
+        }
+
+        .dentition-container {
+            padding: 0.25rem;
+            gap: 0.25rem;
+        }
+
+        .teeth-row {
+            padding: 0.5rem 0.25rem !important;
+        }
+
+        .quadrant-divider {
+            height: 90px;
+        }
+
+        .arch-divider {
+            margin: 0.4rem 0;
+        }
+
+        .treatment-history {
+            margin-top: 1rem;
+            padding-top: 1rem;
+        }
+
+        .treatment-history h3 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .arch-label {
+            font-size: 0.6rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .occlusal-plane-gap {
+            height: 1.5rem;
+        }
+    }
+
     .loading {
         text-align: center;
         padding: 3rem;
@@ -1373,9 +1548,9 @@
             0 20px 25px -5px rgba(0, 0, 0, 0.1),
             0 10px 10px -5px rgba(0, 0, 0, 0.04);
         border-radius: 1rem;
-        width: 100%;
-        max-width: 1000px;
-        max-height: 90vh;
+        width: 95%;
+        max-width: 1500px;
+        max-height: 96vh;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
@@ -1414,6 +1589,17 @@
         overflow: hidden;
         flex: 1;
         min-height: 0; /* Important for flex scroll */
+    }
+
+    @media (max-height: 750px) {
+        .modal-body {
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem !important;
+        }
     }
 
     .left-column {

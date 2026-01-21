@@ -1297,9 +1297,11 @@ export function getAllCDTCodes() {
 }
 
 function seed_db() {
+    console.log('🌱 Seeding essential users and reference data...');
+
     const insertUser = db.prepare('INSERT INTO users (username, password_hash, full_name, role) VALUES (?, ?, ?, ?)');
 
-    // Users
+    // Essential Users Only
     const doctorHash = bcrypt.hashSync('doctor123', 10);
     insertUser.run('doctor1', doctorHash, 'Dr. Jean Dupont', 'doctor');
 
@@ -1313,59 +1315,9 @@ function seed_db() {
     const patientHash = bcrypt.hashSync('patient123', 10);
     insertUser.run('patient1', patientHash, 'Mohamed Al Arabi', 'patient');
 
-    const doctor = db.prepare("SELECT id FROM users WHERE role = 'doctor' LIMIT 1").get() as { id: number };
-    const assistant = db.prepare("SELECT id FROM users WHERE role = 'assistant' LIMIT 1").get() as { id: number };
-    const patientUser = db.prepare("SELECT id FROM users WHERE role = 'patient' LIMIT 1").get() as { id: number };
+    console.log('✅ Users created (doctor1, assistant1, admin, patient1)');
 
-    // Patients
-    const insertPatient = db.prepare(`
-        INSERT INTO patients (
-            full_name, phone, email, date_of_birth, gender, address, city, postal_code, 
-            allergies, current_medications, medical_conditions, blood_type, created_by, user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const patientsData = [
-        ['Mohamed Al Arabi', '555-0106', 'mohamed@example.com', '1992-03-10', 'Male', 'Boulevard Zerktouni', 'Casablanca', '20000', null, null, null, 'O+', assistant.id, patientUser.id], // Linked to patient1 user
-        ['Layla Ouloui', '555-0107', 'layla@example.com', '1998-11-25', 'Female', 'Hay Riad', 'Rabat', '10000', 'Aspirin', null, null, 'A-', assistant.id, null],
-        ['Yassine Bennani', '555-0108', 'yassine@example.com', '2012-08-15', 'Male', 'Gauthier', 'Casablanca', '20600', null, null, 'Asthma', 'B+', assistant.id, null], // Teenager (~13 years)
-        ['Omar Faouzi', '555-0109', 'omar@example.com', '2020-05-20', 'Male', 'Maarif', 'Casablanca', '20100', null, null, null, 'O+', assistant.id, null]         // Kid (~5 years)
-    ];
-
-    for (const p of patientsData) {
-        insertPatient.run(...p);
-    }
-
-    // Appointments
-    const p1 = db.prepare("SELECT id FROM patients WHERE full_name = 'Mohamed Al Arabi'").get() as { id: number };
-    const p2 = db.prepare("SELECT id FROM patients WHERE full_name = 'Layla Ouloui'").get() as { id: number };
-
-    const insertAppointment = db.prepare(`
-        INSERT INTO appointments (patient_id, doctor_id, start_time, end_time, duration_minutes, status, appointment_type, notes) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const today = new Date().toISOString().split('T')[0];
-
-    // Mohamed: Checkup today
-    insertAppointment.run(p1.id, doctor.id, `${today} 09:00:00`, `${today} 09:30:00`, 30, 'scheduled', 'consultation', 'Routine checkup');
-
-    // Layla: Root canal today
-    insertAppointment.run(p2.id, doctor.id, `${today} 10:00:00`, `${today} 11:00:00`, 60, 'confirmed', 'root_canal', 'Complain of pain in upper left');
-
-    // Treatments (for Layla)
-    const laylaAppt = db.prepare("SELECT id FROM appointments WHERE patient_id = ? AND start_time LIKE ?").get(p2.id, `${today}%`) as { id: number };
-
-    // If appointment exists (it should), add treatment
-    if (laylaAppt) {
-        const insertTreatment = db.prepare(`
-            INSERT INTO treatments (appointment_id, patient_id, doctor_id, treatment_date, tooth_number, treatment_type, description, cost, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        insertTreatment.run(laylaAppt.id, p2.id, doctor.id, today, '26', 'root_canal', 'Root canal therapy on tooth 26', 450.00, 'in_progress');
-    }
-
-    // Seed Medications
+    // Seed Medications (Reference Data)
     const medications = [
         ['Paracétamol', '500mg', '1 comprimé toutes les 6 heures'],
         ['Amoxicilline', '1g', '1 comprimé matin et soir'],
@@ -1382,8 +1334,9 @@ function seed_db() {
     for (const m of medications) {
         insertMed.run(...m);
     }
+    console.log('✅ Medications seeded');
 
-    // Seed Suppliers
+    // Seed Suppliers (Reference Data)
     const suppliers = [
         ['DentaLogistics', 'John Doe', '555-9988', 'contact@dentalog.com', '12 Industrial Way, Paris'],
         ['MediSupply', 'Jane Smith', '555-7722', 'sales@medisupply.com', '45 Biotech Blvd, Lyon']
@@ -1395,8 +1348,9 @@ function seed_db() {
 
     const s1 = db.prepare("SELECT id FROM suppliers WHERE name = 'DentaLogistics'").get() as { id: number };
     const s2 = db.prepare("SELECT id FROM suppliers WHERE name = 'MediSupply'").get() as { id: number };
+    console.log('✅ Suppliers seeded');
 
-    // Seed Inventory Items
+    // Seed Inventory Items (Reference Data)
     const inventory = [
         ['Gants (Taille M)', 'BOX-G-M', 'Consommables', 50, 10, 'Boîte de 100', 12.50, '2026-12-31', s1.id],
         ['Masques Chirurgicaux', 'MSK-CHIR', 'Consommables', 100, 20, 'Unité', 0.45, '2027-06-30', s1.id],
@@ -1408,12 +1362,14 @@ function seed_db() {
     for (const i of inventory) {
         insertInv.run(...i);
     }
+    console.log('✅ Inventory items seeded');
 
-    // Seed treatment types as part of initial seeding
+    // Seed treatment types and CDT codes
     seedTreatmentTypesOnly();
-    seedAlgerianCDTCodes(); // Add this line
+    seedAlgerianCDTCodes();
 
-    console.log('Extended database seeded successfully.');
+    console.log('✅ Database initialized with essential data');
+    console.log('ℹ️  To add patients and appointments, run: node seed-enhanced.js');
 }
 
 function seedAlgerianCDTCodes() {
@@ -2020,7 +1976,11 @@ export function getTreatmentsByPatient(patientId: number) {
             'general' as source,
             NULL as surfaces,
             '#6B7280' as color, -- Default gray for general acts
-            diagnosis
+            diagnosis,
+            '' as cdt_code,
+            0 as is_custom,
+            '' as notes,
+            cost as fee
         FROM treatments 
         WHERE patient_id = ? 
         
@@ -2037,7 +1997,11 @@ export function getTreatmentsByPatient(patientId: number) {
             'dental' as source,
             surfaces,
             color,
-            diagnosis
+            diagnosis,
+            cdt_code,
+            is_custom,
+            notes,
+            fee
         FROM dental_treatments 
         WHERE patient_id = ?
         

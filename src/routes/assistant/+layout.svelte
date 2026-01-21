@@ -18,6 +18,7 @@
     userName={data?.user?.full_name || "Assistant"}
     headerTitle={currentTitle}
     roleLabel="common.assistant"
+    noPadding={page.url.pathname.includes("/journey/")}
 >
     {@render children()}
 </PortalShell>

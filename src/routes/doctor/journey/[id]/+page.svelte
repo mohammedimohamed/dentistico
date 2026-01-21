@@ -1,5 +1,6 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
+    import { invalidateAll, beforeNavigate } from "$app/navigation";
     import { t } from "svelte-i18n";
     import { onMount } from "svelte";
     import { fade, slide, scale } from "svelte/transition";
@@ -134,6 +135,7 @@
     const labTrackingItems = $derived((data.labTracking || []) as any[]);
     const highPriorityNotes = $derived((data.clinicalNotes || []) as any[]); // Use all notes for sidebar logic
 
+    let isLeftSidebarOpen = $state(false);
     let isNotesSidebarOpen = $state(false);
 
     // Smart Notification Logic
@@ -156,17 +158,20 @@
         return `${notes.length} Notes: ${critical > 0 ? critical + " Crities, " : ""}${urgent > 0 ? urgent + " Urgentes" : ""}`;
     });
 
+    let localSessionStarted = $state(false);
+
     const isSessionActive = $derived(
-        !!data.appointment.actual_start_time &&
-            !data.appointment.actual_end_time,
+        localSessionStarted ||
+            (!!data.appointment.actual_start_time &&
+                !data.appointment.actual_end_time),
     );
 
     // Reactive timer effect
     $effect(() => {
         if (isSessionActive) {
-            const start = new Date(
-                data.appointment.actual_start_time,
-            ).getTime();
+            const startStr =
+                data.appointment.actual_start_time || new Date().toISOString();
+            const start = new Date(startStr).getTime();
             // Immediate update
             visitTimer = Math.floor((Date.now() - start) / 1000);
 
@@ -191,15 +196,70 @@
         return `${h > 0 ? h + ":" : ""}${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     }
 
+    async function handleTreatmentAdded() {
+        if (!isSessionActive) {
+            localSessionStarted = true; // Instant feedback
+            // Auto-start session using the existing action
+            try {
+                const formData = new FormData();
+                const response = await fetch("?/startVisit", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    await invalidateAll();
+                } else {
+                    localSessionStarted = false; // Revert on failure
+                }
+            } catch (e) {
+                console.error("Failed to auto-start session:", e);
+                localSessionStarted = false;
+            }
+        }
+    }
+
+    // Auto-end session on navigation if active
+    beforeNavigate(async ({ cancel }) => {
+        if (isSessionActive) {
+            const formData = new FormData();
+            // Use sendBeacon for reliability on unload, but here fetch is okay for SPA nav
+            // We use the existing endVisit action
+            try {
+                fetch("?/endVisit", {
+                    method: "POST",
+                    body: formData,
+                    keepalive: true,
+                });
+            } catch (e) {
+                console.error("Failed to auto-end visit:", e);
+            }
+        }
+    });
+
+    const completedDuration = $derived.by(() => {
+        if (
+            data.appointment.status === "completed" &&
+            data.appointment.actual_start_time &&
+            data.appointment.actual_end_time
+        ) {
+            const start = new Date(
+                data.appointment.actual_start_time,
+            ).getTime();
+            const end = new Date(data.appointment.actual_end_time).getTime();
+            const diff = (end - start) / 1000;
+            return formatTime(diff);
+        }
+        return "";
+    });
+
     const patientAge = $derived(calculateAge(data.patient.date_of_birth));
 </script>
 
-<div
-    class="journey-workspace h-[100vh] overflow-hidden bg-slate-50 flex flex-col"
->
+<div class="journey-workspace overflow-hidden bg-slate-50 flex flex-col">
     <!-- 1. Header Identity Bar -->
     <header
-        class="identity-bar h-24 bg-white border-b-2 border-slate-200 flex items-center px-8 justify-between z-20 shadow-md shrink-0"
+        class="identity-bar sticky top-0 bg-white border-b-2 border-slate-200 flex items-center px-8 justify-between z-50 shadow-md shrink-0"
     >
         <div class="flex items-center gap-6">
             <a href="/doctor/journey" class="btn-back"> ← </a>
@@ -261,7 +321,10 @@
                 >
                     <span
                         class="text-xl font-black text-slate-400 tracking-tighter uppercase"
-                        >{$t("journey.completed")}</span
+                        >{$t("journey.completed")}
+                        {completedDuration
+                            ? `(${completedDuration})`
+                            : ""}</span
                     >
                 </div>
             {:else if hasPendingProsthesis}
@@ -365,282 +428,420 @@
             </div>
         </div>
     </header>
-
     <!-- 2. Main Content Grid - Dynamic Collapsible Layout -->
     <main
         class="flex-1 grid gap-0 overflow-hidden transition-all duration-300 ease-out"
-        style="grid-template-columns: 350px 1fr {isNotesSidebarOpen
-            ? '350px'
-            : '5rem'};"
+        style="grid-template-columns: 5rem 1fr 5rem;"
     >
-        <!-- Left Section: Action Grid & Clinical Intelligence (Fixed 350px) -->
+        <!-- Left Section: Action Grid & Clinical Intelligence (Retractable) -->
         <section
-            class="p-6 bg-slate-50 border-r-2 border-slate-200 overflow-y-auto flex flex-col gap-6"
+            class="relative bg-slate-50 border-r-2 border-slate-200"
+            style="z-index: {isLeftSidebarOpen ? 100 : 30};"
         >
-            <!-- 1. Planned Acts Notification -->
-            {#if plannedActs.length > 0}
-                <div class="planned-acts-alert animate-bounce-subtle" in:slide>
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="text-xl">📅</span>
-                        <h4 class="font-black text-indigo-900 leading-none">
-                            {$t("journey.planned_today")}
-                        </h4>
-                    </div>
-                    <ul class="space-y-1">
-                        {#each plannedActs as act}
-                            <li
-                                class="text-indigo-700 text-sm font-bold flex items-center gap-2"
+            <div
+                class="h-full transition-all duration-300 ease-out flex flex-col bg-slate-50 {isLeftSidebarOpen
+                    ? 'absolute top-0 left-0 w-[350px] shadow-2xl border-r-2 border-slate-200 z-[100]'
+                    : 'w-full'}"
+                onclick={(e) => e.stopPropagation()}
+            >
+                {#if isLeftSidebarOpen}
+                    <div
+                        class="p-6 overflow-y-auto flex-1 flex flex-col gap-6"
+                        in:fade
+                    >
+                        <div class="flex justify-between items-center">
+                            <span
+                                class="text-[10px] font-black text-slate-400 uppercase tracking-widest"
+                                >Workspace</span
                             >
-                                <span
-                                    class="w-1.5 h-1.5 rounded-full bg-indigo-400"
-                                ></span>
-                                {act.treatment_type}
-                            </li>
-                        {/each}
-                    </ul>
-                </div>
-            {/if}
+                            <button
+                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+                                onclick={() => (isLeftSidebarOpen = false)}
+                            >
+                                ←
+                            </button>
+                        </div>
 
-            <!-- 2. Main Actions -->
-            <div class="action-group">
-                <h3 class="group-title">{$t("journey.clinical_actions")}</h3>
-                <div class="action-grid">
-                    <button
-                        class="pos-btn"
-                        style="--color: #6366f1"
-                        onclick={() => chart?.openGeneralTreatment()}
-                    >
-                        <span class="icon">🦷</span>
-                        <span class="label">{$t("journey.acte_general")}</span>
-                    </button>
-                    <button class="pos-btn" style="--color: #10b981">
-                        <span class="icon">💳</span>
-                        <span class="label">{$t("journey.paiement")}</span>
-                    </button>
-                    <button class="pos-btn" style="--color: #8b5cf6">
-                        <span class="icon">📜</span>
-                        <span class="label">{$t("journey.ordonnance")}</span>
-                    </button>
-                    <button class="pos-btn" style="--color: #3b82f6">
-                        <span class="icon">📑</span>
-                        <span class="label">{$t("journey.facture")}</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- 3. Exception Handling (Quick Status) -->
-            <div class="action-group">
-                <h3 class="group-title">
-                    {$t("journey.appointment_management")}
-                </h3>
-                <div class="grid grid-cols-2 gap-3">
-                    <form
-                        action="?/updateStatus"
-                        method="POST"
-                        use:enhance
-                        class="contents"
-                    >
-                        <input type="hidden" name="status" value="scheduled" />
-                        <button
-                            class="status-action-btn postponed"
-                            disabled={isSessionActive}
-                        >
-                            {$t("journey.postpone")}
-                        </button>
-                    </form>
-                    <form
-                        action="?/updateStatus"
-                        method="POST"
-                        use:enhance
-                        class="contents"
-                    >
-                        <input type="hidden" name="status" value="cancelled" />
-                        <button
-                            class="status-action-btn cancelled"
-                            disabled={isSessionActive}
-                        >
-                            {$t("journey.cancel")}
-                        </button>
-                    </form>
-                    <button
-                        class="status-action-btn reschedule col-span-2"
-                        disabled={isSessionActive}
-                        onclick={() => (showRescheduleModal = true)}
-                    >
-                        {$t("journey.reschedule")}
-                    </button>
-                </div>
-            </div>
-
-            <!-- 4. Lab Tracking -->
-            <div class="action-group">
-                <h3 class="group-title">{$t("journey.lab_tracking")}</h3>
-                <div class="lab-tracking-container">
-                    {#if labTrackingItems.length > 0}
-                        {#each labTrackingItems as item}
-                            <div class="lab-item {item.status}">
-                                <div
-                                    class="flex justify-between items-start mb-1"
-                                >
-                                    <span
-                                        class="lab-name font-bold text-slate-700"
-                                        >{item.description}</span
+                        <!-- 1. Planned Acts Notification -->
+                        {#if plannedActs.length > 0}
+                            <div
+                                class="planned-acts-alert animate-bounce-subtle"
+                                in:slide
+                            >
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="text-xl">📅</span>
+                                    <h4
+                                        class="font-black text-indigo-900 leading-none"
                                     >
-                                    <span class="status-pill"
-                                        >{item.status}</span
-                                    >
+                                        {$t("journey.planned_today")}
+                                    </h4>
                                 </div>
-                                <span
-                                    class="text-[10px] text-slate-400 font-bold uppercase"
-                                    >{new Date(
-                                        item.updated_at,
-                                    ).toLocaleDateString()}</span
-                                >
+                                <ul class="space-y-1">
+                                    {#each plannedActs as act}
+                                        <li
+                                            class="text-indigo-700 text-sm font-bold flex items-center gap-2"
+                                        >
+                                            <span
+                                                class="w-1.5 h-1.5 rounded-full bg-indigo-400"
+                                            ></span>
+                                            {act.treatment_type}
+                                        </li>
+                                    {/each}
+                                </ul>
                             </div>
-                        {/each}
-                    {:else}
-                        <div class="empty-lab-state">
-                            <span class="text-sm font-medium text-slate-400"
-                                >{$t("journey.no_prosthesis")}</span
+                        {/if}
+
+                        <!-- 2. Main Actions -->
+                        <div class="action-group">
+                            <h3 class="group-title">
+                                {$t("journey.clinical_actions")}
+                            </h3>
+                            <div class="action-grid">
+                                <button
+                                    class="pos-btn"
+                                    style="--color: #6366f1"
+                                    onclick={() =>
+                                        chart?.openGeneralTreatment()}
+                                >
+                                    <span class="icon">🦷</span>
+                                    <span class="label"
+                                        >{$t("journey.acte_general")}</span
+                                    >
+                                </button>
+                                <button
+                                    class="pos-btn"
+                                    style="--color: #10b981"
+                                >
+                                    <span class="icon">💳</span>
+                                    <span class="label"
+                                        >{$t("journey.paiement")}</span
+                                    >
+                                </button>
+                                <button
+                                    class="pos-btn"
+                                    style="--color: #8b5cf6"
+                                >
+                                    <span class="icon">📜</span>
+                                    <span class="label"
+                                        >{$t("journey.ordonnance")}</span
+                                    >
+                                </button>
+                                <button
+                                    class="pos-btn"
+                                    style="--color: #3b82f6"
+                                >
+                                    <span class="icon">📑</span>
+                                    <span class="label"
+                                        >{$t("journey.facture")}</span
+                                    >
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 3. Exception Handling (Quick Status) -->
+                        <div class="action-group">
+                            <h3 class="group-title">
+                                {$t("journey.appointment_management")}
+                            </h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <form
+                                    action="?/updateStatus"
+                                    method="POST"
+                                    use:enhance
+                                    class="contents"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="status"
+                                        value="scheduled"
+                                    />
+                                    <button
+                                        class="status-action-btn postponed flex flex-col items-center gap-1 py-3"
+                                        disabled={isSessionActive}
+                                    >
+                                        <span class="text-lg">🕒</span>
+                                        <span class="text-[10px]"
+                                            >{$t("journey.postpone")}</span
+                                        >
+                                    </button>
+                                </form>
+                                <form
+                                    action="?/updateStatus"
+                                    method="POST"
+                                    use:enhance
+                                    class="contents"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="status"
+                                        value="cancelled"
+                                    />
+                                    <button
+                                        class="status-action-btn cancelled flex flex-col items-center gap-1 py-3"
+                                        disabled={isSessionActive}
+                                    >
+                                        <span class="text-lg">❌</span>
+                                        <span class="text-[10px]"
+                                            >{$t("journey.cancel")}</span
+                                        >
+                                    </button>
+                                </form>
+                                <button
+                                    class="status-action-btn reschedule col-span-2 flex items-center justify-center gap-2"
+                                    disabled={isSessionActive}
+                                    onclick={() => (showRescheduleModal = true)}
+                                >
+                                    <span class="text-lg">📅</span>
+                                    <span>{$t("journey.reschedule")}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 4. Lab Tracking -->
+                        <div class="action-group">
+                            <h3 class="group-title">
+                                {$t("journey.lab_tracking")}
+                            </h3>
+                            <div class="lab-tracking-container">
+                                {#if labTrackingItems.length > 0}
+                                    {#each labTrackingItems as item}
+                                        <div class="lab-item {item.status}">
+                                            <div
+                                                class="flex justify-between items-start mb-1"
+                                            >
+                                                <span
+                                                    class="lab-name font-bold text-slate-700"
+                                                    >{item.description}</span
+                                                >
+                                                <span class="status-pill"
+                                                    >{item.status}</span
+                                                >
+                                            </div>
+                                            <span
+                                                class="text-[10px] text-slate-400 font-bold uppercase"
+                                                >{new Date(
+                                                    item.updated_at,
+                                                ).toLocaleDateString()}</span
+                                            >
+                                        </div>
+                                    {/each}
+                                {:else}
+                                    <div class="empty-lab-state">
+                                        <span
+                                            class="text-sm font-medium text-slate-400"
+                                            >{$t("journey.no_prosthesis")}</span
+                                        >
+                                    </div>
+                                {/if}
+                            </div>
+                        </div>
+                    </div>
+                {:else}
+                    <!-- COLLAPSED STATE -->
+                    <div
+                        class="h-full w-full flex flex-col items-center py-6 gap-8 overflow-y-auto"
+                        in:fade
+                    >
+                        <button
+                            class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white shadow-md border-2 border-slate-100 text-slate-400 hover:text-indigo-600 hover:border-indigo-400 transition-all hover:scale-110 mb-4"
+                            onclick={() => (isLeftSidebarOpen = true)}
+                        >
+                            →
+                        </button>
+
+                        <!-- Clinical Actions Icons -->
+                        <div class="flex flex-col items-center gap-3">
+                            <button
+                                class="w-12 h-12 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-xl shadow-sm hover:border-indigo-500 hover:text-indigo-500 transition-all"
+                                title={$t("journey.acte_general")}
+                                onclick={() => chart?.openGeneralTreatment()}
+                                >🦷</button
+                            >
+                            <button
+                                class="w-12 h-12 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-xl shadow-sm hover:border-emerald-500 hover:text-emerald-500 transition-all"
+                                title={$t("journey.paiement")}>💳</button
+                            >
+                            <button
+                                class="w-12 h-12 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-xl shadow-sm hover:border-violet-500 hover:text-violet-500 transition-all"
+                                title={$t("journey.ordonnance")}>📜</button
+                            >
+                            <button
+                                class="w-12 h-12 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-xl shadow-sm hover:border-blue-500 hover:text-blue-500 transition-all"
+                                title={$t("journey.facture")}>📑</button
                             >
                         </div>
-                    {/if}
-                </div>
+
+                        <!-- Appointment Management Icons -->
+                        <div class="flex flex-col items-center gap-3">
+                            <button
+                                class="w-12 h-12 rounded-2xl bg-slate-50 border-2 border-slate-200 flex items-center justify-center text-xl shadow-sm hover:bg-slate-100 transition-all"
+                                title={$t("journey.postpone")}>🕒</button
+                            >
+                            <button
+                                class="w-12 h-12 rounded-2xl bg-rose-50 border-2 border-rose-100 flex items-center justify-center text-xl shadow-sm hover:bg-rose-100 transition-all"
+                                title={$t("journey.cancel")}>❌</button
+                            >
+                            <button
+                                class="w-12 h-12 rounded-2xl bg-indigo-50 border-2 border-indigo-100 flex items-center justify-center text-xl shadow-sm hover:bg-indigo-100 transition-all"
+                                title={$t("journey.reschedule")}
+                                onclick={() => (showRescheduleModal = true)}
+                                >📅</button
+                            >
+                        </div>
+
+                        <!-- Lab Tracking Icon -->
+                        <div class="flex flex-col items-center gap-3">
+                            <button
+                                class="w-12 h-12 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-xl shadow-sm hover:border-indigo-400 transition-all"
+                                title={$t("journey.lab_tracking")}>🧪</button
+                            >
+                        </div>
+                    </div>
+                {/if}
             </div>
         </section>
 
         <!-- Center Section: Interactive Odontogram (Flexible) -->
-        <section
-            class="bg-white overflow-auto flex items-center justify-center p-4 relative border-r-2 border-slate-100"
-        >
+        <section class="bg-white relative border-r-2 border-slate-100">
             <DentalChart
                 bind:this={chart}
                 patientId={data.patient.id}
                 {patientAge}
+                onTreatmentAdded={handleTreatmentAdded}
             />
         </section>
 
         <!-- Right Section: Collapsible Clinical Sidebar -->
         <section
-            class="bg-slate-50/50 flex flex-col border-l-2 border-slate-100 h-full overflow-hidden relative transition-all duration-300"
+            class="relative bg-slate-50 border-l-2 border-slate-100"
+            style="z-index: {isNotesSidebarOpen ? 100 : 30};"
         >
-            {#if !isNotesSidebarOpen}
-                <!-- COLLAPSED: Toggle Handle with Smart Indicators -->
-                <button
-                    class="h-full w-full flex flex-col items-center py-6 gap-6 hover:bg-slate-100 transition-colors group cursor-pointer"
-                    onclick={() => (isNotesSidebarOpen = true)}
-                    title={notesSummary}
-                >
-                    <!-- Status Badge -->
-                    <div class="relative">
-                        <div
-                            class="w-12 h-12 rounded-2xl flex items-center justify-center border-2 shadow-sm transition-all group-hover:scale-110 {notesStatus ===
-                            'critical'
-                                ? 'bg-red-50 border-red-200 text-red-500 animate-pulse'
-                                : notesStatus === 'high'
-                                  ? 'bg-orange-50 border-orange-200 text-orange-500'
-                                  : notesStatus === 'normal'
-                                    ? 'bg-blue-50 border-blue-200 text-blue-500'
-                                    : 'bg-white border-slate-200 text-slate-300'}"
-                        >
-                            <span class="text-xl font-black">
-                                {notesStatus === "empty" ? "📝" : "i"}
-                            </span>
-                        </div>
-                        {#if notesStatus !== "empty"}
+            <div
+                class="h-full transition-all duration-300 ease-out flex flex-col bg-slate-50 {isNotesSidebarOpen
+                    ? 'fixed top-0 right-0 h-full w-[350px] shadow-2xl border-l-2 border-slate-200 z-[100]'
+                    : 'w-full'}"
+                onclick={(e) => e.stopPropagation()}
+            >
+                {#if !isNotesSidebarOpen}
+                    <!-- COLLAPSED: Toggle Handle with Smart Indicators -->
+                    <button
+                        class="h-full w-full flex flex-col items-center py-6 gap-6 hover:bg-slate-100 transition-colors group cursor-pointer"
+                        onclick={() => (isNotesSidebarOpen = true)}
+                        title={notesSummary}
+                    >
+                        <!-- Status Badge -->
+                        <div class="relative">
                             <div
-                                class="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white {notesStatus ===
+                                class="w-12 h-12 rounded-2xl flex items-center justify-center border-2 shadow-sm transition-all group-hover:scale-110 {notesStatus ===
                                 'critical'
-                                    ? 'bg-red-500'
+                                    ? 'bg-red-50 border-red-200 text-red-500 animate-pulse'
                                     : notesStatus === 'high'
-                                      ? 'bg-orange-500'
-                                      : 'bg-blue-500'}"
-                            ></div>
-                        {/if}
-                    </div>
-
-                    <!-- Vertical Label -->
-                    <div
-                        class="writing-vertical-rl rotate-180 flex items-center gap-4 py-4"
-                    >
-                        <span
-                            class="font-black text-slate-400 text-xs tracking-[0.3em] uppercase whitespace-nowrap group-hover:text-indigo-500 transition-colors"
-                        >
-                            {$t("journey.clinical_notes")}
-                        </span>
-                    </div>
-                </button>
-            {:else}
-                <!-- EXPANDED: Full Note Panel -->
-                <div
-                    class="absolute inset-0 flex flex-col"
-                    in:slide={{ axis: "x", duration: 300 }}
-                >
-                    <div
-                        class="p-6 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 flex justify-between items-center"
-                    >
-                        <div class="flex items-center gap-3">
-                            <button
-                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors"
-                                onclick={() => (isNotesSidebarOpen = false)}
+                                      ? 'bg-orange-50 border-orange-200 text-orange-500'
+                                      : notesStatus === 'normal'
+                                        ? 'bg-blue-50 border-blue-200 text-blue-500'
+                                        : 'bg-white border-slate-200 text-slate-300'}"
                             >
-                                →
-                            </button>
-                            <h3
-                                class="font-black text-slate-800 uppercase tracking-wider text-sm"
+                                <span class="text-xl font-black">
+                                    {notesStatus === "empty" ? "📝" : "i"}
+                                </span>
+                            </div>
+                            {#if notesStatus !== "empty"}
+                                <div
+                                    class="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white {notesStatus ===
+                                    'critical'
+                                        ? 'bg-red-500'
+                                        : notesStatus === 'high'
+                                          ? 'bg-orange-500'
+                                          : 'bg-blue-500'}"
+                                ></div>
+                            {/if}
+                        </div>
+
+                        <!-- Vertical Label -->
+                        <div
+                            class="writing-vertical-rl rotate-180 flex items-center gap-4 py-4"
+                        >
+                            <span
+                                class="font-black text-slate-400 text-xs tracking-[0.3em] uppercase whitespace-nowrap group-hover:text-indigo-500 transition-colors"
                             >
                                 {$t("journey.clinical_notes")}
-                            </h3>
+                            </span>
                         </div>
-                        <button
-                            class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-                            onclick={() => (showNotesModal = true)}
+                    </button>
+                {:else}
+                    <!-- EXPANDED: Full Note Panel -->
+                    <div
+                        class="absolute inset-0 flex flex-col"
+                        in:slide={{ axis: "x", duration: 300 }}
+                    >
+                        <div
+                            class="p-6 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 flex justify-between items-center"
                         >
-                            <span class="text-lg leading-none pb-1">+</span>
-                        </button>
-                    </div>
-
-                    <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-4">
-                        {#if highPriorityNotes.length === 0}
-                            <div class="text-center py-10 opacity-50">
-                                <span class="text-4xl block mb-2">📝</span>
-                                <span
-                                    class="text-xs font-bold text-slate-400 uppercase"
-                                    >{$t("journey.no_notes")}</span
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors"
+                                    onclick={() => (isNotesSidebarOpen = false)}
                                 >
+                                    →
+                                </button>
+                                <h3
+                                    class="font-black text-slate-800 uppercase tracking-wider text-sm"
+                                >
+                                    {$t("journey.clinical_notes")}
+                                </h3>
                             </div>
-                        {/if}
-
-                        {#each highPriorityNotes as note}
-                            <div
-                                class="post-it {note.importance} pointer-events-auto"
-                                in:slide
+                            <button
+                                class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                onclick={() => (showNotesModal = true)}
                             >
-                                <div
-                                    class="flex items-center justify-between mb-2"
-                                >
-                                    <span class="importance-badge"
-                                        >{note.importance}</span
-                                    >
+                                <span class="text-lg leading-none pb-1">+</span>
+                            </button>
+                        </div>
+
+                        <div
+                            class="p-6 overflow-y-auto flex-1 flex flex-col gap-4"
+                        >
+                            {#if highPriorityNotes.length === 0}
+                                <div class="text-center py-10 opacity-50">
+                                    <span class="text-4xl block mb-2">📝</span>
                                     <span
-                                        class="text-[10px] font-bold text-slate-400"
-                                        >{new Date(
-                                            note.created_at,
-                                        ).toLocaleDateString()}</span
+                                        class="text-xs font-bold text-slate-400 uppercase"
+                                        >{$t("journey.no_notes")}</span
                                     >
                                 </div>
-                                <p class="note-text">{note.content}</p>
-                            </div>
-                        {/each}
+                            {/if}
+
+                            {#each highPriorityNotes as note}
+                                <div
+                                    class="post-it {note.importance} pointer-events-auto"
+                                    in:slide
+                                >
+                                    <div
+                                        class="flex items-center justify-between mb-2"
+                                    >
+                                        <span class="importance-badge"
+                                            >{note.importance}</span
+                                        >
+                                        <span
+                                            class="text-[10px] font-bold text-slate-400"
+                                            >{new Date(
+                                                note.created_at,
+                                            ).toLocaleDateString()}</span
+                                        >
+                                    </div>
+                                    <p class="note-text">{note.content}</p>
+                                </div>
+                            {/each}
+                        </div>
                     </div>
-                </div>
-            {/if}
+                {/if}
+            </div>
         </section>
     </main>
 
     {#if showNotesModal}
         <div
-            class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
+            class="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
             transition:fade
         >
             <div
@@ -742,7 +943,7 @@
 
     {#if showRescheduleModal}
         <div
-            class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
+            class="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
             transition:fade
         >
             <div
@@ -847,6 +1048,19 @@
             </div>
         </div>
     {/if}
+
+    <!-- Click-Outside Backdrop -->
+    {#if isLeftSidebarOpen || isNotesSidebarOpen}
+        <button
+            class="fixed inset-0 z-[90] bg-slate-900/10 backdrop-blur-[2px] cursor-default w-full h-full border-none p-0 m-0"
+            onclick={() => {
+                isLeftSidebarOpen = false;
+                isNotesSidebarOpen = false;
+            }}
+            aria-label="Close sidebars"
+            transition:fade={{ duration: 200 }}
+        ></button>
+    {/if}
 </div>
 
 <style>
@@ -854,10 +1068,75 @@
         font-family: "Outfit", "Inter", sans-serif;
     }
 
-    /* 1. Identity Bar & Alerts */
     .identity-bar {
+        height: 6rem;
         background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+
+    /* Compact Mode for Small Heights (e.g. 617px) */
+    @media (max-height: 750px) {
+        .identity-bar {
+            height: 4rem;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+
+        .patient-id-card h2 {
+            font-size: 1.25rem;
+        }
+
+        .timer-display {
+            padding: 0.25rem 1.5rem;
+        }
+
+        .timer-display .time {
+            font-size: 1.5rem;
+        }
+
+        .alert-box {
+            padding: 0.4rem 0.75rem;
+            min-width: 110px;
+            gap: 0.5rem;
+        }
+
+        .alert-box .icon {
+            font-size: 1.1rem;
+        }
+
+        .alert-box .value {
+            font-size: 0.9rem;
+        }
+
+        .pos-btn {
+            height: 70px !important;
+        }
+
+        .pos-btn .icon {
+            font-size: 1.5rem;
+        }
+
+        .action-grid {
+            gap: 0.5rem !important;
+        }
+
+        .group-title {
+            margin-bottom: 0.5rem !important;
+        }
+
+        .action-group {
+            margin-bottom: 0.5rem !important;
+        }
+
+        .planned-acts-alert {
+            padding: 0.75rem !important;
+        }
+
+        /* Sidebar layout adjustments */
+        .lab-item {
+            padding: 0.5rem 0.75rem;
+        }
     }
 
     .alert-box {
@@ -904,6 +1183,7 @@
         background: #f0fdf4;
         border-color: #dcfce7;
         color: #16a34a;
+        padding: 0rem 1.25rem;
     }
 
     .alert-box.balance.negative {
