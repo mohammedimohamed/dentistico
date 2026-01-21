@@ -25,6 +25,9 @@
     let error = $state<string | null>(null);
     let resultsContainer = $state<HTMLDivElement | null>(null);
 
+    // View mode with localStorage persistence
+    let viewMode = $state<"card" | "table">("card");
+
     const categories = [
         { id: "all", label: "Tous" },
         { id: "Diagnostic", label: "Diagnostic" },
@@ -62,6 +65,12 @@
     });
 
     onMount(async () => {
+        // Load view preference from localStorage
+        const savedView = localStorage.getItem("cdt-view-mode");
+        if (savedView === "card" || savedView === "table") {
+            viewMode = savedView;
+        }
+
         try {
             console.log("QuickTreatmentPicker: Fetching acts...");
             const res = await fetch("/api/dental/cdt-codes");
@@ -91,25 +100,70 @@
             resultsContainer.scrollTop = 0;
         }
     }
+
+    function toggleViewMode() {
+        viewMode = viewMode === "card" ? "table" : "card";
+        localStorage.setItem("cdt-view-mode", viewMode);
+    }
 </script>
 
 <div class="treatment-picker">
-    <!-- Search Input -->
+    <!-- Search Input with View Toggle -->
     <div class="search-zone">
-        <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input
-                type="text"
-                bind:value={searchTerm}
-                placeholder="Rechercher par code ou nom..."
-                class="search-input"
-                autofocus
-            />
-            {#if searchTerm}
-                <button class="clear-btn" onclick={() => (searchTerm = "")}
-                    >✕</button
-                >
-            {/if}
+        <div class="search-controls">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input
+                    type="text"
+                    bind:value={searchTerm}
+                    placeholder="Rechercher par code ou nom..."
+                    class="search-input"
+                    autofocus
+                />
+                {#if searchTerm}
+                    <button class="clear-btn" onclick={() => (searchTerm = "")}
+                        >✕</button
+                    >
+                {/if}
+            </div>
+
+            <!-- View Toggle Button -->
+            <button
+                type="button"
+                class="view-toggle-btn"
+                onclick={toggleViewMode}
+                title={viewMode === "card" ? "Vue tableau" : "Vue cartes"}
+            >
+                {#if viewMode === "card"}
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        ></path>
+                    </svg>
+                {:else}
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                        ></path>
+                    </svg>
+                {/if}
+            </button>
         </div>
     </div>
 
@@ -150,7 +204,8 @@
                 <span class="icon">🔎</span>
                 <p>Aucun acte trouvé</p>
             </div>
-        {:else}
+        {:else if viewMode === "card"}
+            <!-- Card View -->
             <div class="code-grid">
                 {#each filteredCodes as code}
                     <button
@@ -177,6 +232,51 @@
                     </button>
                 {/each}
             </div>
+        {:else}
+            <!-- Table View -->
+            <div class="table-container">
+                <table class="code-table">
+                    <thead>
+                        <tr>
+                            <th class="w-24">Code</th>
+                            <th class="flex-1">Description</th>
+                            <th class="w-32 text-center">Surfaces</th>
+                            <th class="w-32 text-right">Honoraires</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#each filteredCodes as code}
+                            <tr
+                                class="table-row"
+                                class:selected={selectedCode === code.code}
+                                onclick={() => onSelect(code)}
+                            >
+                                <td>
+                                    <span
+                                        class="code-badge"
+                                        style="background: {code.color_code}20; color: {code.color_code}; border-color: {code.color_code}40;"
+                                    >
+                                        {code.code}
+                                    </span>
+                                </td>
+                                <td class="description-cell"
+                                    >{code.description}</td
+                                >
+                                <td class="text-center">
+                                    {#if code.requires_surfaces}
+                                        <span class="badge-small">✓</span>
+                                    {:else}
+                                        <span class="text-gray-300">-</span>
+                                    {/if}
+                                </td>
+                                <td class="text-right fee-cell">
+                                    {APP_CONFIG.currencySymbol}{code.default_fee.toLocaleString()}
+                                </td>
+                            </tr>
+                        {/each}
+                    </tbody>
+                </table>
+            </div>
         {/if}
     </div>
 </div>
@@ -195,10 +295,43 @@
         flex-shrink: 0;
     }
 
+    .search-controls {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
     .search-box {
         position: relative;
         display: flex;
         align-items: center;
+        flex: 1;
+    }
+
+    .view-toggle-btn {
+        flex-shrink: 0;
+        width: 2.75rem;
+        height: 2.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: #f9fafb;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #6b7280;
+    }
+
+    .view-toggle-btn:hover {
+        background: white;
+        border-color: #3b82f6;
+        color: #3b82f6;
+    }
+
+    .view-toggle-btn .w-5 {
+        width: 1.25rem;
+        height: 1.25rem;
     }
 
     .search-icon {
@@ -391,5 +524,107 @@
         to {
             transform: rotate(360deg);
         }
+    }
+
+    /* Table View Styles */
+    .table-container {
+        width: 100%;
+        overflow-x: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: white;
+    }
+
+    .code-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .code-table thead {
+        background: #f9fafb;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .code-table th {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .code-table .w-24 {
+        width: 6rem;
+    }
+
+    .code-table .w-32 {
+        width: 8rem;
+    }
+
+    .code-table .flex-1 {
+        flex: 1;
+    }
+
+    .code-table .text-center {
+        text-align: center;
+    }
+
+    .code-table .text-right {
+        text-align: right;
+    }
+
+    .table-row {
+        border-bottom: 1px solid #f3f4f6;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .table-row:hover {
+        background: #f0f9ff;
+    }
+
+    .table-row.selected {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    }
+
+    .table-row td {
+        padding: 0.875rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .code-badge {
+        display: inline-block;
+        font-weight: 700;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        border: 1px solid;
+    }
+
+    .description-cell {
+        color: #374151;
+        font-weight: 500;
+    }
+
+    .fee-cell {
+        font-weight: 700;
+        color: #059669;
+        font-size: 0.95rem;
+    }
+
+    .badge-small {
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        background: #fef3c7;
+        color: #92400e;
+        font-size: 0.7rem;
+        border-radius: 0.25rem;
+        font-weight: 600;
+    }
+
+    .text-gray-300 {
+        color: #d1d5db;
     }
 </style>
