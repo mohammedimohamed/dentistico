@@ -15,7 +15,12 @@ import {
     getAllClinicalStandards,
     createPayment,
     getPaymentsByPatient,
-    getServerConfig
+    getServerConfig,
+    getPrescriptionsByPatient,
+    getAllMedications,
+    getAllPrescriptionTemplates,
+    createPrescription,
+    createPrescriptionTemplate
 } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -56,6 +61,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         plannedActs,
         clinicalStandards,
         payments,
+        prescriptions: getPrescriptionsByPatient(appointment.patient_id),
+        medications: getAllMedications(),
+        prescriptionTemplates: getAllPrescriptionTemplates(),
         config: {
             avgDuration: parseInt(avgDuration),
             currencySymbol: serverConfig.currencySymbol || 'DH',
@@ -181,6 +189,57 @@ export const actions: Actions = {
         } catch (e) {
             console.error(e);
             return fail(500, { error: 'Failed to record payment' });
+        }
+    },
+    savePrescription: async ({ request, locals, params }) => {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const patientId = Number(formData.get('patient_id'));
+        const notes = formData.get('notes') as string;
+        const itemsJson = formData.get('items') as string;
+        const type = formData.get('type') as string || 'Standard';
+
+        if (!patientId || !itemsJson) {
+            return fail(400, { error: 'Missing required fields' });
+        }
+
+        try {
+            const items = JSON.parse(itemsJson);
+            if (!Array.isArray(items) || items.length === 0) {
+                return fail(400, { error: 'Prescription must have at least one item' });
+            }
+
+            const prescriptionId = createPrescription(patientId, locals.user.id, items, notes, type);
+            return { success: true, message: 'Prescription saved successfully', prescriptionId };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to save prescription' });
+        }
+    },
+    createTemplate: async ({ request, locals }) => {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const name = formData.get('name') as string;
+        const description = formData.get('description') as string;
+        const itemsJson = formData.get('items') as string;
+
+        if (!name || !itemsJson) {
+            return fail(400, { error: 'Missing required fields' });
+        }
+
+        try {
+            const items = JSON.parse(itemsJson);
+            createPrescriptionTemplate(name, description, items);
+            return { success: true, message: 'Template saved successfully' };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to save template' });
         }
     }
 };

@@ -286,6 +286,8 @@ export function init_db() {
             patient_id INTEGER NOT NULL,
             doctor_id INTEGER NOT NULL,
             prescription_date TEXT DEFAULT (datetime('now')),
+            prescription_number TEXT,
+            prescription_type TEXT DEFAULT 'Standard',
             notes TEXT,
             FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
             FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE
@@ -300,6 +302,25 @@ export function init_db() {
             duration TEXT,
             instructions TEXT,
             FOREIGN KEY (prescription_id) REFERENCES prescriptions(id) ON DELETE CASCADE,
+            FOREIGN KEY (medication_id) REFERENCES medications(id) ON DELETE SET NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS prescription_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS prescription_template_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            template_id INTEGER NOT NULL,
+            medication_id INTEGER,
+            medication_name TEXT NOT NULL,
+            dosage TEXT NOT NULL,
+            duration TEXT,
+            instructions TEXT,
+            FOREIGN KEY (template_id) REFERENCES prescription_templates(id) ON DELETE CASCADE,
             FOREIGN KEY (medication_id) REFERENCES medications(id) ON DELETE SET NULL
         );
 
@@ -1350,6 +1371,46 @@ function seed_db() {
     const s2 = db.prepare("SELECT id FROM suppliers WHERE name = 'MediSupply'").get() as { id: number };
     console.log('✅ Suppliers seeded');
 
+    // Seed Prescription Templates
+    const templates = [
+        {
+            name: 'Douleur Standard',
+            description: 'Protocole pour douleur légère à modérée',
+            items: [
+                ['Paracétamol', '500mg', '3 jours', '1 comprimé toutes les 6 heures'],
+                ['Ibuprofène', '400mg', '3 jours', '1 comprimé toutes les 8 heures si douleur persiste']
+            ]
+        },
+        {
+            name: 'Infection Dentaire',
+            description: 'Antibiothérapie standard post-extraction ou abcès',
+            items: [
+                ['Amoxicilline', '1g', '7 jours', '1 comprimé matin et soir'],
+                ['Paracétamol', '500mg', '3 jours', '1 comprimé toutes les 6 heures si douleur']
+            ]
+        },
+        {
+            name: 'Extraction Chirurgicale',
+            description: 'Soins post-opératoires après chirurgie',
+            items: [
+                ['Augmentin', '1g/125mg', '7 jours', '1 sachet matin et soir'],
+                ['Prednisolone', '20mg', '4 jours', '3 comprimés le matin'],
+                ['Chlorhexidine', '0.12%', '10 jours', 'Bain de bouche 2 fois par jour après brossage']
+            ]
+        }
+    ];
+
+    const insertTemplate = db.prepare('INSERT INTO prescription_templates (name, description) VALUES (?, ?)');
+    const insertTemplateItem = db.prepare('INSERT INTO prescription_template_items (template_id, medication_name, dosage, duration, instructions) VALUES (?, ?, ?, ?, ?)');
+
+    for (const t of templates) {
+        const templateId = insertTemplate.run(t.name, t.description).lastInsertRowid;
+        for (const item of t.items) {
+            insertTemplateItem.run(templateId, ...item);
+        }
+    }
+    console.log('✅ Prescription templates seeded');
+
     // Seed Inventory Items (Reference Data)
     const inventory = [
         ['Gants (Taille M)', 'BOX-G-M', 'Consommables', 50, 10, 'Boîte de 100', 12.50, '2026-12-31', s1.id],
@@ -2154,6 +2215,34 @@ export function getPrescriptionById(id: number) {
         prescription.items = db.prepare('SELECT * FROM prescription_items WHERE prescription_id = ?').all(id);
     }
     return prescription;
+}
+
+// --- Prescription Templates ---
+export function getAllPrescriptionTemplates() {
+    const templates = db.prepare('SELECT * FROM prescription_templates ORDER BY name ASC').all() as any[];
+    return templates.map(t => {
+        const items = db.prepare('SELECT * FROM prescription_template_items WHERE template_id = ?').all(t.id);
+        return { ...t, items };
+    });
+}
+
+export function createPrescriptionTemplate(name: string, description: string, items: any[]) {
+    const txn = db.transaction(() => {
+        const templateId = db.prepare('INSERT INTO prescription_templates (name, description) VALUES (?, ?)').run(name, description).lastInsertRowid;
+        const insertItem = db.prepare(`
+            INSERT INTO prescription_template_items (template_id, medication_id, medication_name, dosage, duration, instructions)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        for (const item of items) {
+            insertItem.run(templateId, item.medication_id || null, item.medication_name, item.dosage, item.duration || null, item.instructions || null);
+        }
+        return templateId;
+    });
+    return txn();
+}
+
+export function deletePrescriptionTemplate(id: number) {
+    return db.prepare('DELETE FROM prescription_templates WHERE id = ?').run(id);
 }
 
 // --- Invoices ---
