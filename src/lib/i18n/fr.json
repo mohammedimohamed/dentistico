@@ -42,6 +42,7 @@
     },
     "journey": {
         "title": "Le Voyage Clinique",
+        "status": "Statut",
         "start_day": "Commencer la Journée",
         "end_day": "Terminer la Journée",
         "start_visit": "Commencer la Visite",
@@ -60,7 +61,9 @@
         "ordonnance": "Ordonnance",
         "facture": "Facture",
         "prochain_rdv": "Prochain RDV",
-        "note_clinique": "Note Clinique"
+        "note_clinique": "Note Clinique",
+        "completed": "Visite terminée",
+        "waiting": "En attente"
     },
     "inventory": {
         "title": "Inventaire & Stock",
@@ -182,6 +185,7 @@
         "unarchive": "Désarchiver le Patient",
         "archive": "Archiver le Patient",
         "archive_confirm": "Archiver ce patient ? Il doit avoir un solde de 0 et aucun rendez-vous futur.",
+        "parent_guardian": "Parent / Tuteur",
         "personal_info": "Informations Personnelles",
         "medical_alerts": "Alertes Médicales",
         "allergies": "Allergies",

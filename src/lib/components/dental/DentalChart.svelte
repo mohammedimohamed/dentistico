@@ -251,19 +251,22 @@
         }
     }
 
-    export function openGeneralTreatment() {
+    export function openGeneralTreatment(
+        defaultData?: Partial<typeof newTreatment>,
+    ) {
         selectedTooth = "G";
         newTreatment = {
-            cdt_code: "",
-            procedure_description: "general", // Changed from treatment_type to procedure_description
-            fee: 0, // Changed from cost to fee
-            status: "planned",
+            cdt_code: defaultData?.cdt_code || "",
+            procedure_description:
+                defaultData?.procedure_description || "general",
+            fee: defaultData?.fee ?? 0,
+            status: defaultData?.status || "completed",
             surfaces: [],
-            date_performed: new Date().toISOString().split("T")[0], // Added date_performed
-            provider_id: null, // Added provider_id
+            date_performed: new Date().toISOString().split("T")[0],
+            provider_id: null,
             diagnosis: "",
             notes: "",
-            color: "#3B82F6", // Added color
+            color: defaultData?.color || "#3B82F6",
             isCustom: false,
         };
         showTreatmentModal = true;

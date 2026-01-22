@@ -2993,26 +2993,24 @@
                                             name="payment_method"
                                             class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-bold"
                                         >
-                                            <option value="cash"
-                                                >{$t(
-                                                    "assistant.dashboard.payment.methods.cash",
-                                                )}</option
-                                            >
-                                            <option value="card"
-                                                >{$t(
-                                                    "assistant.dashboard.payment.methods.card",
-                                                )}</option
-                                            >
-                                            <option value="insurance"
-                                                >{$t(
-                                                    "assistant.dashboard.payment.methods.insurance",
-                                                )}</option
-                                            >
-                                            <option value="bank_transfer"
-                                                >{$t(
-                                                    "assistant.dashboard.payment.methods.bank_transfer",
-                                                )}</option
-                                            >
+                                            {#if data.config?.paymentMethods}
+                                                {#each data.config.paymentMethods as method}
+                                                    <option value={method}
+                                                        >{method}</option
+                                                    >
+                                                {/each}
+                                            {:else}
+                                                <option value="cash"
+                                                    >{$t(
+                                                        "assistant.dashboard.payment.methods.cash",
+                                                    )}</option
+                                                >
+                                                <option value="card"
+                                                    >{$t(
+                                                        "assistant.dashboard.payment.methods.card",
+                                                    )}</option
+                                                >
+                                            {/if}
                                         </select>
                                     </div>
                                 </div>

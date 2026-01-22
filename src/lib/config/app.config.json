@@ -1,5 +1,11 @@
 {
     "currency": "DZD",
     "currencySymbol": "دج",
-    "bookingMode": "availability"
+    "bookingMode": "availability",
+    "paymentMethods": [
+        "Espèces",
+        "Carte Bancaire",
+        "Chèque",
+        "Virement"
+    ]
 }

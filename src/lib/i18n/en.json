@@ -42,6 +42,7 @@
     },
     "journey": {
         "title": "The Clinical Journey",
+        "status": "Status",
         "start_day": "Start the Day",
         "end_day": "End the Day",
         "start_visit": "Start Visit",
@@ -60,7 +61,9 @@
         "ordonnance": "Prescription",
         "facture": "Invoice",
         "prochain_rdv": "Next Appt",
-        "note_clinique": "Clinical Note"
+        "note_clinique": "Clinical Note",
+        "completed": "Visit Completed",
+        "waiting": "Waiting"
     },
     "inventory": {
         "title": "Inventory & Stock",
@@ -166,6 +169,7 @@
         "unarchive": "Unarchive Patient",
         "archive": "Archive Patient",
         "archive_confirm": "Archive this patient? They must have a balance of 0 and no future appointments.",
+        "parent_guardian": "Parent / Guardian",
         "personal_info": "Personal Information",
         "medical_alerts": "Medical Alerts",
         "allergies": "Allergies",

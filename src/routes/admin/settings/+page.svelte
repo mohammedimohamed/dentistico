@@ -113,9 +113,9 @@
     }
 
     // Local state for financial fields
-    let currency = $state(data.config.currency);
-    let currencySymbol = $state(data.config.currencySymbol);
-    let bookingMode = $state(data.config.bookingMode);
+    let currency = $state("");
+    let currencySymbol = $state("");
+    let bookingMode = $state("");
 
     onMount(() => {
         loadClinicSettings();
@@ -127,8 +127,25 @@
             currency = data.config.currency;
             currencySymbol = data.config.currencySymbol;
             bookingMode = data.config.bookingMode;
+            paymentMethods = data.config.paymentMethods || [];
         }
     });
+
+    let paymentMethods = $state(data.config.paymentMethods || []);
+    let newPaymentMethod = $state("");
+
+    function addPaymentMethod() {
+        if (newPaymentMethod.trim()) {
+            if (!paymentMethods.includes(newPaymentMethod.trim())) {
+                paymentMethods = [...paymentMethods, newPaymentMethod.trim()];
+            }
+            newPaymentMethod = "";
+        }
+    }
+
+    function removePaymentMethod(method: string) {
+        paymentMethods = paymentMethods.filter((m: string) => m !== method);
+    }
 </script>
 
 <div class="py-6 min-h-screen bg-gray-50">
@@ -560,12 +577,14 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
                             <label
+                                for="currency_code"
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
                                 >{$t(
                                     "admin.settings.financial.currencyCode",
                                 )}</label
                             >
                             <input
+                                id="currency_code"
                                 type="text"
                                 name="currency"
                                 bind:value={currency}
@@ -578,12 +597,14 @@
 
                         <div>
                             <label
+                                for="currency_symbol"
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
                                 >{$t(
                                     "admin.settings.financial.currencySymbol",
                                 )}</label
                             >
                             <input
+                                id="currency_symbol"
                                 type="text"
                                 name="currencySymbol"
                                 bind:value={currencySymbol}
@@ -615,6 +636,54 @@
                                     )}</option
                                 >
                             </select>
+                        </div>
+
+                        <div class="md:col-span-2 space-y-4">
+                            <label
+                                class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
+                                >Payment Methods</label
+                            >
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                {#each paymentMethods as method}
+                                    <div
+                                        class="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-bold text-sm border border-indigo-100 group"
+                                    >
+                                        {method}
+                                        <button
+                                            type="button"
+                                            onclick={() =>
+                                                removePaymentMethod(method)}
+                                            class="text-indigo-300 hover:text-red-500 transition-colors"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                {/each}
+                            </div>
+                            <div class="flex gap-2">
+                                <input
+                                    type="text"
+                                    bind:value={newPaymentMethod}
+                                    placeholder="Add new method (e.g., Bitcoin)"
+                                    class="flex-grow px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
+                                    onkeydown={(e) =>
+                                        e.key === "Enter" &&
+                                        (e.preventDefault(),
+                                        addPaymentMethod())}
+                                />
+                                <button
+                                    type="button"
+                                    onclick={addPaymentMethod}
+                                    class="px-6 py-4 bg-indigo-100 text-indigo-600 font-bold rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                >
+                                    Add
+                                </button>
+                            </div>
+                            <input
+                                type="hidden"
+                                name="paymentMethods"
+                                value={JSON.stringify(paymentMethods)}
+                            />
                         </div>
                     </div>
 

@@ -22,6 +22,9 @@
     let rescheduleDate = $state("");
     let rescheduleTime = $state("");
 
+    let isPaymentModalOpen = $state(false);
+    let errorMessage = $state("");
+
     let visitTimer = $state(0);
     let timerInterval: any;
 
@@ -49,8 +52,7 @@
                 break;
             case "p":
                 e.preventDefault();
-                // TODO: Open Payment Modal
-                console.log("Open Payment");
+                isPaymentModalOpen = true;
                 break;
             case "escape":
                 showNotesModal = false;
@@ -73,24 +75,21 @@
     }
 
     // Clinical Standard Intelligence
-    const targetStandard = $derived.by((): ClinicalStandard | null => {
+    const targetStandard = $derived.by(() => {
         if (!data.clinicalStandards) return null;
-        // 1. Try exact match on appointment type (assuming snake_case to Title Case or similar)
-        // Since we don't know exact db format of appointment_type vs standard names, we try fuzzy
         const type = data.appointment.appointment_type
             ?.toLowerCase()
             .replace(/_/g, " ");
+        const results = data.clinicalStandards as any[];
         const std =
-            data.clinicalStandards.find(
-                (s: any) => s.treatment_name.toLowerCase() === type,
-            ) ||
-            data.clinicalStandards.find((s: any) =>
+            results.find((s: any) => s.treatment_name.toLowerCase() === type) ||
+            results.find((s: any) =>
                 type?.includes(s.treatment_name.toLowerCase()),
             ) ||
-            data.clinicalStandards.find(
+            results.find(
                 (s: any) => s.category.toLowerCase() === "consultation",
-            ); // Fallback
-        return std;
+            );
+        return (std as ClinicalStandard) || null;
     });
 
     const maxDurationSeconds = $derived(
@@ -137,6 +136,13 @@
 
     let isLeftSidebarOpen = $state(false);
     let isNotesSidebarOpen = $state(false);
+    let sidebarTab = $state("notes"); // 'notes' or 'finance'
+    const totalPaid = $derived(
+        (data.payments || []).reduce(
+            (sum: number, p: any) => sum + p.amount,
+            0,
+        ),
+    );
 
     // Smart Notification Logic
     const notesStatus = $derived.by(() => {
@@ -190,10 +196,18 @@
     });
 
     function formatTime(seconds: number) {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return `${h > 0 ? h + ":" : ""}${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+        const totalSeconds = Math.floor(seconds);
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+
+        if (h > 0) {
+            return `${h}h ${m.toString().padStart(2, "0")}m`;
+        }
+        if (m > 0) {
+            return `${m}m ${s.toString().padStart(2, "0")}s`;
+        }
+        return `${s}s`;
     }
 
     async function handleTreatmentAdded() {
@@ -289,7 +303,7 @@
                     <span
                         >{data.patient.gender === "F" ? "Femme" : "Homme"}</span
                     >
-                    {#if targetStandard?.typical_sessions > 1}
+                    {#if targetStandard && targetStandard.typical_sessions > 1}
                         <span
                             class="text-indigo-500 border-l border-slate-200 pl-3"
                         >
@@ -317,39 +331,63 @@
                 </div>
             {:else if data.appointment.status === "completed"}
                 <div
-                    class="px-6 py-2 bg-slate-100 rounded-2xl border-2 border-slate-200"
+                    class="flex items-center gap-3 px-6 py-2.5 bg-emerald-50 rounded-full border-2 border-emerald-100 shadow-sm shadow-emerald-100 animate-in fade-in zoom-in duration-500"
                 >
-                    <span
-                        class="text-xl font-black text-slate-400 tracking-tighter uppercase"
-                        >{$t("journey.completed")}
-                        {completedDuration
-                            ? `(${completedDuration})`
-                            : ""}</span
+                    <div
+                        class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm"
                     >
+                        ✓
+                    </div>
+                    <div class="flex flex-col -space-y-1">
+                        <span
+                            class="text-xs font-black text-emerald-400 uppercase tracking-widest"
+                            >{$t("journey.completed")}</span
+                        >
+                        <span
+                            class="text-lg font-black text-emerald-700 font-mono"
+                            >{completedDuration || "--:--"}</span
+                        >
+                    </div>
                 </div>
             {:else if hasPendingProsthesis}
-                <div class="flex flex-col items-center animate-bounce">
-                    <span
-                        class="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded mb-1"
-                        >⚠️ Prothèse non reçue</span
-                    >
+                <div class="flex flex-col items-center gap-2">
                     <div
-                        class="px-6 py-2 bg-red-50 rounded-2xl border-2 border-red-200 opacity-50 cursor-not-allowed"
+                        class="flex items-center gap-3 px-6 py-2.5 bg-rose-50 rounded-full border-2 border-rose-100 shadow-sm shadow-rose-100 animate-bounce"
                     >
-                        <span
-                            class="text-xl font-black text-red-300 tracking-tighter uppercase"
-                            >Bloqué</span
+                        <div
+                            class="w-8 h-8 bg-rose-500 rounded-full flex items-center justify-center text-white text-sm"
                         >
+                            ⚠️
+                        </div>
+                        <div class="flex flex-col -space-y-1">
+                            <span
+                                class="text-xs font-black text-rose-400 uppercase tracking-widest"
+                                >Bloqué</span
+                            >
+                            <span class="text-sm font-black text-rose-700"
+                                >Prothèse non reçue</span
+                            >
+                        </div>
                     </div>
                 </div>
             {:else}
                 <div
-                    class="px-6 py-2 bg-indigo-50 rounded-2xl border-2 border-indigo-100 animate-pulse"
+                    class="flex items-center gap-3 px-6 py-2.5 bg-indigo-50 rounded-full border-2 border-indigo-100 shadow-sm shadow-indigo-100 animate-pulse"
                 >
-                    <span
-                        class="text-xl font-black text-indigo-400 tracking-tighter uppercase"
-                        >{$t("journey.waiting")}</span
+                    <div
+                        class="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center text-white text-sm"
                     >
+                        ⌛
+                    </div>
+                    <div class="flex flex-col -space-y-1">
+                        <span
+                            class="text-xs font-black text-indigo-400 uppercase tracking-widest"
+                            >{$t("journey.status") || "Statut"}</span
+                        >
+                        <span class="text-lg font-black text-indigo-700"
+                            >{$t("journey.waiting")}</span
+                        >
+                    </div>
                 </div>
             {/if}
         </div>
@@ -379,18 +417,23 @@
                         </div>
                     </div>
                 {/if}
-                <div
-                    class="alert-box balance"
+                <button
+                    class="alert-box balance cursor-pointer hover:scale-105 active:scale-95 transition-all text-left border-none bg-transparent p-0"
                     class:negative={data.patient.balance_due > 0}
+                    onclick={() => {
+                        sidebarTab = "finance";
+                        isNotesSidebarOpen = true;
+                    }}
                 >
                     <span class="icon">💰</span>
                     <div class="flex flex-col">
                         <span class="label">{$t("journey.solde")}</span>
                         <span class="value"
-                            >{data.patient.balance_due.toLocaleString()} دج</span
+                            >{data.patient.balance_due.toLocaleString()}
+                            {data.config?.currencySymbol || "دج"}</span
                         >
                     </div>
-                </div>
+                </button>
             </div>
 
             <!-- Visit Control -->
@@ -414,14 +457,17 @@
                             class="btn-commencer"
                             class:warning={hasPendingProsthesis}
                         >
-                            {hasPendingProsthesis ? "⚠️" : "🚀"}
-                            {$t("journey.start_visit")}
+                            <span class="control-icon"
+                                >{hasPendingProsthesis ? "⚠️" : "▶"}</span
+                            >
+                            <span>{$t("journey.start_visit")}</span>
                         </button>
                     </form>
                 {:else if !data.appointment.actual_end_time}
                     <form action="?/endVisit" method="POST" use:enhance>
                         <button class="btn-terminer">
-                            {$t("journey.end_visit")}
+                            <span class="control-icon">■</span>
+                            <span>{$t("journey.end_visit")}</span>
                         </button>
                     </form>
                 {/if}
@@ -443,6 +489,7 @@
                     ? 'absolute top-0 left-0 w-[350px] shadow-2xl border-r-2 border-slate-200 z-[100]'
                     : 'w-full'}"
                 onclick={(e) => e.stopPropagation()}
+                role="presentation"
             >
                 {#if isLeftSidebarOpen}
                     <div
@@ -501,7 +548,14 @@
                                     class="pos-btn"
                                     style="--color: #6366f1"
                                     onclick={() =>
-                                        chart?.openGeneralTreatment()}
+                                        chart?.openGeneralTreatment({
+                                            cdt_code: "CONS",
+                                            procedure_description:
+                                                "Consultation générale",
+                                            fee: 1500,
+                                            status: "completed",
+                                            color: "#6B7280",
+                                        })}
                                 >
                                     <span class="icon">🦷</span>
                                     <span class="label"
@@ -511,6 +565,7 @@
                                 <button
                                     class="pos-btn"
                                     style="--color: #10b981"
+                                    onclick={() => (isPaymentModalOpen = true)}
                                 >
                                     <span class="icon">💳</span>
                                     <span class="label"
@@ -643,7 +698,7 @@
                         in:fade
                     >
                         <button
-                            class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white shadow-md border-2 border-slate-100 text-slate-400 hover:text-indigo-600 hover:border-indigo-400 transition-all hover:scale-110 mb-4"
+                            class="action-icon toggle-btn"
                             onclick={() => (isLeftSidebarOpen = true)}
                         >
                             →
@@ -652,37 +707,81 @@
                         <!-- Clinical Actions Icons -->
                         <div class="flex flex-col items-center gap-3">
                             <button
-                                class="w-12 h-12 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-xl shadow-sm hover:border-indigo-500 hover:text-indigo-500 transition-all"
+                                class="action-icon"
+                                style="--color: #6366f1"
                                 title={$t("journey.acte_general")}
-                                onclick={() => chart?.openGeneralTreatment()}
-                                >🦷</button
+                                onclick={() =>
+                                    chart?.openGeneralTreatment({
+                                        cdt_code: "CONS",
+                                        procedure_description:
+                                            "Consultation générale",
+                                        fee: 1500,
+                                        status: "completed",
+                                        color: "#6B7280",
+                                    })}>🦷</button
                             >
                             <button
-                                class="w-12 h-12 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-xl shadow-sm hover:border-emerald-500 hover:text-emerald-500 transition-all"
-                                title={$t("journey.paiement")}>💳</button
+                                class="action-icon"
+                                style="--color: #10b981"
+                                title={$t("journey.paiement")}
+                                onclick={() => (isPaymentModalOpen = true)}
+                                >💳</button
                             >
                             <button
-                                class="w-12 h-12 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-xl shadow-sm hover:border-violet-500 hover:text-violet-500 transition-all"
+                                class="action-icon"
+                                style="--color: #8b5cf6"
                                 title={$t("journey.ordonnance")}>📜</button
                             >
                             <button
-                                class="w-12 h-12 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-xl shadow-sm hover:border-blue-500 hover:text-blue-500 transition-all"
+                                class="action-icon"
+                                style="--color: #3b82f6"
                                 title={$t("journey.facture")}>📑</button
                             >
                         </div>
 
                         <!-- Appointment Management Icons -->
                         <div class="flex flex-col items-center gap-3">
-                            <button
-                                class="w-12 h-12 rounded-2xl bg-slate-50 border-2 border-slate-200 flex items-center justify-center text-xl shadow-sm hover:bg-slate-100 transition-all"
-                                title={$t("journey.postpone")}>🕒</button
+                            <form
+                                action="?/updateStatus"
+                                method="POST"
+                                use:enhance
+                                class="contents"
                             >
-                            <button
-                                class="w-12 h-12 rounded-2xl bg-rose-50 border-2 border-rose-100 flex items-center justify-center text-xl shadow-sm hover:bg-rose-100 transition-all"
-                                title={$t("journey.cancel")}>❌</button
+                                <input
+                                    type="hidden"
+                                    name="status"
+                                    value="scheduled"
+                                />
+                                <button
+                                    class="action-icon status-scheduled"
+                                    disabled={isSessionActive}
+                                    title={$t("journey.postpone")}
+                                >
+                                    🕒
+                                </button>
+                            </form>
+                            <form
+                                action="?/updateStatus"
+                                method="POST"
+                                use:enhance
+                                class="contents"
                             >
+                                <input
+                                    type="hidden"
+                                    name="status"
+                                    value="cancelled"
+                                />
+                                <button
+                                    class="action-icon status-cancelled"
+                                    disabled={isSessionActive}
+                                    title={$t("journey.cancel")}
+                                >
+                                    ❌
+                                </button>
+                            </form>
                             <button
-                                class="w-12 h-12 rounded-2xl bg-indigo-50 border-2 border-indigo-100 flex items-center justify-center text-xl shadow-sm hover:bg-indigo-100 transition-all"
+                                class="action-icon status-reschedule"
+                                disabled={isSessionActive}
                                 title={$t("journey.reschedule")}
                                 onclick={() => (showRescheduleModal = true)}
                                 >📅</button
@@ -692,7 +791,8 @@
                         <!-- Lab Tracking Icon -->
                         <div class="flex flex-col items-center gap-3">
                             <button
-                                class="w-12 h-12 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-xl shadow-sm hover:border-indigo-400 transition-all"
+                                class="action-icon"
+                                style="--color: #6366f1"
                                 title={$t("journey.lab_tracking")}>🧪</button
                             >
                         </div>
@@ -718,9 +818,10 @@
         >
             <div
                 class="h-full transition-all duration-300 ease-out flex flex-col bg-slate-50 {isNotesSidebarOpen
-                    ? 'fixed top-0 right-0 h-full w-[350px] shadow-2xl border-l-2 border-slate-200 z-[100]'
+                    ? 'absolute top-0 right-0 h-full w-[45vw] shadow-2xl border-l-2 border-slate-200 z-[100]'
                     : 'w-full'}"
                 onclick={(e) => e.stopPropagation()}
+                role="presentation"
             >
                 {#if !isNotesSidebarOpen}
                     <!-- COLLAPSED: Toggle Handle with Smart Indicators -->
@@ -764,7 +865,9 @@
                             <span
                                 class="font-black text-slate-400 text-xs tracking-[0.3em] uppercase whitespace-nowrap group-hover:text-indigo-500 transition-colors"
                             >
-                                {$t("journey.clinical_notes")}
+                                {sidebarTab === "notes"
+                                    ? $t("journey.clinical_notes")
+                                    : $t("journey.paiement")}
                             </span>
                         </div>
                     </button>
@@ -772,66 +875,238 @@
                     <!-- EXPANDED: Full Note Panel -->
                     <div
                         class="absolute inset-0 flex flex-col"
-                        in:slide={{ axis: "x", duration: 300 }}
+                        in:fade={{ duration: 300 }}
                     >
                         <div
-                            class="p-6 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 flex justify-between items-center"
+                            class="p-6 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 flex flex-col gap-4"
                         >
-                            <div class="flex items-center gap-3">
-                                <button
-                                    class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors"
-                                    onclick={() => (isNotesSidebarOpen = false)}
-                                >
-                                    →
-                                </button>
-                                <h3
-                                    class="font-black text-slate-800 uppercase tracking-wider text-sm"
-                                >
-                                    {$t("journey.clinical_notes")}
-                                </h3>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-3">
+                                    <button
+                                        class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors"
+                                        onclick={() =>
+                                            (isNotesSidebarOpen = false)}
+                                    >
+                                        →
+                                    </button>
+                                    <h3
+                                        class="font-black text-slate-800 uppercase tracking-wider text-sm"
+                                    >
+                                        {sidebarTab === "notes"
+                                            ? $t("journey.clinical_notes")
+                                            : $t("journey.finance_details")}
+                                    </h3>
+                                </div>
+                                {#if sidebarTab === "notes"}
+                                    <button
+                                        class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                        onclick={() => (showNotesModal = true)}
+                                    >
+                                        <span class="text-lg leading-none pb-1"
+                                            >+</span
+                                        >
+                                    </button>
+                                {:else}
+                                    <button
+                                        class="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                                        onclick={() =>
+                                            (isPaymentModalOpen = true)}
+                                        title={$t("journey.paiement")}
+                                    >
+                                        <span class="text-sm leading-none"
+                                            >💳</span
+                                        >
+                                    </button>
+                                {/if}
                             </div>
-                            <button
-                                class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-                                onclick={() => (showNotesModal = true)}
-                            >
-                                <span class="text-lg leading-none pb-1">+</span>
-                            </button>
+
+                            <!-- Tabs -->
+                            <div class="flex p-1 bg-slate-100 rounded-xl gap-1">
+                                <button
+                                    class="flex-1 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all {sidebarTab ===
+                                    'notes'
+                                        ? 'bg-white text-indigo-600 shadow-sm'
+                                        : 'text-slate-400 hover:text-slate-600'}"
+                                    onclick={() => (sidebarTab = "notes")}
+                                >
+                                    📝 Notes
+                                </button>
+                                <button
+                                    class="flex-1 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all {sidebarTab ===
+                                    'finance'
+                                        ? 'bg-white text-emerald-600 shadow-sm'
+                                        : 'text-slate-400 hover:text-slate-600'}"
+                                    onclick={() => (sidebarTab = "finance")}
+                                >
+                                    💰 Finance
+                                </button>
+                            </div>
                         </div>
 
                         <div
                             class="p-6 overflow-y-auto flex-1 flex flex-col gap-4"
                         >
-                            {#if highPriorityNotes.length === 0}
-                                <div class="text-center py-10 opacity-50">
-                                    <span class="text-4xl block mb-2">📝</span>
-                                    <span
-                                        class="text-xs font-bold text-slate-400 uppercase"
-                                        >{$t("journey.no_notes")}</span
-                                    >
-                                </div>
-                            {/if}
-
-                            {#each highPriorityNotes as note}
-                                <div
-                                    class="post-it {note.importance} pointer-events-auto"
-                                    in:slide
-                                >
-                                    <div
-                                        class="flex items-center justify-between mb-2"
-                                    >
-                                        <span class="importance-badge"
-                                            >{note.importance}</span
+                            {#if sidebarTab === "notes"}
+                                {#if highPriorityNotes.length === 0}
+                                    <div class="text-center py-10 opacity-50">
+                                        <span class="text-4xl block mb-2"
+                                            >📝</span
                                         >
                                         <span
-                                            class="text-[10px] font-bold text-slate-400"
-                                            >{new Date(
-                                                note.created_at,
-                                            ).toLocaleDateString()}</span
+                                            class="text-xs font-bold text-slate-400 uppercase"
+                                            >{$t("journey.no_notes")}</span
                                         >
                                     </div>
-                                    <p class="note-text">{note.content}</p>
+                                {/if}
+
+                                {#each highPriorityNotes as note}
+                                    <div
+                                        class="post-it {note.importance} pointer-events-auto"
+                                        in:slide
+                                    >
+                                        <div
+                                            class="flex items-center justify-between mb-2"
+                                        >
+                                            <span class="importance-badge"
+                                                >{note.importance}</span
+                                            >
+                                            <span
+                                                class="text-[10px] font-bold text-slate-400"
+                                                >{new Date(
+                                                    note.created_at,
+                                                ).toLocaleDateString()}</span
+                                            >
+                                        </div>
+                                        <p class="note-text">{note.content}</p>
+                                    </div>
+                                {/each}
+                            {:else}
+                                <!-- Financial Tab Content -->
+                                <div class="space-y-6">
+                                    <div
+                                        class="p-5 bg-rose-50 rounded-[2rem] border-2 border-rose-100 flex flex-col gap-4"
+                                    >
+                                        <div
+                                            class="flex justify-between items-center"
+                                        >
+                                            <span
+                                                class="text-xs font-black text-rose-600 uppercase tracking-widest"
+                                                >{$t(
+                                                    "assistant.dashboard.payment.modal.totalDue",
+                                                )}</span
+                                            >
+                                            <span
+                                                class="text-2xl font-black text-rose-600"
+                                                >{data.config?.currencySymbol ||
+                                                    "DH"}{data.patient.balance_due.toFixed(
+                                                    2,
+                                                )}</span
+                                            >
+                                        </div>
+                                        {#if data.patient.parent_name}
+                                            <div
+                                                class="pt-3 border-t border-rose-200 flex flex-col gap-1"
+                                            >
+                                                <span
+                                                    class="text-[10px] font-black text-rose-400 uppercase tracking-widest"
+                                                    >{$t(
+                                                        "patient_details.parent_guardian",
+                                                    )}</span
+                                                >
+                                                <div
+                                                    class="flex justify-between items-center"
+                                                >
+                                                    <span
+                                                        class="text-sm font-black text-rose-700"
+                                                        >{data.patient
+                                                            .parent_name}</span
+                                                    >
+                                                    <a
+                                                        href="tel:{data.patient
+                                                            .parent_phone}"
+                                                        class="text-xs font-bold text-rose-500 hover:underline"
+                                                        >{data.patient
+                                                            .parent_phone}</a
+                                                    >
+                                                </div>
+                                            </div>
+                                        {/if}
+                                    </div>
+
+                                    <div class="space-y-3">
+                                        <span
+                                            class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                        >
+                                            {$t(
+                                                "patient_details.encaissements",
+                                            )}
+                                        </span>
+                                        <div class="flex flex-col gap-3">
+                                            {#if data.payments && data.payments.length > 0}
+                                                {#each [...(data.payments as any[])].reverse() as p}
+                                                    {@const payment = p as any}
+                                                    <div
+                                                        class="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group"
+                                                    >
+                                                        <div
+                                                            class="flex justify-between items-start mb-2"
+                                                        >
+                                                            <div
+                                                                class="flex flex-col"
+                                                            >
+                                                                <span
+                                                                    class="text-[10px] font-black text-slate-400 uppercase tracking-widest"
+                                                                >
+                                                                    {new Date(
+                                                                        payment.payment_date,
+                                                                    ).toLocaleDateString()}
+                                                                </span>
+                                                                <span
+                                                                    class="text-sm font-black text-slate-700"
+                                                                >
+                                                                    {$t(
+                                                                        `assistant.dashboard.payment.methods.${payment.payment_method}`,
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                            <span
+                                                                class="text-lg font-black text-emerald-600"
+                                                            >
+                                                                {data.config
+                                                                    ?.currencySymbol}{payment.amount.toFixed(
+                                                                    2,
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                        {#if payment.notes}
+                                                            <p
+                                                                class="text-xs text-slate-400 font-medium italic"
+                                                            >
+                                                                {payment.notes}
+                                                            </p>
+                                                        {/if}
+                                                    </div>
+                                                {/each}
+                                            {:else}
+                                                <div
+                                                    class="text-center py-10 opacity-50 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200"
+                                                >
+                                                    <span
+                                                        class="text-4xl block mb-2"
+                                                        >💰</span
+                                                    >
+                                                    <span
+                                                        class="text-[10px] font-bold text-slate-400 uppercase"
+                                                        >{$t(
+                                                            "patient_details.no_payments",
+                                                        )}</span
+                                                    >
+                                                </div>
+                                            {/if}
+                                        </div>
+                                    </div>
                                 </div>
-                            {/each}
+                            {/if}
                         </div>
                     </div>
                 {/if}
@@ -1002,10 +1277,12 @@
                             <div class="flex flex-col gap-2">
                                 <label
                                     class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                    for="reschedule_date"
                                 >
                                     Date
                                 </label>
                                 <input
+                                    id="reschedule_date"
                                     type="date"
                                     bind:value={rescheduleDate}
                                     min={recommendedRescheduleDate}
@@ -1016,10 +1293,12 @@
                             <div class="flex flex-col gap-2">
                                 <label
                                     class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                    for="reschedule_time"
                                 >
                                     Heure
                                 </label>
                                 <input
+                                    id="reschedule_time"
                                     type="time"
                                     bind:value={rescheduleTime}
                                     class="p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 font-bold text-slate-700 focus:border-indigo-500 focus:bg-white outline-none transition-all"
@@ -1042,6 +1321,274 @@
                             class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 hover:scale-[1.02] transition-all shadow-lg shadow-indigo-200"
                         >
                             {$t("common.confirm")}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {/if}
+
+    <!-- Record Payment Modal -->
+    {#if isPaymentModalOpen}
+        <div
+            class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+            transition:fade={{ duration: 200 }}
+        >
+            <div
+                class="bg-white rounded-[2.5rem] shadow-2xl w-[80%] max-w-7xl overflow-hidden border-4 border-white"
+                in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
+            >
+                <form
+                    method="POST"
+                    action="?/recordPayment"
+                    use:enhance={() => {
+                        errorMessage = "";
+                        return async ({ result, update }) => {
+                            if (result.type === "success") {
+                                isPaymentModalOpen = false;
+                            } else {
+                                errorMessage =
+                                    (result as any).data?.error ||
+                                    "Payment failed";
+                            }
+                            await update();
+                        };
+                    }}
+                >
+                    <div
+                        class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50"
+                    >
+                        <h3
+                            class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3"
+                        >
+                            <span class="w-1.5 h-8 bg-emerald-500 rounded-full"
+                            ></span>
+                            {$t("assistant.dashboard.payment.modal.title")}
+                        </h3>
+                        <button
+                            type="button"
+                            class="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm text-slate-400 hover:text-rose-500 transition-all border border-slate-100"
+                            onclick={() => (isPaymentModalOpen = false)}
+                            >✕</button
+                        >
+                    </div>
+
+                    <div class="p-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            <!-- Left Column: Form -->
+                            <div class="space-y-6">
+                                <span
+                                    class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                >
+                                    {$t("patient_details.record_payment")}
+                                </span>
+
+                                <div class="space-y-4">
+                                    <div class="flex flex-col gap-2">
+                                        <label
+                                            class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                            for="payment_amount"
+                                        >
+                                            {$t(
+                                                "assistant.dashboard.payment.fields.amount",
+                                            )}
+                                        </label>
+                                        <div class="relative">
+                                            <input
+                                                id="payment_amount"
+                                                type="number"
+                                                step="0.01"
+                                                name="amount"
+                                                required
+                                                class="w-full p-5 bg-slate-50 rounded-2xl border-2 border-slate-100 font-black text-2xl text-emerald-600 focus:border-emerald-500 focus:bg-white outline-none transition-all pl-12"
+                                                value={data.patient.balance_due}
+                                            />
+                                            <span
+                                                class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold"
+                                                >{data.config?.currencySymbol ||
+                                                    "DH"}</span
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col gap-2">
+                                        <label
+                                            class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                            for="payment_method"
+                                        >
+                                            {$t(
+                                                "assistant.dashboard.payment.fields.paymentMethod",
+                                            )}
+                                        </label>
+                                        <select
+                                            id="payment_method"
+                                            name="payment_method"
+                                            class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 font-bold text-slate-700 focus:border-indigo-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
+                                        >
+                                            {#if data.config?.paymentMethods}
+                                                {#each data.config.paymentMethods as method}
+                                                    <option value={method}
+                                                        >{method}</option
+                                                    >
+                                                {/each}
+                                            {:else}
+                                                <option value="cash"
+                                                    >{$t(
+                                                        "assistant.dashboard.payment.methods.cash",
+                                                    )}</option
+                                                >
+                                                <option value="card"
+                                                    >{$t(
+                                                        "assistant.dashboard.payment.methods.card",
+                                                    )}</option
+                                                >
+                                            {/if}
+                                        </select>
+                                    </div>
+
+                                    <div class="flex flex-col gap-2">
+                                        <label
+                                            class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                            for="payment_notes"
+                                        >
+                                            {$t("journey.note_clinique")} (Optionnel)
+                                        </label>
+                                        <textarea
+                                            id="payment_notes"
+                                            name="notes"
+                                            rows="2"
+                                            class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 font-medium text-slate-600 focus:border-indigo-500 focus:bg-white outline-none transition-all resize-none"
+                                            placeholder="Ex: Paiement d'avance, chèque n°..."
+                                        ></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Column: History & Summary -->
+                            <div class="space-y-6">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div
+                                        class="bg-rose-50 border-2 border-rose-100 p-5 rounded-3xl flex flex-col gap-1"
+                                    >
+                                        <span
+                                            class="text-[10px] font-black text-rose-400 uppercase tracking-widest"
+                                            >{$t(
+                                                "assistant.dashboard.payment.modal.totalDue",
+                                            )}</span
+                                        >
+                                        <span
+                                            class="text-2xl font-black text-rose-600"
+                                            >{data.config?.currencySymbol ||
+                                                "DH"}{data.patient.balance_due.toFixed(
+                                                2,
+                                            )}</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="bg-emerald-50 border-2 border-emerald-100 p-5 rounded-3xl flex flex-col gap-1"
+                                    >
+                                        <span
+                                            class="text-[10px] font-black text-emerald-400 uppercase tracking-widest"
+                                            >Total Payé</span
+                                        >
+                                        <span
+                                            class="text-2xl font-black text-emerald-600"
+                                            >{data.config?.currencySymbol ||
+                                                "DH"}{totalPaid.toFixed(
+                                                2,
+                                            )}</span
+                                        >
+                                    </div>
+                                </div>
+
+                                <!-- Payment History -->
+                                {#if data.payments && data.payments.length > 0}
+                                    <div class="space-y-3">
+                                        <span
+                                            class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                        >
+                                            {$t(
+                                                "patient_details.encaissements",
+                                            )}
+                                        </span>
+                                        <div
+                                            class="max-h-[220px] overflow-y-auto pr-2 space-y-2"
+                                        >
+                                            {#each (data.payments || [])
+                                                .slice()
+                                                .reverse() as p}
+                                                {@const payment = p as any}
+                                                <div
+                                                    class="flex justify-between items-center p-3 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-sm transition-all"
+                                                >
+                                                    <div class="flex flex-col">
+                                                        <span
+                                                            class="text-[10px] font-black text-slate-800"
+                                                        >
+                                                            {new Date(
+                                                                payment.payment_date,
+                                                            ).toLocaleDateString(
+                                                                "fr-FR",
+                                                                {
+                                                                    day: "2-digit",
+                                                                    month: "short",
+                                                                    year: "numeric",
+                                                                },
+                                                            )}
+                                                        </span>
+                                                        <span
+                                                            class="text-[9px] font-bold text-slate-400 uppercase"
+                                                        >
+                                                            {$t(
+                                                                `assistant.dashboard.payment.methods.${payment.payment_method}`,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <span
+                                                        class="text-sm font-black text-emerald-600"
+                                                    >
+                                                        {data.config
+                                                            ?.currencySymbol}{payment.amount.toFixed(
+                                                            2,
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            {/each}
+                                        </div>
+                                    </div>
+                                {:else}
+                                    <div
+                                        class="flex flex-col items-center justify-center py-10 opacity-30 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200"
+                                    >
+                                        <span class="text-4xl mb-2">💰</span>
+                                        <span
+                                            class="text-[10px] font-black uppercase tracking-widest"
+                                            >{$t(
+                                                "patient_details.no_payments",
+                                            )}</span
+                                        >
+                                    </div>
+                                {/if}
+
+                                {#if errorMessage}
+                                    <div
+                                        class="p-4 bg-rose-50 border border-rose-100 text-rose-700 rounded-2xl text-sm font-bold flex items-center gap-3"
+                                    >
+                                        <span class="text-lg">⚠️</span>
+                                        {errorMessage}
+                                    </div>
+                                {/if}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-8 bg-slate-50">
+                        <button
+                            type="submit"
+                            class="w-full py-5 bg-emerald-600 text-white rounded-[1.5rem] font-black text-lg hover:bg-emerald-700 hover:scale-[1.02] transition-all shadow-xl shadow-emerald-100 flex items-center justify-center gap-3"
+                        >
+                            <span class="text-xl">💰</span>
+                            {$t("assistant.dashboard.payment.modal.confirm")}
                         </button>
                     </div>
                 </form>
@@ -1255,22 +1802,95 @@
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
-        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
     .pos-btn:hover {
-        transform: translateY(-4px);
+        transform: translateY(-5px) scale(1.02);
         border-color: var(--color);
-        box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1);
+        box-shadow:
+            0 20px 25px -5px rgba(0, 0, 0, 0.1),
+            0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .pos-btn:active {
+        transform: translateY(-2px) scale(0.98);
+        box-shadow: 0 5px 10px -3px rgba(0, 0, 0, 0.1);
     }
 
     .pos-btn .icon {
-        font-size: 2rem;
+        font-size: 2.25rem;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
     }
+
     .pos-btn .label {
-        font-weight: 800;
-        font-size: 0.75rem;
-        color: #475569;
+        font-weight: 900;
+        font-size: 0.8rem;
+        color: #334155;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    /* 4. Collapsed Sidebar Styling */
+    .action-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 1rem;
+        background: white;
+        border: 2px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+    }
+
+    .action-icon:hover:not(:disabled) {
+        transform: scale(1.15) rotate(5deg);
+        border-color: var(--color, #6366f1);
+        color: var(--color, #6366f1);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+    }
+
+    .action-icon:active:not(:disabled) {
+        transform: scale(0.9);
+    }
+
+    .action-icon:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        filter: grayscale(1);
+    }
+
+    .action-icon.toggle-btn {
+        margin-bottom: 1rem;
+        border-color: #e2e8f0;
+        color: #94a3b8;
+    }
+
+    .action-icon.toggle-btn:hover {
+        background: #f8fafc;
+        color: #6366f1;
+        border-color: #6366f1;
+    }
+
+    .action-icon.status-scheduled {
+        --color: #64748b;
+        background: #f8fafc;
+    }
+    .action-icon.status-cancelled {
+        --color: #e11d48;
+        background: #fff1f2;
+        border-color: #fecdd3;
+    }
+    .action-icon.status-reschedule {
+        --color: #4f46e5;
+        background: #eef2ff;
+        border-color: #c7d2fe;
     }
 
     /* 4. Status Actions (Exceptions) */
@@ -1282,7 +1902,16 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
         border: 2px solid transparent;
-        transition: all 0.2s;
+        transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .status-action-btn:hover:not(:disabled) {
+        transform: translateY(-3px) scale(1.03);
+        box-shadow: 0 10px 15px -10px rgba(0, 0, 0, 0.1);
+    }
+
+    .status-action-btn:active:not(:disabled) {
+        transform: scale(0.95);
     }
 
     .status-action-btn.postponed {
@@ -1301,9 +1930,9 @@
         border-color: #c7d2fe;
     }
 
-    .status-action-btn:hover:not(:disabled) {
-        filter: brightness(0.95);
-        transform: translateY(-2px);
+    .status-action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
     .status-action-btn:disabled {
@@ -1460,5 +2089,57 @@
 
     .animate-bounce-subtle {
         animation: bounce-subtle 4s infinite ease-in-out;
+    }
+
+    /* 8. Player-style Visit Controls */
+    .btn-commencer,
+    .btn-terminer {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 99px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.85rem;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        border: none;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        color: white;
+    }
+
+    .btn-commencer {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-commencer:hover {
+        transform: scale(1.05) translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-commencer.warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-terminer {
+        background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+        box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+    }
+
+    .btn-terminer:hover {
+        transform: scale(1.05) translateY(-2px);
+        box-shadow: 0 8px 25px rgba(244, 63, 94, 0.4);
+    }
+
+    .control-icon {
+        font-size: 1.2rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
     }
 </style>

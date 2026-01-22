@@ -37,9 +37,17 @@ export const actions = {
         const currency = formData.get('currency') as string;
         const currencySymbol = formData.get('currencySymbol') as string;
         const bookingMode = formData.get('bookingMode') as string;
+        const paymentMethodsJson = formData.get('paymentMethods') as string;
 
         if (!currency || !currencySymbol || !bookingMode) {
             return fail(400, { message: 'Missing required configuration fields' });
+        }
+
+        let paymentMethods: string[] = [];
+        try {
+            paymentMethods = JSON.parse(paymentMethodsJson || '[]');
+        } catch (e) {
+            console.error('Failed to parse payment methods:', e);
         }
 
         const configPath = path.resolve('src/lib/config/app.config.json');
@@ -47,7 +55,8 @@ export const actions = {
         const newJsonConfig = {
             currency,
             currencySymbol,
-            bookingMode
+            bookingMode,
+            paymentMethods
         };
 
         try {

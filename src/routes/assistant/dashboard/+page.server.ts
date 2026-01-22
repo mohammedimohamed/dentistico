@@ -15,7 +15,8 @@ import {
     getAppointmentById,
     getUserByUsername,
     createUser,
-    db
+    db,
+    getServerConfig
 } from '$lib/server/db';
 import { createNotification, getAllAdminIds } from '$lib/server/notifications';
 import type { PageServerLoad, Actions } from './$types';
@@ -46,7 +47,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         pendingPayments,
         patientSearch,
         patientFilter,
-        user: locals.user
+        user: locals.user,
+        config: {
+            paymentMethods: getServerConfig().paymentMethods || []
+        }
     };
 };
 

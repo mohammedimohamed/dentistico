@@ -12,7 +12,10 @@ import {
     autoClosePreviousSessions,
     addClinicalNote,
     updateAppointmentStatus,
-    getAllClinicalStandards
+    getAllClinicalStandards,
+    createPayment,
+    getPaymentsByPatient,
+    getServerConfig
 } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -39,7 +42,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     const labTracking = getLabTracking(appointment.patient_id);
     const plannedActs = getPlannedActsForToday(appointment.patient_id);
     const avgDuration = getAppSetting('avg_consultation_duration') || '20';
+    const currencySymbol = getAppSetting('currency_symbol') || 'DH';
     const clinicalStandards = getAllClinicalStandards();
+    const payments = getPaymentsByPatient(appointment.patient_id);
+    const serverConfig = getServerConfig();
 
     return {
         appointment,
@@ -49,8 +55,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         labTracking,
         plannedActs,
         clinicalStandards,
+        payments,
         config: {
-            avgDuration: parseInt(avgDuration)
+            avgDuration: parseInt(avgDuration),
+            currencySymbol: serverConfig.currencySymbol || 'DH',
+            paymentMethods: serverConfig.paymentMethods || []
         }
     };
 };
@@ -138,5 +147,40 @@ export const actions: Actions = {
         }
 
         return { success: true };
+    },
+    recordPayment: async ({ request, locals, params }) => {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const apptId = Number(params.id);
+        const appointment = getAppointmentById(apptId) as any;
+
+        if (!appointment) return fail(404, { error: 'Appointment not found' });
+
+        const amount = parseFloat(formData.get('amount') as string);
+        const method = formData.get('payment_method') as string;
+        const notes = formData.get('notes') as string;
+
+        if (isNaN(amount) || amount <= 0) {
+            return fail(400, { error: 'Invalid amount' });
+        }
+
+        try {
+            createPayment({
+                patient_id: appointment.patient_id,
+                amount,
+                payment_method: method,
+                payment_date: new Date().toISOString(),
+                notes: notes || `Direct payment from doctor journey (Appointment #${apptId})`,
+                recorded_by: locals.user.id
+            });
+
+            return { success: true, message: 'Payment recorded successfully' };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to record payment' });
+        }
     }
 };

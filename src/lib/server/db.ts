@@ -2486,7 +2486,12 @@ export function getAppointmentsForDate(doctorId: number, date: string) {
 }
 
 export function getPatientJourneySummary(patientId: number) {
-    const patient = db.prepare('SELECT * FROM patients WHERE id = ?').get(patientId) as any;
+    const patient = db.prepare(`
+        SELECT p.*, parent.full_name as parent_name, parent.phone as parent_phone
+        FROM patients p
+        LEFT JOIN patients parent ON p.primary_contract_id = parent.id
+        WHERE p.id = ?
+    `).get(patientId) as any;
     const balance = db.prepare('SELECT balance_due FROM patient_balance WHERE patient_id = ?').get(patientId) as { balance_due: number } | undefined;
 
     return {
