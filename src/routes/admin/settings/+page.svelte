@@ -95,22 +95,7 @@
         await loadClinicSettings();
     }
 
-    // Treatment Type helper
-    async function deleteTreatmentType(id: number) {
-        if (confirm($t("admin.settings.treatment_types.confirm_delete"))) {
-            const formData = new FormData();
-            formData.append("id", id.toString());
-
-            const response = await fetch("?/deleteTreatmentType", {
-                method: "POST",
-                body: formData,
-            });
-
-            if (response.ok) {
-                window.location.reload();
-            }
-        }
-    }
+    // Treatment Type helper removed (Deprecated)
 
     // Local state for financial fields
     let currency = $state("");
@@ -702,73 +687,7 @@
             </div>
         </div>
 
-        <!-- Treatment Types (Preserved from old page) -->
-        <div
-            class="bg-white shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden border border-gray-100 mb-20"
-        >
-            <div
-                class="px-8 py-6 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center"
-            >
-                <h2
-                    class="text-xl font-bold text-gray-900 flex items-center gap-2"
-                >
-                    <span>💊</span>
-                    {$t("admin.settings.treatment_types.title")}
-                </h2>
-                <button
-                    onclick={() => {
-                        editingTreatmentType = null;
-                        isCreatingTreatmentType = true;
-                    }}
-                    class="px-5 py-2.5 bg-indigo-600 text-white hover:bg-indigo-700 font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-indigo-100"
-                >
-                    <span>+</span>
-                    {$t("admin.settings.treatment_types.add_button")}
-                </button>
-            </div>
-            <div class="p-8">
-                <div
-                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                >
-                    {#each data.treatmentTypes as any[] as treatmentType (treatmentType.id)}
-                        <div
-                            class="group relative p-6 bg-white border border-gray-100 rounded-3xl hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/5 transition-all"
-                        >
-                            <h4 class="font-black text-gray-900 text-lg mb-2">
-                                {treatmentType.name}
-                            </h4>
-                            {#if treatmentType.description}
-                                <p
-                                    class="text-sm text-gray-500 font-medium line-clamp-2"
-                                >
-                                    {treatmentType.description}
-                                </p>
-                            {/if}
-                            <div
-                                class="mt-6 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all"
-                            >
-                                <button
-                                    onclick={() => {
-                                        editingTreatmentType = treatmentType;
-                                        isEditingTreatmentType = true;
-                                    }}
-                                    class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg font-bold text-xs uppercase tracking-tighter"
-                                >
-                                    {$t("common.edit")}
-                                </button>
-                                <button
-                                    onclick={() =>
-                                        deleteTreatmentType(treatmentType.id)}
-                                    class="p-2 text-red-600 hover:bg-red-50 rounded-lg font-bold text-xs uppercase tracking-tighter"
-                                >
-                                    {$t("common.delete")}
-                                </button>
-                            </div>
-                        </div>
-                    {/each}
-                </div>
-            </div>
-        </div>
+        <!-- Treatment Types Deprecated -->
 
         <!-- Data Management -->
         <div
@@ -881,104 +800,4 @@
     </div>
 {/if}
 
-<!-- Create/Edit Treatment Type Modal -->
-{#if isCreatingTreatmentType || isEditingTreatmentType}
-    <div
-        class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
-    >
-        <div
-            class="bg-white rounded-[2rem] shadow-2xl p-8 w-full max-w-md border border-gray-100 animate-in fade-in zoom-in duration-200"
-        >
-            <h3
-                class="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3"
-            >
-                <span class="p-3 bg-indigo-50 rounded-2xl text-xl">💊</span>
-                {isEditingTreatmentType
-                    ? $t("admin.settings.treatment_types.edit_title")
-                    : $t("admin.settings.treatment_types.create_title")}
-            </h3>
-
-            <form
-                method="POST"
-                action={isEditingTreatmentType
-                    ? "?/updateTreatmentType"
-                    : "?/createTreatmentType"}
-                use:enhance={() => {
-                    isCreatingTreatmentType = false;
-                    isEditingTreatmentType = false;
-                    editingTreatmentType = null;
-                    return async ({ update, result }) => {
-                        if (result.type === "success") {
-                            await update({ reset: false });
-                        }
-                    };
-                }}
-                class="space-y-6"
-            >
-                {#if isEditingTreatmentType}
-                    <input
-                        type="hidden"
-                        name="id"
-                        value={editingTreatmentType.id}
-                    />
-                {/if}
-
-                <div>
-                    <label
-                        class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                        >{$t(
-                            "admin.settings.treatment_types.name_label",
-                        )}</label
-                    >
-                    <input
-                        type="text"
-                        name="name"
-                        value={editingTreatmentType?.name || ""}
-                        required
-                        class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
-                    />
-                </div>
-
-                <div>
-                    <label
-                        class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                        >{$t(
-                            "admin.settings.treatment_types.description_label",
-                        )}</label
-                    >
-                    <textarea
-                        name="description"
-                        rows="3"
-                        value={editingTreatmentType?.description || ""}
-                        class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
-                        placeholder={$t(
-                            "admin.settings.treatment_types.description_placeholder",
-                        )}
-                    ></textarea>
-                </div>
-
-                <div class="flex gap-4 mt-10">
-                    <button
-                        type="button"
-                        onclick={() => {
-                            isCreatingTreatmentType = false;
-                            isEditingTreatmentType = false;
-                            editingTreatmentType = null;
-                        }}
-                        class="flex-1 py-4 bg-gray-50 hover:bg-gray-100 text-gray-500 font-bold rounded-2xl transition-all active:scale-95"
-                    >
-                        {$t("common.cancel")}
-                    </button>
-                    <button
-                        type="submit"
-                        class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
-                    >
-                        {isEditingTreatmentType
-                            ? $t("common.save")
-                            : $t("common.add")}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-{/if}
+<!-- Deprecated Treatment Type Modals removed -->

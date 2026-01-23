@@ -20,7 +20,12 @@ import {
     getAllMedications,
     getAllPrescriptionTemplates,
     createPrescription,
-    createPrescriptionTemplate
+    createPrescriptionTemplate,
+    createInvoice,
+    getInvoicesByPatient,
+    getUninvoicedTreatments,
+    getInvoiceById,
+    getBillingSummary
 } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -62,6 +67,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         clinicalStandards,
         payments,
         prescriptions: getPrescriptionsByPatient(appointment.patient_id),
+        invoices: getInvoicesByPatient(appointment.patient_id),
+        uninvoicedTreatments: getUninvoicedTreatments(appointment.patient_id),
+        billingSummary: getBillingSummary(appointment.patient_id),
         medications: getAllMedications(),
         prescriptionTemplates: getAllPrescriptionTemplates(),
         config: {
@@ -241,5 +249,34 @@ export const actions: Actions = {
             console.error(e);
             return fail(500, { error: 'Failed to save template' });
         }
+    },
+    createInvoice: async ({ request, locals }) => {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const patientId = Number(formData.get('patient_id'));
+        const itemsJson = formData.get('items') as string;
+        const type = formData.get('invoice_type') as 'detailed' | 'global' || 'detailed';
+        const globalDescription = formData.get('global_description') as string;
+
+        if (!patientId || !itemsJson) {
+            return fail(400, { error: 'Missing required fields' });
+        }
+
+        try {
+            const items = JSON.parse(itemsJson);
+            if (!Array.isArray(items) || items.length === 0) {
+                return fail(400, { error: 'Invoice must have at least one item' });
+            }
+
+            const invoiceId = createInvoice(patientId, items, type, globalDescription);
+            return { success: true, message: 'Invoice created successfully', invoiceId };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to create invoice' });
+        }
     }
 };
+

@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import fs from 'fs';
 import path from 'path';
-import { getAllTreatmentTypes, createTreatmentType, updateTreatmentType, deleteTreatmentType, getAllSettings, updateMultipleSettings } from '$lib/server/db';
+import { getAllSettings, updateMultipleSettings } from '$lib/server/db';
 
 export const load = async () => {
     const configPath = path.resolve('src/lib/config/app.config.json');
@@ -19,15 +19,13 @@ export const load = async () => {
         };
     }
 
-    const treatmentTypes = getAllTreatmentTypes();
     const dbSettings = getAllSettings();
 
     return {
         config: {
             ...config,
             ...dbSettings
-        },
-        treatmentTypes
+        }
     };
 };
 
@@ -73,72 +71,5 @@ export const actions = {
         }
     },
 
-    createTreatmentType: async ({ request }: { request: Request }) => {
-        const formData = await request.formData();
-        const name = formData.get('name') as string;
-        const description = formData.get('description') as string;
-
-        if (!name) {
-            return fail(400, { message: 'Name is required' });
-        }
-
-        try {
-            const result = createTreatmentType({
-                name: name.trim(),
-                description: description?.trim() || null
-            });
-
-            return {
-                success: true,
-                treatmentTypeId: result
-            };
-        } catch (e) {
-            console.error('Failed to create treatment type:', e);
-            return fail(500, { message: 'Failed to create treatment type' });
-        }
-    },
-
-    updateTreatmentType: async ({ request }: { request: Request }) => {
-        const formData = await request.formData();
-        const id = parseInt(formData.get('id') as string);
-        const name = formData.get('name') as string;
-        const description = formData.get('description') as string;
-
-        if (!id || !name) {
-            return fail(400, { message: 'ID and name are required' });
-        }
-
-        try {
-            updateTreatmentType(id, {
-                name: name.trim(),
-                description: description?.trim() || null
-            });
-
-            return {
-                success: true
-            };
-        } catch (e) {
-            console.error('Failed to update treatment type:', e);
-            return fail(500, { message: 'Failed to update treatment type' });
-        }
-    },
-
-    deleteTreatmentType: async ({ request }: { request: Request }) => {
-        const formData = await request.formData();
-        const id = parseInt(formData.get('id') as string);
-
-        if (!id) {
-            return fail(400, { message: 'ID is required' });
-        }
-
-        try {
-            deleteTreatmentType(id);
-            return {
-                success: true
-            };
-        } catch (e) {
-            console.error('Failed to delete treatment type:', e);
-            return fail(500, { message: 'Failed to delete treatment type' });
-        }
-    }
+    // deleted treatment type actions
 };

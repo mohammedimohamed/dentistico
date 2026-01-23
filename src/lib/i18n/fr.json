@@ -169,6 +169,12 @@
         "archived_on": "Archivé le"
     },
     "patient_details": {
+        "billing_summary": {
+            "total_acts": "Total des actes effectués",
+            "already_invoiced": "Actes déjà facturés",
+            "remaining_to_invoice": "Reste à facturer",
+            "selected_count": "Vous avez sélectionné {count} actes pour cette facture."
+        },
         "overview": "Aperçu",
         "medical_history": "Historique Médical",
         "dental_records": "Dossiers Dentaires",

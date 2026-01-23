@@ -16,11 +16,11 @@ import {
     markInvoiceAsPaid,
     archivePatient,
     unarchivePatient,
-    getAllTreatmentTypes,
     getAttachmentsByPatient,
     createAttachment,
     getAttachmentById,
-    deleteAttachment
+    deleteAttachment,
+    getBillingSummary
 } from '$lib/server/db';
 import fs from 'fs';
 import type { PageServerLoad, Actions } from './$types';
@@ -63,7 +63,6 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     const medications = getAllMedications();
     const prescriptions = getPrescriptionsByPatient(patientId);
     const invoices = (await import('$lib/server/db')).getInvoicesByPatient(patientId);
-    const treatmentTypes = getAllTreatmentTypes();
     const attachments = getAttachmentsByPatient(patientId);
 
     const appConfig = getAppConfig();
@@ -77,9 +76,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         medications,
         prescriptions,
         invoices,
-        treatmentTypes,
         attachments,
         appConfig,
+        billingSummary: getBillingSummary(patientId),
         user: locals.user
     };
 };
@@ -148,45 +147,6 @@ export const actions: Actions = {
         }
     },
 
-    addTreatment: async ({ request, params, locals }) => {
-        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
-            return fail(403, { error: 'Unauthorized' });
-        }
-
-        const patientId = parseInt(params.id);
-        const formData = await request.formData();
-
-        const treatmentData = {
-            patient_id: patientId,
-            doctor_id: locals.user.id,
-            appointment_id: formData.get('appointment_id') ? parseInt(formData.get('appointment_id') as string) : null,
-            treatment_date: formData.get('treatment_date') || new Date().toISOString().split('T')[0],
-            tooth_number: formData.get('tooth_number'),
-            treatment_type: formData.get('treatment_type'),
-            description: formData.get('description'),
-            diagnosis: formData.get('diagnosis'),
-            treatment_notes: formData.get('treatment_notes'),
-            cost: parseFloat(formData.get('cost') as string) || 0,
-            paid_amount: 0, // Initially 0
-            status: formData.get('status') || 'completed'
-        };
-
-        if (!treatmentData.treatment_type || treatmentData.cost < 0) {
-            return fail(400, { error: 'Invalid treatment data' });
-        }
-
-        try {
-            // Wrap in transaction for atomicity
-            const txn = (await import('$lib/server/db')).db.transaction(() => {
-                createTreatment(treatmentData);
-            });
-            txn();
-            return { success: true, message: 'Treatment added successfully' };
-        } catch (e) {
-            console.error(e);
-            return fail(500, { error: 'Failed to add treatment' });
-        }
-    },
 
     createPrescription: async ({ request, params, locals }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
@@ -225,6 +185,8 @@ export const actions: Actions = {
         const patientId = parseInt(params.id);
         const formData = await request.formData();
         const itemsJson = formData.get('items') as string;
+        const type = formData.get('invoice_type') as 'detailed' | 'global' || 'detailed';
+        const globalDescription = formData.get('global_description') as string;
 
         if (!itemsJson) {
             return fail(400, { error: 'No items selected for invoice' });
@@ -232,7 +194,7 @@ export const actions: Actions = {
 
         try {
             const items = JSON.parse(itemsJson);
-            createInvoice(patientId, items);
+            createInvoice(patientId, items, type, globalDescription);
             return { success: true };
         } catch (e) {
             console.error(e);
@@ -272,8 +234,8 @@ export const actions: Actions = {
         }
         const patientId = parseInt(params.id);
 
-        const balance = getPatientBalance(patientId);
-        if (balance > 0) {
+        const balance = getPatientBalance(patientId) as any;
+        if (balance && balance.balance_due > 0) {
             return fail(400, { error: 'Cannot archive patient with outstanding balance' });
         }
 

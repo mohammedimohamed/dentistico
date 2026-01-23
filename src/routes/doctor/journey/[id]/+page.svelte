@@ -86,18 +86,158 @@
         }
     }
 
-    async function loadPrescription(id: number) {
-        try {
-            const res = await fetch(`/api/prescriptions/${id}`);
-            if (!res.ok) throw new Error("Failed to load");
-            const prescription = await res.json();
+    let isInvoiceModalOpen = $state(false);
+    let invoiceSelection = $state<string[]>([]);
+    let invoiceType = $state<"detailed" | "global">("detailed");
+    let invoiceGlobalDescription = $state("Soins et Traitements Dentaires");
+    let invoiceShake = $state(false);
 
-            currentPrescriptionItems = prescription.items;
-            prescriptionNotes = prescription.notes || "";
-            prescriptionType = prescription.prescription_type || "Standard";
+    function handleGenerateInvoice(e: Event) {
+        if (invoiceSelection.length === 0) {
+            e.preventDefault();
+            invoiceShake = true;
+            setTimeout(() => (invoiceShake = false), 500);
+            return;
+        }
+    }
+
+    function toggleTreatmentForInvoice(id: string) {
+        if (invoiceSelection.includes(id)) {
+            invoiceSelection = invoiceSelection.filter((i) => i !== id);
+        } else {
+            invoiceSelection = [...invoiceSelection, id];
+        }
+    }
+
+    function selectAllTreatments() {
+        if (data.uninvoicedTreatments) {
+            invoiceSelection = data.uninvoicedTreatments.map(
+                (t: any) => t.unique_id,
+            );
+        }
+    }
+
+    const invoiceTotal = $derived.by(() => {
+        if (!data.uninvoicedTreatments) return 0;
+        return (data.uninvoicedTreatments as any[])
+            .filter((t: any) => invoiceSelection.includes(t.unique_id))
+            .reduce((sum: number, t: any) => sum + t.amount, 0);
+    });
+
+    async function printInvoice(id: number) {
+        try {
+            const res = await fetch(`/api/invoices/${id}`);
+            if (!res.ok) throw new Error("Failed to load invoice");
+            const invoice = await res.json();
+
+            const printWindow = window.open(
+                "",
+                "_blank",
+                "width=800,height=900",
+            );
+            if (!printWindow) return;
+
+            const itemsHtml =
+                invoice.invoice_type === "global"
+                    ? `
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px; color: #1f2937;">${invoice.global_description || "Soins et Traitements Dentaires"}</td>
+                    <td style="padding: 10px; text-align: right; color: #111827; font-weight: bold;">${invoice.total_amount.toFixed(2)} ${data.config?.currencySymbol || "DH"}</td>
+                </tr>
+            `
+                    : invoice.items
+                          .map(
+                              (item: any) => `
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px; color: #1f2937;">${item.description}</td>
+                    <td style="padding: 10px; text-align: right; color: #111827; font-weight: bold;">${item.amount.toFixed(2)} ${data.config?.currencySymbol || "DH"}</td>
+                </tr>
+            `,
+                          )
+                          .join("");
+
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Facture - ${invoice.invoice_number}</title>
+                        <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+                            body { font-family: 'Inter', sans-serif; padding: 50px; color: #1e293b; line-height: 1.6; }
+                            .header { display: flex; justify-content: space-between; margin-bottom: 60px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
+                            .clinic-info h1 { font-weight: 900; margin: 0; font-size: 1.5rem; text-transform: uppercase; color: #4f46e5; }
+                            .clinic-info p { margin: 2px 0; color: #64748b; font-size: 0.9rem; }
+                            .invoice-info { text-align: right; }
+                            .invoice-info h2 { font-weight: 900; font-size: 2rem; margin: 0; color: #1e293b; }
+                            .invoice-info p { margin: 2px 0; color: #94a3b8; font-weight: bold; }
+                            .client-section { background: #f8fafc; padding: 25px; border-radius: 20px; margin-bottom: 40px; }
+                            .client-section h3 { margin: 0 0 10px 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; }
+                            .client-name { font-weight: 900; font-size: 1.4rem; color: #1e293b; }
+                            .items-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+                            .items-table theta { text-align: left; }
+                            .items-table th { text-align: left; padding: 10px; border-bottom: 2px solid #e2e8f0; font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; }
+                            .total-section { display: flex; justify-content: flex-end; }
+                            .total-box { background: #4f46e5; color: white; padding: 20px 40px; border-radius: 15px; text-align: center; }
+                            .total-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; }
+                            .total-value { font-size: 2rem; font-weight: 900; }
+                            .footer { margin-top: 80px; text-align: center; color: #94a3b8; font-size: 0.8rem; padding-top: 20px; border-top: 1px dashed #e2e8f0; }
+                            @media print { .no-print { display: none; } }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <div class="clinic-info">
+                                <h1>${data.config?.clinicName || "Dentistico Clinic"}</h1>
+                                <p>Soins Dentaires & Esthétiques</p>
+                            </div>
+                            <div class="invoice-info">
+                                <h2>FACTURE</h2>
+                                <p>N° ${invoice.invoice_number}</p>
+                                <p>Date: ${new Date(invoice.invoice_date).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+
+                        <div class="client-section">
+                            <h3>Facturé à</h3>
+                            <div class="client-name">${invoice.patient_name}</div>
+                            <div>${invoice.patient_address || ""}</div>
+                            <div>${invoice.patient_city || ""}</div>
+                        </div>
+
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th style="text-align: right;">Montant</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+
+                        <div class="total-section">
+                            <div class="total-box">
+                                <div class="total-label">Total à Payer</div>
+                                <div class="total-value">${invoice.total_amount.toFixed(2)} ${data.config?.currencySymbol || "DH"}</div>
+                            </div>
+                        </div>
+
+                        <div class="footer">
+                            Merci pour votre confiance.
+                        </div>
+
+                        <div class="no-print" style="position: fixed; bottom: 20px; right: 20px;">
+                            <button onclick="window.print()" style="background: #4f46e5; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);">
+                                Imprimer maintenant
+                            </button>
+                        </div>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
         } catch (err) {
             console.error(err);
-            alert("Erreur lors du chargement de l'ordonnance");
+            alert("Erreur lors de l'impression de la facture");
         }
     }
 
@@ -242,12 +382,17 @@
                 e.preventDefault();
                 showPrescriptionModal = true;
                 break;
+            case "i":
+            case "f":
+                e.preventDefault();
+                isInvoiceModalOpen = true;
+                break;
             case "escape":
                 showNotesModal = false;
                 showRescheduleModal = false;
                 isPaymentModalOpen = false;
                 showPrescriptionModal = false;
-                // chart component handles its own escape usually, or we can add a method
+                isInvoiceModalOpen = false;
                 break;
         }
     }
@@ -460,23 +605,25 @@
     const patientAge = $derived(calculateAge(data.patient.date_of_birth));
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div class="journey-workspace overflow-hidden bg-slate-50 flex flex-col">
     <!-- 1. Header Identity Bar -->
     <header
-        class="identity-bar sticky top-0 bg-white border-b-2 border-slate-200 flex items-center px-8 justify-between z-50 shadow-md shrink-0"
+        class="identity-bar sticky top-0 bg-white border-b border-slate-200 flex items-center px-4 h-14 justify-between z-50 shadow-sm shrink-0"
     >
-        <div class="flex items-center gap-6">
-            <a href="/doctor/journey" class="btn-back"> ← </a>
+        <div class="flex items-center gap-4">
+            <a href="/doctor/journey" class="btn-back scale-90"> ← </a>
             <div class="patient-id-card">
                 <div class="flex items-center gap-2">
                     <h2
-                        class="text-2xl font-black text-slate-900 leading-none mb-1"
+                        class="text-lg font-black text-slate-900 leading-none mb-0.5"
                     >
                         {data.patient.full_name}
                     </h2>
                     {#if targetStandard?.complexity}
                         <div
-                            class="flex gap-0.5"
+                            class="flex gap-0.5 scale-75 origin-left"
                             title="Complexité: {targetStandard.complexity}/5"
                         >
                             {#each Array(targetStandard.complexity) as _}
@@ -486,18 +633,18 @@
                     {/if}
                 </div>
                 <div
-                    class="flex gap-3 text-sm text-slate-500 font-bold uppercase tracking-wider"
+                    class="flex gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider"
                 >
                     <span>{patientAge} ANS</span>
-                    <span class="text-slate-300">|</span>
+                    <span class="text-slate-200">|</span>
                     <span
                         >{data.patient.gender === "F" ? "Femme" : "Homme"}</span
                     >
                     {#if targetStandard && targetStandard.typical_sessions > 1}
                         <span
-                            class="text-indigo-500 border-l border-slate-200 pl-3"
+                            class="text-indigo-400 border-l border-slate-100 pl-2"
                         >
-                            Séance 1 / {targetStandard.typical_sessions}
+                            S1 / {targetStandard.typical_sessions}
                         </span>
                     {/if}
                 </div>
@@ -507,34 +654,34 @@
         <!-- Center: Intelligent Timer -->
         <div class="flex flex-col items-center">
             {#if isSessionActive}
-                <div class="timer-display {timerStatus}" in:scale>
+                <div class="timer-display {timerStatus} scale-90" in:scale>
                     <span
-                        class="time font-mono text-4xl font-black tracking-tight"
+                        class="time font-mono text-2xl font-black tracking-tight"
                         >{formatTime(visitTimer)}</span
                     >
                     {#if timerStatus !== "green"}
                         <span
-                            class="absolute -bottom-6 text-[10px] font-bold uppercase tracking-widest text-red-500 animate-pulse"
+                            class="absolute -bottom-4 text-[9px] font-bold uppercase tracking-widest text-red-500 animate-pulse"
                             >Dépassement</span
                         >
                     {/if}
                 </div>
             {:else if data.appointment.status === "completed"}
                 <div
-                    class="flex items-center gap-3 px-6 py-2.5 bg-emerald-50 rounded-full border-2 border-emerald-100 shadow-sm shadow-emerald-100 animate-in fade-in zoom-in duration-500"
+                    class="flex items-center gap-2 px-4 py-1.5 bg-emerald-50 rounded-full border border-emerald-100 shadow-sm animate-in fade-in zoom-in duration-500"
                 >
                     <div
-                        class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm"
+                        class="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-[10px]"
                     >
                         ✓
                     </div>
                     <div class="flex flex-col -space-y-1">
                         <span
-                            class="text-xs font-black text-emerald-400 uppercase tracking-widest"
+                            class="text-[9px] font-black text-emerald-400 uppercase tracking-widest"
                             >{$t("journey.completed")}</span
                         >
                         <span
-                            class="text-lg font-black text-emerald-700 font-mono"
+                            class="text-sm font-black text-emerald-700 font-mono"
                             >{completedDuration || "--:--"}</span
                         >
                     </div>
@@ -542,19 +689,19 @@
             {:else if hasPendingProsthesis}
                 <div class="flex flex-col items-center gap-2">
                     <div
-                        class="flex items-center gap-3 px-6 py-2.5 bg-rose-50 rounded-full border-2 border-rose-100 shadow-sm shadow-rose-100 animate-bounce"
+                        class="flex items-center gap-2 px-4 py-1.5 bg-rose-50 rounded-full border border-rose-100 shadow-sm animate-bounce"
                     >
                         <div
-                            class="w-8 h-8 bg-rose-500 rounded-full flex items-center justify-center text-white text-sm"
+                            class="w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center text-white text-[10px]"
                         >
                             ⚠️
                         </div>
                         <div class="flex flex-col -space-y-1">
                             <span
-                                class="text-xs font-black text-rose-400 uppercase tracking-widest"
+                                class="text-[9px] font-black text-rose-400 uppercase tracking-widest"
                                 >Bloqué</span
                             >
-                            <span class="text-sm font-black text-rose-700"
+                            <span class="text-xs font-black text-rose-700"
                                 >Prothèse non reçue</span
                             >
                         </div>
@@ -562,19 +709,19 @@
                 </div>
             {:else}
                 <div
-                    class="flex items-center gap-3 px-6 py-2.5 bg-indigo-50 rounded-full border-2 border-indigo-100 shadow-sm shadow-indigo-100 animate-pulse"
+                    class="flex items-center gap-2 px-4 py-1.5 bg-indigo-50 rounded-full border border-indigo-100 shadow-sm animate-pulse"
                 >
                     <div
-                        class="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center text-white text-sm"
+                        class="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px]"
                     >
                         ⌛
                     </div>
                     <div class="flex flex-col -space-y-1">
                         <span
-                            class="text-xs font-black text-indigo-400 uppercase tracking-widest"
+                            class="text-[9px] font-black text-indigo-400 uppercase tracking-widest"
                             >{$t("journey.status") || "Statut"}</span
                         >
-                        <span class="text-lg font-black text-indigo-700"
+                        <span class="text-sm font-black text-indigo-700"
                             >{$t("journey.waiting")}</span
                         >
                     </div>
@@ -582,43 +729,49 @@
             {/if}
         </div>
 
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-4">
             <!-- Critical Info & Balance (High Visibility) -->
-            <div class="flex gap-3">
+            <div class="flex gap-2">
                 {#if data.patient.allergies}
-                    <div class="alert-box critical">
-                        <span class="icon">⚠️</span>
+                    <div class="alert-box critical scale-95 px-2.5 py-1">
+                        <span class="icon text-sm">⚠️</span>
                         <div class="flex flex-col">
-                            <span class="label">{$t("journey.allergies")}</span>
-                            <span class="value">{data.patient.allergies}</span>
+                            <span class="label text-[8px]"
+                                >{$t("journey.allergies")}</span
+                            >
+                            <span class="value text-xs"
+                                >{data.patient.allergies}</span
+                            >
                         </div>
                     </div>
                 {/if}
                 {#if data.patient.medical_conditions}
-                    <div class="alert-box warning">
-                        <span class="icon">🩺</span>
+                    <div class="alert-box warning scale-95 px-2.5 py-1">
+                        <span class="icon text-sm">🩺</span>
                         <div class="flex flex-col">
-                            <span class="label"
+                            <span class="label text-[8px]"
                                 >{$t("journey.medical_conditions")}</span
                             >
-                            <span class="value"
+                            <span class="value text-xs"
                                 >{data.patient.medical_conditions}</span
                             >
                         </div>
                     </div>
                 {/if}
                 <button
-                    class="alert-box balance cursor-pointer hover:scale-105 active:scale-95 transition-all text-left border-none bg-transparent p-0"
+                    class="alert-box balance cursor-pointer hover:scale-105 active:scale-95 transition-all text-left border-none bg-transparent p-0 scale-95 px-2.5 py-1"
                     class:negative={data.patient.balance_due > 0}
                     onclick={() => {
                         sidebarTab = "finance";
                         isNotesSidebarOpen = true;
                     }}
                 >
-                    <span class="icon">💰</span>
+                    <span class="icon text-sm">💰</span>
                     <div class="flex flex-col">
-                        <span class="label">{$t("journey.solde")}</span>
-                        <span class="value"
+                        <span class="label text-[8px]"
+                            >{$t("journey.solde")}</span
+                        >
+                        <span class="value text-xs"
                             >{data.patient.balance_due.toLocaleString()}
                             {data.config?.currencySymbol || "دج"}</span
                         >
@@ -627,7 +780,7 @@
             </div>
 
             <!-- Visit Control -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
                 {#if !data.appointment.actual_start_time}
                     <form
                         action="?/startVisit"
@@ -644,20 +797,24 @@
                         }}
                     >
                         <button
-                            class="btn-commencer"
+                            class="btn-commencer scale-90"
                             class:warning={hasPendingProsthesis}
                         >
                             <span class="control-icon"
                                 >{hasPendingProsthesis ? "⚠️" : "▶"}</span
                             >
-                            <span>{$t("journey.start_visit")}</span>
+                            <span class="text-xs"
+                                >{$t("journey.start_visit")}</span
+                            >
                         </button>
                     </form>
                 {:else if !data.appointment.actual_end_time}
                     <form action="?/endVisit" method="POST" use:enhance>
-                        <button class="btn-terminer">
+                        <button class="btn-terminer scale-90">
                             <span class="control-icon">■</span>
-                            <span>{$t("journey.end_visit")}</span>
+                            <span class="text-xs"
+                                >{$t("journey.end_visit")}</span
+                            >
                         </button>
                     </form>
                 {/if}
@@ -671,28 +828,28 @@
     >
         <!-- Left Section: Action Grid & Clinical Intelligence (Retractable) -->
         <section
-            class="relative bg-slate-50 border-r-2 border-slate-200"
+            class="relative bg-slate-50 border-r border-slate-200"
             style="z-index: {isLeftSidebarOpen ? 100 : 30};"
         >
             <div
                 class="h-full transition-all duration-300 ease-out flex flex-col bg-slate-50 {isLeftSidebarOpen
-                    ? 'absolute top-0 left-0 w-[350px] shadow-2xl border-r-2 border-slate-200 z-[100]'
+                    ? 'absolute top-0 left-0 w-[280px] shadow-2xl border-r border-slate-200 z-[100]'
                     : 'w-full'}"
                 onclick={(e) => e.stopPropagation()}
                 role="presentation"
             >
                 {#if isLeftSidebarOpen}
                     <div
-                        class="p-6 overflow-y-auto flex-1 flex flex-col gap-6"
+                        class="p-4 overflow-y-auto flex-1 flex flex-col gap-4"
                         in:fade
                     >
                         <div class="flex justify-between items-center">
                             <span
-                                class="text-[10px] font-black text-slate-400 uppercase tracking-widest"
-                                >Workspace</span
+                                class="text-[9px] font-black text-slate-400 uppercase tracking-widest"
+                                >Espace Travail</span
                             >
                             <button
-                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+                                class="w-6 h-6 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm text-xs"
                                 onclick={() => (isLeftSidebarOpen = false)}
                             >
                                 ←
@@ -702,24 +859,24 @@
                         <!-- 1. Planned Acts Notification -->
                         {#if plannedActs.length > 0}
                             <div
-                                class="planned-acts-alert animate-bounce-subtle"
+                                class="planned-acts-alert animate-bounce-subtle p-3 rounded-xl border-indigo-100"
                                 in:slide
                             >
-                                <div class="flex items-center gap-3 mb-2">
-                                    <span class="text-xl">📅</span>
+                                <div class="flex items-center gap-2 mb-1.5">
+                                    <span class="text-lg">📅</span>
                                     <h4
-                                        class="font-black text-indigo-900 leading-none"
+                                        class="font-black text-indigo-900 leading-none text-xs"
                                     >
                                         {$t("journey.planned_today")}
                                     </h4>
                                 </div>
-                                <ul class="space-y-1">
+                                <ul class="space-y-0.5">
                                     {#each plannedActs as act}
                                         <li
-                                            class="text-indigo-700 text-sm font-bold flex items-center gap-2"
+                                            class="text-indigo-700 text-[10px] font-bold flex items-center gap-1.5"
                                         >
                                             <span
-                                                class="w-1.5 h-1.5 rounded-full bg-indigo-400"
+                                                class="w-1 h-1 rounded-full bg-indigo-400"
                                             ></span>
                                             {act.treatment_type}
                                         </li>
@@ -730,12 +887,12 @@
 
                         <!-- 2. Main Actions -->
                         <div class="action-group">
-                            <h3 class="group-title">
+                            <h3 class="group-title mb-2">
                                 {$t("journey.clinical_actions")}
                             </h3>
-                            <div class="action-grid">
+                            <div class="action-grid dense">
                                 <button
-                                    class="pos-btn"
+                                    class="pos-btn-compact"
                                     style="--color: #6366f1"
                                     onclick={() =>
                                         chart?.openGeneralTreatment({
@@ -753,7 +910,7 @@
                                     >
                                 </button>
                                 <button
-                                    class="pos-btn"
+                                    class="pos-btn-compact"
                                     style="--color: #10b981"
                                     onclick={() => (isPaymentModalOpen = true)}
                                 >
@@ -763,7 +920,7 @@
                                     >
                                 </button>
                                 <button
-                                    class="pos-btn"
+                                    class="pos-btn-compact"
                                     style="--color: #8b5cf6"
                                     onclick={() =>
                                         (showPrescriptionModal = true)}
@@ -774,8 +931,9 @@
                                     >
                                 </button>
                                 <button
-                                    class="pos-btn"
+                                    class="pos-btn-compact"
                                     style="--color: #3b82f6"
+                                    onclick={() => (isInvoiceModalOpen = true)}
                                 >
                                     <span class="icon">📑</span>
                                     <span class="label"
@@ -787,10 +945,10 @@
 
                         <!-- 3. Exception Handling (Quick Status) -->
                         <div class="action-group">
-                            <h3 class="group-title">
+                            <h3 class="group-title mb-2">
                                 {$t("journey.appointment_management")}
                             </h3>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-2 gap-2">
                                 <form
                                     action="?/updateStatus"
                                     method="POST"
@@ -803,11 +961,11 @@
                                         value="scheduled"
                                     />
                                     <button
-                                        class="status-action-btn postponed flex flex-col items-center gap-1 py-3"
+                                        class="status-action-btn postponed flex items-center justify-center gap-2 py-2"
                                         disabled={isSessionActive}
                                     >
-                                        <span class="text-lg">🕒</span>
-                                        <span class="text-[10px]"
+                                        <span class="text-sm">🕒</span>
+                                        <span class="text-[9px]"
                                             >{$t("journey.postpone")}</span
                                         >
                                     </button>
@@ -824,48 +982,53 @@
                                         value="cancelled"
                                     />
                                     <button
-                                        class="status-action-btn cancelled flex flex-col items-center gap-1 py-3"
+                                        class="status-action-btn cancelled flex items-center justify-center gap-2 py-2"
                                         disabled={isSessionActive}
                                     >
-                                        <span class="text-lg">❌</span>
-                                        <span class="text-[10px]"
+                                        <span class="text-sm">❌</span>
+                                        <span class="text-[9px]"
                                             >{$t("journey.cancel")}</span
                                         >
                                     </button>
                                 </form>
                                 <button
-                                    class="status-action-btn reschedule col-span-2 flex items-center justify-center gap-2"
+                                    class="status-action-btn reschedule col-span-2 flex items-center justify-center gap-2 py-2"
                                     disabled={isSessionActive}
                                     onclick={() => (showRescheduleModal = true)}
                                 >
-                                    <span class="text-lg">📅</span>
-                                    <span>{$t("journey.reschedule")}</span>
+                                    <span class="text-sm">📅</span>
+                                    <span class="text-[9px]"
+                                        >{$t("journey.reschedule")}</span
+                                    >
                                 </button>
                             </div>
                         </div>
 
                         <!-- 4. Lab Tracking -->
                         <div class="action-group">
-                            <h3 class="group-title">
+                            <h3 class="group-title mb-2">
                                 {$t("journey.lab_tracking")}
                             </h3>
-                            <div class="lab-tracking-container">
+                            <div class="lab-tracking-container gap-2">
                                 {#if labTrackingItems.length > 0}
                                     {#each labTrackingItems as item}
-                                        <div class="lab-item {item.status}">
+                                        <div
+                                            class="lab-item {item.status} p-2.5 rounded-xl"
+                                        >
                                             <div
-                                                class="flex justify-between items-start mb-1"
+                                                class="flex justify-between items-start mb-0.5"
                                             >
                                                 <span
-                                                    class="lab-name font-bold text-slate-700"
+                                                    class="lab-name font-bold text-slate-700 text-[11px]"
                                                     >{item.description}</span
                                                 >
-                                                <span class="status-pill"
+                                                <span
+                                                    class="status-pill px-1 py-0"
                                                     >{item.status}</span
                                                 >
                                             </div>
                                             <span
-                                                class="text-[10px] text-slate-400 font-bold uppercase"
+                                                class="text-[9px] text-slate-400 font-bold uppercase"
                                                 >{new Date(
                                                     item.updated_at,
                                                 ).toLocaleDateString()}</span
@@ -873,9 +1036,9 @@
                                         </div>
                                     {/each}
                                 {:else}
-                                    <div class="empty-lab-state">
+                                    <div class="empty-lab-state py-4">
                                         <span
-                                            class="text-sm font-medium text-slate-400"
+                                            class="text-xs font-medium text-slate-400"
                                             >{$t("journey.no_prosthesis")}</span
                                         >
                                     </div>
@@ -929,7 +1092,9 @@
                             <button
                                 class="action-icon"
                                 style="--color: #3b82f6"
-                                title={$t("journey.facture")}>📑</button
+                                title={$t("journey.facture")}
+                                onclick={() => (isInvoiceModalOpen = true)}
+                                >📑</button
                             >
                         </div>
 
@@ -1007,12 +1172,12 @@
 
         <!-- Right Section: Collapsible Clinical Sidebar -->
         <section
-            class="relative bg-slate-50 border-l-2 border-slate-100"
+            class="relative bg-slate-50 border-l border-slate-100"
             style="z-index: {isNotesSidebarOpen ? 100 : 30};"
         >
             <div
                 class="h-full transition-all duration-300 ease-out flex flex-col bg-slate-50 {isNotesSidebarOpen
-                    ? 'absolute top-0 right-0 h-full w-[45vw] shadow-2xl border-l-2 border-slate-200 z-[100]'
+                    ? 'absolute top-0 right-0 h-full w-[280px] shadow-2xl border-l border-slate-200 z-[100]'
                     : 'w-full'}"
                 onclick={(e) => e.stopPropagation()}
                 role="presentation"
@@ -1020,14 +1185,14 @@
                 {#if !isNotesSidebarOpen}
                     <!-- COLLAPSED: Toggle Handle with Smart Indicators -->
                     <button
-                        class="h-full w-full flex flex-col items-center py-6 gap-6 hover:bg-slate-100 transition-colors group cursor-pointer"
+                        class="h-full w-full flex flex-col items-center py-4 gap-4 hover:bg-slate-100 transition-colors group cursor-pointer"
                         onclick={() => (isNotesSidebarOpen = true)}
                         title={notesSummary}
                     >
                         <!-- Status Badge -->
                         <div class="relative">
                             <div
-                                class="w-12 h-12 rounded-2xl flex items-center justify-center border-2 shadow-sm transition-all group-hover:scale-110 {notesStatus ===
+                                class="w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm transition-all group-hover:scale-110 {notesStatus ===
                                 'critical'
                                     ? 'bg-red-50 border-red-200 text-red-500 animate-pulse'
                                     : notesStatus === 'high'
@@ -1036,13 +1201,13 @@
                                         ? 'bg-blue-50 border-blue-200 text-blue-500'
                                         : 'bg-white border-slate-200 text-slate-300'}"
                             >
-                                <span class="text-xl font-black">
+                                <span class="text-lg font-black">
                                     {notesStatus === "empty" ? "📝" : "i"}
                                 </span>
                             </div>
                             {#if notesStatus !== "empty"}
                                 <div
-                                    class="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white {notesStatus ===
+                                    class="absolute -top-1 -right-1 w-3 h-3 rounded-full border border-white {notesStatus ===
                                     'critical'
                                         ? 'bg-red-500'
                                         : notesStatus === 'high'
@@ -1054,10 +1219,10 @@
 
                         <!-- Vertical Label -->
                         <div
-                            class="writing-vertical-rl rotate-180 flex items-center gap-4 py-4"
+                            class="writing-vertical-rl rotate-180 flex items-center gap-3 py-2"
                         >
                             <span
-                                class="font-black text-slate-400 text-xs tracking-[0.3em] uppercase whitespace-nowrap group-hover:text-indigo-500 transition-colors"
+                                class="font-black text-slate-400 text-[10px] tracking-[0.3em] uppercase whitespace-nowrap group-hover:text-indigo-500 transition-colors"
                             >
                                 {sidebarTab === "notes"
                                     ? $t("journey.clinical_notes")
@@ -1072,19 +1237,19 @@
                         in:fade={{ duration: 300 }}
                     >
                         <div
-                            class="p-6 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 flex flex-col gap-4"
+                            class="p-4 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 flex flex-col gap-3"
                         >
                             <div class="flex justify-between items-center">
-                                <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-2">
                                     <button
-                                        class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors"
+                                        class="w-6 h-6 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors text-xs"
                                         onclick={() =>
                                             (isNotesSidebarOpen = false)}
                                     >
                                         →
                                     </button>
                                     <h3
-                                        class="font-black text-slate-800 uppercase tracking-wider text-sm"
+                                        class="font-black text-slate-800 uppercase tracking-wider text-[10px]"
                                     >
                                         {sidebarTab === "notes"
                                             ? $t("journey.clinical_notes")
@@ -1093,31 +1258,32 @@
                                 </div>
                                 {#if sidebarTab === "notes"}
                                     <button
-                                        class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                        class="w-7 h-7 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
                                         onclick={() => (showNotesModal = true)}
                                     >
-                                        <span class="text-lg leading-none pb-1"
+                                        <span
+                                            class="text-base leading-none pb-0.5"
                                             >+</span
                                         >
                                     </button>
                                 {:else}
                                     <button
-                                        class="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                                        class="w-7 h-7 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm text-xs"
                                         onclick={() =>
                                             (isPaymentModalOpen = true)}
                                         title={$t("journey.paiement")}
                                     >
-                                        <span class="text-sm leading-none"
-                                            >💳</span
-                                        >
+                                        <span>💳</span>
                                     </button>
                                 {/if}
                             </div>
 
                             <!-- Tabs -->
-                            <div class="flex p-1 bg-slate-100 rounded-xl gap-1">
+                            <div
+                                class="flex p-0.5 bg-slate-100 rounded-lg gap-0.5"
+                            >
                                 <button
-                                    class="flex-1 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all {sidebarTab ===
+                                    class="flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all {sidebarTab ===
                                     'notes'
                                         ? 'bg-white text-indigo-600 shadow-sm'
                                         : 'text-slate-400 hover:text-slate-600'}"
@@ -1126,7 +1292,7 @@
                                     📝 Notes
                                 </button>
                                 <button
-                                    class="flex-1 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all {sidebarTab ===
+                                    class="flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all {sidebarTab ===
                                     'finance'
                                         ? 'bg-white text-emerald-600 shadow-sm'
                                         : 'text-slate-400 hover:text-slate-600'}"
@@ -1138,7 +1304,7 @@
                         </div>
 
                         <div
-                            class="p-6 overflow-y-auto flex-1 flex flex-col gap-4"
+                            class="p-4 overflow-y-auto flex-1 flex flex-col gap-3"
                         >
                             {#if sidebarTab === "notes"}
                                 {#if highPriorityNotes.length === 0}
@@ -2292,7 +2458,408 @@
         </div>
     {/if}
 
-    <!-- Click-Outside Backdrop -->
+    <!-- Record Invoice Modal -->
+    {#if isInvoiceModalOpen}
+        <div
+            class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+            transition:fade={{ duration: 200 }}
+        >
+            <div
+                class="bg-white rounded-2xl shadow-2xl w-[90%] h-[85vh] max-w-7xl overflow-hidden border-2 border-white flex flex-col"
+                in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
+            >
+                <div
+                    class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0"
+                >
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100"
+                        >
+                            <span class="text-xl">📑</span>
+                        </div>
+                        <div>
+                            <h3
+                                class="text-lg font-black text-slate-800 tracking-tight leading-none mb-1"
+                            >
+                                {$t("patient_details.new_invoice")}
+                            </h3>
+                            <p
+                                class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none"
+                            >
+                                Patient: {data.patient.full_name}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        class="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm text-slate-400 hover:text-rose-500 transition-all border border-slate-100"
+                        onclick={() => (isInvoiceModalOpen = false)}>✕</button
+                    >
+                </div>
+
+                <!-- Billing Status Bar -->
+                <div
+                    class="px-6 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0"
+                >
+                    <div class="flex gap-6">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-400"
+                                >{$t(
+                                    "patient_details.billing_summary.total_acts",
+                                )}:</span
+                            >
+                            <span
+                                class="px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md text-[10px] font-black"
+                                >{data.billingSummary?.totalActs || 0}</span
+                            >
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-400"
+                                >{$t(
+                                    "patient_details.billing_summary.already_invoiced",
+                                )}:</span
+                            >
+                            <span
+                                class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-md text-[10px] font-black"
+                                >{data.billingSummary?.invoicedActs || 0}</span
+                            >
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-400"
+                                >{$t(
+                                    "patient_details.billing_summary.remaining_to_invoice",
+                                )}:</span
+                            >
+                            <span
+                                class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-md text-[10px] font-black"
+                            >
+                                {(data.billingSummary?.uninvoicedActs || 0) -
+                                    invoiceSelection.length}
+                            </span>
+                        </div>
+                    </div>
+                    {#if invoiceSelection.length > 0}
+                        <div
+                            class="text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse"
+                        >
+                            {$t(
+                                "patient_details.billing_summary.selected_count",
+                                { values: { count: invoiceSelection.length } },
+                            )}
+                        </div>
+                    {/if}
+                </div>
+
+                <div class="flex-1 flex overflow-hidden">
+                    <!-- Left Sidebar: History -->
+                    <aside
+                        class="w-1/3 border-r border-slate-100 bg-slate-50/30 overflow-y-auto p-4 space-y-4"
+                    >
+                        <div class="space-y-4">
+                            <h4
+                                class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                            >
+                                Historique des Factures
+                            </h4>
+                            <div class="space-y-3">
+                                {#each (data.invoices as any[]) || [] as inv}
+                                    <div class="past-prescription-card group">
+                                        <div
+                                            class="flex justify-between font-bold text-slate-700 mb-1"
+                                        >
+                                            <span>{inv.invoice_number}</span>
+                                            <span
+                                                >{new Date(
+                                                    inv.invoice_date,
+                                                ).toLocaleDateString()}</span
+                                            >
+                                        </div>
+                                        <div
+                                            class="flex justify-between items-center mt-2"
+                                        >
+                                            <span
+                                                class="text-base font-black text-slate-800"
+                                            >
+                                                {inv.total_amount.toFixed(2)}
+                                                {data.config?.currencySymbol}
+                                            </span>
+                                            <span
+                                                class="badge-small"
+                                                class:bg-emerald-100={inv.status ===
+                                                    "paid"}
+                                                class:text-emerald-700={inv.status ===
+                                                    "paid"}
+                                            >
+                                                {inv.status}
+                                            </span>
+                                        </div>
+                                        <div
+                                            class="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <button
+                                                class="flex-1 py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all"
+                                                onclick={() =>
+                                                    printInvoice(inv.id)}
+                                            >
+                                                Imprimer
+                                            </button>
+                                        </div>
+                                    </div>
+                                {:else}
+                                    <p
+                                        class="text-xs text-slate-400 italic pl-2"
+                                    >
+                                        Aucune facture précédente
+                                    </p>
+                                {/each}
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Main content: Treatment Selection -->
+                    <main class="flex-1 flex flex-col bg-white overflow-hidden">
+                        <div
+                            class="p-4 border-b border-slate-100 flex flex-col gap-4 shrink-0"
+                        >
+                            <div class="flex justify-between items-center">
+                                <h4
+                                    class="text-xs font-black text-slate-400 uppercase tracking-widest"
+                                >
+                                    Type de Facture
+                                </h4>
+                                <div
+                                    class="flex bg-slate-100 p-0.5 rounded-lg gap-0.5"
+                                >
+                                    <button
+                                        type="button"
+                                        class="px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all {invoiceType ===
+                                        'detailed'
+                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            : 'text-slate-400 hover:text-slate-600'}"
+                                        onclick={() =>
+                                            (invoiceType = "detailed")}
+                                    >
+                                        Détaillée
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all {invoiceType ===
+                                        'global'
+                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            : 'text-slate-400 hover:text-slate-600'}"
+                                        onclick={() => (invoiceType = "global")}
+                                    >
+                                        Globale
+                                    </button>
+                                </div>
+                            </div>
+
+                            {#if invoiceType === "global"}
+                                <div transition:slide>
+                                    <label
+                                        for="global_desc"
+                                        class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block"
+                                    >
+                                        Libellé de la prestation globale
+                                    </label>
+                                    <input
+                                        id="global_desc"
+                                        type="text"
+                                        bind:value={invoiceGlobalDescription}
+                                        class="w-full px-3 py-2 rounded-lg border border-slate-100 focus:border-blue-500 focus:outline-none font-bold text-sm text-slate-700 transition-all bg-slate-50/50"
+                                    />
+                                </div>
+                            {/if}
+
+                            <div class="flex justify-between items-center mt-2">
+                                <h4
+                                    class="text-xs font-black text-slate-400 uppercase tracking-widest"
+                                >
+                                    Actes non facturés
+                                </h4>
+                                <button
+                                    class="text-xs font-bold text-indigo-600 hover:underline"
+                                    onclick={selectAllTreatments}
+                                >
+                                    Tout sélectionner
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-4">
+                            <div class="space-y-3">
+                                {#each (data.uninvoicedTreatments as any[]) || [] as treatment}
+                                    <button
+                                        class="w-full p-3 rounded-xl border transition-all text-left flex items-center justify-between {invoiceSelection.includes(
+                                            treatment.unique_id,
+                                        )
+                                            ? 'border-indigo-500 bg-indigo-50/30'
+                                            : 'border-slate-100 hover:border-indigo-200'}"
+                                        onclick={() =>
+                                            toggleTreatmentForInvoice(
+                                                treatment.unique_id,
+                                            )}
+                                    >
+                                        <div class="flex items-center gap-4">
+                                            <div
+                                                class="w-6 h-6 rounded-full border-2 flex items-center justify-center {invoiceSelection.includes(
+                                                    treatment.unique_id,
+                                                )
+                                                    ? 'bg-indigo-500 border-indigo-500 text-white'
+                                                    : 'border-slate-200'}"
+                                            >
+                                                {#if invoiceSelection.includes(treatment.unique_id)}
+                                                    ✓
+                                                {/if}
+                                            </div>
+                                            <div class="flex flex-col">
+                                                <span
+                                                    class="text-xs font-black text-slate-400 uppercase"
+                                                >
+                                                    {new Date(
+                                                        treatment.treatment_date,
+                                                    ).toLocaleDateString()}
+                                                    {#if treatment.tooth_number}•
+                                                        Dent {treatment.tooth_number}{/if}
+                                                </span>
+                                                <span
+                                                    class="text-sm font-black text-slate-800"
+                                                    >{treatment.description}</span
+                                                >
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="text-base font-black text-slate-800"
+                                        >
+                                            {treatment.amount.toFixed(2)}
+                                            {data.config?.currencySymbol}
+                                        </span>
+                                    </button>
+                                {:else}
+                                    <div
+                                        class="h-full flex flex-col items-center justify-center py-20 opacity-20"
+                                    >
+                                        <span class="text-8xl mb-4">✨</span>
+                                        <p
+                                            class="text-2xl font-black uppercase text-slate-600"
+                                        >
+                                            Tout est à jour
+                                        </p>
+                                        <p class="font-bold text-slate-400">
+                                            Aucun acte à facturer pour le moment
+                                        </p>
+                                    </div>
+                                {/each}
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div
+                            class="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-4 shrink-0 items-center"
+                        >
+                            <div class="flex-1">
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2"
+                                        >Total Sélectionné</span
+                                    >
+                                    <span
+                                        class="text-2xl font-black text-slate-800"
+                                    >
+                                        {invoiceTotal.toFixed(2)}
+                                        {data.config?.currencySymbol}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="w-1/3">
+                                <form
+                                    action="?/createInvoice"
+                                    method="POST"
+                                    use:enhance={() => {
+                                        return async ({ result, update }) => {
+                                            if (result.type === "success") {
+                                                const invId = (
+                                                    result.data as any
+                                                )?.invoiceId;
+                                                isInvoiceModalOpen = false;
+                                                invoiceSelection = [];
+                                                if (invId) printInvoice(invId);
+                                            }
+                                            await update();
+                                        };
+                                    }}
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="patient_id"
+                                        value={data.patient.id}
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="invoice_type"
+                                        value={invoiceType}
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="global_description"
+                                        value={invoiceGlobalDescription}
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="items"
+                                        value={JSON.stringify(
+                                            (
+                                                (data.uninvoicedTreatments as any[]) ||
+                                                []
+                                            )
+                                                .filter((t) =>
+                                                    invoiceSelection.includes(
+                                                        t.unique_id,
+                                                    ),
+                                                )
+                                                .map((t) => ({
+                                                    treatment_id:
+                                                        t.treatment_id,
+                                                    dental_treatment_id:
+                                                        t.dental_treatment_id,
+                                                    description: t.description,
+                                                    amount: t.amount,
+                                                })),
+                                        )}
+                                    />
+
+                                    {#if invoiceSelection.length === 0}
+                                        <div
+                                            class="flex items-center gap-2 mb-4 p-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-700 text-xs font-bold animate-fade-in"
+                                        >
+                                            <span>⚠️</span>
+                                            Veuillez sélectionner au moins un acte
+                                            dans la liste pour générer votre facture.
+                                        </div>
+                                    {/if}
+
+                                    <button
+                                        type="submit"
+                                        class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-base hover:bg-blue-700 hover:scale-[1.01] transition-all shadow-lg flex items-center justify-center gap-3 {invoiceShake
+                                            ? 'animate-shake'
+                                            : ''} {invoiceSelection.length === 0
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : ''}"
+                                        onclick={handleGenerateInvoice}
+                                    >
+                                        <span class="text-xl">📝</span>
+                                        Générer & Imprimer
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </div>
+    {/if}
+
     {#if isLeftSidebarOpen || isNotesSidebarOpen}
         <button
             class="fixed inset-0 z-[90] bg-slate-900/10 backdrop-blur-[2px] cursor-default w-full h-full border-none p-0 m-0"
@@ -2312,89 +2879,26 @@
     }
 
     .identity-bar {
-        height: 6rem;
         background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(10px);
         transition: all 0.3s ease;
     }
 
-    /* Compact Mode for Small Heights (e.g. 617px) */
-    @media (max-height: 750px) {
-        .identity-bar {
-            height: 4rem;
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-        }
-
-        .patient-id-card h2 {
-            font-size: 1.25rem;
-        }
-
-        .timer-display {
-            padding: 0.25rem 1.5rem;
-        }
-
-        .timer-display .time {
-            font-size: 1.5rem;
-        }
-
-        .alert-box {
-            padding: 0.4rem 0.75rem;
-            min-width: 110px;
-            gap: 0.5rem;
-        }
-
-        .alert-box .icon {
-            font-size: 1.1rem;
-        }
-
-        .alert-box .value {
-            font-size: 0.9rem;
-        }
-
-        .pos-btn {
-            height: 70px !important;
-        }
-
-        .pos-btn .icon {
-            font-size: 1.5rem;
-        }
-
-        .action-grid {
-            gap: 0.5rem !important;
-        }
-
-        .group-title {
-            margin-bottom: 0.5rem !important;
-        }
-
-        .action-group {
-            margin-bottom: 0.5rem !important;
-        }
-
-        .planned-acts-alert {
-            padding: 0.75rem !important;
-        }
-
-        /* Sidebar layout adjustments */
-        .lab-item {
-            padding: 0.5rem 0.75rem;
-        }
-    }
+    /* Unified Compact Design */
 
     .alert-box {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1.25rem;
-        border-radius: 1.25rem;
-        border: 2px solid transparent;
-        min-width: 140px;
+        gap: 0.5rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: 1rem;
+        border: 1px solid transparent;
+        min-width: 110px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .alert-box .icon {
-        font-size: 1.5rem;
+        font-size: 1.1rem;
     }
     .alert-box .label {
         font-size: 0.6rem;
@@ -2405,7 +2909,7 @@
     }
     .alert-box .value {
         font-weight: 900;
-        font-size: 1.1rem;
+        font-size: 0.85rem;
         line-height: 1;
         letter-spacing: -0.02em;
     }
@@ -2488,41 +2992,40 @@
         gap: 1rem;
     }
 
-    .pos-btn {
-        height: 100px;
+    .pos-btn-compact {
+        height: 52px;
         background: white;
-        border: 2px solid #f1f5f9;
-        border-radius: 1.5rem;
+        border: 1px solid #f1f5f9;
+        border-radius: 1rem;
         display: flex;
-        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 0 0.75rem;
+        gap: 0.75rem;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1);
+        box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+        width: 100%;
+        text-align: left;
     }
 
-    .pos-btn:hover {
-        transform: translateY(-5px) scale(1.02);
+    .dense {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem !important;
+    }
+
+    .pos-btn-compact:hover {
+        transform: translateX(4px);
         border-color: var(--color);
-        box-shadow:
-            0 20px 25px -5px rgba(0, 0, 0, 0.1),
-            0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
 
-    .pos-btn:active {
-        transform: translateY(-2px) scale(0.98);
-        box-shadow: 0 5px 10px -3px rgba(0, 0, 0, 0.1);
+    .pos-btn-compact .icon {
+        font-size: 1.25rem;
+        flex-shrink: 0;
     }
 
-    .pos-btn .icon {
-        font-size: 2.25rem;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-    }
-
-    .pos-btn .label {
+    .pos-btn-compact .label {
         font-weight: 900;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: #334155;
         text-transform: uppercase;
         letter-spacing: 0.025em;
@@ -2532,7 +3035,7 @@
     .action-icon {
         width: 3rem;
         height: 3rem;
-        border-radius: 1rem;
+        border-radius: 1.25rem;
         background: white;
         border: 2px solid #f1f5f9;
         display: flex;
@@ -2542,6 +3045,16 @@
         transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         cursor: pointer;
+        position: relative;
+    }
+
+    .action-icon::after {
+        content: "";
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
     }
 
     .action-icon:hover:not(:disabled) {
@@ -2662,61 +3175,58 @@
     }
 
     .status-pill {
-        font-size: 0.6rem;
+        font-size: 0.55rem;
         font-weight: 900;
         text-transform: uppercase;
-        padding: 0.15rem 0.5rem;
-        border-radius: 0.5rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: 0.4rem;
         background: #f1f5f9;
         color: #64748b;
     }
 
     /* 6. Post-it Notes */
     .post-it {
-        padding: 1.5rem;
-        border-radius: 1.5rem;
-        box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+        padding: 0.75rem;
+        border-radius: 1rem;
+        box-shadow: 0 5px 10px -2px rgba(0, 0, 0, 0.05);
         transform: rotate(1deg);
         transition: all 0.3s;
     }
 
-    .post-it:nth-child(even) {
-        transform: rotate(-1.5deg);
-    }
     .post-it:hover {
-        transform: scale(1.05) rotate(0deg);
+        transform: scale(1.02) rotate(0deg);
         z-index: 40;
     }
 
     .post-it.critical {
         background: #fee2e2;
-        border-left: 8px solid #ef4444;
+        border-left: 5px solid #ef4444;
         color: #991b1b;
     }
     .post-it.high {
         background: #fef3c7;
-        border-left: 8px solid #f59e0b;
+        border-left: 5px solid #f59e0b;
         color: #92400e;
     }
     .post-it.low {
         background: #f0f9ff;
-        border-left: 8px solid #0ea5e9;
+        border-left: 5px solid #0ea5e9;
         color: #075985;
     }
 
     .importance-badge {
-        font-size: 0.6rem;
+        font-size: 0.55rem;
         font-weight: 900;
         text-transform: uppercase;
-        padding: 0.2rem 0.6rem;
-        border-radius: 0.5rem;
+        padding: 0.15rem 0.4rem;
+        border-radius: 0.4rem;
         background: rgba(0, 0, 0, 0.05);
     }
 
     .note-text {
         font-weight: 600;
-        font-size: 0.9rem;
-        line-height: 1.4;
+        font-size: 0.75rem;
+        line-height: 1.3;
     }
 
     .btn-add-note-floating {
@@ -2781,6 +3291,41 @@
         50% {
             transform: translateY(-5px);
         }
+    }
+
+    @keyframes shake {
+        0%,
+        100% {
+            transform: translateX(0);
+        }
+        25% {
+            transform: translateX(-5px);
+        }
+        50% {
+            transform: translateX(5px);
+        }
+        75% {
+            transform: translateX(-5px);
+        }
+    }
+
+    .animate-shake {
+        animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(5px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.3s ease-out forwards;
     }
 
     .animate-bounce-subtle {

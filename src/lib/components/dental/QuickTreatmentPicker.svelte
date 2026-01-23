@@ -291,7 +291,7 @@
     }
 
     .search-zone {
-        padding: 0 0 1rem 0;
+        padding: 0 0 0.5rem 0;
         flex-shrink: 0;
     }
 
@@ -310,17 +310,27 @@
 
     .view-toggle-btn {
         flex-shrink: 0;
-        width: 2.75rem;
-        height: 2.75rem;
+        width: 2.25rem;
+        height: 2.25rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 2px solid #e5e7eb;
-        border-radius: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
         background: #f9fafb;
         cursor: pointer;
         transition: all 0.2s;
         color: #6b7280;
+        position: relative;
+    }
+
+    .view-toggle-btn::after {
+        content: "";
+        position: absolute;
+        top: -4px;
+        left: -4px;
+        right: -4px;
+        bottom: -4px;
     }
 
     .view-toggle-btn:hover {
@@ -343,10 +353,10 @@
 
     .search-input {
         width: 100%;
-        padding: 0.875rem 2.5rem 0.875rem 2.75rem;
-        border: 2px solid #e5e7eb;
-        border-radius: 0.75rem;
-        font-size: 0.95rem;
+        padding: 0.6rem 2.5rem 0.6rem 2.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
         background: #f9fafb;
     }
 
@@ -372,11 +382,20 @@
         justify-content: center;
     }
 
+    .clear-btn::after {
+        content: "";
+        position: absolute;
+        top: -8px;
+        left: -8px;
+        right: -8px;
+        bottom: -8px;
+    }
+
     .category-chips-wrapper {
         flex-shrink: 0;
-        padding-bottom: 1rem;
+        padding-bottom: 0.5rem;
         border-bottom: 1px solid #f3f4f6;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
     }
 
     .category-chips {
@@ -394,15 +413,25 @@
 
     .chip {
         flex-shrink: 0;
-        padding: 0.5rem 1rem;
+        padding: 0.35rem 0.75rem;
         border-radius: 9999px;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
         background: rgba(255, 255, 255, 0.7);
         border: 1px solid rgba(229, 231, 235, 0.8);
         color: #4b5563;
         backdrop-filter: blur(8px);
+        position: relative;
+    }
+
+    .chip::after {
+        content: "";
+        position: absolute;
+        top: -5px;
+        left: 0;
+        right: 0;
+        bottom: -5px;
     }
 
     .chip.active {
@@ -428,14 +457,14 @@
     .code-card {
         display: flex;
         flex-direction: column;
-        padding: 1rem;
-        border: 2px solid #e5e7eb;
-        border-radius: 0.75rem;
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
         background: white;
         cursor: pointer;
         transition: all 0.2s;
         text-align: left;
-        min-height: 100px;
+        min-height: 80px;
     }
 
     .code-card:hover {
@@ -467,13 +496,13 @@
     .fee {
         font-weight: 700;
         color: #059669;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
     }
 
     .description {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         color: #374151;
-        line-height: 1.4;
+        line-height: 1.3;
         margin: 0;
     }
 
@@ -590,8 +619,8 @@
     }
 
     .table-row td {
-        padding: 0.875rem 1rem;
-        font-size: 0.875rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
     }
 
     .code-badge {
@@ -611,7 +640,7 @@
     .fee-cell {
         font-weight: 700;
         color: #059669;
-        font-size: 0.95rem;
+        font-size: 0.8rem;
     }
 
     .badge-small {

@@ -7,7 +7,6 @@
     let { data }: { data: PageData } = $props();
     let activeTab = $state("overview");
     let isEditModalOpen = $state(false);
-    let isTreatmentModalOpen = $state(false);
     let formError = $state<string | null>(null);
     let formSuccess = $state<string | null>(null);
 
@@ -26,8 +25,23 @@
     import DentalChart from "$lib/components/dental/DentalChart.svelte";
     import { calculateAge } from "$lib/dental/tooth-data";
     let showPrescriptionBuilder = $state(false);
-    let selectedTreatmentsForInvoice = $state<number[]>([]);
+    let selectedTreatmentsForInvoice = $state<string[]>([]);
+    let invoiceType = $state<"detailed" | "global">("detailed");
+    let invoiceGlobalDescription = $state(
+        $t("patient_details.global_invoice_default_label") ||
+            "Soins et Traitements Dentaires",
+    );
     let isInvoiceModalOpen = $state(false);
+    let invoiceShake = $state(false);
+
+    function handleGenerateInvoice(e: Event) {
+        if (selectedTreatmentsForInvoice.length === 0) {
+            e.preventDefault();
+            invoiceShake = true;
+            setTimeout(() => (invoiceShake = false), 500);
+            return;
+        }
+    }
     let isPaymentModalOpen = $state(false);
     let selectedInvoice = $state<any>(null);
     let previewFile = $state<any>(null);
@@ -148,10 +162,10 @@
             </div>
             <div class="flex flex-wrap gap-3">
                 <button
-                    onclick={() => (isTreatmentModalOpen = true)}
+                    onclick={() => chart.openGeneralTreatment()}
                     class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-100 transition-all text-sm"
                 >
-                    + Acte Général
+                    + Acte (CDT)
                 </button>
                 <button
                     onclick={() => (isEditModalOpen = true)}
@@ -749,9 +763,13 @@
                         class="bg-gray-50 rounded-2xl p-6 border border-gray-100 overflow-x-auto"
                     >
                         <DentalChart
+                            bind:this={chart}
                             patientId={data.patient.id}
                             patientAge={age}
                             readOnly={false}
+                            onTreatmentAdded={() => {
+                                // refresh data
+                            }}
                         />
                     </div>
                 </div>
@@ -813,10 +831,8 @@
                                                   "-"}</td
                                         >
                                         <td
-                                            class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700 capitalize"
-                                            >{$t(
-                                                `patient_details.${treatment.treatment_type}`,
-                                            )}</td
+                                            class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700"
+                                            >{treatment.treatment_type}</td
                                         >
                                         <td
                                             class="px-6 py-4 text-sm text-gray-500 font-medium max-w-xs"
@@ -1682,12 +1698,127 @@
                                 };
                             }}
                         >
-                            <div class="px-8 pt-8 pb-6">
+                            <div class="px-8 pt-8 pb-4">
                                 <h3
                                     class="text-2xl font-black text-gray-900 mb-2"
                                 >
                                     {$t("patient_details.generate_invoice")}
                                 </h3>
+
+                                <!-- Billing Status Bar -->
+                                <div
+                                    class="px-6 py-2 bg-slate-50 border border-slate-100 rounded-xl mb-4 flex items-center justify-between"
+                                >
+                                    <div class="flex gap-4">
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="text-[10px] font-bold text-slate-400"
+                                                >{$t(
+                                                    "patient_details.billing_summary.total_acts",
+                                                )}:</span
+                                            >
+                                            <span
+                                                class="px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded-md text-[9px] font-black"
+                                                >{data.billingSummary
+                                                    ?.totalActs || 0}</span
+                                            >
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="text-[10px] font-bold text-slate-400"
+                                                >{$t(
+                                                    "patient_details.billing_summary.already_invoiced",
+                                                )}:</span
+                                            >
+                                            <span
+                                                class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded-md text-[9px] font-black"
+                                                >{data.billingSummary
+                                                    ?.invoicedActs || 0}</span
+                                            >
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="text-[10px] font-bold text-slate-400"
+                                                >{$t(
+                                                    "patient_details.billing_summary.remaining_to_invoice",
+                                                )}:</span
+                                            >
+                                            <span
+                                                class="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-md text-[9px] font-black"
+                                            >
+                                                {(data.billingSummary
+                                                    ?.uninvoicedActs || 0) -
+                                                    selectedTreatmentsForInvoice.length}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {#if selectedTreatmentsForInvoice.length > 0}
+                                        <div
+                                            class="text-[9px] font-black text-indigo-600 uppercase tracking-widest animate-pulse"
+                                        >
+                                            {$t(
+                                                "patient_details.billing_summary.selected_count",
+                                                {
+                                                    values: {
+                                                        count: selectedTreatmentsForInvoice.length,
+                                                    },
+                                                },
+                                            )}
+                                        </div>
+                                    {/if}
+                                </div>
+                                <div class="flex items-center gap-4 mt-6 mb-4">
+                                    <span
+                                        class="text-xs font-black text-gray-400 uppercase tracking-widest"
+                                        >Type:</span
+                                    >
+                                    <div
+                                        class="flex bg-gray-100 p-1 rounded-xl gap-1"
+                                    >
+                                        <button
+                                            type="button"
+                                            class="px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all {invoiceType ===
+                                            'detailed'
+                                                ? 'bg-white text-indigo-600 shadow-sm'
+                                                : 'text-gray-400 hover:text-gray-600'}"
+                                            onclick={() =>
+                                                (invoiceType = "detailed")}
+                                        >
+                                            Détaillée
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all {invoiceType ===
+                                            'global'
+                                                ? 'bg-white text-indigo-600 shadow-sm'
+                                                : 'text-gray-400 hover:text-gray-600'}"
+                                            onclick={() =>
+                                                (invoiceType = "global")}
+                                        >
+                                            Globale
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {#if invoiceType === "global"}
+                                    <div transition:slide class="mb-6">
+                                        <label
+                                            for="global_desc_det"
+                                            class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"
+                                        >
+                                            Libellé de la prestation globale
+                                        </label>
+                                        <input
+                                            id="global_desc_det"
+                                            type="text"
+                                            bind:value={
+                                                invoiceGlobalDescription
+                                            }
+                                            class="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:outline-none font-bold text-gray-700 transition-all bg-gray-50/50"
+                                        />
+                                    </div>
+                                {/if}
+
                                 <p class="text-sm text-gray-500 font-medium">
                                     {$t(
                                         "patient_details.select_treatments_invoice",
@@ -1732,7 +1863,7 @@
                                                         <input
                                                             type="checkbox"
                                                             checked={selectedTreatmentsForInvoice.includes(
-                                                                treatment.id,
+                                                                treatment.unique_id,
                                                             )}
                                                             onchange={(e) => {
                                                                 if (
@@ -1741,7 +1872,7 @@
                                                                         .checked
                                                                 ) {
                                                                     selectedTreatmentsForInvoice.push(
-                                                                        treatment.id,
+                                                                        treatment.unique_id,
                                                                     );
                                                                 } else {
                                                                     selectedTreatmentsForInvoice =
@@ -1750,7 +1881,7 @@
                                                                                 id,
                                                                             ) =>
                                                                                 id !==
-                                                                                treatment.id,
+                                                                                treatment.unique_id,
                                                                         );
                                                                 }
                                                             }}
@@ -1785,16 +1916,28 @@
 
                             <input
                                 type="hidden"
+                                name="invoice_type"
+                                value={invoiceType}
+                            />
+                            <input
+                                type="hidden"
+                                name="global_description"
+                                value={invoiceGlobalDescription}
+                            />
+                            <input
+                                type="hidden"
                                 name="items"
                                 value={JSON.stringify(
                                     data.treatments
                                         .filter((t) =>
                                             selectedTreatmentsForInvoice.includes(
-                                                t.id,
+                                                t.unique_id,
                                             ),
                                         )
                                         .map((t) => ({
-                                            treatment_id: t.id,
+                                            treatment_id: t.treatment_id,
+                                            dental_treatment_id:
+                                                t.dental_treatment_id,
                                             description: t.treatment_type,
                                             amount: t.cost,
                                         })),
@@ -1827,12 +1970,25 @@
                                             .toFixed(2)}
                                     </span>
                                 </div>
+                                {#if selectedTreatmentsForInvoice.length === 0}
+                                    <div
+                                        class="flex items-center gap-2 mb-2 p-3 bg-amber-50 rounded-xl border border-amber-100 text-amber-700 text-[10px] font-bold animate-fade-in shadow-sm"
+                                    >
+                                        <span>⚠️</span>
+                                        Veuillez sélectionner au moins un acte pour
+                                        générer votre facture.
+                                    </div>
+                                {/if}
                                 <div class="flex flex-row-reverse gap-3">
                                     <button
                                         type="submit"
-                                        disabled={selectedTreatmentsForInvoice.length ===
-                                            0}
-                                        class="flex-1 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all disabled:opacity-50 disabled:shadow-none"
+                                        class="flex-1 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all {selectedTreatmentsForInvoice.length ===
+                                        0
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : ''} {invoiceShake
+                                            ? 'animate-shake'
+                                            : ''}"
+                                        onclick={handleGenerateInvoice}
                                     >
                                         {$t("patient_details.generate_invoice")}
                                     </button>
@@ -2127,220 +2283,7 @@
         </div>
     {/if}
 
-    <!-- Add Treatment Modal -->
-    {#if isTreatmentModalOpen}
-        <div class="relative z-50" role="dialog" aria-modal="true">
-            <div
-                class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
-                aria-hidden="true"
-                onclick={() => (isTreatmentModalOpen = false)}
-            ></div>
-            <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
-                <div class="flex min-h-full items-center justify-center p-4">
-                    <div
-                        class="relative w-full max-w-6xl transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all"
-                    >
-                        <form
-                            method="POST"
-                            action="?/addTreatment"
-                            use:enhance={() => {
-                                formError = null;
-                                formSuccess = null;
-                                return async ({ result, update }) => {
-                                    if (result.type === "success") {
-                                        formSuccess =
-                                            "Treatment added successfully!";
-                                        setTimeout(() => {
-                                            isTreatmentModalOpen = false;
-                                            formSuccess = null;
-                                        }, 1500);
-                                    } else if (
-                                        result.type === "failure" ||
-                                        result.type === "error"
-                                    ) {
-                                        formError =
-                                            (result.data as any)?.error ||
-                                            "An unexpected error occurred.";
-                                    }
-                                    await update();
-                                };
-                            }}
-                        >
-                            <div
-                                class="px-8 pt-8 pb-6 border-b border-gray-100"
-                            >
-                                <h3
-                                    class="text-2xl font-black text-gray-900 mb-2"
-                                >
-                                    {$t("patient_details.add_treatment")}
-                                </h3>
-                                <p class="text-sm text-gray-500 font-medium">
-                                    {$t("patient_details.add_treatment_desc")}
-                                </p>
-                            </div>
-
-                            <div
-                                class="px-8 py-8 max-h-[70vh] overflow-y-auto custom-scrollbar text-start"
-                            >
-                                {#if formError}
-                                    <div
-                                        class="mb-6 p-4 bg-red-50 border border-red-100 text-red-700 rounded-2xl text-sm font-bold flex items-center gap-3"
-                                    >
-                                        <span class="text-lg">⚠️</span>
-                                        {formError}
-                                    </div>
-                                {/if}
-                                {#if formSuccess}
-                                    <div
-                                        class="mb-6 p-4 bg-green-50 border border-green-100 text-green-700 rounded-2xl text-sm font-bold flex items-center gap-3"
-                                    >
-                                        <span class="text-lg">✓</span>
-                                        {formSuccess}
-                                    </div>
-                                {/if}
-
-                                <div
-                                    class="grid grid-cols-1 md:grid-cols-2 gap-6"
-                                >
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label
-                                            class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
-                                            >{$t("patient_details.date")}</label
-                                        >
-                                        <input
-                                            type="date"
-                                            name="treatment_date"
-                                            value={new Date()
-                                                .toISOString()
-                                                .split("T")[0]}
-                                            required
-                                            class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter"
-                                        />
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label
-                                            class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
-                                            >{$t("patient_details.type")}</label
-                                        >
-                                        <select
-                                            name="treatment_type"
-                                            required
-                                            class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border"
-                                        >
-                                            {#each data.treatmentTypes as type}
-                                                <option value={type.name}
-                                                    >{$t(
-                                                        `patient_details.${type.name}`,
-                                                        { default: type.name },
-                                                    )}</option
-                                                >
-                                            {/each}
-                                        </select>
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label
-                                            class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
-                                            >{$t("patient_details.tooth")} #</label
-                                        >
-                                        <input
-                                            type="text"
-                                            name="tooth_number"
-                                            value={selectedTeeth.join(", ")}
-                                            placeholder="Select from below..."
-                                            class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter"
-                                        />
-                                    </div>
-                                    <div class="col-span-2 md:col-span-1">
-                                        <label
-                                            class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
-                                            >{$t("patient_details.cost")} ({data
-                                                .appConfig
-                                                .currencySymbol})</label
-                                        >
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            name="cost"
-                                            required
-                                            placeholder="0.00"
-                                            class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border font-inter"
-                                        />
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label
-                                            class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
-                                            >{$t(
-                                                "patient_details.visual_tooth_selector",
-                                            )}</label
-                                        >
-                                        <div
-                                            class="bg-gray-50/50 rounded-2xl p-6 border border-gray-100"
-                                        >
-                                            <ToothSelector
-                                                {selectedTeeth}
-                                                onToggle={toggleTooth}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label
-                                            class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
-                                            >{$t(
-                                                "patient_details.description",
-                                            )}</label
-                                        >
-                                        <input
-                                            type="text"
-                                            name="description"
-                                            placeholder={$t(
-                                                "patient_details.short_description",
-                                            )}
-                                            class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border"
-                                        />
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label
-                                            class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
-                                            >{$t(
-                                                "doctor_dashboard.clinical_notes",
-                                            )}</label
-                                        >
-                                        <textarea
-                                            name="treatment_notes"
-                                            rows="3"
-                                            placeholder={$t(
-                                                "doctor_dashboard.clinical_notes_placeholder",
-                                            )}
-                                            class="block w-full rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border"
-                                        ></textarea>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div
-                                class="px-8 py-6 bg-gray-50 border-t border-gray-100 flex flex-row-reverse gap-4"
-                            >
-                                <button
-                                    type="submit"
-                                    class="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
-                                >
-                                    Ajouter Acte Général
-                                </button>
-                                <button
-                                    type="button"
-                                    class="bg-white text-gray-700 px-8 py-3 rounded-2xl font-bold border border-gray-200 hover:bg-gray-50 transition-all"
-                                    onclick={() =>
-                                        (isTreatmentModalOpen = false)}
-                                >
-                                    {$t("common.cancel")}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {/if}
+    <!-- Deprecated Treatment Modal removed -->
     <!-- Payment Modal -->
     {#if isPaymentModalOpen && selectedInvoice}
         <div class="relative z-50" role="dialog" aria-modal="true">

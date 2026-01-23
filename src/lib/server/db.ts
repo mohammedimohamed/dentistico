@@ -20,6 +20,27 @@ function normalizeDate(dateStr: string) {
     return res;
 }
 
+function normalizePaymentMethod(method: string): string {
+    if (!method) return method;
+    // Remove emojis and extra punctuation to match mapping keys
+    const m = method.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').trim();
+    const mapping: Record<string, string> = {
+        'espèces': 'cash',
+        'cash': 'cash',
+        'carte bancaire': 'card',
+        'carte': 'card',
+        'card': 'card',
+        'chèque': 'check',
+        'check': 'check',
+        'virement': 'bank_transfer',
+        'virement bancaire': 'bank_transfer',
+        'bank_transfer': 'bank_transfer',
+        'assurance': 'insurance',
+        'insurance': 'insurance'
+    };
+    return mapping[m] || 'cash';
+}
+
 const DB_PATH = process.env.TEST_DB_PATH || 'dental_clinic.db';
 export const db = new Database(DB_PATH, { verbose: console.log });
 
@@ -331,17 +352,21 @@ export function init_db() {
             invoice_date TEXT DEFAULT (datetime('now')),
             status TEXT DEFAULT 'unpaid' CHECK(status IN ('unpaid', 'paid', 'cancelled')),
             total_amount REAL DEFAULT 0.0,
+            invoice_type TEXT DEFAULT 'detailed' CHECK(invoice_type IN ('detailed', 'global')),
+            global_description TEXT,
             FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
         );
 
         CREATE TABLE IF NOT EXISTS invoice_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             invoice_id INTEGER NOT NULL,
-            treatment_id INTEGER,
+            treatment_id INTEGER, -- Deprecated (General Treatment)
+            dental_treatment_id INTEGER, -- Structured CDT Treatment
             description TEXT NOT NULL,
             amount REAL NOT NULL,
             FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
-            FOREIGN KEY (treatment_id) REFERENCES treatments(id) ON DELETE SET NULL
+            FOREIGN KEY (treatment_id) REFERENCES treatments(id) ON DELETE SET NULL,
+            FOREIGN KEY (dental_treatment_id) REFERENCES dental_treatments(id) ON DELETE SET NULL
         );
 
         CREATE TABLE IF NOT EXISTS suppliers (
@@ -419,13 +444,7 @@ export function init_db() {
             FOREIGN KEY (created_by_user_id) REFERENCES users(id)
         );
 
-        CREATE TABLE IF NOT EXISTS treatment_types (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            description TEXT,
-            is_active INTEGER DEFAULT 1,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        );
+        -- Deprecated: treatment_types table removed in favor of CDT codes
 
         CREATE INDEX IF NOT EXISTS idx_spending_date ON spending(spending_date);
         CREATE INDEX IF NOT EXISTS idx_spending_category ON spending(category_id);
@@ -523,12 +542,12 @@ export function init_db() {
         SELECT 
             p.id as patient_id,
             p.full_name,
-            -- Total Billed = Invoices + Completed Uninvoiced Treatments
+            -- Total Billed = Invoices + Completed Uninvoiced Treatments + Completed Uninvoiced CDTs
             COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) 
             +
             COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
             +
-            COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
+            COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)), 0)
             as total_billed,
             
             COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as total_paid,
@@ -538,7 +557,7 @@ export function init_db() {
                 +
                 COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
                 +
-                COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
+                COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)), 0)
             ) - 
             COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
         FROM patients p;
@@ -589,15 +608,12 @@ export function init_db() {
 
     // Check if seed needed
     const userCount = db.prepare('SELECT count(*) as count FROM users').get() as { count: number };
-    const treatmentTypeCount = db.prepare('SELECT count(*) as count FROM treatment_types').get() as { count: number };
 
     if (userCount.count === 0) {
         console.log('Seeding database...');
         seed_db();
     } else {
-        // Update treatment definitions on every start to ensure translations are consistent
-        seedTreatmentTypesOnly();
-        seedAlgerianCDTCodes(); // Also ensure CDT codes are up to date
+        seedAlgerianCDTCodes(); // Ensure CDT codes are up to date
     }
 
     // Migration for existing databases
@@ -1202,116 +1218,35 @@ export function init_db() {
     } catch (e) {
         console.error('Migration for dental chart tables failed:', e);
     }
-}
 
-function seedTreatmentTypesOnly() {
+    // Ensure invoice_items has the dental_treatment_id column for CDT acts
     try {
-        console.log('Seeding treatment types...');
-
-        // Seed Treatment Types - Comprehensive list of common dental procedures (Algerian specific)
-        const treatmentTypes = [
-            // Consultations
-            ['consultation', 'Consultation générale'],
-            ['emergency_consultation', 'Consultation d\'urgence'],
-            ['follow_up', 'Contrôle / Suivi de traitement'],
-
-            // Hygiène & Prophylaxie
-            ['cleaning', 'Détartrage simple'],
-            ['deep_cleaning', 'Détartrage sous-gingival'],
-            ['polishing', 'Polissage'],
-            ['fluoride_treatment', 'Application de fluor (Prophylaxie)'],
-
-            // Odontologie (Soins/Plombages)
-            ['filling', 'Obturation (Soins de carie)'],
-            ['filling_amalgam', 'Obturation à l\'amalgame (Plombage gris)'],
-            ['filling_composite', 'Obturation au composite (Plombage blanc)'],
-            ['filling_glass_ionomer', 'Obturation au CVI (Verre ionomère)'],
-            ['inlay', 'Inlay'],
-            ['onlay', 'Onlay'],
-            ['temporary_filling', 'Pansement dentaire (Obturation provisoire)'],
-
-            // Endodontie (Dévitalisation)
-            ['root_canal', 'Traitement de canal (Dévitalisation)'],
-            ['root_canal_anterior', 'Traitement de canal (Dent monoradiculée)'],
-            ['root_canal_posterior', 'Traitement de canal (Dent pluriradiculée)'],
-
-            // Chirurgie & Extractions
-            ['extraction', 'Extraction dentaire'],
-            ['extraction_simple', 'Extraction simple'],
-            ['extraction_surgical', 'Extraction chirurgicale (Alvéolectomie)'],
-            ['extraction_impacted', 'Extraction de dent incluse (ex: Dent de sagesse)'],
-
-            // Prothèses Fixes
-            ['crown', 'Pose de couronne'],
-            ['crown_porcelain', 'Couronne céramique'],
-            ['crown_metal', 'Couronne métallique'],
-            ['crown_pfm', 'Couronne Céramo-métallique (CCM)'],
-            ['crown_zirconia', 'Couronne Zircone'],
-            ['bridge', 'Bridge dentaire'],
-            ['bridge_fixed', 'Bridge fixe'],
-            ['bridge_maryland', 'Bridge collé (Maryland)'],
-
-            // Prothèses Amovibles
-            ['denture', 'Prothèse dentaire (Appareil)'],
-            ['denture_complete', 'Prothèse totale (Dentier)'],
-            ['denture_partial', 'Prothèse partielle (Stellite ou Résine)'],
-
-            // Implantologie
-            ['implant', 'Implantologie'],
-            ['implant_placement', 'Pose d\'implant'],
-            ['implant_crown', 'Couronne sur implant'],
-            ['bone_graft', 'Greffe osseuse'],
-            ['sinus_lift', 'Sinus Lift (Élévation de sinus)'],
-
-            // Orthodontie & Esthétique
-            ['orthodontics', 'Traitement ODF (Orthodontie)'],
-            ['braces', 'Appareil multi-attaches (Bagues)'],
-            ['retainer', 'Appareil de contention'],
-            ['whitening', 'Blanchiment dentaire'],
-            ['whitening_office', 'Blanchiment au fauteuil'],
-            ['whitening_home', 'Blanchiment à domicile'],
-            ['veneer', 'Facette dentaire'],
-            ['veneer_porcelain', 'Facette céramique'],
-            ['veneer_composite', 'Facette composite'],
-
-            // Parodontologie
-            ['periodontal', 'Traitement parodontal (Soins des gencives)'],
-            ['scaling', 'Surfaçage radiculaire'],
-            ['gum_surgery', 'Chirurgie parodontale'],
-
-            // Imagerie
-            ['x_ray', 'Radiographie'],
-            ['x_ray_intraoral', 'Radio intra-orale (Rétro-alvéolaire)'],
-            ['x_ray_panorama', 'Radio Panoramique'],
-            ['x_ray_cbct', 'Scanner dentaire (CBCT)'],
-
-            // Divers
-            ['emergency', 'Soins d\'urgence'],
-            ['pain_relief', 'Traitement sédatif (Soulagement douleur)'],
-            ['repair', 'Réparation de prothèse / restauration'],
-            ['maintenance', 'Maintenance et contrôle périodique']
-        ];
-
-        const insertTreatmentType = db.prepare(`
-            INSERT INTO treatment_types (name, description) 
-            VALUES (?, ?) 
-            ON CONFLICT(name) DO UPDATE SET description = excluded.description
-        `);
-
-        let insertedCount = 0;
-        for (const tt of treatmentTypes) {
-            const result = insertTreatmentType.run(...tt);
-            if (result.changes > 0) {
-                insertedCount++;
-            }
+        const invoiceItemCols = db.prepare("PRAGMA table_info(invoice_items)").all() as any[];
+        if (!invoiceItemCols.find(c => c.name === 'dental_treatment_id')) {
+            db.exec('ALTER TABLE invoice_items ADD COLUMN dental_treatment_id INTEGER REFERENCES dental_treatments(id) ON DELETE SET NULL');
+            console.log('Added dental_treatment_id column to invoice_items');
         }
+    } catch (e) {
+        console.error('Failed to add dental_treatment_id to invoice_items:', e);
+    }
 
-        console.log(`Treatment types seeded/updated successfully.`);
-    } catch (error) {
-        console.error('Error seeding treatment types:', error);
-        throw error;
+    // Ensure invoices table has invoice_type and global_description
+    try {
+        const invoiceCols = db.prepare("PRAGMA table_info(invoices)").all() as any[];
+        if (!invoiceCols.find(c => c.name === 'invoice_type')) {
+            db.exec("ALTER TABLE invoices ADD COLUMN invoice_type TEXT DEFAULT 'detailed' CHECK(invoice_type IN ('detailed', 'global'))");
+            console.log('Added invoice_type column to invoices');
+        }
+        if (!invoiceCols.find(c => c.name === 'global_description')) {
+            db.exec("ALTER TABLE invoices ADD COLUMN global_description TEXT");
+            console.log('Added global_description column to invoices');
+        }
+    } catch (e) {
+        console.error('Failed to update invoices table:', e);
     }
 }
+
+// seedTreatmentTypesOnly removed (Deprecated)
 
 export function getAllCDTCodes() {
     return db.prepare('SELECT * FROM cdt_codes ORDER BY category, code').all();
@@ -1425,8 +1360,7 @@ function seed_db() {
     }
     console.log('✅ Inventory items seeded');
 
-    // Seed treatment types and CDT codes
-    seedTreatmentTypesOnly();
+    // Seed CDT codes
     seedAlgerianCDTCodes();
 
     console.log('✅ Database initialized with essential data');
@@ -2027,6 +1961,7 @@ export function updateTreatment(id: number, treatmentData: any) {
 export function getTreatmentsByPatient(patientId: number) {
     return db.prepare(`
         SELECT 
+            ('general_' || id) as unique_id,
             id, 
             treatment_date, 
             tooth_number, 
@@ -2041,13 +1976,16 @@ export function getTreatmentsByPatient(patientId: number) {
             '' as cdt_code,
             0 as is_custom,
             '' as notes,
-            cost as fee
+            cost as fee,
+            id as treatment_id,
+            NULL as dental_treatment_id
         FROM treatments 
         WHERE patient_id = ? 
         
         UNION ALL
         
         SELECT 
+            ('dental_' || id) as unique_id,
             id, 
             COALESCE(date_performed, created_at) as treatment_date, 
             tooth_number, 
@@ -2062,7 +2000,9 @@ export function getTreatmentsByPatient(patientId: number) {
             cdt_code,
             is_custom,
             notes,
-            fee
+            fee,
+            NULL as treatment_id,
+            id as dental_treatment_id
         FROM dental_treatments 
         WHERE patient_id = ?
         
@@ -2076,6 +2016,16 @@ export function getTreatmentById(id: number) {
 
 // --- Payments ---
 export function createPayment(paymentData: any) {
+    // Normalize payment method for DB constraint compatibility
+    if (paymentData.payment_method) {
+        paymentData.payment_method = normalizePaymentMethod(paymentData.payment_method);
+    }
+
+    // Normalize date for consistency
+    if (paymentData.payment_date) {
+        paymentData.payment_date = normalizeDate(paymentData.payment_date);
+    }
+
     const keys = Object.keys(paymentData);
     const columns = keys.join(', ');
     const placeholders = keys.map(() => '?').join(', ');
@@ -2259,35 +2209,110 @@ export function getNextInvoiceNumber() {
     return `FAC-${year}-${nextNum.toString().padStart(4, '0')}`;
 }
 
-export function createInvoice(patientId: number, items: any[]) {
+export function createInvoice(patientId: number, items: any[], type: 'detailed' | 'global' = 'detailed', globalDescription?: string) {
     const txn = db.transaction(() => {
         const invoiceNumber = getNextInvoiceNumber();
         const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
 
         const invoiceId = db.prepare(`
-            INSERT INTO invoices (invoice_number, patient_id, total_amount)
-            VALUES (?, ?, ?)
-        `).run(invoiceNumber, patientId, totalAmount).lastInsertRowid as number;
+            INSERT INTO invoices (invoice_number, patient_id, total_amount, status, invoice_type, global_description)
+            VALUES (?, ?, ?, 'unpaid', ?, ?)
+        `).run(invoiceNumber, patientId, totalAmount, type, globalDescription || null).lastInsertRowid as number;
 
         const insertItem = db.prepare(`
-            INSERT INTO invoice_items (invoice_id, treatment_id, description, amount)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO invoice_items (invoice_id, treatment_id, dental_treatment_id, description, amount)
+            VALUES (?, ?, ?, ?, ?)
         `);
 
         for (const item of items) {
-            insertItem.run(invoiceId, item.treatment_id || null, item.description, item.amount);
-
-            // If treatment is linked, we could potentially mark it as invoiced
-            // but for now we follow the schema
+            insertItem.run(invoiceId, item.treatment_id || null, item.dental_treatment_id || null, item.description, item.amount);
         }
         return invoiceId;
     });
     return txn();
 }
 
-export function getInvoicesByPatient(patientId: number) {
-    return db.prepare('SELECT * FROM invoices WHERE patient_id = ? ORDER BY invoice_date DESC').all(patientId);
+export function getBillingSummary(patientId: number) {
+    const totalCompleted = db.prepare(`
+        SELECT 
+            (SELECT COUNT(*) FROM dental_treatments WHERE patient_id = ? AND status = 'completed' AND fee > 0) +
+            (SELECT COUNT(*) FROM treatments WHERE patient_id = ? AND status = 'completed' AND cost > 0) as count
+    `).get(patientId, patientId) as { count: number };
+
+    const uninvoiced = db.prepare(`
+        SELECT 
+            (SELECT COUNT(*) FROM dental_treatments 
+             WHERE patient_id = ? AND status = 'completed' AND fee > 0 
+             AND id NOT IN (SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)) +
+            (SELECT COUNT(*) FROM treatments 
+             WHERE patient_id = ? AND status = 'completed' AND cost > 0 
+             AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)) as count
+    `).get(patientId, patientId) as { count: number };
+
+    const totalActs = totalCompleted?.count || 0;
+    const uninvoicedActs = uninvoiced?.count || 0;
+
+    return {
+        totalActs,
+        uninvoicedActs,
+        invoicedActs: totalActs - uninvoicedActs
+    };
 }
+
+export function getUninvoicedTreatments(patientId: number) {
+    // Select both general treatments AND dental_treatments that are completed and uninvoiced
+    // But prioritize CDTs (dental_treatments) as requested
+    return db.prepare(`
+        SELECT 
+            ('dental_' || id) as unique_id,
+            id, 
+            COALESCE(date_performed, created_at) as treatment_date, 
+            (cdt_code || ' - ' || treatment_type) as description, 
+            fee as amount, 
+            tooth_number, 
+            'dental' as source,
+            id as dental_treatment_id,
+            NULL as treatment_id
+        FROM dental_treatments
+        WHERE patient_id = ?
+        AND status = 'completed'
+        AND fee > 0
+        AND id NOT IN (SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)
+
+        UNION ALL
+
+        SELECT 
+            ('general_' || id) as unique_id,
+            id, 
+            treatment_date, 
+            description, 
+            cost as amount, 
+            tooth_number, 
+            'general' as source,
+            NULL as dental_treatment_id,
+            id as treatment_id
+        FROM treatments
+        WHERE patient_id = ? 
+        AND status = 'completed'
+        AND cost > 0
+        AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)
+        
+        ORDER BY treatment_date DESC
+    `).all(patientId, patientId);
+}
+
+export function getInvoicesByPatient(patientId: number) {
+    const invoices = db.prepare(`
+        SELECT id, invoice_number, invoice_date, total_amount, status 
+        FROM invoices 
+        WHERE patient_id = ? 
+        ORDER BY invoice_date DESC
+    `).all(patientId);
+
+    return invoices;
+}
+
+
 
 export function getAllInvoices(filters?: { search?: string; startDate?: string; endDate?: string }) {
     let sql = `
@@ -2343,7 +2368,13 @@ export function markInvoiceAsPaid(invoiceId: number, paymentData: { amount: numb
         db.prepare(`
             INSERT INTO payments (patient_id, invoice_id, amount, payment_method, recorded_by)
             VALUES (?, ?, ?, ?, ?)
-        `).run(invoice.patient_id, invoiceId, paymentData.amount, paymentData.payment_method, paymentData.recorded_by);
+        `).run(
+            invoice.patient_id,
+            invoiceId,
+            paymentData.amount,
+            normalizePaymentMethod(paymentData.payment_method),
+            paymentData.recorded_by
+        );
     });
     txn();
 }
@@ -2418,35 +2449,7 @@ export function createSupplier(supplierData: any) {
     return db.prepare(`INSERT INTO suppliers (${columns}) VALUES (${placeholders})`).run(...Object.values(supplierData)).lastInsertRowid;
 }
 
-// --- Treatment Types ---
-export function getAllTreatmentTypes() {
-    return db.prepare('SELECT * FROM treatment_types WHERE is_active = 1 ORDER BY name ASC').all();
-}
-
-export function getTreatmentTypeById(id: number) {
-    return db.prepare('SELECT * FROM treatment_types WHERE id = ?').get(id);
-}
-
-export function createTreatmentType(treatmentTypeData: any) {
-    const keys = Object.keys(treatmentTypeData);
-    const columns = keys.join(', ');
-    const placeholders = keys.map(() => '?').join(', ');
-    const stmt = db.prepare(`INSERT INTO treatment_types (${columns}) VALUES (${placeholders})`);
-    return stmt.run(...Object.values(treatmentTypeData)).lastInsertRowid;
-}
-
-export function updateTreatmentType(id: number, treatmentTypeData: any) {
-    const keys = Object.keys(treatmentTypeData);
-    const setClause = keys.map(key => `${key} = ?`).join(', ');
-    const values = [...Object.values(treatmentTypeData), id];
-
-    const stmt = db.prepare(`UPDATE treatment_types SET ${setClause} WHERE id = ?`);
-    return stmt.run(...values);
-}
-
-export function deleteTreatmentType(id: number) {
-    return db.prepare('UPDATE treatment_types SET is_active = 0 WHERE id = ?').run(id);
-}
+// Treatment Type functions removed (Deprecated)
 
 // --- Settings ---
 export function getSetting(key: string, defaultValue?: string) {

@@ -1572,7 +1572,7 @@
     }
 
     .modal-header {
-        padding: 1.5rem;
+        padding: 0.75rem 1.25rem;
         border-bottom: 1px solid #e5e7eb;
         display: flex;
         justify-content: space-between;
@@ -1587,8 +1587,8 @@
     .modal-body {
         display: grid;
         grid-template-columns: 1.2fr 1fr;
-        gap: 2rem;
-        padding: 1.5rem;
+        gap: 1rem;
+        padding: 1rem;
         overflow: hidden;
         flex: 1;
         min-height: 0; /* Important for flex scroll */
@@ -1629,7 +1629,7 @@
     }
 
     .selected-procedure {
-        padding: 1rem;
+        padding: 0.75rem;
         background: #eff6ff;
         border: 2px solid #3b82f6;
         border-radius: 0.5rem;
@@ -1677,7 +1677,7 @@
     .status-buttons {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
+        gap: 0.4rem;
     }
 
     .status-btn {
@@ -1685,13 +1685,14 @@
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
-        padding: 1rem;
+        padding: 0.5rem;
         border: 2px solid #d1d5db;
         border-radius: 0.5rem;
         background: white;
         cursor: pointer;
         transition: all 0.2s;
         font-weight: 500;
+        font-size: 0.8rem;
     }
 
     .status-btn:hover {
@@ -1715,18 +1716,19 @@
         display: flex;
         justify-content: flex-end;
         gap: 1rem;
-        padding: 1.5rem;
+        padding: 1rem 1.5rem;
         border-top: 2px solid #e5e7eb;
     }
 
     .btn-secondary {
-        padding: 0.75rem 1.5rem;
+        padding: 0.5rem 1rem;
         border: 2px solid #d1d5db;
         border-radius: 0.5rem;
         background: white;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s;
+        font-size: 0.9rem;
     }
 
     .btn-secondary:hover {
@@ -1734,13 +1736,13 @@
     }
 
     .btn-primary {
-        padding: 0.75rem 2rem;
+        padding: 0.5rem 1.5rem;
         border: none;
         border-radius: 0.5rem;
         background: #3b82f6;
         color: white;
         font-weight: 600;
-        font-size: 1.125rem;
+        font-size: 1rem;
         cursor: pointer;
         transition: all 0.2s;
     }
