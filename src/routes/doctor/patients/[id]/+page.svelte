@@ -1083,7 +1083,7 @@
                                         class="px-6 py-4 whitespace-nowrap text-inline-end"
                                     >
                                         <a
-                                            href="/print/prescription/{prescription.id}"
+                                            href="/api/print?template=Prescription&id={prescription.id}"
                                             target="_blank"
                                             class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-bold hover:bg-indigo-100 transition-colors"
                                         >
@@ -1536,7 +1536,7 @@
                                             class="px-6 py-4 whitespace-nowrap text-inline-end text-sm font-bold"
                                         >
                                             <a
-                                                href="/print/invoice/{invoice.id}"
+                                                href="/api/print?template=Invoice&id={invoice.id}"
                                                 target="_blank"
                                                 class="text-indigo-600 hover:underline margin-inline-end-4"
                                                 >{$t(

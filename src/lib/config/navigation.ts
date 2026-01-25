@@ -22,6 +22,7 @@ export const NAVIGATION = {
         { label: "admin.nav.inventory", href: "/inventory", icon: "inventory" },
         { label: "spending.menu", href: "/admin/spending", icon: "spending" },
         { label: "spending.categories_menu", href: "/admin/spending/categories", icon: "categories" },
+        { label: "Print Templates", href: "/admin/templates", icon: "settings" },
 
     ]
 };

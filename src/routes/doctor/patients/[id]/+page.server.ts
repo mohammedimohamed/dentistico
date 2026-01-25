@@ -281,7 +281,7 @@ export const actions: Actions = {
         const patient = getPatientByIdFull(patientId);
         if (!patient) return fail(404, { error: 'Patient not found' });
 
-        const currentChart = JSON.parse(patient.teeth_treatments || '{}');
+        const currentChart = JSON.parse((patient as any).teeth_treatments || '{}');
 
         currentChart[`tooth_${toothNumber}`] = {
             treatments: treatmentsStr ? treatmentsStr.split(',').map(t => t.trim()) : [],
@@ -362,7 +362,7 @@ export const actions: Actions = {
                 // Remove file from disk
                 // attachment.file_path is like /uploads/attachments/filename
                 // detailed path is static + file_path
-                const fullPath = path.resolve('static' + attachment.file_path);
+                const fullPath = path.resolve('static' + (attachment as any).file_path);
                 if (fs.existsSync(fullPath)) {
                     try {
                         fs.unlinkSync(fullPath);
