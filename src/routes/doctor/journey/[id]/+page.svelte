@@ -10,6 +10,8 @@
     import SmartDateTimePicker from "$lib/components/SmartDateTimePicker.svelte";
 
     import ResponsiveShield from "$lib/components/common/ResponsiveShield.svelte";
+    import Calendar from "$lib/components/Calendar.svelte";
+    import { page } from "$app/stores";
 
     let { data } = $props();
 
@@ -386,6 +388,62 @@
     });
 
     const patientAge = $derived(calculateAge(data.patient.date_of_birth));
+
+    // Calendar & Auto-Start Logic
+    let calendarEvents = $state([]);
+
+    async function loadCalendarEvents() {
+        try {
+            const res = await fetch(
+                `/api/appointments?doctorId=${data.appointment.doctor_id}`,
+            );
+            if (res.ok) {
+                calendarEvents = await res.json();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    $effect(() => {
+        if (showRescheduleModal) {
+            loadCalendarEvents();
+        }
+    });
+
+    function handleDateClick(info: any) {
+        // info.dateStr is YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss
+        const d = new Date(info.dateStr);
+        rescheduleDate = d.toISOString().split("T")[0];
+        if (info.dateStr.includes("T")) {
+            rescheduleTime = info.dateStr.split("T")[1].substring(0, 5);
+        } else {
+            // Default to 09:00 if day clicked
+            rescheduleTime = "09:00";
+        }
+    }
+
+    async function autoStartVisit() {
+        if (
+            !isSessionActive &&
+            data.appointment.status !== "completed" &&
+            data.appointment.status !== "in_progress"
+        ) {
+            try {
+                const formData = new FormData();
+                const response = await fetch("?/startVisit", {
+                    method: "POST",
+                    body: formData,
+                });
+                if (response.ok) {
+                    await invalidateAll();
+                    localSessionStarted = true;
+                }
+            } catch (e) {
+                console.error("Failed to auto-start session:", e);
+            }
+        }
+    }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -695,7 +753,10 @@
                                 <button
                                     class="pos-btn-compact"
                                     style="--color: #10b981"
-                                    onclick={() => (isPaymentModalOpen = true)}
+                                    onclick={async () => {
+                                        await autoStartVisit();
+                                        isPaymentModalOpen = true;
+                                    }}
                                 >
                                     <span class="icon">💳</span>
                                     <span class="label"
@@ -705,8 +766,10 @@
                                 <button
                                     class="pos-btn-compact"
                                     style="--color: #8b5cf6"
-                                    onclick={() =>
-                                        (showPrescriptionModal = true)}
+                                    onclick={async () => {
+                                        await autoStartVisit();
+                                        showPrescriptionModal = true;
+                                    }}
                                 >
                                     <span class="icon">📜</span>
                                     <span class="label"
@@ -716,7 +779,10 @@
                                 <button
                                     class="pos-btn-compact"
                                     style="--color: #3b82f6"
-                                    onclick={() => (isInvoiceModalOpen = true)}
+                                    onclick={async () => {
+                                        await autoStartVisit();
+                                        isInvoiceModalOpen = true;
+                                    }}
                                 >
                                     <span class="icon">📑</span>
                                     <span class="label"
@@ -1365,7 +1431,7 @@
             transition:fade
         >
             <div
-                class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden border-4 border-white"
+                class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden border-4 border-white"
                 in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
             >
                 <form
@@ -1415,6 +1481,17 @@
                                 </div>
                             </div>
                         {/if}
+
+                        <div
+                            class="h-[400px] mb-4 border rounded-xl overflow-hidden"
+                        >
+                            <Calendar
+                                events={calendarEvents}
+                                initialView="dayGridMonth"
+                                editable={false}
+                                onDateClick={handleDateClick}
+                            />
+                        </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="flex flex-col gap-2">

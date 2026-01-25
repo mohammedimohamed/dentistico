@@ -653,12 +653,27 @@ export function init_db() {
         // Column might already exist
     }
 
+
     try {
         db.exec('ALTER TABLE appointments ADD COLUMN actual_start_time TEXT');
         db.exec('ALTER TABLE appointments ADD COLUMN actual_end_time TEXT');
         console.log('Added actual_start/end_time columns to appointments table');
     } catch (e) {
         // Columns might already exist
+    }
+
+    try {
+        db.exec('ALTER TABLE dental_treatments ADD COLUMN appointment_id INTEGER REFERENCES appointments(id) ON DELETE SET NULL');
+        console.log('Added appointment_id column to dental_treatments table');
+    } catch (e) {
+        // Column might already exist
+    }
+
+    try {
+        db.exec('ALTER TABLE appointments ADD COLUMN created_from_dental_treatment_id INTEGER');
+        console.log('Added created_from_dental_treatment_id column to appointments table');
+    } catch (e) {
+        // Column might already exist
     }
 
 

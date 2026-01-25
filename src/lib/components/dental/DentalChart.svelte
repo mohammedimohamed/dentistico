@@ -198,7 +198,7 @@
                 : "/api/dental/treatments";
             const method = editingTreatmentId ? "PUT" : "POST";
 
-            await fetch(url, {
+            const res = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -217,6 +217,13 @@
                     is_custom: newTreatment.isCustom,
                 }),
             });
+
+            if (res.ok) {
+                const result = await res.json();
+                if (result.warning) {
+                    alert(result.warning);
+                }
+            }
 
             // Reset
             newTreatment = {
@@ -970,6 +977,62 @@
 
             <!-- Two-Column Layout -->
             <div class="modal-body">
+                <!-- History Section -->
+                {#if selectedTooth && getTreatmentsForTooth(selectedTooth).length > 0}
+                    <div style="grid-column: 1 / -1; margin-bottom: 1rem;">
+                        <div
+                            class="bg-blue-50 border border-blue-100 rounded-lg p-3"
+                        >
+                            <h4
+                                class="text-xs font-bold text-blue-800 uppercase tracking-widest mb-2 flex items-center gap-2"
+                            >
+                                <span>🕒</span> Historique de la dent #{selectedTooth}
+                            </h4>
+                            <div class="flex gap-2 overflow-x-auto pb-1">
+                                {#each getTreatmentsForTooth(selectedTooth) as t}
+                                    <div
+                                        class="flex-shrink-0 bg-white border border-blue-200 rounded px-2 py-1.5 min-w-[140px]"
+                                    >
+                                        <div
+                                            class="flex justify-between items-start"
+                                        >
+                                            <span
+                                                class="text-[10px] font-bold text-gray-700 truncate max-w-[110px]"
+                                                title={t.treatment_type}
+                                                >{t.treatment_type}</span
+                                            >
+                                            <span
+                                                class="w-2 h-2 rounded-full"
+                                                style="background-color: {t.color}"
+                                            ></span>
+                                        </div>
+                                        <div
+                                            class="flex justify-between items-end mt-1"
+                                        >
+                                            <span
+                                                class="text-[9px] text-gray-400"
+                                                >{new Date(
+                                                    t.treatment_date ||
+                                                        t.created_at,
+                                                ).toLocaleDateString()}</span
+                                            >
+                                            <span
+                                                class="text-[9px] font-bold uppercase {t.status ===
+                                                'completed'
+                                                    ? 'text-green-600'
+                                                    : t.status === 'planned'
+                                                      ? 'text-blue-600'
+                                                      : 'text-gray-400'}"
+                                                >{t.status}</span
+                                            >
+                                        </div>
+                                    </div>
+                                {/each}
+                            </div>
+                        </div>
+                    </div>
+                {/if}
+
                 <!-- LEFT COLUMN: Procedure Selection -->
                 <div class="left-column">
                     <div class="mb-4">

@@ -25,7 +25,8 @@ import {
     getInvoicesByPatient,
     getUninvoicedTreatments,
     getInvoiceById,
-    getBillingSummary
+    getBillingSummary,
+    startDailySession
 } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -89,6 +90,13 @@ export const actions: Actions = {
         autoClosePreviousSessions(locals.user.id, apptId);
 
         const now = new Date().toISOString();
+
+        // Auto-start daily session
+        const today = now.split('T')[0];
+        if (!getDailySession(locals.user.id, today)) {
+            startDailySession(locals.user.id, today, now);
+        }
+
         updateAppointmentVisit(apptId, {
             actual_start_time: now,
             status: 'in_progress'
@@ -121,6 +129,13 @@ export const actions: Actions = {
         if (appointment.status !== 'in_progress' && appointment.status !== 'completed') {
             autoClosePreviousSessions(locals.user.id, apptId);
             const now = new Date().toISOString();
+
+            // Auto-start daily session
+            const today = now.split('T')[0];
+            if (!getDailySession(locals.user.id, today)) {
+                startDailySession(locals.user.id, today, now);
+            }
+
             updateAppointmentVisit(apptId, {
                 actual_start_time: now,
                 status: 'in_progress'
@@ -183,6 +198,23 @@ export const actions: Actions = {
             return fail(400, { error: 'Invalid amount' });
         }
 
+        // Auto-start session
+        if (appointment.status !== 'in_progress' && appointment.status !== 'completed') {
+            autoClosePreviousSessions(locals.user.id, apptId);
+            const now = new Date().toISOString();
+
+            // Auto-start daily session
+            const today = now.split('T')[0];
+            if (!getDailySession(locals.user.id, today)) {
+                startDailySession(locals.user.id, today, now);
+            }
+
+            updateAppointmentVisit(apptId, {
+                actual_start_time: now,
+                status: 'in_progress'
+            });
+        }
+
         try {
             createPayment({
                 patient_id: appointment.patient_id,
@@ -212,6 +244,24 @@ export const actions: Actions = {
 
         if (!patientId || !itemsJson) {
             return fail(400, { error: 'Missing required fields' });
+        }
+
+        const apptId = Number(params.id);
+        const appointment = getAppointmentById(apptId) as any;
+        if (appointment && appointment.status !== 'in_progress' && appointment.status !== 'completed') {
+            autoClosePreviousSessions(locals.user.id, apptId);
+            const now = new Date().toISOString();
+
+            // Auto-start daily session
+            const today = now.split('T')[0];
+            if (!getDailySession(locals.user.id, today)) {
+                startDailySession(locals.user.id, today, now);
+            }
+
+            updateAppointmentVisit(apptId, {
+                actual_start_time: now,
+                status: 'in_progress'
+            });
         }
 
         try {
@@ -250,7 +300,7 @@ export const actions: Actions = {
             return fail(500, { error: 'Failed to save template' });
         }
     },
-    createInvoice: async ({ request, locals }) => {
+    createInvoice: async ({ request, locals, params }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
@@ -263,6 +313,24 @@ export const actions: Actions = {
 
         if (!patientId || !itemsJson) {
             return fail(400, { error: 'Missing required fields' });
+        }
+
+        const apptId = Number(params.id);
+        const appointment = getAppointmentById(apptId) as any;
+        if (appointment && appointment.status !== 'in_progress' && appointment.status !== 'completed') {
+            autoClosePreviousSessions(locals.user.id, apptId);
+            const now = new Date().toISOString();
+
+            // Auto-start daily session
+            const today = now.split('T')[0];
+            if (!getDailySession(locals.user.id, today)) {
+                startDailySession(locals.user.id, today, now);
+            }
+
+            updateAppointmentVisit(apptId, {
+                actual_start_time: now,
+                status: 'in_progress'
+            });
         }
 
         try {
