@@ -394,9 +394,7 @@
 
     async function loadCalendarEvents() {
         try {
-            const res = await fetch(
-                `/api/appointments?doctorId=${data.appointment.doctor_id}`,
-            );
+            const res = await fetch("/api/appointments?doctorId=all");
             if (res.ok) {
                 calendarEvents = await res.json();
             }
@@ -1431,7 +1429,7 @@
             transition:fade
         >
             <div
-                class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden border-4 border-white"
+                class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-6xl overflow-hidden border-4 border-white"
                 in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
             >
                 <form
@@ -1460,88 +1458,109 @@
                         >
                     </div>
 
-                    <div class="p-8 space-y-6">
-                        {#if targetStandard && targetStandard.gap_days_min > 0}
-                            <div
-                                class="bg-indigo-50 border-2 border-indigo-100 p-5 rounded-2xl flex items-start gap-4"
-                            >
-                                <span class="text-2xl">ℹ️</span>
-                                <div>
-                                    <p
-                                        class="font-black text-indigo-900 text-xs uppercase tracking-widest mb-1"
-                                    >
-                                        Standard Clinique
-                                    </p>
-                                    <p
-                                        class="font-bold text-indigo-600 text-sm"
-                                    >
-                                        Délai médical conseillé : {targetStandard.gap_days_min}
-                                        jours.
-                                    </p>
+                    <div class="p-8">
+                        <div
+                            class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start"
+                        >
+                            <!-- Left Column: Intelligence & Calendar (7/12) -->
+                            <div class="lg:col-span-7 space-y-6">
+                                <div
+                                    class="h-[600px] border-2 border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white"
+                                >
+                                    <Calendar
+                                        events={calendarEvents}
+                                        initialView="dayGridMonth"
+                                        editable={false}
+                                        onDateClick={handleDateClick}
+                                    />
                                 </div>
                             </div>
-                        {/if}
 
-                        <div
-                            class="h-[400px] mb-4 border rounded-xl overflow-hidden"
-                        >
-                            <Calendar
-                                events={calendarEvents}
-                                initialView="dayGridMonth"
-                                editable={false}
-                                onDateClick={handleDateClick}
-                            />
-                        </div>
+                            <!-- Right Column: Form (5/12) -->
+                            <div class="lg:col-span-5 space-y-8 py-4">
+                                {#if targetStandard && targetStandard.gap_days_min > 0}
+                                    <div
+                                        class="bg-indigo-50 border-2 border-indigo-100 p-6 rounded-[2rem] flex items-start gap-4 shadow-sm"
+                                        in:slide
+                                    >
+                                        <div
+                                            class="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center shrink-0"
+                                        >
+                                            <span class="text-xl">ℹ️</span>
+                                        </div>
+                                        <div>
+                                            <p
+                                                class="font-black text-indigo-900 text-[10px] uppercase tracking-widest mb-1"
+                                            >
+                                                Standard Clinique
+                                            </p>
+                                            <p
+                                                class="font-bold text-indigo-600 text-sm leading-snug"
+                                            >
+                                                Délai médical conseillé : <span
+                                                    class="text-indigo-900"
+                                                    >{targetStandard.gap_days_min}</span
+                                                >
+                                                jours.
+                                            </p>
+                                        </div>
+                                    </div>
+                                {/if}
 
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="flex flex-col gap-2">
-                                <label
-                                    class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
-                                    for="reschedule_date"
-                                >
-                                    Date
-                                </label>
-                                <input
-                                    id="reschedule_date"
-                                    type="date"
-                                    bind:value={rescheduleDate}
-                                    min={recommendedRescheduleDate}
-                                    class="p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 font-bold text-slate-700 focus:border-indigo-500 focus:bg-white outline-none transition-all"
-                                    required
-                                />
+                                <div class="space-y-6">
+                                    <div class="flex flex-col gap-3">
+                                        <label
+                                            class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                            for="reschedule_date"
+                                        >
+                                            Date du rendez-vous
+                                        </label>
+                                        <input
+                                            id="reschedule_date"
+                                            type="date"
+                                            bind:value={rescheduleDate}
+                                            min={recommendedRescheduleDate}
+                                            class="p-5 bg-slate-50 rounded-2xl border-2 border-slate-100 font-black text-slate-700 focus:border-indigo-500 focus:bg-white outline-none transition-all shadow-sm text-lg"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div class="flex flex-col gap-3">
+                                        <label
+                                            class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                            for="reschedule_time"
+                                        >
+                                            Heure de début
+                                        </label>
+                                        <input
+                                            id="reschedule_time"
+                                            type="time"
+                                            bind:value={rescheduleTime}
+                                            class="p-5 bg-slate-50 rounded-2xl border-2 border-slate-100 font-black text-slate-700 focus:border-indigo-500 focus:bg-white outline-none transition-all shadow-sm text-lg"
+                                            required
+                                        />
+                                    </div>
+
+                                    <!-- Hidden concatenated input for server -->
+                                    <input
+                                        type="hidden"
+                                        name="start_time"
+                                        value="{rescheduleDate}T{rescheduleTime ||
+                                            '09:00'}"
+                                    />
+                                </div>
+
+                                <div class="pt-4">
+                                    <button
+                                        type="submit"
+                                        class="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-xl hover:bg-indigo-700 hover:scale-[1.02] transition-all shadow-xl shadow-indigo-100 active:scale-95 flex items-center justify-center gap-3"
+                                    >
+                                        <span>🗓️</span>
+                                        {$t("common.confirm")}
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex flex-col gap-2">
-                                <label
-                                    class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
-                                    for="reschedule_time"
-                                >
-                                    Heure
-                                </label>
-                                <input
-                                    id="reschedule_time"
-                                    type="time"
-                                    bind:value={rescheduleTime}
-                                    class="p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 font-bold text-slate-700 focus:border-indigo-500 focus:bg-white outline-none transition-all"
-                                    required
-                                />
-                            </div>
                         </div>
-
-                        <!-- Hidden concatenated input for server -->
-                        <input
-                            type="hidden"
-                            name="start_time"
-                            value="{rescheduleDate}T{rescheduleTime || '09:00'}"
-                        />
-                    </div>
-
-                    <div class="p-8 bg-slate-50">
-                        <button
-                            type="submit"
-                            class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 hover:scale-[1.02] transition-all shadow-lg shadow-indigo-200"
-                        >
-                            {$t("common.confirm")}
-                        </button>
                     </div>
                 </form>
             </div>

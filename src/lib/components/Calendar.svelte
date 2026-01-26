@@ -37,14 +37,17 @@
     let calendar: Calendar;
 
     $effect(() => {
-        if (calendar) {
-            // Remove existing event sources
-            const sources = calendar.getEventSources();
-            for (const source of sources) {
+        if (calendar && events) {
+            // Efficiently update events by replacing the data source
+            // This is better for memory-based event arrays
+            const source = calendar.getEventSourceById("memory-source");
+            if (source) {
                 source.remove();
             }
-            // Add new events
-            calendar.addEventSource(events);
+            calendar.addEventSource({
+                id: "memory-source",
+                events: events,
+            });
         }
     });
 
@@ -104,7 +107,6 @@
                 center: "title",
                 right: "dayGridMonth,timeGridWeek,timeGridDay",
             },
-            events,
             editable,
             eventClick: onEventClick,
             eventDrop: onEventDrop,

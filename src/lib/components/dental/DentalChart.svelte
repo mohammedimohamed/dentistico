@@ -946,22 +946,21 @@
             aria-modal="true"
             tabindex="-1"
         >
-            <!-- Header -->
             <div class="modal-header">
-                <div>
-                    <h3 class="text-2xl font-bold">
+                <div class="flex items-center gap-4">
+                    <h3 class="text-xl font-bold whitespace-nowrap">
                         {editingTreatmentId
                             ? "Modifier le traitement"
                             : "Ajouter un traitement"}
                     </h3>
-                    <div class="flex flex-col mt-1">
+                    <div class="h-6 w-px bg-slate-200"></div>
+                    <div class="flex items-baseline gap-2">
                         <span
-                            class="text-3xl font-black text-slate-800 tracking-tight"
+                            class="text-2xl font-black text-slate-800 tracking-tight"
+                            >#{selectedTooth}</span
                         >
-                            #{selectedTooth}
-                        </span>
                         <span
-                            class="text-sm font-medium text-slate-500 uppercase tracking-wide"
+                            class="text-xs font-bold text-slate-500 uppercase tracking-widest truncate max-w-[400px]"
                         >
                             {getToothName(selectedTooth || "")}
                         </span>
@@ -1639,7 +1638,7 @@
         border-bottom: 1px solid #e5e7eb;
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
         background: rgba(255, 255, 255, 0.5);
         backdrop-filter: blur(10px);
         position: sticky;

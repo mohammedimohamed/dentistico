@@ -63,7 +63,10 @@
         "prochain_rdv": "Prochain RDV",
         "note_clinique": "Note Clinique",
         "completed": "Visite terminée",
-        "waiting": "En attente"
+        "waiting": "En attente",
+        "reschedule": "Reprogrammer le RDV",
+        "appointment_management": "Gestion du RDV",
+        "planned_today": "Actes prévus aujourd'hui"
     },
     "inventory": {
         "title": "Inventaire & Stock",
