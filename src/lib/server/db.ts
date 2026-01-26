@@ -2608,6 +2608,85 @@ export function getAppointmentsForDate(doctorId: number, date: string) {
     `).all(doctorId, date);
 }
 
+export function getDoctorJourneyStats(doctorId: number, date: string) {
+    // 1. Fetch Today's Appointments for specific doctor with patient info
+    const todayAppts = db.prepare(`
+        SELECT 
+            a.status, 
+            a.patient_id,
+            a.start_time,
+            a.end_time,
+            a.created_from_dental_treatment_id,
+            (SELECT COUNT(*) FROM appointments WHERE patient_id = a.patient_id) as patient_total_appts,
+            p.registration_date
+        FROM appointments a
+        JOIN patients p ON a.patient_id = p.id
+        WHERE a.doctor_id = ? 
+            AND date(a.start_time) = date(?)
+    `).all(doctorId, date) as any[];
+
+    // 2. Fetch Clinic Settings
+    const clinicSettings = db.prepare(`
+        SELECT work_start_time, work_end_time 
+        FROM clinic_settings 
+        WHERE id = 1
+    `).get() as { work_start_time: string; work_end_time: string } | undefined;
+
+    const avgConsultation = getAppSetting('avg_consultation_duration') || '20';
+
+    // Process Statistics
+    const stats = {
+        volume: {
+            total: todayAppts.length,
+            completed: todayAppts.filter(a => a.status === 'completed').length,
+            remaining: todayAppts.filter(a => !['completed', 'cancelled', 'no_show'].includes(a.status)).length
+        },
+        statusBreakdown: {
+            confirmed: todayAppts.filter(a => a.status === 'confirmed').length,
+            scheduled: todayAppts.filter(a => a.status === 'scheduled').length,
+            inProgress: todayAppts.filter(a => a.status === 'in_progress').length,
+            cancelled: todayAppts.filter(a => ['cancelled', 'no_show'].includes(a.status)).length
+        },
+        patientTypes: {
+            new: todayAppts.filter(a => {
+                const regDate = a.registration_date ? a.registration_date.split(' ')[0] : '';
+                return regDate === date;
+            }).length,
+            returning: todayAppts.filter(a => a.patient_total_appts > 1).length,
+            planned: todayAppts.filter(a => a.created_from_dental_treatment_id !== null).length
+        },
+        timeManagement: {
+            workStart: clinicSettings?.work_start_time || '09:00',
+            workEnd: clinicSettings?.work_end_time || '18:00',
+            lunchBreakMinutes: 60, // Default 1 hour
+            availableMinutes: 0,
+            avgConsultationSetting: parseInt(avgConsultation),
+            recommendedTimePerVisit: 0,
+            paceStatus: 'comfortable' as 'comfortable' | 'tight' | 'overbooked'
+        }
+    };
+
+    // Calculate Time Management
+    const startParts = stats.timeManagement.workStart.split(':').map(Number);
+    const endParts = stats.timeManagement.workEnd.split(':').map(Number);
+    const totalMinutes = (endParts[0] * 60 + (endParts[1] || 0)) - (startParts[0] * 60 + (startParts[1] || 0)) - stats.timeManagement.lunchBreakMinutes;
+    
+    stats.timeManagement.availableMinutes = totalMinutes;
+
+    if (stats.volume.total > 0) {
+        stats.timeManagement.recommendedTimePerVisit = Math.floor(totalMinutes / stats.volume.total);
+        if (stats.timeManagement.recommendedTimePerVisit >= 30) {
+            stats.timeManagement.paceStatus = 'comfortable';
+        } else if (stats.timeManagement.recommendedTimePerVisit >= 20) {
+            stats.timeManagement.paceStatus = 'tight';
+        } else {
+            stats.timeManagement.paceStatus = 'overbooked';
+        }
+    }
+
+    return stats;
+}
+
 export function getPatientJourneySummary(patientId: number) {
     const patient = db.prepare(`
         SELECT p.*, parent.full_name as parent_name, parent.phone as parent_phone

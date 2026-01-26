@@ -3,13 +3,14 @@
     import { t } from "svelte-i18n";
     import { fade, slide, scale } from "svelte/transition";
     import { quintOut } from "svelte/easing";
+    import StatisticsPanel from "$lib/components/doctor/journey/StatisticsPanel.svelte";
 
     let { data } = $props();
 
     let activeTab = $state("today");
     let loading = $state(false);
 
-    const tabs = [
+    const tabs = $derived([
         { id: "today", label: "journey.today", date: data.dates.today },
         {
             id: "tomorrow",
@@ -21,9 +22,9 @@
             label: "journey.after_tomorrow",
             date: data.dates.dayAfter,
         },
-    ];
+    ]);
 
-    const currentAppointments = $derived(data.agenda[activeTab]);
+    const currentAppointments = $derived((data.agenda as any)[activeTab] || []);
     const isToday = $derived(activeTab === "today");
 </script>
 
@@ -91,6 +92,11 @@
         {/if}
     </div>
 
+    <!-- Statistics Dashboard -->
+    {#if isToday}
+        <StatisticsPanel stats={data.stats} />
+    {/if}
+
     <!-- Agenda Content -->
     <div class="agenda-container">
         <!-- Tabs -->
@@ -120,9 +126,7 @@
                 <div class="empty-state" in:fade>
                     <div class="empty-icon">📅</div>
                     <h3>
-                        {$t("dashboard.no_appointments", {
-                            tab: $t(tabs.find((t) => t.id === activeTab).label),
-                        })}
+                        {$t("dashboard.no_appointments")}
                     </h3>
                 </div>
             {:else}

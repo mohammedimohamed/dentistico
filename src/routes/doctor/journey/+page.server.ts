@@ -4,7 +4,8 @@ import {
     getAppointmentsForDate,
     getDailySession,
     startDailySession,
-    endDailySession
+    endDailySession,
+    getDoctorJourneyStats
 } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -21,8 +22,11 @@ export const load: PageServerLoad = async ({ locals }) => {
     const tomorrowAppts = getAppointmentsForDate(locals.user.id, tomorrowStr);
     const dayAfterAppts = getAppointmentsForDate(locals.user.id, dayAfterStr);
 
+    const stats = getDoctorJourneyStats(locals.user.id, todayStr);
+
     return {
         session,
+        stats,
         agenda: {
             today: todayAppts,
             tomorrow: tomorrowAppts,
