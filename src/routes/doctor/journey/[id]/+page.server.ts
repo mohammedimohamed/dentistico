@@ -26,7 +26,11 @@ import {
     getUninvoicedTreatments,
     getInvoiceById,
     getBillingSummary,
-    startDailySession
+    startDailySession,
+    getCancellationReasons,
+    getReasonRequirements,
+    cancelAppointmentWithReason,
+    postponeAppointmentWithReason
 } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -77,7 +81,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
             avgDuration: parseInt(avgDuration),
             currencySymbol: serverConfig.currencySymbol || 'DH',
             paymentMethods: serverConfig.paymentMethods || []
-        }
+        },
+        cancellationReasons: getCancellationReasons('cancel'),
+        postponeReasons: getCancellationReasons('postpone'),
+        reasonRequirements: getReasonRequirements()
     };
 };
 
@@ -150,30 +157,63 @@ export const actions: Actions = {
         const apptId = Number(params.id);
         const formData = await request.formData();
         const startTime = formData.get('start_time') as string;
+        const reasonId = formData.get('reason_id') ? Number(formData.get('reason_id')) : null;
+        const customReason = formData.get('custom_reason') as string | null;
 
         if (!startTime) return fail(400, { message: 'Start time is required' });
 
-        // Simple update for now, could include conflict check but user requested "override"
-        updateAppointmentVisit(apptId, {
-            status: 'scheduled'
-        });
-
-        // Update the main appointment record start_time
-        // I need a function for this in db.ts
-        const { updateAppointmentTime } = await import('$lib/server/db');
-        updateAppointmentTime(apptId, startTime.replace('T', ' '));
-
-        return { success: true };
+        try {
+            postponeAppointmentWithReason(
+                apptId,
+                startTime.replace('T', ' '),
+                reasonId,
+                customReason,
+                locals.user.id
+            );
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { message: 'Failed to reschedule appointment' });
+        }
     },
     updateStatus: async ({ request, params, locals }) => {
         if (!locals.user) return fail(401);
         const apptId = Number(params.id);
         const formData = await request.formData();
         const status = formData.get('status') as string;
+        const reasonId = formData.get('reason_id') ? Number(formData.get('reason_id')) : null;
+        const customReason = formData.get('custom_reason') as string | null;
 
-        updateAppointmentStatus(apptId, status);
+        if (status === 'cancelled') {
+            cancelAppointmentWithReason(apptId, reasonId, customReason, locals.user.id);
+            throw redirect(303, '/doctor/journey');
+        } else if (status === 'scheduled') {
+            // This is "Postpone" (putting back to scheduled)
+            // We reuse the update logic but keep the current time or just update status
+            // The postponeAppointmentWithReason can be used if we had a new time, 
+            // but here handleUpdateStatus just resets it to scheduled for today mostly.
+            // Let's add an updateAppointmentStatusWithReason in db.ts or just handle it here.
 
-        if (status === 'cancelled' || status === 'no_show') {
+            // Actually let's use a simpler approach: updateStatus usually just sets status.
+            // I'll update updateAppointmentStatus in db.ts to accept reasons or use the ones I created.
+
+            // Direct DB update for now to ensure reasons are saved
+            const { db } = await import('$lib/server/db');
+            db.prepare(`
+                UPDATE appointments 
+                SET status = ?, 
+                    cancellation_reason_id = ?, 
+                    cancellation_custom_reason = ?,
+                    cancellation_timestamp = datetime('now'),
+                    cancelled_by_user_id = ?,
+                    updated_at = datetime('now')
+                WHERE id = ?
+            `).run(status, reasonId, customReason, locals.user.id, apptId);
+        } else {
+            updateAppointmentStatus(apptId, status);
+        }
+
+        if (status === 'no_show') {
             throw redirect(303, '/doctor/journey');
         }
 

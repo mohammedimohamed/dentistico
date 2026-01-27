@@ -12,6 +12,7 @@
         "journey": "Le Voyage",
         "save": "Enregistrer",
         "cancel": "Annuler",
+        "abort": "Abandonner",
         "confirm": "Confirmer",
         "delete": "Supprimer",
         "edit": "Modifier",
@@ -66,7 +67,11 @@
         "waiting": "En attente",
         "reschedule": "Reprogrammer le RDV",
         "appointment_management": "Gestion du RDV",
-        "planned_today": "Actes prévus aujourd'hui"
+        "planned_today": "Actes prévus aujourd'hui",
+        "confirm_cancel_title": "Annuler la visite",
+        "confirm_cancel_message": "Êtes-vous sûr de vouloir annuler cette visite ?",
+        "confirm_postpone_title": "Remettre en attente",
+        "confirm_postpone_message": "Voulez-vous vraiment remettre ce rendez-vous en attente ?"
     },
     "inventory": {
         "title": "Inventaire & Stock",

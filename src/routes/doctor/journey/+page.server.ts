@@ -5,13 +5,15 @@ import {
     getDailySession,
     startDailySession,
     endDailySession,
-    getDoctorJourneyStats
+    getJourneyDashboardStats
 } from '$lib/server/db';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, depends }) => {
     if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
         throw redirect(303, '/login');
     }
+
+    depends('journey:stats');
 
     const todayStr = new Date().toISOString().split('T')[0];
     const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
@@ -22,7 +24,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     const tomorrowAppts = getAppointmentsForDate(locals.user.id, tomorrowStr);
     const dayAfterAppts = getAppointmentsForDate(locals.user.id, dayAfterStr);
 
-    const stats = getDoctorJourneyStats(locals.user.id, todayStr);
+    const stats = getJourneyDashboardStats(locals.user.id);
 
     return {
         session,

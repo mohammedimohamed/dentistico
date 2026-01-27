@@ -11,6 +11,7 @@
         "user": "مستخدم",
         "save": "حفظ",
         "cancel": "إلغاء",
+        "abort": "تراجع",
         "confirm": "تأكيد",
         "delete": "حذف",
         "edit": "تعديل",
@@ -38,6 +39,13 @@
         "export": "تصدير",
         "enabled": "مفعل",
         "disabled": "معطل"
+    },
+    "journey": {
+        "planned_today": "العمليات المخطط لها اليوم",
+        "confirm_cancel_title": "إلغاء الزيارة",
+        "confirm_cancel_message": "هل أنت متأكد من أنك تريد إلغاء هذه الزيارة؟",
+        "confirm_postpone_title": "تأجيل الموعد",
+        "confirm_postpone_message": "هل تريد حقاً إعادة هذا الموعد إلى قائمة الانتظار؟"
     },
     "inventory": {
         "title": "المخزون والمتجر",

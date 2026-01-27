@@ -2,6 +2,7 @@
     import { enhance } from "$app/forms";
     import { invalidateAll, beforeNavigate } from "$app/navigation";
     import { t } from "svelte-i18n";
+    import { get } from "svelte/store";
     import { onMount } from "svelte";
     import { fade, slide, scale } from "svelte/transition";
     import DentalChart from "$lib/components/dental/DentalChart.svelte";
@@ -12,8 +13,9 @@
     import ResponsiveShield from "$lib/components/common/ResponsiveShield.svelte";
     import Calendar from "$lib/components/Calendar.svelte";
     import { page } from "$app/stores";
+    import ReasonSelector from "$lib/components/ReasonSelector.svelte";
 
-    let { data } = $props();
+    let { data } = $props<{ data: any }>();
 
     let chart: any = $state();
     let showNotesModal = $state(false);
@@ -21,12 +23,51 @@
     let noteImportance = $state("low");
 
     let showRescheduleModal = $state(false);
+
+    let showConfirmModal = $state(false);
+    let confirmModalConfig = $state({
+        title: "",
+        message: "",
+        confirmText: "",
+        cancelText: "",
+        onConfirm: () => {},
+        confirmDisabled: false,
+        statusType: "" as "cancel" | "postpone" | "",
+    });
+
+    let selectedReasonId = $state<number | null>(null);
+    let customReasonText = $state("");
+    let statusActionType = $state<"cancel" | "postpone">("cancel");
+
     let rescheduleDate = $state("");
     let rescheduleTime = $state("");
 
     let isPaymentModalOpen = $state(false);
     let showPrescriptionModal = $state(false);
     let errorMessage = $state("");
+
+    const isReasonValid = $derived.by(() => {
+        if (!showConfirmModal || !confirmModalConfig.statusType) return true;
+        const type = confirmModalConfig.statusType;
+        if (!type) return true;
+
+        const isRequired =
+            type === "cancel"
+                ? data.reasonRequirements?.cancelRequired
+                : data.reasonRequirements?.postponeRequired;
+
+        if (!isRequired) return true;
+        if (selectedReasonId === null) return false;
+
+        const reasons =
+            type === "cancel" ? data.cancellationReasons : data.postponeReasons;
+        const isCustom =
+            (reasons as any[]).find((r: any) => r.id === selectedReasonId)
+                ?.reason_text === "Custom/Other";
+        if (isCustom && !customReasonText.trim()) return false;
+
+        return true;
+    });
 
     // Prescription State
     let currentPrescriptionItems = $state<any[]>([]);
@@ -132,6 +173,18 @@
 
     function printPrescription(id: number) {
         window.open(`/api/print?template=Prescription&id=${id}`, "_blank");
+    }
+
+    function loadPrescription(id: number) {
+        const p = (data.prescriptions as any[]).find((p: any) => p.id === id);
+        if (p) {
+            currentPrescriptionItems = p.items.map((item: any) => ({
+                ...item,
+            }));
+            prescriptionNotes = p.notes || "";
+            prescriptionType = p.type || "Standard";
+            showPrescriptionModal = true;
+        }
     }
 
     let visitTimer = $state(0);
@@ -441,6 +494,74 @@
                 console.error("Failed to auto-start session:", e);
             }
         }
+    }
+
+    async function handleUpdateStatus(
+        status: "cancel" | "postpone" | "cancelled" | "scheduled",
+    ) {
+        let title = "";
+        let message = "";
+
+        // Normalize status
+        const normStatus =
+            status === "cancelled" || status === "cancel"
+                ? "cancel"
+                : "postpone";
+        const dbStatus = normStatus === "cancel" ? "cancelled" : "scheduled";
+
+        selectedReasonId = null;
+        customReasonText = "";
+
+        if (normStatus === "cancel") {
+            title = get(t)("journey.confirm_cancel_title");
+            message = get(t)("journey.confirm_cancel_message");
+        } else {
+            title = get(t)("journey.confirm_postpone_title");
+            message = get(t)("journey.confirm_postpone_message");
+        }
+
+        const onConfirm = async () => {
+            const formData = new FormData();
+            formData.append("status", dbStatus);
+            if (selectedReasonId)
+                formData.append("reason_id", selectedReasonId.toString());
+            if (customReasonText)
+                formData.append("custom_reason", customReasonText);
+
+            try {
+                const response = await fetch("?/updateStatus", {
+                    method: "POST",
+                    body: formData,
+                });
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else if (response.ok) {
+                    await invalidateAll();
+                }
+                showConfirmModal = false;
+            } catch (e) {
+                console.error("Failed to update status:", e);
+                showConfirmModal = false;
+            }
+        };
+
+        confirmModalConfig = {
+            title,
+            message,
+            confirmText: get(t)("common.confirm"),
+            cancelText: get(t)("common.abort"),
+            statusType: normStatus,
+            confirmDisabled: false, // Calculated in UI
+            onConfirm,
+        };
+        showConfirmModal = true;
+    }
+
+    function openReschedule() {
+        selectedReasonId = null;
+        customReasonText = "";
+        statusActionType = "postpone";
+        showRescheduleModal = true;
     }
 </script>
 
@@ -796,52 +917,34 @@
                                 {$t("journey.appointment_management")}
                             </h3>
                             <div class="grid grid-cols-2 gap-2">
-                                <form
-                                    action="?/updateStatus"
-                                    method="POST"
-                                    use:enhance
-                                    class="contents"
+                                <button
+                                    type="button"
+                                    class="status-action-btn postponed flex items-center justify-center gap-2 py-2"
+                                    disabled={isSessionActive}
+                                    onclick={() =>
+                                        handleUpdateStatus("scheduled")}
                                 >
-                                    <input
-                                        type="hidden"
-                                        name="status"
-                                        value="scheduled"
-                                    />
-                                    <button
-                                        class="status-action-btn postponed flex items-center justify-center gap-2 py-2"
-                                        disabled={isSessionActive}
+                                    <span class="text-sm">🕒</span>
+                                    <span class="text-[9px]"
+                                        >{$t("journey.postpone")}</span
                                     >
-                                        <span class="text-sm">🕒</span>
-                                        <span class="text-[9px]"
-                                            >{$t("journey.postpone")}</span
-                                        >
-                                    </button>
-                                </form>
-                                <form
-                                    action="?/updateStatus"
-                                    method="POST"
-                                    use:enhance
-                                    class="contents"
+                                </button>
+                                <button
+                                    type="button"
+                                    class="status-action-btn cancelled flex items-center justify-center gap-2 py-2"
+                                    disabled={isSessionActive}
+                                    onclick={() =>
+                                        handleUpdateStatus("cancelled")}
                                 >
-                                    <input
-                                        type="hidden"
-                                        name="status"
-                                        value="cancelled"
-                                    />
-                                    <button
-                                        class="status-action-btn cancelled flex items-center justify-center gap-2 py-2"
-                                        disabled={isSessionActive}
+                                    <span class="text-sm">❌</span>
+                                    <span class="text-[9px]"
+                                        >{$t("journey.cancel")}</span
                                     >
-                                        <span class="text-sm">❌</span>
-                                        <span class="text-[9px]"
-                                            >{$t("journey.cancel")}</span
-                                        >
-                                    </button>
-                                </form>
+                                </button>
                                 <button
                                     class="status-action-btn reschedule col-span-2 flex items-center justify-center gap-2 py-2"
                                     disabled={isSessionActive}
-                                    onclick={() => (showRescheduleModal = true)}
+                                    onclick={openReschedule}
                                 >
                                     <span class="text-sm">📅</span>
                                     <span class="text-[9px]"
@@ -906,6 +1009,25 @@
                             →
                         </button>
 
+                        {#if plannedActs.length > 0}
+                            <div class="relative group">
+                                <button
+                                    class="w-10 h-10 flex items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 animate-bounce-subtle"
+                                    onclick={() => (isLeftSidebarOpen = true)}
+                                >
+                                    📅
+                                </button>
+                                <span
+                                    class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"
+                                ></span>
+                                <div
+                                    class="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
+                                >
+                                    {$t("journey.planned_today")} ({plannedActs.length})
+                                </div>
+                            </div>
+                        {/if}
+
                         <!-- Clinical Actions Icons -->
                         <div class="flex flex-col items-center gap-3">
                             <button
@@ -947,50 +1069,29 @@
 
                         <!-- Appointment Management Icons -->
                         <div class="flex flex-col items-center gap-3">
-                            <form
-                                action="?/updateStatus"
-                                method="POST"
-                                use:enhance
-                                class="contents"
+                            <button
+                                type="button"
+                                class="action-icon status-scheduled"
+                                disabled={isSessionActive}
+                                title={$t("journey.postpone")}
+                                onclick={() => handleUpdateStatus("scheduled")}
                             >
-                                <input
-                                    type="hidden"
-                                    name="status"
-                                    value="scheduled"
-                                />
-                                <button
-                                    class="action-icon status-scheduled"
-                                    disabled={isSessionActive}
-                                    title={$t("journey.postpone")}
-                                >
-                                    🕒
-                                </button>
-                            </form>
-                            <form
-                                action="?/updateStatus"
-                                method="POST"
-                                use:enhance
-                                class="contents"
+                                🕒
+                            </button>
+                            <button
+                                type="button"
+                                class="action-icon status-cancelled"
+                                disabled={isSessionActive}
+                                title={$t("journey.cancel")}
+                                onclick={() => handleUpdateStatus("cancelled")}
                             >
-                                <input
-                                    type="hidden"
-                                    name="status"
-                                    value="cancelled"
-                                />
-                                <button
-                                    class="action-icon status-cancelled"
-                                    disabled={isSessionActive}
-                                    title={$t("journey.cancel")}
-                                >
-                                    ❌
-                                </button>
-                            </form>
+                                ❌
+                            </button>
                             <button
                                 class="action-icon status-reschedule"
                                 disabled={isSessionActive}
                                 title={$t("journey.reschedule")}
-                                onclick={() => (showRescheduleModal = true)}
-                                >📅</button
+                                onclick={openReschedule}>📅</button
                             >
                         </div>
 
@@ -1548,12 +1649,33 @@
                                         value="{rescheduleDate}T{rescheduleTime ||
                                             '09:00'}"
                                     />
+
+                                    <ReasonSelector
+                                        action="postpone"
+                                        reasons={data.postponeReasons || []}
+                                        required={data.reasonRequirements
+                                            ?.postponeRequired}
+                                        bind:selectedReasonId
+                                        bind:customReason={customReasonText}
+                                    />
+
+                                    <input
+                                        type="hidden"
+                                        name="reason_id"
+                                        value={selectedReasonId || ""}
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="custom_reason"
+                                        value={customReasonText || ""}
+                                    />
                                 </div>
 
                                 <div class="pt-4">
                                     <button
                                         type="submit"
-                                        class="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-xl hover:bg-indigo-700 hover:scale-[1.02] transition-all shadow-xl shadow-indigo-100 active:scale-95 flex items-center justify-center gap-3"
+                                        class="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-xl hover:bg-indigo-700 hover:scale-[1.02] transition-all shadow-xl shadow-indigo-200 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                        disabled={!isReasonValid}
                                     >
                                         <span>🗓️</span>
                                         {$t("common.confirm")}
@@ -2749,6 +2871,78 @@
             aria-label="Close sidebars"
             transition:fade={{ duration: 200 }}
         ></button>
+    {/if}
+    {#if showConfirmModal}
+        <div
+            class="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            transition:fade={{ duration: 200 }}
+        >
+            <button
+                class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-default w-full h-full border-none"
+                onclick={() => (showConfirmModal = false)}
+                aria-label="Close modal"
+            ></button>
+
+            <div
+                class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md ring-1 ring-slate-200"
+                transition:scale={{
+                    duration: 300,
+                    start: 0.95,
+                    easing: quintOut,
+                }}
+            >
+                <div class="p-8">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-2xl"
+                        >
+                            ⚠️
+                        </div>
+                        <h3 class="text-2xl font-black text-slate-900">
+                            {confirmModalConfig.title}
+                        </h3>
+                    </div>
+
+                    <p class="text-slate-600 leading-relaxed mb-6 italic">
+                        {confirmModalConfig.message}
+                    </p>
+
+                    {#if confirmModalConfig.statusType === "cancel"}
+                        <ReasonSelector
+                            action="cancel"
+                            reasons={data.cancellationReasons || []}
+                            required={data.reasonRequirements?.cancelRequired}
+                            bind:selectedReasonId
+                            bind:customReason={customReasonText}
+                        />
+                    {:else if confirmModalConfig.statusType === "postpone"}
+                        <ReasonSelector
+                            action="postpone"
+                            reasons={data.postponeReasons || []}
+                            required={data.reasonRequirements?.postponeRequired}
+                            bind:selectedReasonId
+                            bind:customReason={customReasonText}
+                        />
+                    {/if}
+
+                    <div class="flex gap-3 mt-8">
+                        <button
+                            class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-colors"
+                            onclick={() => (showConfirmModal = false)}
+                        >
+                            {confirmModalConfig.cancelText}
+                        </button>
+                        <button
+                            class="flex-2 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 px-8"
+                            disabled={!isReasonValid}
+                            onclick={confirmModalConfig.onConfirm}
+                        >
+                            {confirmModalConfig.confirmText}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     {/if}
 </div>
 

@@ -81,6 +81,15 @@ export function init_db() {
     // actually, let's just use IF NOT EXISTS and assume a fresh start or compatible state.
 
     db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            full_name TEXT NOT NULL,
+            role TEXT NOT NULL CHECK (role IN ('admin', 'doctor', 'assistant', 'patient')),
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL,
@@ -129,453 +138,499 @@ export function init_db() {
           (5, 1), -- Friday
           (6, 0), -- Saturday (not working)
           (0, 0); -- Sunday (not working)
+    `);
 
-        CREATE TABLE IF NOT EXISTS users (
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS cancellation_reasons (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            full_name TEXT NOT NULL,
-            phone TEXT, 
-            role TEXT NOT NULL CHECK(role IN ('doctor', 'assistant', 'patient', 'admin')),
-            created_at TEXT DEFAULT (datetime('now'))
-        );
-
-        -- Add phone column if it doesn't exist (for existing databases)
-        BEGIN;
-        SELECT count(*) FROM pragma_table_info('users') WHERE name='phone';
-        COMMIT;
-        -- Note: Better-sqlite3 doesn't easily support conditional ALTER in one exec block without logic.
-        -- We will try-catch the alter in init_db function logic instead or just use a safe dev-mode trick.
-
-        CREATE TABLE IF NOT EXISTS patients (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT NOT NULL,
-            date_of_birth TEXT,
-            gender TEXT,  
-            phone TEXT, 
-            email TEXT,
-            secondary_phone TEXT,
-            secondary_email TEXT,
-            address TEXT,
-            city TEXT,
-            postal_code TEXT,
-            emergency_contact_name TEXT,
-            emergency_contact_phone TEXT,
-            emergency_contact_relationship TEXT,  -- e.g., 'Spouse', 'Parent'
-            insurance_provider TEXT,
-            insurance_number TEXT,
-            
-            -- Relationship tracking
-            primary_contract_id INTEGER, -- Refers back to patients(id) if this is a secondary person
-            relationship_to_primary TEXT, -- e.g., 'child', 'spouse', 'other'
-            
-            -- Medical Information
-            allergies TEXT,
-            current_medications TEXT,
-            medical_conditions TEXT,
-            surgical_history TEXT,  -- e.g., 'Heart surgery 2020'
-            family_medical_history TEXT,  -- Genetic dental-relevant info
-            pregnancy_status INTEGER DEFAULT 0,  -- BOOLEAN: 0 or 1
-            blood_type TEXT,
-            oral_habits TEXT,  -- e.g., 'Smoking: Yes, 1 pack/day; Bruxism: Yes'
-            substance_use TEXT,  -- e.g., 'Alcohol: Moderate; Drugs: None'
-            
-            -- Dental History
-            previous_dentist TEXT,
-            last_visit_date TEXT,
-            dental_notes TEXT,
-            
-            registration_date TEXT DEFAULT (datetime('now')),
+            reason_text TEXT NOT NULL,
+            reason_type TEXT CHECK(reason_type IN('postpone', 'cancel', 'both')) DEFAULT 'both',
             is_active INTEGER DEFAULT 1,
-            is_archived INTEGER DEFAULT 0,
-            created_by INTEGER,
-            user_id INTEGER, -- Linked authentication account
-            last_updated TEXT DEFAULT (datetime('now')),  -- Track history updates
-            teeth_treatments TEXT DEFAULT '{}', -- JSON stored as string for dental chart
-            FOREIGN KEY (created_by) REFERENCES users(id),
-            FOREIGN KEY (primary_contract_id) REFERENCES patients(id),
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS attachments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            file_name TEXT NOT NULL,
-            file_path TEXT NOT NULL,
-            file_type TEXT,
-            category TEXT DEFAULT 'General',
-            upload_date TEXT DEFAULT (datetime('now')),
-            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS patient_history_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            update_date TEXT DEFAULT (datetime('now')),
-            updated_by INTEGER,  -- User who updated
-            changes TEXT,  -- JSON string of diffs
-            FOREIGN KEY (patient_id) REFERENCES patients(id),
-            FOREIGN KEY (updated_by) REFERENCES users(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS appointments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            doctor_id INTEGER, -- Made nullable to allow appointments without a specific doctor
-            booked_by_id INTEGER, -- The patient ID who actually made the booking
-            start_time TEXT NOT NULL,
-            end_time TEXT NOT NULL,
-            duration_minutes INTEGER DEFAULT 30,
-            appointment_type TEXT DEFAULT 'consultation',
-            status TEXT DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show', 'in_progress')),
-            notes TEXT,
-            actual_start_time TEXT,
-            actual_end_time TEXT,
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now')),
-            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-            FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (booked_by_id) REFERENCES patients(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS daily_sessions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            doctor_id INTEGER NOT NULL,
-            session_date TEXT NOT NULL,
-            start_time TEXT NOT NULL,
-            end_time TEXT,
-            FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE(doctor_id, session_date)
-        );
-
-        -- Print Templates System
-        CREATE TABLE IF NOT EXISTS print_templates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            html_content TEXT NOT NULL,
-            css_content TEXT,
-            updated_at TEXT DEFAULT (datetime('now'))
-        );
-
-        CREATE TABLE IF NOT EXISTS template_resources (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT NOT NULL,
-            path TEXT NOT NULL,
-            uploaded_at TEXT DEFAULT (datetime('now'))
-        );
-
-
-        CREATE TABLE IF NOT EXISTS treatments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            appointment_id INTEGER, -- Made nullable
-            patient_id INTEGER NOT NULL,
-            doctor_id INTEGER NOT NULL,
-            treatment_date TEXT NOT NULL,
-            tooth_number TEXT,
-            treatment_type TEXT NOT NULL,
-            description TEXT,
-            diagnosis TEXT,
-            treatment_notes TEXT,
-            cost REAL DEFAULT 0.0,
-            paid_amount REAL DEFAULT 0.0,
-            status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'in_progress', 'completed')),
-            created_at TEXT DEFAULT (datetime('now')),
-            FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
-            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-            FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS payments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            treatment_id INTEGER,
-            appointment_id INTEGER,
-            amount REAL NOT NULL,
-            payment_method TEXT CHECK(payment_method IN ('cash', 'card', 'insurance', 'bank_transfer', 'check')),
-            payment_date TEXT DEFAULT (datetime('now')),
-            notes TEXT,
-            recorded_by INTEGER NOT NULL,
-            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-            FOREIGN KEY (treatment_id) REFERENCES treatments(id) ON DELETE SET NULL,
-            FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE SET NULL,
-            FOREIGN KEY (recorded_by) REFERENCES users(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS sessions (
-            id TEXT PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            expires_at TEXT NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        );
-
-        -- New Tables for Prescription, Invoicing and Inventory
-        CREATE TABLE IF NOT EXISTS medications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            default_dosage TEXT,
-            instructions TEXT,
-            forme TEXT,
-            created_at TEXT DEFAULT (datetime('now'))
-        );
-
-        CREATE TABLE IF NOT EXISTS prescriptions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            doctor_id INTEGER NOT NULL,
-            prescription_date TEXT DEFAULT (datetime('now')),
-            prescription_number TEXT,
-            prescription_type TEXT DEFAULT 'Standard',
-            notes TEXT,
-            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-            FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS prescription_items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            prescription_id INTEGER NOT NULL,
-            medication_id INTEGER,
-            medication_name TEXT NOT NULL,
-            dosage TEXT NOT NULL,
-            duration TEXT,
-            instructions TEXT,
-            FOREIGN KEY (prescription_id) REFERENCES prescriptions(id) ON DELETE CASCADE,
-            FOREIGN KEY (medication_id) REFERENCES medications(id) ON DELETE SET NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS prescription_templates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            description TEXT,
-            created_at TEXT DEFAULT (datetime('now'))
-        );
-
-        CREATE TABLE IF NOT EXISTS prescription_template_items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            template_id INTEGER NOT NULL,
-            medication_id INTEGER,
-            medication_name TEXT NOT NULL,
-            dosage TEXT NOT NULL,
-            duration TEXT,
-            instructions TEXT,
-            FOREIGN KEY (template_id) REFERENCES prescription_templates(id) ON DELETE CASCADE,
-            FOREIGN KEY (medication_id) REFERENCES medications(id) ON DELETE SET NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS invoices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            invoice_number TEXT UNIQUE NOT NULL,
-            patient_id INTEGER NOT NULL,
-            invoice_date TEXT DEFAULT (datetime('now')),
-            status TEXT DEFAULT 'unpaid' CHECK(status IN ('unpaid', 'paid', 'cancelled')),
-            total_amount REAL DEFAULT 0.0,
-            invoice_type TEXT DEFAULT 'detailed' CHECK(invoice_type IN ('detailed', 'global')),
-            global_description TEXT,
-            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS invoice_items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            invoice_id INTEGER NOT NULL,
-            treatment_id INTEGER, -- Deprecated (General Treatment)
-            dental_treatment_id INTEGER, -- Structured CDT Treatment
-            description TEXT NOT NULL,
-            amount REAL NOT NULL,
-            FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
-            FOREIGN KEY (treatment_id) REFERENCES treatments(id) ON DELETE SET NULL,
-            FOREIGN KEY (dental_treatment_id) REFERENCES dental_treatments(id) ON DELETE SET NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS suppliers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            contact_name TEXT,
-            phone TEXT,
-            email TEXT,
-            address TEXT,
-            created_at TEXT DEFAULT (datetime('now'))
-        );
-
-        CREATE TABLE IF NOT EXISTS inventory_items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            sku TEXT UNIQUE,
-            category TEXT,
-            current_quantity INTEGER DEFAULT 0,
-            min_threshold INTEGER DEFAULT 5,
-            unit TEXT,
-            unit_cost REAL DEFAULT 0.0,
-            expiry_date TEXT,
-            supplier_id INTEGER,
-            last_updated TEXT DEFAULT (datetime('now')),
-            FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS stock_moves (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            item_id INTEGER NOT NULL,
-            type TEXT CHECK(type IN ('IN', 'OUT')) NOT NULL,
-            quantity INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            reason TEXT,
-            move_date TEXT DEFAULT (datetime('now')),
-            FOREIGN KEY (item_id) REFERENCES inventory_items(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            type TEXT NOT NULL,
-            title TEXT NOT NULL,
-            message TEXT NOT NULL,
-            link TEXT,
-            is_read INTEGER DEFAULT 0,
+            display_order INTEGER DEFAULT 0,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id)
+            UNIQUE(reason_text)
         );
+
+        -- Cleanup duplicates before creating index
+        DELETE FROM cancellation_reasons 
+        WHERE id NOT IN (
+            SELECT MIN(id) 
+            FROM cancellation_reasons 
+            GROUP BY reason_text
+        );
+
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_cancel_reason_text ON cancellation_reasons(reason_text);
+    `);
+
+
+    db.exec(`
+        INSERT OR IGNORE INTO cancellation_reasons (reason_text, reason_type, display_order) VALUES
+        ('Patient emergency', 'both', 1),
+        ('Doctor illness/emergency', 'both', 2),
+        ('Equipment failure', 'both', 3),
+        ('Scheduled by mistake', 'both', 4),
+        ('Insurance issues', 'cancel', 5),
+        ('Patient forgot/No show', 'cancel', 6),
+        ('Transportation issues', 'postpone', 7),
+        ('Custom/Other', 'both', 99);
+    `);
+
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS patients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        full_name TEXT NOT NULL,
+        date_of_birth TEXT,
+        gender TEXT,
+        phone TEXT,
+        email TEXT,
+        secondary_phone TEXT,
+        secondary_email TEXT,
+        address TEXT,
+        city TEXT,
+        postal_code TEXT,
+        emergency_contact_name TEXT,
+        emergency_contact_phone TEXT,
+        emergency_contact_relationship TEXT, --e.g., 'Spouse', 'Parent'
+            insurance_provider TEXT,
+        insurance_number TEXT,
+
+        --Relationship tracking
+            primary_contract_id INTEGER, --Refers back to patients(id) if this is a secondary person
+            relationship_to_primary TEXT, --e.g., 'child', 'spouse', 'other'
+
+    --Medical Information
+            allergies TEXT,
+        current_medications TEXT,
+            medical_conditions TEXT,
+                surgical_history TEXT, --e.g., 'Heart surgery 2020'
+            family_medical_history TEXT, --Genetic dental - relevant info
+            pregnancy_status INTEGER DEFAULT 0, --BOOLEAN: 0 or 1
+            blood_type TEXT,
+        oral_habits TEXT, --e.g., 'Smoking: Yes, 1 pack/day; Bruxism: Yes'
+            substance_use TEXT, --e.g., 'Alcohol: Moderate; Drugs: None'
+
+    --Dental History
+            previous_dentist TEXT,
+        last_visit_date TEXT,
+            dental_notes TEXT,
+
+                registration_date TEXT DEFAULT(datetime('now')),
+                    is_active INTEGER DEFAULT 1,
+                        is_archived INTEGER DEFAULT 0,
+                            created_by INTEGER,
+                                user_id INTEGER, --Linked authentication account
+            last_updated TEXT DEFAULT(datetime('now')), --Track history updates
+            teeth_treatments TEXT DEFAULT '{}', --JSON stored as string for dental chart
+            FOREIGN KEY(created_by) REFERENCES users(id),
+        FOREIGN KEY(primary_contract_id) REFERENCES patients(id),
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+        );
+    `);
+
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS attachments(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id INTEGER NOT NULL,
+                file_name TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                file_type TEXT,
+                category TEXT DEFAULT 'General',
+                upload_date TEXT DEFAULT(datetime('now')),
+                FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE
+            );
+
+        CREATE TABLE IF NOT EXISTS patient_history_logs(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id INTEGER NOT NULL,
+                update_date TEXT DEFAULT(datetime('now')),
+                updated_by INTEGER, --User who updated
+            changes TEXT, --JSON string of diffs
+            FOREIGN KEY(patient_id) REFERENCES patients(id),
+                FOREIGN KEY(updated_by) REFERENCES users(id)
+            );
+
+        CREATE TABLE IF NOT EXISTS appointments(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id INTEGER NOT NULL,
+                doctor_id INTEGER, --Made nullable to allow appointments without a specific doctor
+            booked_by_id INTEGER, --The patient ID who actually made the booking
+            start_time TEXT NOT NULL,
+                end_time TEXT NOT NULL,
+                duration_minutes INTEGER DEFAULT 30,
+                appointment_type TEXT DEFAULT 'consultation',
+                status TEXT DEFAULT 'scheduled' CHECK(status IN('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show', 'in_progress')),
+                notes TEXT,
+                actual_start_time TEXT,
+                actual_end_time TEXT,
+                created_at TEXT DEFAULT(datetime('now')),
+                updated_at TEXT DEFAULT(datetime('now')),
+                FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+                FOREIGN KEY(doctor_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY(booked_by_id) REFERENCES patients(id)
+            );
+    `);
+
+    // --- Column Migrations & Initial Seeding ---
+
+    // Helper to add column if not exists
+    const addColumnIfNotExists = (table: string, column: string, definition: string) => {
+        const info = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
+        if (!info.some(col => col.name === column)) {
+            db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`).run();
+        }
+    };
+
+    // Apply necessary columns that might be missing in older DB versions
+    addColumnIfNotExists('users', 'phone', 'TEXT');
+    addColumnIfNotExists('clinic_settings', 'require_postpone_reason', 'INTEGER DEFAULT 0');
+    addColumnIfNotExists('clinic_settings', 'require_cancel_reason', 'INTEGER DEFAULT 0');
+    addColumnIfNotExists('appointments', 'cancellation_reason_id', 'INTEGER REFERENCES cancellation_reasons(id)');
+    addColumnIfNotExists('appointments', 'cancellation_custom_reason', 'TEXT');
+    addColumnIfNotExists('appointments', 'cancellation_timestamp', 'TEXT');
+    addColumnIfNotExists('appointments', 'cancelled_by_user_id', 'INTEGER REFERENCES users(id)');
+
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS daily_sessions(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                doctor_id INTEGER NOT NULL,
+                session_date TEXT NOT NULL,
+                start_time TEXT NOT NULL,
+                end_time TEXT,
+                FOREIGN KEY(doctor_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE(doctor_id, session_date)
+            );
+
+    --Print Templates System
+        CREATE TABLE IF NOT EXISTS print_templates(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        html_content TEXT NOT NULL,
+        css_content TEXT,
+        updated_at TEXT DEFAULT(datetime('now'))
+    );
+
+        CREATE TABLE IF NOT EXISTS template_resources(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filename TEXT NOT NULL,
+        path TEXT NOT NULL,
+        uploaded_at TEXT DEFAULT(datetime('now'))
+    );
+
+
+        CREATE TABLE IF NOT EXISTS treatments(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        appointment_id INTEGER, --Made nullable
+            patient_id INTEGER NOT NULL,
+        doctor_id INTEGER NOT NULL,
+        treatment_date TEXT NOT NULL,
+        tooth_number TEXT,
+        treatment_type TEXT NOT NULL,
+        description TEXT,
+        diagnosis TEXT,
+        treatment_notes TEXT,
+        cost REAL DEFAULT 0.0,
+        paid_amount REAL DEFAULT 0.0,
+        status TEXT DEFAULT 'pending' CHECK(status IN('pending', 'in_progress', 'completed')),
+        created_at TEXT DEFAULT(datetime('now')),
+        FOREIGN KEY(appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
+        FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY(doctor_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+        CREATE TABLE IF NOT EXISTS payments(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        treatment_id INTEGER,
+        appointment_id INTEGER,
+        amount REAL NOT NULL,
+        payment_method TEXT CHECK(payment_method IN('cash', 'card', 'insurance', 'bank_transfer', 'check')),
+        payment_date TEXT DEFAULT(datetime('now')),
+        notes TEXT,
+        recorded_by INTEGER NOT NULL,
+        FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY(treatment_id) REFERENCES treatments(id) ON DELETE SET NULL,
+        FOREIGN KEY(appointment_id) REFERENCES appointments(id) ON DELETE SET NULL,
+        FOREIGN KEY(recorded_by) REFERENCES users(id)
+    );
+
+        CREATE TABLE IF NOT EXISTS sessions(
+        id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        expires_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    --New Tables for Prescription, Invoicing and Inventory
+        CREATE TABLE IF NOT EXISTS medications(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        default_dosage TEXT,
+        instructions TEXT,
+        forme TEXT,
+        created_at TEXT DEFAULT(datetime('now'))
+    );
+
+        CREATE TABLE IF NOT EXISTS prescriptions(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        doctor_id INTEGER NOT NULL,
+        prescription_date TEXT DEFAULT(datetime('now')),
+        prescription_number TEXT,
+        prescription_type TEXT DEFAULT 'Standard',
+        notes TEXT,
+        FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY(doctor_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+        CREATE TABLE IF NOT EXISTS prescription_items(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        prescription_id INTEGER NOT NULL,
+        medication_id INTEGER,
+        medication_name TEXT NOT NULL,
+        dosage TEXT NOT NULL,
+        duration TEXT,
+        instructions TEXT,
+        FOREIGN KEY(prescription_id) REFERENCES prescriptions(id) ON DELETE CASCADE,
+        FOREIGN KEY(medication_id) REFERENCES medications(id) ON DELETE SET NULL
+    );
+
+        CREATE TABLE IF NOT EXISTS prescription_templates(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        created_at TEXT DEFAULT(datetime('now'))
+    );
+
+        CREATE TABLE IF NOT EXISTS prescription_template_items(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        template_id INTEGER NOT NULL,
+        medication_id INTEGER,
+        medication_name TEXT NOT NULL,
+        dosage TEXT NOT NULL,
+        duration TEXT,
+        instructions TEXT,
+        FOREIGN KEY(template_id) REFERENCES prescription_templates(id) ON DELETE CASCADE,
+        FOREIGN KEY(medication_id) REFERENCES medications(id) ON DELETE SET NULL
+    );
+
+        CREATE TABLE IF NOT EXISTS invoices(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_number TEXT UNIQUE NOT NULL,
+        patient_id INTEGER NOT NULL,
+        invoice_date TEXT DEFAULT(datetime('now')),
+        status TEXT DEFAULT 'unpaid' CHECK(status IN('unpaid', 'paid', 'cancelled')),
+        total_amount REAL DEFAULT 0.0,
+        invoice_type TEXT DEFAULT 'detailed' CHECK(invoice_type IN('detailed', 'global')),
+        global_description TEXT,
+        FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE
+    );
+
+        CREATE TABLE IF NOT EXISTS invoice_items(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_id INTEGER NOT NULL,
+        treatment_id INTEGER, --Deprecated(General Treatment)
+            dental_treatment_id INTEGER, --Structured CDT Treatment
+            description TEXT NOT NULL,
+        amount REAL NOT NULL,
+        FOREIGN KEY(invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+        FOREIGN KEY(treatment_id) REFERENCES treatments(id) ON DELETE SET NULL,
+        FOREIGN KEY(dental_treatment_id) REFERENCES dental_treatments(id) ON DELETE SET NULL
+    );
+
+        CREATE TABLE IF NOT EXISTS suppliers(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        contact_name TEXT,
+        phone TEXT,
+        email TEXT,
+        address TEXT,
+        created_at TEXT DEFAULT(datetime('now'))
+    );
+
+        CREATE TABLE IF NOT EXISTS inventory_items(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        sku TEXT UNIQUE,
+        category TEXT,
+        current_quantity INTEGER DEFAULT 0,
+        min_threshold INTEGER DEFAULT 5,
+        unit TEXT,
+        unit_cost REAL DEFAULT 0.0,
+        expiry_date TEXT,
+        supplier_id INTEGER,
+        last_updated TEXT DEFAULT(datetime('now')),
+        FOREIGN KEY(supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
+    );
+
+        CREATE TABLE IF NOT EXISTS stock_moves(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        item_id INTEGER NOT NULL,
+        type TEXT CHECK(type IN('IN', 'OUT')) NOT NULL,
+        quantity INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        reason TEXT,
+        move_date TEXT DEFAULT(datetime('now')),
+        FOREIGN KEY(item_id) REFERENCES inventory_items(id) ON DELETE CASCADE,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+    );
+
+        CREATE TABLE IF NOT EXISTS notifications(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        link TEXT,
+        is_read INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+    );
 
         CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
         CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);
 
-        CREATE TABLE IF NOT EXISTS spending_categories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            description TEXT,
-            color TEXT DEFAULT '#3B82F6',
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        );
+        CREATE TABLE IF NOT EXISTS spending_categories(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        color TEXT DEFAULT '#3B82F6',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
 
-        CREATE TABLE IF NOT EXISTS spending (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            category_id INTEGER NOT NULL,
-            amount REAL NOT NULL,
-            description TEXT NOT NULL,
-            payment_method TEXT DEFAULT 'cash',
-            receipt_number TEXT,
-            spending_date TEXT NOT NULL,
-            created_by_user_id INTEGER NOT NULL,
-            notes TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (category_id) REFERENCES spending_categories(id),
-            FOREIGN KEY (created_by_user_id) REFERENCES users(id)
-        );
+        CREATE TABLE IF NOT EXISTS spending(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        description TEXT NOT NULL,
+        payment_method TEXT DEFAULT 'cash',
+        receipt_number TEXT,
+        spending_date TEXT NOT NULL,
+        created_by_user_id INTEGER NOT NULL,
+        notes TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(category_id) REFERENCES spending_categories(id),
+        FOREIGN KEY(created_by_user_id) REFERENCES users(id)
+    );
 
-        -- Deprecated: treatment_types table removed in favor of CDT codes
+    --Deprecated: treatment_types table removed in favor of CDT codes
 
         CREATE INDEX IF NOT EXISTS idx_spending_date ON spending(spending_date);
         CREATE INDEX IF NOT EXISTS idx_spending_category ON spending(category_id);
 
         CREATE INDEX IF NOT EXISTS idx_appointments_start ON appointments(start_time);
         CREATE INDEX IF NOT EXISTS idx_appointments_doctor ON appointments(doctor_id);
+        CREATE INDEX IF NOT EXISTS idx_appointments_doctor_date ON appointments(doctor_id, start_time);
+        CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status);
+        CREATE INDEX IF NOT EXISTS idx_appointments_doctor_date_status ON appointments(doctor_id, start_time, status);
         CREATE INDEX IF NOT EXISTS idx_treatments_patient ON treatments(patient_id);
         CREATE INDEX IF NOT EXISTS idx_payments_patient ON payments(patient_id);
 
-        -- Data normalization migration for appointments
+    --Data normalization migration for appointments
         UPDATE appointments SET start_time = REPLACE(start_time, 'T', ' ') WHERE start_time LIKE '%T%';
         UPDATE appointments SET end_time = REPLACE(end_time, 'T', ' ') WHERE end_time LIKE '%T%';
 
-        CREATE TABLE IF NOT EXISTS cdt_codes (
-            code TEXT PRIMARY KEY,
-            category TEXT NOT NULL,
-            description TEXT NOT NULL,
-            default_fee REAL DEFAULT 0,
-            requires_surfaces INTEGER DEFAULT 0,
-            whole_tooth_only INTEGER DEFAULT 0,
-            valid_tooth_types TEXT,
-            color_code TEXT DEFAULT '#3B82F6',
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        );
+        CREATE TABLE IF NOT EXISTS cdt_codes(
+        code TEXT PRIMARY KEY,
+        category TEXT NOT NULL,
+        description TEXT NOT NULL,
+        default_fee REAL DEFAULT 0,
+        requires_surfaces INTEGER DEFAULT 0,
+        whole_tooth_only INTEGER DEFAULT 0,
+        valid_tooth_types TEXT,
+        color_code TEXT DEFAULT '#3B82F6',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
 
-        INSERT OR IGNORE INTO cdt_codes (code, category, description, requires_surfaces, default_fee, color_code)
-        VALUES ('CUSTOM', 'General', 'Custom Treatment', 0, 0, '#6366F1');
+        INSERT OR IGNORE INTO cdt_codes(code, category, description, requires_surfaces, default_fee, color_code)
+    VALUES('CUSTOM', 'General', 'Custom Treatment', 0, 0, '#6366F1');
 
 
-        CREATE TABLE IF NOT EXISTS dental_treatments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            tooth_number TEXT NOT NULL,
-            surfaces TEXT,
-            cdt_code TEXT,
-            treatment_type TEXT NOT NULL,
-            status TEXT NOT NULL CHECK(status IN ('existing', 'completed', 'planned')),
-            fee REAL DEFAULT 0,
-            date_performed TEXT,
-            provider_id INTEGER,
-            diagnosis TEXT,
-            notes TEXT,
-            color TEXT NOT NULL,
-            is_custom INTEGER DEFAULT 0,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-            FOREIGN KEY (provider_id) REFERENCES users(id),
-            FOREIGN KEY (cdt_code) REFERENCES cdt_codes(code)
-        );
+        CREATE TABLE IF NOT EXISTS dental_treatments(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        tooth_number TEXT NOT NULL,
+        surfaces TEXT,
+        cdt_code TEXT,
+        treatment_type TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN('existing', 'completed', 'planned')),
+        fee REAL DEFAULT 0,
+        date_performed TEXT,
+        provider_id INTEGER,
+        diagnosis TEXT,
+        notes TEXT,
+        color TEXT NOT NULL,
+        is_custom INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY(provider_id) REFERENCES users(id),
+        FOREIGN KEY(cdt_code) REFERENCES cdt_codes(code)
+    );
 
         CREATE INDEX IF NOT EXISTS idx_dental_tooth ON dental_treatments(patient_id, tooth_number);
 
-        CREATE TABLE IF NOT EXISTS tooth_status (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            tooth_number TEXT NOT NULL,
-            is_primary INTEGER DEFAULT 1,
-            status TEXT DEFAULT 'present' CHECK(status IN ('present', 'missing', 'erupting', 'impacted')),
-            notes TEXT,
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(patient_id, tooth_number),
-            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
-        );
+        CREATE TABLE IF NOT EXISTS tooth_status(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        tooth_number TEXT NOT NULL,
+        is_primary INTEGER DEFAULT 1,
+        status TEXT DEFAULT 'present' CHECK(status IN('present', 'missing', 'erupting', 'impacted')),
+        notes TEXT,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(patient_id, tooth_number),
+        FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE
+    );
 
-        CREATE TABLE IF NOT EXISTS clinical_notes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            doctor_id INTEGER NOT NULL,
-            appointment_id INTEGER,
-            content TEXT NOT NULL,
-            importance TEXT DEFAULT 'low' CHECK(importance IN ('low', 'high', 'critical')),
-            created_at TEXT DEFAULT (datetime('now')),
-            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-            FOREIGN KEY (doctor_id) REFERENCES users(id),
-            FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE SET NULL
-        );
+        CREATE TABLE IF NOT EXISTS clinical_notes(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        doctor_id INTEGER NOT NULL,
+        appointment_id INTEGER,
+        content TEXT NOT NULL,
+        importance TEXT DEFAULT 'low' CHECK(importance IN('low', 'high', 'critical')),
+        created_at TEXT DEFAULT(datetime('now')),
+        FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY(doctor_id) REFERENCES users(id),
+        FOREIGN KEY(appointment_id) REFERENCES appointments(id) ON DELETE SET NULL
+    );
 
-        CREATE TABLE IF NOT EXISTS lab_tracking (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            doctor_id INTEGER NOT NULL,
-            treatment_id INTEGER,
-            description TEXT NOT NULL,
-            status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'ordered', 'received')),
-            notes TEXT,
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now')),
-            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-            FOREIGN KEY (doctor_id) REFERENCES users(id),
-            FOREIGN KEY (treatment_id) REFERENCES treatments(id) ON DELETE SET NULL
-        );
+        CREATE TABLE IF NOT EXISTS lab_tracking(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        doctor_id INTEGER NOT NULL,
+        treatment_id INTEGER,
+        description TEXT NOT NULL,
+        status TEXT DEFAULT 'pending' CHECK(status IN('pending', 'ordered', 'received')),
+        notes TEXT,
+        created_at TEXT DEFAULT(datetime('now')),
+        updated_at TEXT DEFAULT(datetime('now')),
+        FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY(doctor_id) REFERENCES users(id),
+        FOREIGN KEY(treatment_id) REFERENCES treatments(id) ON DELETE SET NULL
+    );
 
         DROP VIEW IF EXISTS patient_balance;
         CREATE VIEW patient_balance AS
-        SELECT 
-            p.id as patient_id,
-            p.full_name,
-            -- Total Billed = Invoices + Completed Uninvoiced Treatments + Completed Uninvoiced CDTs
-            COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) 
-            +
-            COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
-            +
-            COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)), 0)
+    SELECT
+    p.id as patient_id,
+        p.full_name,
+        --Total Billed = Invoices + Completed Uninvoiced Treatments + Completed Uninvoiced CDTs
+    COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0)
+    +
+        COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN(SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
+    +
+        COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN(SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)), 0)
             as total_billed,
-            
-            COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as total_paid,
-            
+
+        COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as total_paid,
+
             (
-                COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) 
-                +
-                COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
-                +
-                COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)), 0)
-            ) - 
-            COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
+                COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0)
+            +
+            COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN(SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
+    +
+        COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN(SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)), 0)
+            ) -
+        COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
         FROM patients p;
     `);
 
@@ -597,9 +652,9 @@ export function init_db() {
     ];
 
     const insertCategory = db.prepare(`
-      INSERT OR IGNORE INTO spending_categories (name, description, color)
-      VALUES (?, ?, ?)
-    `);
+      INSERT OR IGNORE INTO spending_categories(name, description, color)
+    VALUES(?, ?, ?)
+        `);
 
     for (const [name, desc, color] of defaultCategories) {
         insertCategory.run(name, desc, color);
@@ -614,9 +669,9 @@ export function init_db() {
     ];
 
     const insertSetting = db.prepare(`
-        INSERT OR IGNORE INTO settings (key, value)
-        VALUES (?, ?)
-    `);
+        INSERT OR IGNORE INTO settings(key, value)
+    VALUES(?, ?)
+        `);
 
     for (const [key, value] of defaultSettings) {
         insertSetting.run(key, value);
@@ -678,7 +733,7 @@ export function init_db() {
 
 
     db.exec(`
-        CREATE TABLE IF NOT EXISTS clinical_standards (
+        CREATE TABLE IF NOT EXISTS clinical_standards(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             category TEXT,
             treatment_name TEXT,
@@ -696,9 +751,9 @@ export function init_db() {
     const standardsCount = db.prepare('SELECT count(*) as count FROM clinical_standards').get() as { count: number };
     if (standardsCount.count === 0) {
         const insertStandard = db.prepare(`
-                INSERT INTO clinical_standards (category, treatment_name, min_duration, max_duration, typical_sessions, complexity, gap_days_min, gap_days_max, workflow_steps)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `);
+                INSERT INTO clinical_standards(category, treatment_name, min_duration, max_duration, typical_sessions, complexity, gap_days_min, gap_days_max, workflow_steps)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
 
         const standards = [
             ['Consultation', 'Diagnostic / Urgence', 15, 30, 1, 1, 0, 0, 'Examen + radio + diagnostic ± traitement urgence'],
@@ -740,65 +795,65 @@ export function init_db() {
                 db.exec('DROP VIEW IF EXISTS patient_balance');
                 db.exec('ALTER TABLE treatments RENAME TO treatments_old');
                 db.exec(`
-                    CREATE TABLE treatments (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        appointment_id INTEGER,
-                        patient_id INTEGER NOT NULL,
-                        doctor_id INTEGER NOT NULL,
-                        treatment_date TEXT NOT NULL,
-                        tooth_number TEXT,
-                        treatment_type TEXT NOT NULL,
-                        description TEXT,
-                        diagnosis TEXT,
-                        treatment_notes TEXT,
-                        cost REAL DEFAULT 0.0,
-                        paid_amount REAL DEFAULT 0.0,
-                        status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'in_progress', 'completed')),
-                        created_at TEXT DEFAULT (datetime('now')),
-                        FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
-                        FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-                        FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE
-                    );
-                `);
+                    CREATE TABLE treatments(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            appointment_id INTEGER,
+            patient_id INTEGER NOT NULL,
+            doctor_id INTEGER NOT NULL,
+            treatment_date TEXT NOT NULL,
+            tooth_number TEXT,
+            treatment_type TEXT NOT NULL,
+            description TEXT,
+            diagnosis TEXT,
+            treatment_notes TEXT,
+            cost REAL DEFAULT 0.0,
+            paid_amount REAL DEFAULT 0.0,
+            status TEXT DEFAULT 'pending' CHECK(status IN('pending', 'in_progress', 'completed')),
+            created_at TEXT DEFAULT(datetime('now')),
+            FOREIGN KEY(appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
+            FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+            FOREIGN KEY(doctor_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+    `);
                 // Explicitly map existing columns, leave diagnosis and treatment_notes as NULL
                 db.exec(`
-                    INSERT INTO treatments (
-                        id, appointment_id, patient_id, doctor_id, treatment_date, 
-                        tooth_number, treatment_type, description, cost, paid_amount, status, created_at
-                    ) 
-                    SELECT 
-                        id, appointment_id, patient_id, doctor_id, treatment_date, 
-                        tooth_number, treatment_type, description, cost, paid_amount, status, created_at 
+                    INSERT INTO treatments(
+        id, appointment_id, patient_id, doctor_id, treatment_date,
+        tooth_number, treatment_type, description, cost, paid_amount, status, created_at
+    )
+    SELECT
+    id, appointment_id, patient_id, doctor_id, treatment_date,
+        tooth_number, treatment_type, description, cost, paid_amount, status, created_at 
                     FROM treatments_old
-                `);
+        `);
                 db.exec('DROP TABLE treatments_old');
 
                 db.exec(`
                     DROP VIEW IF EXISTS patient_balance;
                     CREATE VIEW patient_balance AS
-                    SELECT 
-                        p.id as patient_id,
-                        p.full_name,
-                        -- Total Billed = Invoices + Completed Uninvoiced Treatments
-                        COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) 
-                        +
-                        COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
-                        +
-                        COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
+    SELECT
+    p.id as patient_id,
+        p.full_name,
+        --Total Billed = Invoices + Completed Uninvoiced Treatments
+    COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0)
+    +
+        COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN(SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
+    +
+        COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
                         as total_billed,
-                        
-                        COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as total_paid,
-                        
-                        (
-                            COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0) 
-                            +
-                            COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
-                            +
-                            COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
-                        ) - 
-                        COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
+
+        COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as total_paid,
+
+            (
+                COALESCE((SELECT SUM(total_amount) FROM invoices WHERE patient_id = p.id AND status != 'cancelled'), 0)
+            +
+            COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN(SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
+    +
+        COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
+                        ) -
+        COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
                     FROM patients p;
-                `);
+    `);
             })();
             console.log('Treatments table migration successful.');
         }
@@ -863,16 +918,16 @@ export function init_db() {
         const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='patient_history_logs'").get();
         if (!tables) {
             db.exec(`
-                CREATE TABLE IF NOT EXISTS patient_history_logs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    patient_id INTEGER NOT NULL,
-                    update_date TEXT DEFAULT (datetime('now')),
-                    updated_by INTEGER,
-                    changes TEXT,
-                    FOREIGN KEY (patient_id) REFERENCES patients(id),
-                    FOREIGN KEY (updated_by) REFERENCES users(id)
-                )
-            `);
+                CREATE TABLE IF NOT EXISTS patient_history_logs(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        update_date TEXT DEFAULT(datetime('now')),
+        updated_by INTEGER,
+        changes TEXT,
+        FOREIGN KEY(patient_id) REFERENCES patients(id),
+        FOREIGN KEY(updated_by) REFERENCES users(id)
+    )
+        `);
             console.log('Created patient_history_logs table');
         }
     } catch (e) {
@@ -1053,32 +1108,32 @@ export function init_db() {
 
             // Create new table with nullable doctor_id
             db.exec(`
-                CREATE TABLE appointments_new (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    patient_id INTEGER NOT NULL,
-                    doctor_id INTEGER,
-                    booked_by_id INTEGER,
-                    start_time TEXT NOT NULL,
-                    end_time TEXT NOT NULL,
-                    duration_minutes INTEGER DEFAULT 30,
-                    appointment_type TEXT DEFAULT 'consultation',
-                    status TEXT DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show', 'in_progress')),
-                    notes TEXT,
-                    created_at TEXT DEFAULT (datetime('now')),
-                    updated_at TEXT DEFAULT (datetime('now')),
-                    created_by_user_id INTEGER REFERENCES users(id),
-                    confirmed_by_user_id INTEGER REFERENCES users(id),
-                    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-                    FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE,
-                    FOREIGN KEY (booked_by_id) REFERENCES patients(id)
-                );
-            `);
+                CREATE TABLE appointments_new(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            doctor_id INTEGER,
+            booked_by_id INTEGER,
+            start_time TEXT NOT NULL,
+            end_time TEXT NOT NULL,
+            duration_minutes INTEGER DEFAULT 30,
+            appointment_type TEXT DEFAULT 'consultation',
+            status TEXT DEFAULT 'scheduled' CHECK(status IN('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show', 'in_progress')),
+            notes TEXT,
+            created_at TEXT DEFAULT(datetime('now')),
+            updated_at TEXT DEFAULT(datetime('now')),
+            created_by_user_id INTEGER REFERENCES users(id),
+            confirmed_by_user_id INTEGER REFERENCES users(id),
+            FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+            FOREIGN KEY(doctor_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY(booked_by_id) REFERENCES patients(id)
+        );
+    `);
 
             // Copy data from old table to new table
             db.exec(`
-                INSERT INTO appointments_new 
-                SELECT * FROM appointments;
-            `);
+                INSERT INTO appointments_new
+    SELECT * FROM appointments;
+    `);
 
             // Drop old table and rename new one
             db.exec('DROP TABLE appointments');
@@ -1098,107 +1153,107 @@ export function init_db() {
         if (isOldSchema) {
             console.log('Upgrading dental_treatments table to new schema...');
             db.exec(`
-                -- CDT Code reference table
-                CREATE TABLE IF NOT EXISTS cdt_codes (
-                    code TEXT PRIMARY KEY,
-                    category TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    default_fee REAL DEFAULT 0,
-                    requires_surfaces INTEGER DEFAULT 0,
-                    whole_tooth_only INTEGER DEFAULT 0,
-                    valid_tooth_types TEXT,
-                    color_code TEXT DEFAULT '#3B82F6',
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-                );
+    --CDT Code reference table
+                CREATE TABLE IF NOT EXISTS cdt_codes(
+        code TEXT PRIMARY KEY,
+        category TEXT NOT NULL,
+        description TEXT NOT NULL,
+        default_fee REAL DEFAULT 0,
+        requires_surfaces INTEGER DEFAULT 0,
+        whole_tooth_only INTEGER DEFAULT 0,
+        valid_tooth_types TEXT,
+        color_code TEXT DEFAULT '#3B82F6',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
 
-                -- Update dental_treatments table
+    --Update dental_treatments table
                 DROP TABLE IF EXISTS dental_treatments_old;
                 ALTER TABLE dental_treatments RENAME TO dental_treatments_old;
 
-                CREATE TABLE dental_treatments (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    patient_id INTEGER NOT NULL,
-                    tooth_number TEXT NOT NULL,
-                    surfaces TEXT,
-                    cdt_code TEXT,
-                    treatment_type TEXT NOT NULL,
-                    status TEXT NOT NULL CHECK(status IN ('existing', 'completed', 'planned')),
-                    fee REAL DEFAULT 0,
-                    date_performed TEXT,
-                    provider_id INTEGER,
-                    diagnosis TEXT,
-                    notes TEXT,
-                    color TEXT NOT NULL,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-                    FOREIGN KEY (provider_id) REFERENCES users(id),
-                    FOREIGN KEY (cdt_code) REFERENCES cdt_codes(code)
-                );
+                CREATE TABLE dental_treatments(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        tooth_number TEXT NOT NULL,
+        surfaces TEXT,
+        cdt_code TEXT,
+        treatment_type TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN('existing', 'completed', 'planned')),
+        fee REAL DEFAULT 0,
+        date_performed TEXT,
+        provider_id INTEGER,
+        diagnosis TEXT,
+        notes TEXT,
+        color TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY(provider_id) REFERENCES users(id),
+        FOREIGN KEY(cdt_code) REFERENCES cdt_codes(code)
+    );
 
-                -- Copy old data
-                INSERT INTO dental_treatments (
-                    id, patient_id, tooth_number, surfaces, treatment_type, 
-                    status, notes, color, created_at
-                )
-                SELECT 
-                    id, patient_id, tooth_number, surface, treatment_type,
-                    status, notes, color, created_at
+    --Copy old data
+                INSERT INTO dental_treatments(
+        id, patient_id, tooth_number, surfaces, treatment_type,
+        status, notes, color, created_at
+    )
+    SELECT
+    id, patient_id, tooth_number, surface, treatment_type,
+        status, notes, color, created_at
                 FROM dental_treatments_old;
 
                 DROP TABLE IF EXISTS dental_treatments_old;
-            `);
+    `);
         } else {
             // Just ensure tables exist for fresh install
             db.exec(`
-                CREATE TABLE IF NOT EXISTS cdt_codes (
-                    code TEXT PRIMARY KEY,
-                    category TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    default_fee REAL DEFAULT 0,
-                    requires_surfaces INTEGER DEFAULT 0,
-                    whole_tooth_only INTEGER DEFAULT 0,
-                    valid_tooth_types TEXT,
-                    color_code TEXT DEFAULT '#3B82F6',
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-                );
+                CREATE TABLE IF NOT EXISTS cdt_codes(
+        code TEXT PRIMARY KEY,
+        category TEXT NOT NULL,
+        description TEXT NOT NULL,
+        default_fee REAL DEFAULT 0,
+        requires_surfaces INTEGER DEFAULT 0,
+        whole_tooth_only INTEGER DEFAULT 0,
+        valid_tooth_types TEXT,
+        color_code TEXT DEFAULT '#3B82F6',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
 
-                CREATE TABLE IF NOT EXISTS dental_treatments (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    patient_id INTEGER NOT NULL,
-                    tooth_number TEXT NOT NULL,
-                    surfaces TEXT,
-                    cdt_code TEXT,
-                    treatment_type TEXT NOT NULL,
-                    status TEXT NOT NULL CHECK(status IN ('existing', 'completed', 'planned')),
-                    fee REAL DEFAULT 0,
-                    date_performed TEXT,
-                    provider_id INTEGER,
-                    diagnosis TEXT,
-                    notes TEXT,
-                    color TEXT NOT NULL,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-                    FOREIGN KEY (provider_id) REFERENCES users(id),
-                    FOREIGN KEY (cdt_code) REFERENCES cdt_codes(code)
-                );
-            `);
+                CREATE TABLE IF NOT EXISTS dental_treatments(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        tooth_number TEXT NOT NULL,
+        surfaces TEXT,
+        cdt_code TEXT,
+        treatment_type TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN('existing', 'completed', 'planned')),
+        fee REAL DEFAULT 0,
+        date_performed TEXT,
+        provider_id INTEGER,
+        diagnosis TEXT,
+        notes TEXT,
+        color TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY(provider_id) REFERENCES users(id),
+        FOREIGN KEY(cdt_code) REFERENCES cdt_codes(code)
+    );
+    `);
         }
 
         db.exec(`
             CREATE INDEX IF NOT EXISTS idx_dental_tooth ON dental_treatments(patient_id, tooth_number);
             
-            CREATE TABLE IF NOT EXISTS tooth_status (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                patient_id INTEGER NOT NULL,
-                tooth_number TEXT NOT NULL,
-                is_primary INTEGER DEFAULT 1,
-                status TEXT DEFAULT 'present' CHECK(status IN ('present', 'missing', 'erupting', 'impacted')),
-                notes TEXT,
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(patient_id, tooth_number),
-                FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
-            );
-        `);
+            CREATE TABLE IF NOT EXISTS tooth_status(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        tooth_number TEXT NOT NULL,
+        is_primary INTEGER DEFAULT 1,
+        status TEXT DEFAULT 'present' CHECK(status IN('present', 'missing', 'erupting', 'impacted')),
+        notes TEXT,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(patient_id, tooth_number),
+        FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE
+    );
+    `);
 
         // Seed basic CDT codes if empty
         const count = db.prepare("SELECT COUNT(*) as count FROM cdt_codes").get() as { count: number };
@@ -1234,11 +1289,11 @@ export function init_db() {
             ];
 
             const insertCDT = db.prepare(`
-                INSERT OR IGNORE INTO cdt_codes (
-                    code, category, description, default_fee, requires_surfaces, 
-                    whole_tooth_only, valid_tooth_types, color_code
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `);
+                INSERT OR IGNORE INTO cdt_codes(
+        code, category, description, default_fee, requires_surfaces,
+        whole_tooth_only, valid_tooth_types, color_code
+    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+        `);
 
             for (const code of basicCDTCodes) {
                 insertCDT.run(...code);
@@ -1281,6 +1336,88 @@ export function init_db() {
 
 export function getAllCDTCodes() {
     return db.prepare('SELECT * FROM cdt_codes ORDER BY category, code').all();
+}
+
+export function getCancellationReasons(type: 'postpone' | 'cancel') {
+    return db.prepare(`
+        SELECT id, reason_text 
+        FROM cancellation_reasons 
+        WHERE is_active = 1 
+          AND (reason_type = ? OR reason_type = 'both')
+        ORDER BY display_order ASC, reason_text ASC
+    `).all(type) as any[];
+}
+
+export function getAllCancellationReasons() {
+    return db.prepare("SELECT * FROM cancellation_reasons ORDER BY display_order ASC").all();
+}
+
+export function getReasonRequirements() {
+    const settings = db.prepare(`
+        SELECT require_postpone_reason, require_cancel_reason 
+        FROM clinic_settings 
+        WHERE id = 1
+    `).get() as any;
+
+    return {
+        postponeRequired: settings?.require_postpone_reason === 1,
+        cancelRequired: settings?.require_cancel_reason === 1
+    };
+}
+
+export function cancelAppointmentWithReason(
+    appointmentId: number,
+    reasonId: number | null,
+    customReason: string | null,
+    userId: number
+) {
+    return db.prepare(`
+        UPDATE appointments 
+        SET 
+            status = 'cancelled',
+            cancellation_reason_id = ?,
+            cancellation_custom_reason = ?,
+            cancellation_timestamp = datetime('now'),
+            cancelled_by_user_id = ?,
+            updated_at = datetime('now')
+        WHERE id = ?
+    `).run(reasonId, customReason, userId, appointmentId);
+}
+
+export function postponeAppointmentWithReason(
+    appointmentId: number,
+    newStartTime: string,
+    reasonId: number | null,
+    customReason: string | null,
+    userId: number
+) {
+    return db.prepare(`
+        UPDATE appointments 
+        SET 
+            status = 'scheduled',
+            start_time = ?,
+            cancellation_reason_id = ?,
+            cancellation_custom_reason = ?,
+            cancellation_timestamp = datetime('now'),
+            cancelled_by_user_id = ?,
+            updated_at = datetime('now')
+        WHERE id = ?
+    `).run(newStartTime, reasonId, customReason, userId, appointmentId);
+}
+
+export function createCancellationReason(reasonText: string, reasonType: string) {
+    return db.prepare(`
+        INSERT INTO cancellation_reasons (reason_text, reason_type)
+        VALUES (?, ?)
+    `).run(reasonText, reasonType);
+}
+
+export function deleteCancellationReason(id: number) {
+    // Prevent deleting "Custom/Other"
+    return db.prepare(`
+        DELETE FROM cancellation_reasons 
+        WHERE id = ? AND reason_text != 'Custom/Other'
+    `).run(id);
 }
 
 function seed_db() {
@@ -1471,15 +1608,15 @@ function seedAlgerianCDTCodes() {
         ];
 
         const insert = db.prepare(`
-            INSERT INTO cdt_codes (code, category, description, default_fee, color_code, requires_surfaces)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(code) DO UPDATE SET 
-                category = excluded.category,
-                description = excluded.description,
-                default_fee = excluded.default_fee,
-                color_code = excluded.color_code,
-                requires_surfaces = excluded.requires_surfaces
-        `);
+            INSERT INTO cdt_codes(code, category, description, default_fee, color_code, requires_surfaces)
+    VALUES(?, ?, ?, ?, ?, ?)
+            ON CONFLICT(code) DO UPDATE SET
+    category = excluded.category,
+        description = excluded.description,
+        default_fee = excluded.default_fee,
+        color_code = excluded.color_code,
+        requires_surfaces = excluded.requires_surfaces
+            `);
 
         for (const c of codes) {
             insert.run(c.code, c.cat, c.desc, c.fee, c.color, c.reqSurf ? 1 : 0);
@@ -1506,7 +1643,7 @@ export function createUser(userData: any) {
     const placeholders = keys.map(() => '?').join(', ');
     const values = Object.values(userData);
 
-    const stmt = db.prepare(`INSERT INTO users (${columns}) VALUES (${placeholders})`);
+    const stmt = db.prepare(`INSERT INTO users(${columns}) VALUES(${placeholders})`);
     const info = stmt.run(...values);
     return info.lastInsertRowid;
 }
@@ -1525,6 +1662,18 @@ export function updateUserPassword(id: number, passwordHash: string) {
 
 export function getDoctors() {
     return db.prepare("SELECT id, full_name FROM users WHERE role = 'doctor'").all();
+}
+
+export function getClinicSettings() {
+    return db.prepare('SELECT * FROM clinic_settings WHERE id = 1').get();
+}
+
+export function updateReasonRequirements(postponeRequired: boolean, cancelRequired: boolean) {
+    return db.prepare(`
+        UPDATE clinic_settings 
+        SET require_postpone_reason = ?, require_cancel_reason = ? 
+        WHERE id = 1
+    `).run(postponeRequired ? 1 : 0, cancelRequired ? 1 : 0);
 }
 
 // --- Patients ---
@@ -1546,7 +1695,7 @@ export function getPatientsEnhanced({
 
     if (searchTerm) {
         whereClause += ' AND p.full_name LIKE ?';
-        params.push(`%${searchTerm}%`);
+        params.push(`% ${searchTerm}% `);
     }
 
     const ageExpr = `((strftime('%Y', 'now') - strftime('%Y', p.date_of_birth)) - (strftime('%m-%d', 'now') < strftime('%m-%d', p.date_of_birth)))`;
@@ -1555,9 +1704,9 @@ export function getPatientsEnhanced({
 
     if (filter) {
         switch (filter) {
-            case 'child': whereClause += ` AND ${ageExpr} < 16`; break;
+            case 'child': whereClause += ` AND ${ageExpr} <16`; break;
             case 'adult': whereClause += ` AND ${ageExpr} >= 16`; break;
-            case 'debt': whereClause += ` AND ${netBalanceExpr} < 0`; break;
+            case 'debt': whereClause += ` AND ${netBalanceExpr} <0`; break;
             case 'credit': whereClause += ` AND ${netBalanceExpr} > 0`; break;
             case 'upcoming': whereClause += ` AND ${nextApptExpr} IS NOT NULL`; break;
             case 'male': whereClause += ` AND p.gender = 'Male'`; break;
@@ -1567,21 +1716,21 @@ export function getPatientsEnhanced({
 
     const selectFields = isLimited
         ? `p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth, p.gender, p.relationship_to_primary`
-        : `p.*`;
+        : `p.* `;
 
     const sql = `
-        SELECT 
+    SELECT 
             ${selectFields},
             ${netBalanceExpr} as net_balance,
-            ${nextApptExpr} as next_appointment,
-            (${ageExpr} < 16) as is_child,
-            ${ageExpr} as age
+        ${nextApptExpr} as next_appointment,
+            (${ageExpr} <16) as is_child,
+                ${ageExpr} as age
         FROM patients p
         LEFT JOIN patient_balance pb ON p.id = pb.patient_id
         WHERE ${whereClause}
         ORDER BY p.full_name ASC
-        LIMIT ? OFFSET ?
-    `;
+    LIMIT ? OFFSET ?
+        `;
 
     params.push(limit, offset);
     return db.prepare(sql).all(...params);
@@ -1593,7 +1742,7 @@ export function getPatientsCount(searchTerm?: string, filter?: string) {
 
     if (searchTerm) {
         whereClause += ' AND p.full_name LIKE ?';
-        params.push(`%${searchTerm}%`);
+        params.push(`% ${searchTerm}% `);
     }
 
     if (filter) {
@@ -1602,9 +1751,9 @@ export function getPatientsCount(searchTerm?: string, filter?: string) {
         const nextApptExpr = `(SELECT MIN(start_time) FROM appointments WHERE patient_id = p.id AND start_time >= datetime('now', 'localtime') AND status != 'cancelled')`;
 
         switch (filter) {
-            case 'child': whereClause += ` AND ${ageExpr} < 16`; break;
+            case 'child': whereClause += ` AND ${ageExpr} <16`; break;
             case 'adult': whereClause += ` AND ${ageExpr} >= 16`; break;
-            case 'debt': whereClause += ` AND ${netBalanceExpr} < 0`; break;
+            case 'debt': whereClause += ` AND ${netBalanceExpr} <0`; break;
             case 'credit': whereClause += ` AND ${netBalanceExpr} > 0`; break;
             case 'upcoming': whereClause += ` AND ${nextApptExpr} IS NOT NULL`; break;
             case 'male': whereClause += ` AND p.gender = 'Male'`; break;
@@ -1638,7 +1787,7 @@ export function createPatient(patientData: any) {
     const placeholders = keys.map(() => '?').join(', ');
     const values = Object.values(patientData);
 
-    const stmt = db.prepare(`INSERT INTO patients (${columns}) VALUES (${placeholders})`);
+    const stmt = db.prepare(`INSERT INTO patients(${columns}) VALUES(${placeholders})`);
     const info = stmt.run(...values);
     return info.lastInsertRowid;
 }
@@ -1652,7 +1801,7 @@ export function updatePatient(id: number, patientData: any, updatedBy?: number) 
     const values = [...Object.values(patientData), id];
 
     // Add last_updated timestamp
-    const updateStmt = db.prepare(`UPDATE patients SET ${setClause}, last_updated = datetime('now') WHERE id = ?`);
+    const updateStmt = db.prepare(`UPDATE patients SET ${setClause}, last_updated = datetime('now') WHERE id = ? `);
     const result = updateStmt.run(...values);
 
     // Log changes to history if updatedBy is provided
@@ -1668,9 +1817,9 @@ export function updatePatient(id: number, patientData: any, updatedBy?: number) 
 
         if (Object.keys(changes).length > 0) {
             const logStmt = db.prepare(`
-                INSERT INTO patient_history_logs (patient_id, updated_by, changes)
-                VALUES (?, ?, ?)
-            `);
+                INSERT INTO patient_history_logs(patient_id, updated_by, changes)
+    VALUES(?, ?, ?)
+        `);
             logStmt.run(id, updatedBy, JSON.stringify(changes));
         }
     }
@@ -1688,8 +1837,8 @@ export function archivePatient(id: number) {
     const futureAppts = db.prepare(`
         SELECT count(*) as count 
         FROM appointments 
-        WHERE patient_id = ? AND date(start_time) >= date('now') AND status NOT IN ('cancelled', 'completed')
-    `).get(id) as { count: number };
+        WHERE patient_id = ? AND date(start_time) >= date('now') AND status NOT IN('cancelled', 'completed')
+        `).get(id) as { count: number };
 
     if (futureAppts.count > 0) {
         throw new Error('Cannot archive patient with upcoming appointments.');
@@ -1705,30 +1854,30 @@ export function unarchivePatient(id: number) {
 // Limited access for Assistants
 export function getAllPatientsLimited() {
     return db.prepare(`
-        SELECT 
-            p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth, p.gender,
-            p.relationship_to_primary,
-            parent.full_name as parent_name, parent.phone as parent_phone
+    SELECT
+    p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth, p.gender,
+        p.relationship_to_primary,
+        parent.full_name as parent_name, parent.phone as parent_phone
         FROM patients p
         LEFT JOIN patients parent ON p.primary_contract_id = parent.id
         WHERE p.is_archived = 0 
         ORDER BY p.full_name ASC
         LIMIT 1000
-    `).all();
+        `).all();
 }
 
 export function searchPatientsByNameLimited(searchTerm: string) {
     return db.prepare(`
-        SELECT 
-            p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth, p.gender,
-            p.relationship_to_primary,
-            parent.full_name as parent_name, parent.phone as parent_phone
+    SELECT
+    p.id, p.full_name, p.phone, p.email, p.secondary_phone, p.secondary_email, p.date_of_birth, p.gender,
+        p.relationship_to_primary,
+        parent.full_name as parent_name, parent.phone as parent_phone
         FROM patients p
         LEFT JOIN patients parent ON p.primary_contract_id = parent.id
         WHERE p.is_archived = 0 AND p.full_name LIKE ?
         ORDER BY p.full_name ASC
         LIMIT 100
-    `).all(`%${searchTerm}%`);
+        `).all(` % ${searchTerm}% `);
 }
 
 export function getArchivedPatientsLimited() {
@@ -1761,7 +1910,7 @@ export function getPatientHistoryLogs(patientId: number) {
         LEFT JOIN users u ON h.updated_by = u.id
         WHERE h.patient_id = ?
         ORDER BY h.update_date DESC
-    `).all(patientId);
+            `).all(patientId);
 }
 
 
@@ -1772,71 +1921,71 @@ export function getAppointmentById(id: number) {
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         WHERE a.id = ?
-    `).get(id);
+        `).get(id);
 }
 
 export function getDoctorAppointmentsToday(doctorId: number) {
     const today = new Date().toISOString().split('T')[0];
     return db.prepare(`
-        SELECT 
-            a.id, a.start_time, a.end_time, a.duration_minutes, 
-            a.status, a.appointment_type, a.notes,
-            p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone, p.date_of_birth as patient_dob, p.gender as patient_gender
+        SELECT
+    a.id, a.start_time, a.end_time, a.duration_minutes,
+        a.status, a.appointment_type, a.notes,
+        p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone, p.date_of_birth as patient_dob, p.gender as patient_gender
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
-        WHERE a.doctor_id = ? 
-          AND a.start_time >= ? 
-          AND a.start_time <= ?
-        ORDER BY a.start_time ASC
-    `).all(doctorId, today + ' 00:00:00', today + ' 23:59:59');
+        WHERE a.doctor_id = ?
+        AND a.start_time >= ?
+            AND a.start_time <= ?
+                ORDER BY a.start_time ASC
+                    `).all(doctorId, today + ' 00:00:00', today + ' 23:59:59');
 }
 
 // Deprecated or alias for compatibility
 export function getDoctorAppointments(doctorId: number, dateStr: string) {
     return db.prepare(`
-        SELECT 
-            a.id, a.start_time, a.duration_minutes, a.status, a.notes,
-            p.full_name as patient_name, p.phone as patient_phone, p.email as patient_email, p.date_of_birth as patient_dob
+    SELECT
+    a.id, a.start_time, a.duration_minutes, a.status, a.notes,
+        p.full_name as patient_name, p.phone as patient_phone, p.email as patient_email, p.date_of_birth as patient_dob
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
-        WHERE a.doctor_id = ? 
-          AND date(a.start_time) = date(?)
+        WHERE a.doctor_id = ?
+        AND date(a.start_time) = date(?)
         ORDER BY a.start_time ASC
-    `).all(doctorId, dateStr);
+        `).all(doctorId, dateStr);
 }
 
 
 export function getDoctorUpcomingAppointments(doctorId: number) {
     return db.prepare(`
-        SELECT 
-            a.id, a.start_time, a.end_time, a.duration_minutes, 
-            a.status, a.appointment_type, a.notes,
-            p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone, 
-            p.email as patient_email, p.date_of_birth as patient_dob, p.gender as patient_gender,
-            p.secondary_phone, p.secondary_email
+    SELECT
+    a.id, a.start_time, a.end_time, a.duration_minutes,
+        a.status, a.appointment_type, a.notes,
+        p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone,
+        p.email as patient_email, p.date_of_birth as patient_dob, p.gender as patient_gender,
+        p.secondary_phone, p.secondary_email
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
-        WHERE a.doctor_id = ? 
-          AND a.start_time >= date('now', '+1 day')
+        WHERE a.doctor_id = ?
+        AND a.start_time >= date('now', '+1 day')
         ORDER BY a.start_time ASC
         LIMIT 100
-    `).all(doctorId);
+        `).all(doctorId);
 }
 
 export function getAllUpcomingAppointments() {
     return db.prepare(`
-        SELECT 
-            a.id, a.start_time, a.end_time, a.duration_minutes, 
-            a.status, a.appointment_type, a.doctor_id, a.notes,
-            a.created_by_user_id, a.confirmed_by_user_id,
-            p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone,
-            p.email as patient_email, p.date_of_birth, p.gender,
-            p.secondary_email, p.secondary_phone,
-            u.full_name as doctor_name,
-            b.full_name as booked_by_name,
-            p.relationship_to_primary,
-            creator.full_name as created_by_name,
-            confirmer.full_name as confirmed_by_name
+    SELECT
+    a.id, a.start_time, a.end_time, a.duration_minutes,
+        a.status, a.appointment_type, a.doctor_id, a.notes,
+        a.created_by_user_id, a.confirmed_by_user_id,
+        p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone,
+        p.email as patient_email, p.date_of_birth, p.gender,
+        p.secondary_email, p.secondary_phone,
+        u.full_name as doctor_name,
+        b.full_name as booked_by_name,
+        p.relationship_to_primary,
+        creator.full_name as created_by_name,
+        confirmer.full_name as confirmed_by_name
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         LEFT JOIN users u ON a.doctor_id = u.id
@@ -1846,7 +1995,7 @@ export function getAllUpcomingAppointments() {
         WHERE a.start_time >= date('now', '-30 days')
         ORDER BY a.start_time ASC
         LIMIT 500
-    `).all();
+        `).all();
 }
 
 // Backwards compatibility wrapper (if old code calls it)
@@ -1864,7 +2013,7 @@ export function getPatientAppointments(patientId: number) {
         JOIN users u ON a.doctor_id = u.id
         WHERE a.patient_id = ?
         ORDER BY a.start_time DESC
-    `).all(patientId);
+            `).all(patientId);
 }
 
 // Check if doctor has conflicting appointments
@@ -1873,17 +2022,17 @@ export function checkDoctorConflict(doctorId: number, startTime: string, endTime
         SELECT COUNT(*) as count
         FROM appointments
         WHERE doctor_id = ?
-          AND status NOT IN ('cancelled', 'no_show')
-          AND (
-              -- New appointment starts during existing appointment
-              (? >= start_time AND ? < end_time)
+        AND status NOT IN('cancelled', 'no_show')
+    AND(
+        --New appointment starts during existing appointment
+        (? >= start_time AND ? <end_time)
               OR
-              -- New appointment ends during existing appointment
-              (? > start_time AND ? <= end_time)
+              --New appointment ends during existing appointment
+        (? > start_time AND ? <= end_time)
               OR
-              -- New appointment completely overlaps existing appointment
-              (? <= start_time AND ? >= end_time)
-          )
+              --New appointment completely overlaps existing appointment
+        (? <= start_time AND ? >= end_time)
+    )
     `;
 
     const normalizedStart = normalizeDate(startTime);
@@ -1924,7 +2073,7 @@ export function createAppointment(appointmentData: any) {
     const placeholders = keys.map(() => '?').join(', ');
     const values = Object.values(appointmentData);
 
-    const stmt = db.prepare(`INSERT INTO appointments (${columns}) VALUES (${placeholders})`);
+    const stmt = db.prepare(`INSERT INTO appointments(${columns}) VALUES(${placeholders})`);
     const info = stmt.run(...values);
     return info.lastInsertRowid;
 }
@@ -1960,7 +2109,7 @@ export function updateAppointment(id: number, appointmentData: any) {
     const setClause = keys.map(key => `${key} = ?`).join(', ');
     const values = [...Object.values(appointmentData), id];
 
-    const stmt = db.prepare(`UPDATE appointments SET ${setClause} WHERE id = ?`);
+    const stmt = db.prepare(`UPDATE appointments SET ${setClause} WHERE id = ? `);
     return stmt.run(...values);
 }
 
@@ -1975,7 +2124,7 @@ export function createTreatment(treatmentData: any) {
     const placeholders = keys.map(() => '?').join(', ');
     const values = Object.values(treatmentData);
 
-    const stmt = db.prepare(`INSERT INTO treatments (${columns}) VALUES (${placeholders})`);
+    const stmt = db.prepare(`INSERT INTO treatments(${columns}) VALUES(${placeholders})`);
     const info = stmt.run(...values);
     return info.lastInsertRowid;
 }
@@ -1985,58 +2134,58 @@ export function updateTreatment(id: number, treatmentData: any) {
     const setClause = keys.map(key => `${key} = ?`).join(', ');
     const values = [...Object.values(treatmentData), id];
 
-    const stmt = db.prepare(`UPDATE treatments SET ${setClause} WHERE id = ?`);
+    const stmt = db.prepare(`UPDATE treatments SET ${setClause} WHERE id = ? `);
     return stmt.run(...values);
 }
 
 export function getTreatmentsByPatient(patientId: number) {
     return db.prepare(`
-        SELECT 
-            ('general_' || id) as unique_id,
-            id, 
-            treatment_date, 
-            tooth_number, 
-            treatment_type, 
-            description, 
-            cost, 
-            status,
-            'general' as source,
-            NULL as surfaces,
-            '#6B7280' as color, -- Default gray for general acts
+        SELECT
+        ('general_' || id) as unique_id,
+        id,
+        treatment_date,
+        tooth_number,
+        treatment_type,
+        description,
+        cost,
+        status,
+        'general' as source,
+        NULL as surfaces,
+        '#6B7280' as color, --Default gray for general acts
             diagnosis,
-            '' as cdt_code,
-            0 as is_custom,
-            '' as notes,
-            cost as fee,
-            id as treatment_id,
-            NULL as dental_treatment_id
+        '' as cdt_code,
+        0 as is_custom,
+        '' as notes,
+        cost as fee,
+        id as treatment_id,
+        NULL as dental_treatment_id
         FROM treatments 
-        WHERE patient_id = ? 
-        
+        WHERE patient_id = ?
+
         UNION ALL
-        
-        SELECT 
-            ('dental_' || id) as unique_id,
-            id, 
-            COALESCE(date_performed, created_at) as treatment_date, 
-            tooth_number, 
-            treatment_type, 
-            notes as description, 
-            fee as cost, 
-            status,
-            'dental' as source,
-            surfaces,
-            color,
-            diagnosis,
-            cdt_code,
-            is_custom,
-            notes,
-            fee,
-            NULL as treatment_id,
-            id as dental_treatment_id
+
+    SELECT
+        ('dental_' || id) as unique_id,
+        id,
+        COALESCE(date_performed, created_at) as treatment_date,
+        tooth_number,
+        treatment_type,
+        notes as description,
+        fee as cost,
+        status,
+        'dental' as source,
+        surfaces,
+        color,
+        diagnosis,
+        cdt_code,
+        is_custom,
+        notes,
+        fee,
+        NULL as treatment_id,
+        id as dental_treatment_id
         FROM dental_treatments 
         WHERE patient_id = ?
-        
+
         ORDER BY treatment_date DESC
     `).all(patientId, patientId);
 }
@@ -2062,7 +2211,7 @@ export function createPayment(paymentData: any) {
     const placeholders = keys.map(() => '?').join(', ');
     const values = Object.values(paymentData);
 
-    const stmt = db.prepare(`INSERT INTO payments (${columns}) VALUES (${placeholders})`);
+    const stmt = db.prepare(`INSERT INTO payments(${columns}) VALUES(${placeholders})`);
     const info = stmt.run(...values);
     return info.lastInsertRowid;
 }
@@ -2072,9 +2221,9 @@ export function getPaymentsByPatient(patientId: number) {
         SELECT p.*, u.full_name as recorded_by_name 
         FROM payments p
         JOIN users u ON p.recorded_by = u.id
-        WHERE p.patient_id = ? 
+        WHERE p.patient_id = ?
         ORDER BY p.payment_date DESC
-    `).all(patientId);
+            `).all(patientId);
 }
 
 export function getPendingPayments() {
@@ -2097,7 +2246,7 @@ export function createMedication(medData: any) {
     const keys = Object.keys(medData);
     const columns = keys.join(', ');
     const placeholders = keys.map(() => '?').join(', ');
-    const stmt = db.prepare(`INSERT INTO medications (${columns}) VALUES (${placeholders})`);
+    const stmt = db.prepare(`INSERT INTO medications(${columns}) VALUES(${placeholders})`);
     return stmt.run(...Object.values(medData)).lastInsertRowid;
 }
 
@@ -2127,10 +2276,10 @@ export function getNextPrescriptionNumber() {
     const lastPrescr = db.prepare(`
         SELECT prescription_number 
         FROM prescriptions 
-        WHERE prescription_number LIKE ? 
+        WHERE prescription_number LIKE ?
         ORDER BY CAST(SUBSTR(prescription_number, 1, INSTR(prescription_number, '-') - 1) AS INTEGER) DESC 
         LIMIT 1
-    `).get(`%-${year}`) as { prescription_number: string };
+        `).get(` % -${year} `) as { prescription_number: string };
 
     let nextNum = 1;
     if (lastPrescr && lastPrescr.prescription_number) {
@@ -2138,7 +2287,7 @@ export function getNextPrescriptionNumber() {
         nextNum = parseInt(parts[0]) + 1;
     }
 
-    return `${nextNum.toString().padStart(3, '0')}-${year}`;
+    return `${nextNum.toString().padStart(3, '0')} -${year} `;
 }
 
 export function createPrescription(patientId: number, doctorId: number, items: any[], notes?: string, type: string = 'Standard') {
@@ -2146,13 +2295,13 @@ export function createPrescription(patientId: number, doctorId: number, items: a
     const txn = db.transaction(() => {
         const prescriptionNumber = getNextPrescriptionNumber();
         const prescriptionId = db.prepare(`
-            INSERT INTO prescriptions (patient_id, doctor_id, notes, prescription_number, prescription_type) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO prescriptions(patient_id, doctor_id, notes, prescription_number, prescription_type)
+    VALUES(?, ?, ?, ?, ?)
         `).run(patientId, doctorId, notes || null, prescriptionNumber, type).lastInsertRowid;
 
         const insertItem = db.prepare(`
-            INSERT INTO prescription_items (prescription_id, medication_id, medication_name, dosage, duration, instructions)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO prescription_items(prescription_id, medication_id, medication_name, dosage, duration, instructions)
+    VALUES(?, ?, ?, ?, ?, ?)
         `);
 
         for (const item of items) {
@@ -2172,15 +2321,15 @@ export function createPrescription(patientId: number, doctorId: number, items: a
 
 export function getPrescriptionsByPatient(patientId: number) {
     return db.prepare(`
-        SELECT 
-            p.*, 
-            u.full_name as doctor_name,
-            (SELECT GROUP_CONCAT(medication_name, ', ') FROM prescription_items WHERE prescription_id = p.id) as meds_summary
+    SELECT
+    p.*,
+        u.full_name as doctor_name,
+        (SELECT GROUP_CONCAT(medication_name, ', ') FROM prescription_items WHERE prescription_id = p.id) as meds_summary
         FROM prescriptions p
         JOIN users u ON p.doctor_id = u.id
         WHERE p.patient_id = ?
         ORDER BY p.prescription_date DESC
-    `).all(patientId);
+            `).all(patientId);
 }
 
 export function getPrescriptionById(id: number) {
@@ -2190,7 +2339,7 @@ export function getPrescriptionById(id: number) {
         JOIN users u ON p.doctor_id = u.id
         JOIN patients pat ON p.patient_id = pat.id
         WHERE p.id = ?
-    `).get(id) as any;
+        `).get(id) as any;
 
     if (prescription) {
         prescription.items = db.prepare('SELECT * FROM prescription_items WHERE prescription_id = ?').all(id);
@@ -2211,8 +2360,8 @@ export function createPrescriptionTemplate(name: string, description: string, it
     const txn = db.transaction(() => {
         const templateId = db.prepare('INSERT INTO prescription_templates (name, description) VALUES (?, ?)').run(name, description).lastInsertRowid;
         const insertItem = db.prepare(`
-            INSERT INTO prescription_template_items (template_id, medication_id, medication_name, dosage, duration, instructions)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO prescription_template_items(template_id, medication_id, medication_name, dosage, duration, instructions)
+    VALUES(?, ?, ?, ?, ?, ?)
         `);
         for (const item of items) {
             insertItem.run(templateId, item.medication_id || null, item.medication_name, item.dosage, item.duration || null, item.instructions || null);
@@ -2229,7 +2378,7 @@ export function deletePrescriptionTemplate(id: number) {
 // --- Invoices ---
 export function getNextInvoiceNumber() {
     const year = new Date().getFullYear();
-    const lastInvoice = db.prepare("SELECT invoice_number FROM invoices WHERE invoice_number LIKE ? ORDER BY id DESC LIMIT 1").get(`FAC-${year}-%`) as { invoice_number: string };
+    const lastInvoice = db.prepare("SELECT invoice_number FROM invoices WHERE invoice_number LIKE ? ORDER BY id DESC LIMIT 1").get(`FAC - ${year} -% `) as { invoice_number: string };
 
     let nextNum = 1;
     if (lastInvoice) {
@@ -2237,7 +2386,7 @@ export function getNextInvoiceNumber() {
         nextNum = parseInt(parts[2]) + 1;
     }
 
-    return `FAC-${year}-${nextNum.toString().padStart(4, '0')}`;
+    return `FAC - ${year} -${nextNum.toString().padStart(4, '0')} `;
 }
 
 export function createInvoice(patientId: number, items: any[], type: 'detailed' | 'global' = 'detailed', globalDescription?: string) {
@@ -2246,13 +2395,13 @@ export function createInvoice(patientId: number, items: any[], type: 'detailed' 
         const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
 
         const invoiceId = db.prepare(`
-            INSERT INTO invoices (invoice_number, patient_id, total_amount, status, invoice_type, global_description)
-            VALUES (?, ?, ?, 'unpaid', ?, ?)
+            INSERT INTO invoices(invoice_number, patient_id, total_amount, status, invoice_type, global_description)
+    VALUES(?, ?, ?, 'unpaid', ?, ?)
         `).run(invoiceNumber, patientId, totalAmount, type, globalDescription || null).lastInsertRowid as number;
 
         const insertItem = db.prepare(`
-            INSERT INTO invoice_items (invoice_id, treatment_id, dental_treatment_id, description, amount)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO invoice_items(invoice_id, treatment_id, dental_treatment_id, description, amount)
+    VALUES(?, ?, ?, ?, ?)
         `);
 
         for (const item of items) {
@@ -2265,20 +2414,20 @@ export function createInvoice(patientId: number, items: any[], type: 'detailed' 
 
 export function getBillingSummary(patientId: number) {
     const totalCompleted = db.prepare(`
-        SELECT 
-            (SELECT COUNT(*) FROM dental_treatments WHERE patient_id = ? AND status = 'completed' AND fee > 0) +
-            (SELECT COUNT(*) FROM treatments WHERE patient_id = ? AND status = 'completed' AND cost > 0) as count
-    `).get(patientId, patientId) as { count: number };
+    SELECT
+        (SELECT COUNT(*) FROM dental_treatments WHERE patient_id = ? AND status = 'completed' AND fee > 0) +
+        (SELECT COUNT(*) FROM treatments WHERE patient_id = ? AND status = 'completed' AND cost > 0) as count
+            `).get(patientId, patientId) as { count: number };
 
     const uninvoiced = db.prepare(`
-        SELECT 
-            (SELECT COUNT(*) FROM dental_treatments 
+    SELECT
+        (SELECT COUNT(*) FROM dental_treatments 
              WHERE patient_id = ? AND status = 'completed' AND fee > 0 
-             AND id NOT IN (SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)) +
-            (SELECT COUNT(*) FROM treatments 
+             AND id NOT IN(SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)) +
+        (SELECT COUNT(*) FROM treatments 
              WHERE patient_id = ? AND status = 'completed' AND cost > 0 
-             AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)) as count
-    `).get(patientId, patientId) as { count: number };
+             AND id NOT IN(SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)) as count
+        `).get(patientId, patientId) as { count: number };
 
     const totalActs = totalCompleted?.count || 0;
     const uninvoicedActs = uninvoiced?.count || 0;
@@ -2294,51 +2443,51 @@ export function getUninvoicedTreatments(patientId: number) {
     // Select both general treatments AND dental_treatments that are completed and uninvoiced
     // But prioritize CDTs (dental_treatments) as requested
     return db.prepare(`
-        SELECT 
-            ('dental_' || id) as unique_id,
-            id, 
-            COALESCE(date_performed, created_at) as treatment_date, 
-            (cdt_code || ' - ' || treatment_type) as description, 
-            fee as amount, 
-            tooth_number, 
-            'dental' as source,
-            id as dental_treatment_id,
-            NULL as treatment_id
+    SELECT
+        ('dental_' || id) as unique_id,
+        id,
+        COALESCE(date_performed, created_at) as treatment_date,
+        (cdt_code || ' - ' || treatment_type) as description,
+        fee as amount,
+        tooth_number,
+        'dental' as source,
+        id as dental_treatment_id,
+        NULL as treatment_id
         FROM dental_treatments
         WHERE patient_id = ?
         AND status = 'completed'
         AND fee > 0
-        AND id NOT IN (SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)
+        AND id NOT IN(SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)
 
         UNION ALL
 
-        SELECT 
-            ('general_' || id) as unique_id,
-            id, 
-            treatment_date, 
-            description, 
-            cost as amount, 
-            tooth_number, 
-            'general' as source,
-            NULL as dental_treatment_id,
-            id as treatment_id
+    SELECT
+        ('general_' || id) as unique_id,
+        id,
+        treatment_date,
+        description,
+        cost as amount,
+        tooth_number,
+        'general' as source,
+        NULL as dental_treatment_id,
+        id as treatment_id
         FROM treatments
-        WHERE patient_id = ? 
+        WHERE patient_id = ?
         AND status = 'completed'
         AND cost > 0
-        AND id NOT IN (SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)
+        AND id NOT IN(SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)
         
         ORDER BY treatment_date DESC
-    `).all(patientId, patientId);
+        `).all(patientId, patientId);
 }
 
 export function getInvoicesByPatient(patientId: number) {
     const invoices = db.prepare(`
         SELECT id, invoice_number, invoice_date, total_amount, status 
         FROM invoices 
-        WHERE patient_id = ? 
+        WHERE patient_id = ?
         ORDER BY invoice_date DESC
-    `).all(patientId);
+            `).all(patientId);
 
     return invoices;
 }
@@ -2350,13 +2499,13 @@ export function getAllInvoices(filters?: { search?: string; startDate?: string; 
         SELECT i.*, p.full_name as patient_name
         FROM invoices i
         JOIN patients p ON i.patient_id = p.id
-        WHERE 1=1
-    `;
+        WHERE 1 = 1
+        `;
     const params = [];
 
     if (filters?.search) {
-        sql += ` AND (p.full_name LIKE ? OR i.invoice_number LIKE ?)`;
-        params.push(`%${filters.search}%`, `%${filters.search}%`);
+        sql += ` AND(p.full_name LIKE ? OR i.invoice_number LIKE ?)`;
+        params.push(`% ${filters.search}% `, ` % ${filters.search}% `);
     }
 
     if (filters?.startDate) {
@@ -2380,7 +2529,7 @@ export function getInvoiceById(id: number) {
         FROM invoices i
         JOIN patients p ON i.patient_id = p.id
         WHERE i.id = ?
-    `).get(id) as any;
+        `).get(id) as any;
 
     if (invoice) {
         invoice.items = db.prepare('SELECT * FROM invoice_items WHERE invoice_id = ?').all(id);
@@ -2397,8 +2546,8 @@ export function markInvoiceAsPaid(invoiceId: number, paymentData: { amount: numb
 
         // Create payment
         db.prepare(`
-            INSERT INTO payments (patient_id, invoice_id, amount, payment_method, recorded_by)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO payments(patient_id, invoice_id, amount, payment_method, recorded_by)
+    VALUES(?, ?, ?, ?, ?)
         `).run(
             invoice.patient_id,
             invoiceId,
@@ -2422,8 +2571,8 @@ export function getInventoryItemById(id: number) {
 export function recordStockMove(moveData: { item_id: number; type: 'IN' | 'OUT'; quantity: number; user_id: number; reason?: string }) {
     const txn = db.transaction(() => {
         db.prepare(`
-            INSERT INTO stock_moves (item_id, type, quantity, user_id, reason)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO stock_moves(item_id, type, quantity, user_id, reason)
+    VALUES(?, ?, ?, ?, ?)
         `).run(moveData.item_id, moveData.type, moveData.quantity, moveData.user_id, moveData.reason || null);
 
         const adjustment = moveData.type === 'IN' ? moveData.quantity : -moveData.quantity;
@@ -2442,7 +2591,7 @@ export function createInventoryItem(itemData: any) {
     const placeholders = keys.map(() => '?').join(', ');
     const values = Object.values(itemData);
 
-    const stmt = db.prepare(`INSERT INTO inventory_items (${columns}) VALUES (${placeholders})`);
+    const stmt = db.prepare(`INSERT INTO inventory_items(${columns}) VALUES(${placeholders})`);
     const info = stmt.run(...values);
     return info.lastInsertRowid;
 }
@@ -2455,8 +2604,8 @@ export function getStockMoves(itemId?: number) {
             JOIN users u ON m.user_id = u.id
             JOIN inventory_items i ON m.item_id = i.id
             WHERE m.item_id = ?
-            ORDER BY m.move_date DESC
-        `).all(itemId);
+        ORDER BY m.move_date DESC
+            `).all(itemId);
     }
     return db.prepare(`
         SELECT m.*, u.full_name as user_name, i.name as item_name
@@ -2477,7 +2626,7 @@ export function createSupplier(supplierData: any) {
     const keys = Object.keys(supplierData);
     const columns = keys.join(', ');
     const placeholders = keys.map(() => '?').join(', ');
-    return db.prepare(`INSERT INTO suppliers (${columns}) VALUES (${placeholders})`).run(...Object.values(supplierData)).lastInsertRowid;
+    return db.prepare(`INSERT INTO suppliers(${columns}) VALUES(${placeholders})`).run(...Object.values(supplierData)).lastInsertRowid;
 }
 
 // Treatment Type functions removed (Deprecated)
@@ -2535,7 +2684,7 @@ export function getServerConfig() {
         // Map db keys to frontend keys if they differ (Backwards compatibility)
         clinicName: clinicSettings.clinic_name || dbSettings.clinic_name || 'Dentistico Clinic',
         bookingInterval: clinicSettings.booking_interval_minutes || parseInt(dbSettings.booking_interval || '30'),
-        workHours: clinicSettings.work_start_time ? `${clinicSettings.work_start_time} - ${clinicSettings.work_end_time}` : (dbSettings.work_hours || '9h00 - 18h00')
+        workHours: clinicSettings.work_start_time ? `${clinicSettings.work_start_time} - ${clinicSettings.work_end_time} ` : (dbSettings.work_hours || '9h00 - 18h00')
     };
 }
 
@@ -2568,7 +2717,7 @@ export function createAttachment(data: any) {
     const placeholders = keys.map(() => '?').join(', ');
     const values = Object.values(data);
 
-    const stmt = db.prepare(`INSERT INTO attachments (${columns}) VALUES (${placeholders})`);
+    const stmt = db.prepare(`INSERT INTO attachments(${columns}) VALUES(${placeholders})`);
     return stmt.run(...values).lastInsertRowid;
 }
 
@@ -2605,32 +2754,32 @@ export function getAppointmentsForDate(doctorId: number, date: string) {
         JOIN patients p ON a.patient_id = p.id
         WHERE a.doctor_id = ? AND date(a.start_time) = date(?)
         ORDER BY a.start_time ASC
-    `).all(doctorId, date);
+        `).all(doctorId, date);
 }
 
 export function getDoctorJourneyStats(doctorId: number, date: string) {
     // 1. Fetch Today's Appointments for specific doctor with patient info
     const todayAppts = db.prepare(`
-        SELECT 
-            a.status, 
-            a.patient_id,
-            a.start_time,
-            a.end_time,
-            a.created_from_dental_treatment_id,
-            (SELECT COUNT(*) FROM appointments WHERE patient_id = a.patient_id) as patient_total_appts,
+    SELECT
+    a.status,
+        a.patient_id,
+        a.start_time,
+        a.end_time,
+        a.created_from_dental_treatment_id,
+        (SELECT COUNT(*) FROM appointments WHERE patient_id = a.patient_id) as patient_total_appts,
             p.registration_date
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
-        WHERE a.doctor_id = ? 
-            AND date(a.start_time) = date(?)
-    `).all(doctorId, date) as any[];
+        WHERE a.doctor_id = ?
+        AND date(a.start_time) = date(?)
+            `).all(doctorId, date) as any[];
 
     // 2. Fetch Clinic Settings
     const clinicSettings = db.prepare(`
         SELECT work_start_time, work_end_time 
         FROM clinic_settings 
         WHERE id = 1
-    `).get() as { work_start_time: string; work_end_time: string } | undefined;
+        `).get() as { work_start_time: string; work_end_time: string } | undefined;
 
     const avgConsultation = getAppSetting('avg_consultation_duration') || '20';
 
@@ -2670,7 +2819,7 @@ export function getDoctorJourneyStats(doctorId: number, date: string) {
     const startParts = stats.timeManagement.workStart.split(':').map(Number);
     const endParts = stats.timeManagement.workEnd.split(':').map(Number);
     const totalMinutes = (endParts[0] * 60 + (endParts[1] || 0)) - (startParts[0] * 60 + (startParts[1] || 0)) - stats.timeManagement.lunchBreakMinutes;
-    
+
     stats.timeManagement.availableMinutes = totalMinutes;
 
     if (stats.volume.total > 0) {
@@ -2687,13 +2836,94 @@ export function getDoctorJourneyStats(doctorId: number, date: string) {
     return stats;
 }
 
+export function getJourneyDashboardStats(doctorId: number) {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const dayAfter = new Date(Date.now() + 172800000).toISOString().split('T')[0];
+
+    // Get end of current week (Sunday)
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const daysUntilSunday = 7 - dayOfWeek;
+    const endOfWeek = new Date(now.getTime() + daysUntilSunday * 86400000)
+        .toISOString().split('T')[0];
+
+    // ==========================================
+    // TODAY'S FUNNEL
+    // ==========================================
+    const todayStats = db.prepare(`
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as treated,
+            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as canceled,
+            SUM(CASE WHEN status NOT IN ('completed', 'cancelled') THEN 1 ELSE 0 END) as remaining,
+            SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as waiting_room
+        FROM appointments
+        WHERE doctor_id = ? 
+          AND DATE(start_time) = DATE(?)
+    `).get(doctorId, today) as any;
+
+    // ==========================================
+    // PLANNED vs WALK-INS
+    // ==========================================
+    const compositionStats = db.prepare(`
+        SELECT 
+            SUM(CASE WHEN DATE(created_at) < DATE(?) THEN 1 ELSE 0 END) as planned,
+            SUM(CASE WHEN DATE(created_at) = DATE(?) THEN 1 ELSE 0 END) as walk_ins
+        FROM appointments
+        WHERE doctor_id = ? 
+          AND DATE(start_time) = DATE(?)
+          AND status NOT IN ('cancelled')
+    `).get(today, today, doctorId, today) as any;
+
+    // ==========================================
+    // BOOKING PIPELINE (Future Appointments)
+    // ==========================================
+    const pipelineStats = db.prepare(`
+        SELECT 
+            SUM(CASE WHEN DATE(start_time) = DATE(?) THEN 1 ELSE 0 END) as tomorrow,
+            SUM(CASE WHEN DATE(start_time) = DATE(?) THEN 1 ELSE 0 END) as day_after,
+            COUNT(*) as total_until_weekend
+        FROM appointments
+        WHERE doctor_id = ? 
+          AND DATE(start_time) > DATE(?)
+          AND DATE(start_time) <= DATE(?)
+          AND status NOT IN ('cancelled')
+    `).get(tomorrow, dayAfter, doctorId, today, endOfWeek) as any;
+
+    // Calculate remaining week (excluding tomorrow and day after)
+    const restOfWeek = (pipelineStats.total_until_weekend || 0)
+        - (pipelineStats.tomorrow || 0)
+        - (pipelineStats.day_after || 0);
+
+    return {
+        today: {
+            total: todayStats.total || 0,
+            treated: todayStats.treated || 0,
+            canceled: todayStats.canceled || 0,
+            remaining: todayStats.remaining || 0,
+            waitingRoom: todayStats.waiting_room || 0
+        },
+        composition: {
+            planned: compositionStats.planned || 0,
+            walkIns: compositionStats.walk_ins || 0
+        },
+        pipeline: {
+            tomorrow: pipelineStats.tomorrow || 0,
+            dayAfter: pipelineStats.day_after || 0,
+            restOfWeek: restOfWeek,
+            total: pipelineStats.total_until_weekend || 0
+        }
+    };
+}
+
 export function getPatientJourneySummary(patientId: number) {
     const patient = db.prepare(`
         SELECT p.*, parent.full_name as parent_name, parent.phone as parent_phone
         FROM patients p
         LEFT JOIN patients parent ON p.primary_contract_id = parent.id
         WHERE p.id = ?
-    `).get(patientId) as any;
+        `).get(patientId) as any;
     const balance = db.prepare('SELECT balance_due FROM patient_balance WHERE patient_id = ?').get(patientId) as { balance_due: number } | undefined;
 
     return {
@@ -2706,7 +2936,7 @@ export function updateAppointmentVisit(id: number, data: { actual_start_time?: s
     const keys = Object.keys(data);
     const setClause = keys.map(key => `${key} = ?`).join(', ');
     const values = [...Object.values(data), id];
-    return db.prepare(`UPDATE appointments SET ${setClause}, updated_at = datetime('now') WHERE id = ?`).run(...values);
+    return db.prepare(`UPDATE appointments SET ${setClause}, updated_at = datetime('now') WHERE id = ? `).run(...values);
 }
 
 // --- Clinical intelligence & Lab tracking ---
@@ -2716,9 +2946,9 @@ export function getClinicalNotes(patientId: number) {
 
 export function addClinicalNote(patientId: number, doctorId: number, appointmentId: number | null, content: string, importance: string) {
     return db.prepare(`
-        INSERT INTO clinical_notes (patient_id, doctor_id, appointment_id, content, importance)
-        VALUES (?, ?, ?, ?, ?)
-    `).run(patientId, doctorId, appointmentId, content, importance);
+        INSERT INTO clinical_notes(patient_id, doctor_id, appointment_id, content, importance)
+    VALUES(?, ?, ?, ?, ?)
+        `).run(patientId, doctorId, appointmentId, content, importance);
 }
 
 export function getLabTracking(patientId: number) {
@@ -2728,9 +2958,9 @@ export function getLabTracking(patientId: number) {
 export function addLabTracking(data: any) {
     const { patient_id, doctor_id, treatment_id, description, status, notes } = data;
     return db.prepare(`
-        INSERT INTO lab_tracking (patient_id, doctor_id, treatment_id, description, status, notes)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `).run(patient_id, doctor_id, treatment_id, description, status, notes);
+        INSERT INTO lab_tracking(patient_id, doctor_id, treatment_id, description, status, notes)
+    VALUES(?, ?, ?, ?, ?, ?)
+        `).run(patient_id, doctor_id, treatment_id, description, status, notes);
 }
 
 export function updateLabStatus(id: number, status: string) {
@@ -2740,9 +2970,9 @@ export function updateLabStatus(id: number, status: string) {
 export function getPlannedActsForToday(patientId: number) {
     const today = new Date().toISOString().split('T')[0];
     return db.prepare(`
-        SELECT * FROM dental_treatments 
+    SELECT * FROM dental_treatments 
         WHERE patient_id = ? AND status = 'planned' AND date(date_performed) = date(?)
-    `).all(patientId, today);
+        `).all(patientId, today);
 }
 
 export function getAppSetting(key: string) {
@@ -2755,9 +2985,9 @@ export function autoClosePreviousSessions(doctorId: number, currentApptId: numbe
     // Close any other in_progress appointments for this doctor
     db.prepare(`
         UPDATE appointments 
-        SET status = 'completed', actual_end_time = ? 
+        SET status = 'completed', actual_end_time = ?
         WHERE doctor_id = ? AND status = 'in_progress' AND id != ?
-    `).run(now, doctorId, currentApptId);
+            `).run(now, doctorId, currentApptId);
 }
 
 // --- Appointment Actions ---
@@ -2816,150 +3046,154 @@ export function deleteTemplateResource(id: number) {
 
 export function seedDefaultTemplates() {
     const invoiceHtml = `
-<div class="print-container bg-white min-h-screen p-12 max-w-4xl mx-auto text-gray-900 font-sans">
-    <div class="flex justify-between items-start mb-12">
-        <div>
-            <h1 class="text-3xl font-extrabold text-indigo-900 mb-2">FACTURE</h1>
-            <p class="text-xl font-bold text-gray-700">{{invoice_number}}</p>
-            <p class="text-sm text-gray-500 mt-1">Date : {{date}}</p>
+            < div class="print-container bg-white min-h-screen p-12 max-w-4xl mx-auto text-gray-900 font-sans" >
+                <div class="flex justify-between items-start mb-12" >
+                    <div>
+                    <h1 class="text-3xl font-extrabold text-indigo-900 mb-2" > FACTURE </h1>
+                        < p class="text-xl font-bold text-gray-700" > {{ invoice_number }
+} </p>
+    < p class="text-sm text-gray-500 mt-1" > Date : { { date } } </p>
         </div>
-        <div class="text-right">
-            <h2 class="text-xl font-bold uppercase tracking-wider">{{clinic_name}}</h2>
-            <p class="text-sm text-gray-600">Cabinet Dentaire</p>
-            <p class="text-xs text-gray-500">{{clinic_address}}</p>
-        </div>
-    </div>
+        < div class="text-right" >
+            <h2 class="text-xl font-bold uppercase tracking-wider" > {{ clinic_name }}</h2>
+                < p class="text-sm text-gray-600" > Cabinet Dentaire </p>
+                    < p class="text-xs text-gray-500" > {{ clinic_address }}</p>
+                        </div>
+                        </div>
 
-    <div class="grid grid-cols-2 gap-8 mb-12">
-        <div class="bg-gray-50 p-6 rounded-lg border border-gray-100">
-            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Facturé à :</h3>
-            <p class="text-lg font-bold">{{patient_name}}</p>
-            <p class="text-sm text-gray-600 mt-1">{{patient_address}}<br>{{patient_city}}</p>
-        </div>
-        <div class="flex flex-col justify-center text-right">
-            <div class="inline-block ml-auto px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest {{#if is_paid}}bg-green-100 text-green-800{{else}}bg-yellow-100 text-yellow-800{{/if}}">
-                Statut : {{#if is_paid}}Payée{{else}}En attente{{/if}}
-            </div>
-        </div>
-    </div>
-
-    <table class="min-w-full mb-12">
-        <thead class="bg-gray-900 text-white">
-            <tr>
-                <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Désignation</th>
-                <th class="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider">Dent</th>
-                <th class="px-6 py-4 text-right text-sm font-semibold uppercase tracking-wider">Montant</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200 border-b border-gray-200">
-            {{#each items}}
-            <tr>
-                <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{description}}</td>
-                <td class="px-6 py-4 text-center text-sm text-gray-500">{{#if tooth_number}}{{tooth_number}}{{else}}-{{/if}}</td>
-                <td class="px-6 py-4 text-right text-sm font-bold">{{../currency_symbol}}{{amount}}</td>
-            </tr>
-            {{/each}}
-        </tbody>
-    </table>
-
-    <div class="flex justify-end">
-        <div class="w-64 space-y-3">
-            <div class="flex justify-between text-sm text-gray-600">
-                <span>Total HT</span>
-                <span>{{currency_symbol}}{{total_amount}}</span>
-            </div>
-            <div class="flex justify-between text-sm text-gray-600">
-                <span>TVA (0%)</span>
-                <span>{{currency_symbol}}0.00</span>
-            </div>
-            <div class="flex justify-between text-xl font-bold text-gray-900 pt-3 border-t">
-                <span>TOTAL TTC</span>
-                <span>{{currency_symbol}}{{total_amount}}</span>
-            </div>
-        </div>
-    </div>
+                        < div class="grid grid-cols-2 gap-8 mb-12" >
+                            <div class="bg-gray-50 p-6 rounded-lg border border-gray-100" >
+                                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3" > Facturé à: </h3>
+                                    < p class="text-lg font-bold" > {{ patient_name }}</p>
+                                        < p class="text-sm text-gray-600 mt-1" > {{ patient_address }}<br>{{ patient_city }}</p>
+                                            </div>
+                                            < div class="flex flex-col justify-center text-right" >
+                                                <div class="inline-block ml-auto px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest {{#if is_paid}}bg-green-100 text-green-800{{else}}bg-yellow-100 text-yellow-800{{/if}}" >
+                                                    Statut : { { #if is_paid } }Payée{ {else } }En attente{ {/if } }
 </div>
-`;
+    </div>
+    </div>
+
+    < table class="min-w-full mb-12" >
+        <thead class="bg-gray-900 text-white" >
+            <tr>
+            <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider" > Désignation </th>
+                < th class="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider" > Dent </th>
+                    < th class="px-6 py-4 text-right text-sm font-semibold uppercase tracking-wider" > Montant </th>
+                        </tr>
+                        </thead>
+                        < tbody class="divide-y divide-gray-200 border-b border-gray-200" >
+                            {{ #each items }}
+<tr>
+    <td class="px-6 py-4 text-sm text-gray-900 font-medium" > {{ description }}</td>
+        < td class="px-6 py-4 text-center text-sm text-gray-500" > {{ #if tooth_number }}{ { tooth_number } } { {else } } -{{
+            /if}}</td >
+            <td class="px-6 py-4 text-right text-sm font-bold" > {{../currency_symbol}}{{amount}}</td >
+                </tr>
+        { {/each } }
+        </tbody>
+            </table>
+
+            < div class="flex justify-end" >
+                <div class="w-64 space-y-3" >
+                    <div class="flex justify-between text-sm text-gray-600" >
+                        <span>Total HT </span>
+                            < span > {{ currency_symbol }
+    } { { total_amount } } </span>
+        </div>
+        < div class="flex justify-between text-sm text-gray-600" >
+            <span>TVA(0 %) </span>
+            < span > {{ currency_symbol }
+} 0.00 </span>
+    </div>
+    < div class="flex justify-between text-xl font-bold text-gray-900 pt-3 border-t" >
+        <span>TOTAL TTC </span>
+            < span > {{ currency_symbol }}{ { total_amount } } </span>
+                </div>
+                </div>
+                </div>
+                </div>
+                    `;
 
     const invoiceCss = `
-.print-container { width: 100%; max-width: 800px; margin: auto; }
-table { width: 100%; border-collapse: collapse; }
-th, td { border-bottom: 1px solid #eee; }
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-.text-right { text-align: right; }
-.font-bold { font-weight: bold; }
-.text-indigo-900 { color: #312e81; }
-.bg-gray-50 { background-color: #f9fafb; }
-.bg-gray-900 { background-color: #111827; }
-.text-white { color: #ffffff; }
+                    .print - container { width: 100 %; max - width: 800px; margin: auto; }
+table { width: 100 %; border - collapse: collapse; }
+th, td { border - bottom: 1px solid #eee; }
+.grid { display: grid; grid - template - columns: 1fr 1fr; gap: 2rem; }
+.text - right { text - align: right; }
+.font - bold { font - weight: bold; }
+.text - indigo - 900 { color: #312e81; }
+.bg - gray - 50 { background - color: #f9fafb; }
+.bg - gray - 900 { background - color: #111827; }
+.text - white { color: #ffffff; }
 `;
 
     const prescriptionHtml = `
-<div class="prescription-container relative">
-    <div class="header flex justify-between border-bottom pb-4 mb-6">
-        <div>
-            <h1 class="doctor-name uppercase font-black text-indigo-950">Dr. {{doctor_name}}</h1>
-            <p class="specialties text-indigo-900 opacity-70">{{doctor_specialties}}</p>
-        </div>
-        <div class="text-right">
-            <h2 class="clinic-name font-black tracking-widest text-indigo-900">{{clinic_name}}</h2>
-            <p class="text-xs">{{clinic_address}}</p>
-        </div>
-    </div>
+    < div class="prescription-container relative" >
+        <div class="header flex justify-between border-bottom pb-4 mb-6" >
+            <div>
+            <h1 class="doctor-name uppercase font-black text-indigo-950" > Dr. { { doctor_name } } </h1>
+                < p class="specialties text-indigo-900 opacity-70" > {{ doctor_specialties }}</p>
+                    </div>
+                    < div class="text-right" >
+                        <h2 class="clinic-name font-black tracking-widest text-indigo-900" > {{ clinic_name }}</h2>
+                            < p class="text-xs" > {{ clinic_address }}</p>
+                                </div>
+                                </div>
 
-    <div class="doc-info-bar flex justify-between bg-indigo-50 p-4 rounded-lg mb-8">
-        <div>
-            <span class="label block text-[8px] uppercase tracking-widest opacity-50">Date</span>
-            <span class="value font-black text-indigo-950">{{date}}</span>
-        </div>
-        <div class="text-right">
-            <span class="label block text-[8px] uppercase tracking-widest opacity-50">Nº Ordonnance</span>
-            <span class="value font-black text-indigo-950">{{prescription_number}}</span>
-        </div>
-    </div>
+                                < div class="doc-info-bar flex justify-between bg-indigo-50 p-4 rounded-lg mb-8" >
+                                    <div>
+                                    <span class="label block text-[8px] uppercase tracking-widest opacity-50" > Date </span>
+                                        < span class="value font-black text-indigo-950" > {{ date }}</span>
+                                            </div>
+                                            < div class="text-right" >
+                                                <span class="label block text-[8px] uppercase tracking-widest opacity-50" > Nº Ordonnance </span>
+                                                    < span class="value font-black text-indigo-950" > {{ prescription_number }}</span>
+                                                        </div>
+                                                        </div>
 
-    <div class="patient-info border-l-4 border-indigo-600 pl-4 mb-10">
-        <span class="label block text-[8px] uppercase tracking-widest opacity-50">Patient</span>
-        <h3 class="patient-name font-black text-indigo-950 text-xl">{{patient_name}} ({{patient_age}} ans)</h3>
-    </div>
+                                                        < div class="patient-info border-l-4 border-indigo-600 pl-4 mb-10" >
+                                                            <span class="label block text-[8px] uppercase tracking-widest opacity-50" > Patient </span>
+                                                                < h3 class="patient-name font-black text-indigo-950 text-xl" > {{ patient_name }} ({{ patient_age }} ans)</h3>
+                                                                    </div>
 
-    <div class="treatments flex-grow min-h-[400px]">
-        {{#each items}}
-        <div class="treatment-item border-bottom py-4">
-            <div class="flex justify-between items-baseline mb-2">
-                <h4 class="med-name font-black text-gray-900 uppercase">#{{index_plus_one}} {{medication_name}}</h4>
-                <span class="dosage font-black text-indigo-900">{{dosage}}</span>
-            </div>
-            <p class="instructions text-gray-700 ml-8">{{instructions}}</p>
-            {{#if duration}}
-            <span class="duration inline-block bg-gray-100 px-2 py-1 rounded text-xs mt-2 ml-8">Pendant {{duration}}</span>
-            {{/if}}
-        </div>
-        {{/each}}
-    </div>
-
-    <div class="footer mt-auto pt-10 border-top flex justify-between items-end">
-        <div class="notes max-w-xs italic text-gray-500 text-sm">
-            {{notes}}
-        </div>
-        <div class="signature text-center">
-            <div class="sig-box border-2 border-dashed border-gray-200 w-48 h-24 mb-2 bg-gray-50"></div>
-            <p class="font-black text-indigo-950 uppercase text-xs">Dr. {{doctor_name}}</p>
-        </div>
-    </div>
+                                                                    < div class="treatments flex-grow min-h-[400px]" >
+                                                                        {{ #each items }}
+<div class="treatment-item border-bottom py-4" >
+    <div class="flex justify-between items-baseline mb-2" >
+        <h4 class="med-name font-black text-gray-900 uppercase" >#{ { index_plus_one } } { { medication_name } } </h4>
+            < span class="dosage font-black text-indigo-900" > {{ dosage }}</span>
+                </div>
+                < p class="instructions text-gray-700 ml-8" > {{ instructions }}</p>
+{ { #if duration } }
+<span class="duration inline-block bg-gray-100 px-2 py-1 rounded text-xs mt-2 ml-8" > Pendant { { duration } } </span>
+{ {/if } }
 </div>
-`;
+{ {/each } }
+</div>
+
+    < div class="footer mt-auto pt-10 border-top flex justify-between items-end" >
+        <div class="notes max-w-xs italic text-gray-500 text-sm" >
+            {{ notes }}
+</div>
+    < div class="signature text-center" >
+        <div class="sig-box border-2 border-dashed border-gray-200 w-48 h-24 mb-2 bg-gray-50" > </div>
+            < p class="font-black text-indigo-950 uppercase text-xs" > Dr. { { doctor_name } } </p>
+                </div>
+                </div>
+                </div>
+                    `;
 
     const prescriptionCss = `
-.prescription-container { padding: 40px; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; min-height: 800px; }
-.border-bottom { border-bottom: 2px solid rgba(49, 46, 129, 0.1); }
-.border-top { border-top: 2px solid rgba(49, 46, 129, 0.1); }
+                    .prescription - container { padding: 40px; font - family: 'Inter', sans - serif; display: flex; flex - direction: column; min - height: 800px; }
+.border - bottom { border - bottom: 2px solid rgba(49, 46, 129, 0.1); }
+.border - top { border - top: 2px solid rgba(49, 46, 129, 0.1); }
 .flex { display: flex; }
-.justify-between { justify-content: space-between; }
-.font-black { font-weight: 900; }
-.uppercase { text-transform: uppercase; }
-.text-indigo-950 { color: #1e1b4b; }
-.text-indigo-900 { color: #312e81; }
+.justify - between { justify - content: space - between; }
+.font - black { font - weight: 900; }
+.uppercase { text - transform: uppercase; }
+.text - indigo - 950 { color: #1e1b4b; }
+.text - indigo - 900 { color: #312e81; }
 `;
 
     upsertTemplate('Invoice', invoiceHtml, invoiceCss);

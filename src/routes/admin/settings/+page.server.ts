@@ -1,7 +1,16 @@
 import { fail } from '@sveltejs/kit';
 import fs from 'fs';
 import path from 'path';
-import { getAllSettings, updateMultipleSettings } from '$lib/server/db';
+import {
+    getAllSettings,
+    updateMultipleSettings,
+    getCancellationReasons,
+    getClinicSettings,
+    createCancellationReason,
+    deleteCancellationReason,
+    updateReasonRequirements,
+    getAllCancellationReasons
+} from '$lib/server/db';
 
 export const load = async () => {
     const configPath = path.resolve('src/lib/config/app.config.json');
@@ -20,11 +29,17 @@ export const load = async () => {
     }
 
     const dbSettings = getAllSettings();
+    const clinicSettings = getClinicSettings() as any;
 
     return {
         config: {
             ...config,
             ...dbSettings
+        },
+        cancellationReasons: getAllCancellationReasons(),
+        reasonRequirements: {
+            postponeRequired: clinicSettings?.require_postpone_reason === 1,
+            cancelRequired: clinicSettings?.require_cancel_reason === 1
         }
     };
 };
@@ -71,5 +86,46 @@ export const actions = {
         }
     },
 
-    // deleted treatment type actions
+    updateReasonRequirements: async ({ request }) => {
+        const formData = await request.formData();
+        const postponeRequired = formData.get('postponeRequired') === 'true';
+        const cancelRequired = formData.get('cancelRequired') === 'true';
+
+        try {
+            updateReasonRequirements(postponeRequired, cancelRequired);
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { message: 'Failed to update requirements' });
+        }
+    },
+
+    addCancellationReason: async ({ request }) => {
+        const formData = await request.formData();
+        const reasonText = formData.get('reasonText') as string;
+        const reasonType = formData.get('reasonType') as string; // 'cancel', 'postpone', 'both'
+
+        if (!reasonText || !reasonType) return fail(400, { message: 'Missing fields' });
+
+        try {
+            createCancellationReason(reasonText, reasonType);
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { message: 'Failed to add reason' });
+        }
+    },
+
+    deleteCancellationReason: async ({ request }) => {
+        const formData = await request.formData();
+        const id = Number(formData.get('id'));
+
+        try {
+            deleteCancellationReason(id);
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { message: 'Failed to delete reason' });
+        }
+    }
 };

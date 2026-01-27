@@ -1,204 +1,356 @@
 <script lang="ts">
-    import { slide } from "svelte/transition";
-    import { onMount } from "svelte";
-    import PatientVolumeCard from "./PatientVolumeCard.svelte";
-    import AppointmentStatusCard from "./AppointmentStatusCard.svelte";
-    import PatientTypeCard from "./PatientTypeCard.svelte";
-    import TimeManagementCard from "./TimeManagementCard.svelte";
+    import {
+        CheckCircle,
+        XCircle,
+        Clock,
+        Users,
+        Calendar,
+        TrendingUp,
+    } from "lucide-svelte";
 
-    let { stats } = $props<{ stats: any }>();
+    let { dashboardStats } = $props<{ dashboardStats: any }>();
 
-    let isExpanded = $state(false);
-
-    onMount(() => {
-        const saved = localStorage.getItem("doctor_stats_panel_state");
-        if (saved === "open") {
-            isExpanded = true;
-        }
-    });
-
-    function toggle() {
-        isExpanded = !isExpanded;
-        localStorage.setItem(
-            "doctor_stats_panel_state",
-            isExpanded ? "open" : "closed",
-        );
-    }
+    // Reactive derived values
+    let todayProgress = $derived(
+        (dashboardStats.today.treated / dashboardStats.today.total) * 100 || 0,
+    );
 </script>
 
-<div class="stats-panel-container" class:is-expanded={isExpanded}>
-    <button class="panel-header" onclick={toggle}>
-        <div class="header-left">
-            <span class="icon">📊</span>
-            <span class="title">Aperçu de la journée</span>
-        </div>
-        <div class="header-right">
-            {#if !isExpanded}
-                <div class="mini-stats">
-                    <span class="mini-item"><b>{stats.volume.total}</b> RV</span
-                    >
-                    <span class="mini-item"
-                        ><b>{stats.volume.completed}</b> terminés</span
-                    >
-                    <span
-                        class="mini-item pace-{stats.timeManagement.paceStatus}"
-                        >{stats.timeManagement.recommendedTimePerVisit} min/pat.</span
-                    >
-                </div>
-            {/if}
-            <div class="toggle-icon" class:is-rotated={isExpanded}>
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="2.5"
-                    stroke="currentColor"
-                    class="w-5 h-5"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                    />
-                </svg>
-            </div>
-        </div>
-    </button>
+<!-- ============================================ -->
+<!-- MINIMALIST STATS DASHBOARD -->
+<!-- ============================================ -->
+<div class="stats-dashboard">
+    <!-- TODAY'S FUNNEL -->
+    <div class="stat-section">
+        <h3 class="section-title">
+            {dashboardStats.today.total} Patients aujourd'hui
+        </h3>
 
-    {#if isExpanded}
-        <div class="panel-content" transition:slide={{ duration: 300 }}>
-            <div class="stats-grid">
-                <PatientVolumeCard stats={stats.volume} />
-                <AppointmentStatusCard stats={stats.statusBreakdown} />
-                <PatientTypeCard stats={stats.patientTypes} />
-                <TimeManagementCard
-                    stats={stats.timeManagement}
-                    totalAppointments={stats.volume.total}
-                />
+        <div class="stat-grid">
+            <!-- Total -->
+            <div class="stat-mini stat-primary">
+                <Users size={16} />
+                <span class="value">{dashboardStats.today.total}</span>
+                <span class="label">Total</span>
+            </div>
+
+            <!-- Treated -->
+            <div class="stat-mini stat-success">
+                <span class="stat-icon-wrapper"><CheckCircle size={14} /></span>
+                <span class="value">{dashboardStats.today.treated}</span>
+                <span class="label">Traités</span>
+            </div>
+
+            <!-- Remaining -->
+            <div class="stat-mini stat-warning">
+                <span class="stat-icon-wrapper"><Clock size={14} /></span>
+                <span class="value">{dashboardStats.today.remaining}</span>
+                <span class="label">Restants</span>
+            </div>
+
+            <!-- Canceled -->
+            <div class="stat-mini stat-danger">
+                <span class="stat-icon-wrapper"><XCircle size={14} /></span>
+                <span class="value">{dashboardStats.today.canceled}</span>
+                <span class="label">Annulés</span>
             </div>
         </div>
-    {/if}
+
+        <!-- Progress Mini -->
+        <div class="progress-info">
+            <div class="progress-track">
+                <div
+                    class="progress-fill"
+                    style="width: {todayProgress}%"
+                ></div>
+            </div>
+            <span class="progress-percentage">{todayProgress.toFixed(0)}%</span>
+        </div>
+    </div>
+
+    <!-- COMPOSITION -->
+    <div class="stat-section">
+        <h3 class="section-title">Composition</h3>
+        <div class="comp-list">
+            <div class="comp-item">
+                <div class="icon-box bg-indigo-50 text-indigo-500">
+                    <Calendar size={16} />
+                </div>
+                <div class="details">
+                    <span class="val">{dashboardStats.composition.planned}</span
+                    >
+                    <span class="lbl">Rendez-vous prévus</span>
+                </div>
+            </div>
+            <div class="comp-item">
+                <div class="icon-box bg-purple-50 text-purple-500">
+                    <Users size={16} />
+                </div>
+                <div class="details">
+                    <span class="val">{dashboardStats.composition.walkIns}</span
+                    >
+                    <span class="lbl">Sans rendez-vous</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIPELINE -->
+    <div class="stat-section">
+        <h3 class="section-title">Prévisions Semaine</h3>
+        <div class="pipeline-minimal">
+            <div class="pipeline-header">
+                <div class="icon-box bg-rose-50 text-rose-500">
+                    <TrendingUp size={16} />
+                </div>
+                <div class="pipeline-total-group">
+                    <span class="total">{dashboardStats.pipeline.total}</span>
+                    <span class="desc">Réservations</span>
+                </div>
+            </div>
+            <div class="pipeline-tags">
+                <div class="tag">
+                    Demain: <b>{dashboardStats.pipeline.tomorrow}</b>
+                </div>
+                <div class="tag">
+                    Après: <b>{dashboardStats.pipeline.dayAfter}</b>
+                </div>
+                <div class="tag">
+                    Reste: <b>{dashboardStats.pipeline.restOfWeek}</b>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
-    .stats-panel-container {
+    .stats-dashboard {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr 1.2fr;
+        gap: 2.5rem;
+        padding: 2rem;
+        margin-bottom: 2.5rem;
         background: white;
-        border-radius: 1.5rem;
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-        margin-bottom: 2rem;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border-radius: 2rem;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
     }
 
-    .stats-panel-container.is-expanded {
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        border-color: #cbd5e1;
-    }
-
-    .panel-header {
-        width: 100%;
+    .stat-section {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem 1.5rem;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        transition: background 0.2s;
+        flex-direction: column;
+        gap: 1.25rem;
     }
 
-    .panel-header:hover {
-        background: #f8fafc;
+    .section-title {
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: #94a3b8;
     }
 
-    .header-left {
-        display: flex;
-        align-items: center;
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 0.75rem;
     }
 
-    .header-left .icon {
-        font-size: 1.25rem;
-    }
-
-    .header-left .title {
-        font-weight: 800;
-        color: #1e293b;
-        font-size: 1rem;
-    }
-
-    .header-right {
+    .stat-mini {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        background: #f8fafc;
+        border-radius: 1rem;
+        border: 1px solid #f1f5f9;
+        transition: all 0.2s ease;
     }
 
-    .mini-stats {
-        display: flex;
-        gap: 1rem;
+    .stat-mini:hover {
+        background: white;
+        border-color: #e2e8f0;
+        transform: translateY(-2px);
     }
 
-    .mini-item {
-        font-size: 0.75rem;
-        color: #64748b;
-        background: #f1f5f9;
-        padding: 0.25rem 0.625rem;
-        border-radius: 2rem;
-        font-weight: 600;
-    }
-
-    .mini-item b {
+    .stat-mini .value {
+        font-size: 1.125rem;
+        font-weight: 800;
         color: #1e293b;
     }
 
-    .pace-comfortable {
-        color: #16a34a !important;
-        background: #f0fdf4 !important;
-    }
-    .pace-tight {
-        color: #d97706 !important;
-        background: #fff7ed !important;
-    }
-    .pace-overbooked {
-        color: #dc2626 !important;
-        background: #fef2f2 !important;
+    .stat-mini .label {
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
     }
 
-    .toggle-icon {
-        color: #94a3b8;
-        transition: transform 0.3s;
+    .stat-icon-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.8;
     }
 
-    .toggle-icon.is-rotated {
-        transform: rotate(180deg);
-        color: #4f46e5;
+    .stat-primary {
+        color: #3b82f6;
+    }
+    .stat-success {
+        color: #10b981;
+    }
+    .stat-warning {
+        color: #f59e0b;
+    }
+    .stat-danger {
+        color: #ef4444;
     }
 
-    .panel-content {
-        padding: 0 1.5rem 1.5rem 1.5rem;
-    }
-
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
+    .progress-info {
+        display: flex;
+        align-items: center;
         gap: 1rem;
-        padding-top: 0.5rem;
+        background: #f8fafc;
+        padding: 0.65rem 1rem;
+        border-radius: 3rem;
     }
 
-    @media (max-width: 1024px) {
-        .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
+    .progress-track {
+        flex: 1;
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 3px;
+        overflow: hidden;
     }
 
-    @media (max-width: 640px) {
-        .stats-grid {
+    .progress-fill {
+        height: 100%;
+        background: #10b981;
+        border-radius: 3px;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .progress-percentage {
+        font-size: 0.65rem;
+        font-weight: 900;
+        color: #1e293b;
+    }
+
+    .comp-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .comp-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.85rem;
+        background: white;
+        border: 1px solid #f1f5f9;
+        border-radius: 1.15rem;
+        transition: all 0.2s ease;
+    }
+
+    .comp-item:hover {
+        border-color: #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .icon-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .comp-item .details {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+    }
+
+    .comp-item .val {
+        font-size: 1.125rem;
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .comp-item .lbl {
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+    }
+
+    .pipeline-minimal {
+        padding: 1.25rem;
+        background: #f8fafc;
+        border-radius: 1.5rem;
+        border: 1px solid #f1f5f9;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .pipeline-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .pipeline-total-group {
+        display: flex;
+        flex-direction: column;
+        line-height: 1;
+    }
+
+    .pipeline-header .total {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: #1e293b;
+    }
+
+    .pipeline-header .desc {
+        font-size: 0.6rem;
+        font-weight: 800;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .pipeline-tags {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .tag {
+        font-size: 0.65rem;
+        background: white;
+        padding: 0.5rem 0.85rem;
+        border-radius: 0.75rem;
+        border: 1px solid #f1f5f9;
+        color: #64748b;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .tag b {
+        color: #1e293b;
+        font-weight: 900;
+    }
+
+    @media (max-width: 1200px) {
+        .stats-dashboard {
             grid-template-columns: 1fr;
-        }
-
-        .mini-stats {
-            display: none;
+            gap: 2rem;
         }
     }
 </style>

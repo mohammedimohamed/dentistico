@@ -4,7 +4,7 @@
     import type { ActionData, PageData } from "./$types";
     import { t } from "svelte-i18n";
 
-    let { data, form }: { data: PageData; form: ActionData } = $props();
+    let { data, form }: { data: any; form: any } = $props();
 
     let isSaving = $state(false);
     let isCreatingTreatmentType = $state(false);
@@ -114,6 +114,10 @@
             bookingMode = data.config.bookingMode;
             paymentMethods = data.config.paymentMethods || [];
         }
+        if (data.reasonRequirements) {
+            postponeRequired = data.reasonRequirements.postponeRequired;
+            cancelRequired = data.reasonRequirements.cancelRequired;
+        }
     });
 
     let paymentMethods = $state(data.config.paymentMethods || []);
@@ -131,6 +135,15 @@
     function removePaymentMethod(method: string) {
         paymentMethods = paymentMethods.filter((m: string) => m !== method);
     }
+
+    let newReasonText = $state("");
+    let newReasonType = $state("both");
+    let postponeRequired = $state(
+        data.reasonRequirements?.postponeRequired || false,
+    );
+    let cancelRequired = $state(
+        data.reasonRequirements?.cancelRequired || false,
+    );
 </script>
 
 <div class="py-6 min-h-screen bg-gray-50">
@@ -171,9 +184,10 @@
                         <div>
                             <label
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                >Clinic Name</label
+                                for="clinic_name">Clinic Name</label
                             >
                             <input
+                                id="clinic_name"
                                 type="text"
                                 bind:value={settings.clinic_name}
                                 class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
@@ -184,9 +198,11 @@
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
+                                    for="booking_interval"
                                     >Booking Interval</label
                                 >
                                 <select
+                                    id="booking_interval"
                                     bind:value={
                                         settings.booking_interval_minutes
                                     }
@@ -203,9 +219,10 @@
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                    >Work Start Time</label
+                                    for="work_start_time">Work Start Time</label
                                 >
                                 <input
+                                    id="work_start_time"
                                     type="time"
                                     bind:value={settings.work_start_time}
                                     class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium font-mono"
@@ -215,9 +232,10 @@
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                    >Work End Time</label
+                                    for="work_end_time">Work End Time</label
                                 >
                                 <input
+                                    id="work_end_time"
                                     type="time"
                                     bind:value={settings.work_end_time}
                                     class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium font-mono"
@@ -228,9 +246,10 @@
                         <div>
                             <label
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                >Clinic Address</label
+                                for="clinic_address">Clinic Address</label
                             >
                             <input
+                                id="clinic_address"
                                 type="text"
                                 bind:value={settings.address}
                                 placeholder="123 Rue de la Santé, 75000 Paris"
@@ -242,9 +261,10 @@
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                    >Phone Number</label
+                                    for="phone_number">Phone Number</label
                                 >
                                 <input
+                                    id="phone_number"
                                     type="text"
                                     bind:value={settings.phone}
                                     placeholder="+33 1 23 45 67 89"
@@ -254,9 +274,10 @@
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                    >Clinic Email</label
+                                    for="clinic_email">Clinic Email</label
                                 >
                                 <input
+                                    id="clinic_email"
                                     type="email"
                                     bind:value={settings.email}
                                     placeholder="contact@clinic.com"
@@ -268,7 +289,7 @@
                         <div>
                             <label
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                >Clinic Logo</label
+                                for="clinic_logo">Clinic Logo</label
                             >
                             <div class="flex items-center gap-6">
                                 <div
@@ -288,6 +309,7 @@
                                 </div>
                                 <div class="flex-grow">
                                     <input
+                                        id="clinic_logo"
                                         type="file"
                                         accept="image/*"
                                         onchange={(e) => {
@@ -530,7 +552,7 @@
             </div>
         {/if}
 
-        <!-- Financial Settings (Preserved from old page) -->
+        <!-- Financial Settings -->
         <div
             class="bg-white shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden border border-gray-100"
         >
@@ -564,10 +586,9 @@
                             <label
                                 for="currency_code"
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                >{$t(
-                                    "admin.settings.financial.currencyCode",
-                                )}</label
                             >
+                                {$t("admin.settings.financial.currencyCode")}
+                            </label>
                             <input
                                 id="currency_code"
                                 type="text"
@@ -584,10 +605,9 @@
                             <label
                                 for="currency_symbol"
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                >{$t(
-                                    "admin.settings.financial.currencySymbol",
-                                )}</label
                             >
+                                {$t("admin.settings.financial.currencySymbol")}
+                            </label>
                             <input
                                 id="currency_symbol"
                                 type="text"
@@ -602,33 +622,81 @@
 
                         <div class="md:col-span-2">
                             <label
-                                class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                >{$t("admin.settings.booking.mode")}</label
+                                class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 ml-1"
+                                for="bookingMode"
                             >
-                            <select
-                                name="bookingMode"
-                                bind:value={bookingMode}
-                                class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
+                                {$t("admin.settings.booking.mode")}
+                            </label>
+                            <div
+                                class="grid grid-cols-1 md:grid-cols-2 gap-6"
+                                id="bookingMode"
                             >
-                                <option value="freeform"
-                                    >{$t(
-                                        "admin.settings.booking.freeform",
-                                    )}</option
+                                <label
+                                    class="flex items-start gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-all {bookingMode ===
+                                    'availability'
+                                        ? 'border-indigo-600 bg-indigo-50'
+                                        : 'border-slate-100 hover:border-slate-200'}"
                                 >
-                                <option value="availability"
-                                    >{$t(
-                                        "admin.settings.booking.availability",
-                                    )}</option
+                                    <input
+                                        type="radio"
+                                        name="bookingMode"
+                                        value="availability"
+                                        bind:group={bookingMode}
+                                        class="mt-1 w-4 h-4 text-indigo-600"
+                                    />
+                                    <div class="space-y-1">
+                                        <span
+                                            class="block font-bold text-slate-800"
+                                            >Availability First</span
+                                        >
+                                        <p
+                                            class="text-xs text-slate-500 leading-relaxed"
+                                        >
+                                            System searches for free slots
+                                            across all doctors.
+                                        </p>
+                                    </div>
+                                </label>
+
+                                <label
+                                    class="flex items-start gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-all {bookingMode ===
+                                    'doctor'
+                                        ? 'border-indigo-600 bg-indigo-50'
+                                        : 'border-slate-100 hover:border-slate-200'}"
                                 >
-                            </select>
+                                    <input
+                                        type="radio"
+                                        name="bookingMode"
+                                        value="doctor"
+                                        bind:group={bookingMode}
+                                        class="mt-1 w-4 h-4 text-indigo-600"
+                                    />
+                                    <div class="space-y-1">
+                                        <span
+                                            class="block font-bold text-slate-800"
+                                            >Doctor Specific</span
+                                        >
+                                        <p
+                                            class="text-xs text-slate-500 leading-relaxed"
+                                        >
+                                            Appointments are explicitly assigned
+                                            to a doctor.
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
 
-                        <div class="md:col-span-2 space-y-4">
+                        <div
+                            class="md:col-span-2 space-y-4 pt-6 border-t border-slate-100"
+                        >
                             <label
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                >Payment Methods</label
+                                for="new-payment-method"
                             >
-                            <div class="flex flex-wrap gap-2 mb-4">
+                                Accepted Payment Methods
+                            </label>
+                            <div class="flex flex-wrap gap-2">
                                 {#each paymentMethods as method}
                                     <div
                                         class="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-bold text-sm border border-indigo-100 group"
@@ -636,9 +704,9 @@
                                         {method}
                                         <button
                                             type="button"
+                                            class="text-indigo-300 hover:text-red-500 transition-colors"
                                             onclick={() =>
                                                 removePaymentMethod(method)}
-                                            class="text-indigo-300 hover:text-red-500 transition-colors"
                                         >
                                             ✕
                                         </button>
@@ -647,10 +715,11 @@
                             </div>
                             <div class="flex gap-2">
                                 <input
+                                    id="new-payment-method"
                                     type="text"
                                     bind:value={newPaymentMethod}
-                                    placeholder="Add new method (e.g., Bitcoin)"
-                                    class="flex-grow px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
+                                    placeholder="Add method (e.g. BTC)"
+                                    class="flex-grow px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-gray-900 font-medium"
                                     onkeydown={(e) =>
                                         e.key === "Enter" &&
                                         (e.preventDefault(),
@@ -658,8 +727,8 @@
                                 />
                                 <button
                                     type="button"
-                                    onclick={addPaymentMethod}
                                     class="px-6 py-4 bg-indigo-100 text-indigo-600 font-bold rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                    onclick={addPaymentMethod}
                                 >
                                     Add
                                 </button>
@@ -687,7 +756,202 @@
             </div>
         </div>
 
-        <!-- Treatment Types Deprecated -->
+        <!-- Cancellation & Postponement Reasons -->
+        <div
+            class="bg-white shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden border border-gray-100"
+        >
+            <div class="px-8 py-6 bg-gray-50/50 border-b border-gray-100">
+                <h2
+                    class="text-xl font-bold text-gray-900 flex items-center gap-2"
+                >
+                    <span>🚫</span> Cancellation & Postponement Tracking
+                </h2>
+            </div>
+            <div class="p-8 space-y-8">
+                <!-- Requirements Section -->
+                <div
+                    class="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col md:flex-row justify-between gap-6"
+                >
+                    <div class="space-y-1">
+                        <h3 class="font-bold text-slate-800">
+                            Reason Requirements
+                        </h3>
+                        <p class="text-xs text-slate-500">
+                            Configure if doctors must provide a reason when
+                            changing appointment status.
+                        </p>
+                    </div>
+                    <form
+                        method="POST"
+                        action="?/updateReasonRequirements"
+                        use:enhance
+                        class="flex gap-4 items-center"
+                    >
+                        <input
+                            type="hidden"
+                            name="postponeRequired"
+                            value={postponeRequired}
+                        />
+                        <input
+                            type="hidden"
+                            name="cancelRequired"
+                            value={cancelRequired}
+                        />
+
+                        <label
+                            class="flex items-center gap-2 cursor-pointer group"
+                            for="postponeRequired"
+                        >
+                            <input
+                                type="checkbox"
+                                id="postponeRequired"
+                                bind:checked={postponeRequired}
+                                class="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span
+                                class="text-sm font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors"
+                                >Require for Postpone</span
+                            >
+                        </label>
+
+                        <label
+                            class="flex items-center gap-2 cursor-pointer group"
+                            for="cancelRequired"
+                        >
+                            <input
+                                type="checkbox"
+                                id="cancelRequired"
+                                bind:checked={cancelRequired}
+                                class="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span
+                                class="text-sm font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors"
+                                >Require for Cancel</span
+                            >
+                        </label>
+
+                        <button
+                            type="submit"
+                            class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all active:scale-95 ml-2"
+                        >
+                            Apply
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Reasons Management -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Add Form -->
+                    <div class="space-y-4">
+                        <h3
+                            class="text-sm font-black text-slate-400 uppercase tracking-widest"
+                        >
+                            Add New Reason
+                        </h3>
+                        <form
+                            method="POST"
+                            action="?/addCancellationReason"
+                            use:enhance={({ formElement }) => {
+                                return async ({ result, update }) => {
+                                    if (result.type === "success") {
+                                        newReasonText = "";
+                                        await update();
+                                    }
+                                };
+                            }}
+                            class="space-y-3"
+                        >
+                            <label for="newReasonText" class="sr-only"
+                                >Reason text</label
+                            >
+                            <input
+                                id="newReasonText"
+                                type="text"
+                                name="reasonText"
+                                bind:value={newReasonText}
+                                placeholder="Reason text (e.g. Broken Equipment)"
+                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm"
+                            />
+                            <div class="flex gap-2">
+                                <label for="newReasonType" class="sr-only"
+                                    >Reason type</label
+                                >
+                                <select
+                                    id="newReasonType"
+                                    name="reasonType"
+                                    bind:value={newReasonType}
+                                    class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                >
+                                    <option value="cancel">Cancel only</option>
+                                    <option value="postpone"
+                                        >Postpone only</option
+                                    >
+                                    <option value="both">Both</option>
+                                </select>
+                                <button
+                                    type="submit"
+                                    class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md text-sm"
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Reasons List -->
+                    <div class="lg:col-span-2 space-y-4">
+                        <h3
+                            class="text-sm font-black text-slate-400 uppercase tracking-widest"
+                        >
+                            Configured Reasons
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {#each data.cancellationReasons as any[] as reason}
+                                <div
+                                    class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-indigo-200 transition-all group"
+                                >
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-slate-700"
+                                            >{reason.reason_text}</span
+                                        >
+                                        <span
+                                            class="text-[10px] uppercase font-black tracking-widest {reason.reason_type ===
+                                            'cancel'
+                                                ? 'text-red-400'
+                                                : reason.reason_type ===
+                                                    'postpone'
+                                                  ? 'text-blue-400'
+                                                  : 'text-slate-400'}"
+                                        >
+                                            {reason.reason_type}
+                                        </span>
+                                    </div>
+                                    {#if reason.reason_text !== "Custom/Other"}
+                                        <form
+                                            method="POST"
+                                            action="?/deleteCancellationReason"
+                                            use:enhance
+                                        >
+                                            <input
+                                                type="hidden"
+                                                name="id"
+                                                value={reason.id}
+                                            />
+                                            <button
+                                                type="submit"
+                                                class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                            >
+                                                ✕
+                                            </button>
+                                        </form>
+                                    {/if}
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Data Management -->
         <div
@@ -759,9 +1023,10 @@
                 <div>
                     <label
                         class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                        >Closure Date</label
+                        for="closure_date">Closure Date</label
                     >
                     <input
+                        id="closure_date"
                         type="date"
                         bind:value={newClosure.closure_date}
                         class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
@@ -771,9 +1036,10 @@
                 <div>
                     <label
                         class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                        >Reason</label
+                        for="closure_reason">Reason</label
                     >
                     <input
+                        id="closure_reason"
                         type="text"
                         bind:value={newClosure.reason}
                         class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"

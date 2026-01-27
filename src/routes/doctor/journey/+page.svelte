@@ -3,6 +3,7 @@
     import { t } from "svelte-i18n";
     import { fade, slide, scale } from "svelte/transition";
     import { quintOut } from "svelte/easing";
+    import { invalidate } from "$app/navigation";
     import StatisticsPanel from "$lib/components/doctor/journey/StatisticsPanel.svelte";
 
     let { data } = $props();
@@ -26,6 +27,28 @@
 
     const currentAppointments = $derived((data.agenda as any)[activeTab] || []);
     const isToday = $derived(activeTab === "today");
+
+    async function completeVisit(e: Event, appointmentId: number) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!confirm("Terminer cette visite ?")) return;
+
+        try {
+            const response = await fetch("/api/appointments/complete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: appointmentId }),
+            });
+
+            if (response.ok) {
+                // Trigger data reload - stats will update automatically
+                await invalidate("journey:stats");
+            }
+        } catch (err) {
+            console.error("Failed to complete visit:", err);
+        }
+    }
 </script>
 
 <div class="journey-hub" in:fade>
@@ -94,7 +117,7 @@
 
     <!-- Statistics Dashboard -->
     {#if isToday}
-        <StatisticsPanel stats={data.stats} />
+        <StatisticsPanel dashboardStats={data.stats} />
     {/if}
 
     <!-- Agenda Content -->
@@ -161,9 +184,15 @@
                                 >{appt.status}</span
                             >
                             {#if appt.actual_start_time && !appt.actual_end_time}
-                                <span class="visit-status"
-                                    >Visite en cours...</span
+                                <button
+                                    class="visit-status-btn"
+                                    onclick={(e) => completeVisit(e, appt.id)}
                                 >
+                                    <span class="visit-status"
+                                        >Visite en cours...</span
+                                    >
+                                    <span class="btn-text">Terminer</span>
+                                </button>
                             {/if}
                         </div>
 
@@ -435,6 +464,38 @@
         font-weight: 700;
         color: #f59e0b;
         animation: blink 2s infinite;
+    }
+
+    .visit-status-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .visit-status-btn .btn-text {
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: white;
+        background: #f59e0b;
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.5rem;
+        margin-top: 0.25rem;
+        opacity: 0;
+        transform: translateY(5px);
+        transition: all 0.2s;
+    }
+
+    .visit-status-btn:hover .btn-text {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .visit-status-btn:hover .visit-status {
+        color: #d97706;
     }
 
     @keyframes blink {
