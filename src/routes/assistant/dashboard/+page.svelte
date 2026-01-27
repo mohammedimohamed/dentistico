@@ -2,7 +2,7 @@
     import type { PageData } from "./$types";
     import { enhance } from "$app/forms";
     import { APP_CONFIG } from "$lib/config/app.config";
-    import Calendar from "$lib/components/Calendar.svelte";
+    import FullCalendar from "$lib/components/FullCalendar.svelte";
     import { t } from "svelte-i18n";
 
     import { onMount } from "svelte";

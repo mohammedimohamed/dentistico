@@ -1925,19 +1925,22 @@ export function getAppointmentById(id: number) {
 }
 
 export function getDoctorAppointmentsToday(doctorId: number) {
-    const today = new Date().toISOString().split('T')[0];
-    return db.prepare(`
+    const today = new Date().toISOString().split("T")[0];
+    return db
+        .prepare(
+            `
         SELECT
-    a.id, a.start_time, a.end_time, a.duration_minutes,
-        a.status, a.appointment_type, a.notes,
-        p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone, p.date_of_birth as patient_dob, p.gender as patient_gender
+            a.id, a.start_time, a.end_time, a.duration_minutes,
+            a.status, a.appointment_type, a.notes,
+            p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone, p.date_of_birth as patient_dob, p.gender as patient_gender
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         WHERE a.doctor_id = ?
-        AND a.start_time >= ?
-            AND a.start_time <= ?
-                ORDER BY a.start_time ASC
-                    `).all(doctorId, today + ' 00:00:00', today + ' 23:59:59');
+        AND date(a.start_time) = date(?)
+        ORDER BY a.start_time ASC
+        `,
+        )
+        .all(doctorId, today);
 }
 
 // Deprecated or alias for compatibility

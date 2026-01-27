@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { PageData } from "./$types";
     import { enhance } from "$app/forms";
-    import Calendar from "$lib/components/Calendar.svelte";
+    import FullCalendar from "$lib/components/FullCalendar.svelte";
     import { t } from "svelte-i18n";
 
     let { data }: { data: PageData } = $props();
@@ -74,15 +74,15 @@
         new Map(allAppointments.map((a) => [a.id, a])).values(),
     );
 
-    const calendarEvents = $derived(
-        uniqueAppts.map((a: any) => ({
+    const calendarEvents = $derived.by(() => {
+        const events = uniqueAppts.map((a: any) => ({
             id: a.id,
             title: `${a.patient_name} - ${a.appointment_type?.replace("_", " ") || "Consult"}`,
-            start: a.start_time,
+            start: a.start_time?.replace(" ", "T"),
             end:
-                a.end_time ||
+                a.end_time?.replace(" ", "T") ||
                 new Date(
-                    new Date(a.start_time).getTime() +
+                    new Date(a.start_time?.replace(" ", "T")).getTime() +
                         (a.duration_minutes || 30) * 60000,
                 ).toISOString(),
             extendedProps: a,
@@ -92,8 +92,19 @@
                     : a.status === "scheduled"
                       ? "#3b82f6"
                       : "#9ca3af",
-        })),
-    );
+        }));
+
+        console.log(
+            "🗓️ Dashboard: Calendar events prepared:",
+            events.length,
+            "events",
+        );
+        if (events.length > 0) {
+            console.log("First event:", events[0]);
+        }
+
+        return events;
+    });
 
     function handleEventClick(info: any) {
         openModal(info.event.extendedProps);
@@ -360,7 +371,7 @@
                 </div>
             {/if}
         {:else}
-            <Calendar
+            <FullCalendar
                 events={calendarEvents}
                 onEventClick={handleEventClick}
                 onEventDrop={handleEventChange}

@@ -11,7 +11,7 @@
     import SmartDateTimePicker from "$lib/components/SmartDateTimePicker.svelte";
 
     import ResponsiveShield from "$lib/components/common/ResponsiveShield.svelte";
-    import Calendar from "$lib/components/Calendar.svelte";
+    import FullCalendar from "$lib/components/FullCalendar.svelte";
     import { page } from "$app/stores";
     import ReasonSelector from "$lib/components/ReasonSelector.svelte";
 
@@ -446,13 +446,26 @@
     let calendarEvents = $state([]);
 
     async function loadCalendarEvents() {
+        console.log("🗓️ Journey: Fetching appointments for all doctors...");
         try {
             const res = await fetch("/api/appointments?doctorId=all");
             if (res.ok) {
-                calendarEvents = await res.json();
+                const fetched = await res.json();
+                console.log(
+                    `🗓️ Journey: Successfully fetched ${fetched.length} appointments`,
+                );
+                if (fetched.length > 0) {
+                    console.log("🗓️ Journey: Sample appointment:", fetched[0]);
+                }
+                calendarEvents = fetched;
+            } else {
+                console.error(
+                    "🗓️ Journey: API error fetching appointments",
+                    res.status,
+                );
             }
         } catch (e) {
-            console.error(e);
+            console.error("🗓️ Journey: Network error fetching appointments", e);
         }
     }
 
@@ -1530,7 +1543,7 @@
             transition:fade
         >
             <div
-                class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-6xl overflow-hidden border-4 border-white"
+                class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-[90vw] max-h-[95vh] overflow-y-auto border-4 border-white"
                 in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
             >
                 <form
@@ -1544,7 +1557,7 @@
                     }}
                 >
                     <div
-                        class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50"
+                        class="p-8 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-30"
                     >
                         <h3
                             class="text-2xl font-black text-slate-800 tracking-tight"
@@ -1566,19 +1579,21 @@
                             <!-- Left Column: Intelligence & Calendar (7/12) -->
                             <div class="lg:col-span-7 space-y-6">
                                 <div
-                                    class="h-[600px] border-2 border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white"
+                                    class="min-h-[600px] h-auto border-2 border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white"
                                 >
-                                    <Calendar
+                                    <FullCalendar
                                         events={calendarEvents}
-                                        initialView="dayGridMonth"
+                                        initialView="timeGridDay"
                                         editable={false}
                                         onDateClick={handleDateClick}
                                     />
                                 </div>
                             </div>
 
-                            <!-- Right Column: Form (5/12) -->
-                            <div class="lg:col-span-5 space-y-8 py-4">
+                            <!-- Right Column: Form (5/12) - Sticky -->
+                            <div
+                                class="lg:col-span-5 space-y-8 py-4 sticky top-24"
+                            >
                                 {#if targetStandard && targetStandard.gap_days_min > 0}
                                     <div
                                         class="bg-indigo-50 border-2 border-indigo-100 p-6 rounded-[2rem] flex items-start gap-4 shadow-sm"
