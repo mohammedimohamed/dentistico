@@ -71,7 +71,14 @@
         "confirm_cancel_title": "Annuler la visite",
         "confirm_cancel_message": "Êtes-vous sûr de vouloir annuler cette visite ?",
         "confirm_postpone_title": "Remettre en attente",
-        "confirm_postpone_message": "Voulez-vous vraiment remettre ce rendez-vous en attente ?"
+        "confirm_postpone_message": "Voulez-vous vraiment remettre ce rendez-vous en attente ?",
+        "status_ongoing": "En cours",
+        "status_overdue": "Retard {min}min",
+        "status_upcoming": "Imminent",
+        "status_completed": "Terminé",
+        "consult": "Consulter",
+        "start_treatment": "Traiter",
+        "continue": "Continuer"
     },
     "inventory": {
         "title": "Inventaire & Stock",
@@ -360,6 +367,12 @@
                     "empty": "Aucun paiement en attente trouvé.",
                     "collectPayment": "Encaisser Paiement",
                     "balanceDue": "Solde Dû"
+                },
+                "waiting_room": {
+                    "label": "Salle d'attente",
+                    "icon": "🏥",
+                    "header": "Patients en attente",
+                    "empty": "La salle d'attente est vide."
                 }
             },
             "buttons": {

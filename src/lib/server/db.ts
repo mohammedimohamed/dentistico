@@ -262,6 +262,13 @@ export function init_db() {
                 notes TEXT,
                 actual_start_time TEXT,
                 actual_end_time TEXT,
+
+                -- Check-in tracking
+                checked_in INTEGER DEFAULT 0,
+                check_in_time TEXT,
+                checked_in_by INTEGER REFERENCES users(id),
+                waiting_room_status TEXT CHECK(waiting_room_status IN ('not_arrived', 'waiting', 'called_in', 'in_treatment')) DEFAULT 'not_arrived',
+
                 created_at TEXT DEFAULT(datetime('now')),
                 updated_at TEXT DEFAULT(datetime('now')),
                 FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
@@ -288,6 +295,14 @@ export function init_db() {
     addColumnIfNotExists('appointments', 'cancellation_custom_reason', 'TEXT');
     addColumnIfNotExists('appointments', 'cancellation_timestamp', 'TEXT');
     addColumnIfNotExists('appointments', 'cancelled_by_user_id', 'INTEGER REFERENCES users(id)');
+
+    // Check-in tracking migrations
+    addColumnIfNotExists('appointments', 'checked_in', 'INTEGER DEFAULT 0');
+    addColumnIfNotExists('appointments', 'check_in_time', 'TEXT');
+    addColumnIfNotExists('appointments', 'checked_in_by', 'INTEGER REFERENCES users(id)');
+    addColumnIfNotExists('appointments', 'waiting_room_status', "TEXT CHECK(waiting_room_status IN ('not_arrived', 'waiting', 'called_in', 'in_treatment')) DEFAULT 'not_arrived'");
+
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_checkin ON appointments(checked_in, waiting_room_status, check_in_time);`);
 
     db.exec(`
         CREATE TABLE IF NOT EXISTS daily_sessions(
@@ -1981,6 +1996,7 @@ export function getAllUpcomingAppointments() {
     a.id, a.start_time, a.end_time, a.duration_minutes,
         a.status, a.appointment_type, a.doctor_id, a.notes,
         a.created_by_user_id, a.confirmed_by_user_id,
+        a.checked_in, a.check_in_time, a.waiting_room_status,
         p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone,
         p.email as patient_email, p.date_of_birth, p.gender,
         p.secondary_email, p.secondary_phone,
@@ -2751,13 +2767,16 @@ export function endDailySession(doctorId: number, date: string, endTime: string)
 
 export function getAppointmentsForDate(doctorId: number, date: string) {
     // date: YYYY-MM-DD
+    const dayStart = date + ' 00:00:00';
+    const dayEnd = date + ' 23:59:59';
+
     return db.prepare(`
         SELECT a.*, p.full_name as patient_name, p.phone as patient_phone
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
-        WHERE a.doctor_id = ? AND date(a.start_time) = date(?)
+        WHERE a.doctor_id = ? AND a.start_time >= ? AND a.start_time <= ?
         ORDER BY a.start_time ASC
-        `).all(doctorId, date);
+        `).all(doctorId, dayStart, dayEnd);
 }
 
 export function getDoctorJourneyStats(doctorId: number, date: string) {
@@ -2851,6 +2870,12 @@ export function getJourneyDashboardStats(doctorId: number) {
     const endOfWeek = new Date(now.getTime() + daysUntilSunday * 86400000)
         .toISOString().split('T')[0];
 
+    // Use range queries for index performance (avoid DATE() function in WHERE)
+    const todayStart = today + ' 00:00:00';
+    const tomorrowStart = tomorrow + ' 00:00:00';
+    const dayAfterStart = dayAfter + ' 00:00:00';
+    const weekEndNext = endOfWeek + ' 23:59:59';
+
     // ==========================================
     // TODAY'S FUNNEL
     // ==========================================
@@ -2863,36 +2888,36 @@ export function getJourneyDashboardStats(doctorId: number) {
             SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as waiting_room
         FROM appointments
         WHERE doctor_id = ? 
-          AND DATE(start_time) = DATE(?)
-    `).get(doctorId, today) as any;
+          AND start_time >= ? AND start_time < ?
+    `).get(doctorId, todayStart, tomorrowStart) as any;
 
     // ==========================================
     // PLANNED vs WALK-INS
     // ==========================================
     const compositionStats = db.prepare(`
         SELECT 
-            SUM(CASE WHEN DATE(created_at) < DATE(?) THEN 1 ELSE 0 END) as planned,
-            SUM(CASE WHEN DATE(created_at) = DATE(?) THEN 1 ELSE 0 END) as walk_ins
+            SUM(CASE WHEN created_at < ? THEN 1 ELSE 0 END) as planned,
+            SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) as walk_ins
         FROM appointments
         WHERE doctor_id = ? 
-          AND DATE(start_time) = DATE(?)
+          AND start_time >= ? AND start_time < ?
           AND status NOT IN ('cancelled')
-    `).get(today, today, doctorId, today) as any;
+    `).get(todayStart, todayStart, doctorId, todayStart, tomorrowStart) as any;
 
     // ==========================================
     // BOOKING PIPELINE (Future Appointments)
     // ==========================================
     const pipelineStats = db.prepare(`
         SELECT 
-            SUM(CASE WHEN DATE(start_time) = DATE(?) THEN 1 ELSE 0 END) as tomorrow,
-            SUM(CASE WHEN DATE(start_time) = DATE(?) THEN 1 ELSE 0 END) as day_after,
+            SUM(CASE WHEN start_time >= ? AND start_time < ? THEN 1 ELSE 0 END) as tomorrow,
+            SUM(CASE WHEN start_time >= ? AND start_time < ? THEN 1 ELSE 0 END) as day_after,
             COUNT(*) as total_until_weekend
         FROM appointments
         WHERE doctor_id = ? 
-          AND DATE(start_time) > DATE(?)
-          AND DATE(start_time) <= DATE(?)
+          AND start_time >= ?
+          AND start_time <= ?
           AND status NOT IN ('cancelled')
-    `).get(tomorrow, dayAfter, doctorId, today, endOfWeek) as any;
+    `).get(tomorrowStart, dayAfterStart, dayAfterStart, tomorrowStart, doctorId, tomorrowStart, weekEndNext) as any;
 
     // Calculate remaining week (excluding tomorrow and day after)
     const restOfWeek = (pipelineStats.total_until_weekend || 0)
@@ -3049,154 +3074,150 @@ export function deleteTemplateResource(id: number) {
 
 export function seedDefaultTemplates() {
     const invoiceHtml = `
-            < div class="print-container bg-white min-h-screen p-12 max-w-4xl mx-auto text-gray-900 font-sans" >
-                <div class="flex justify-between items-start mb-12" >
-                    <div>
-                    <h1 class="text-3xl font-extrabold text-indigo-900 mb-2" > FACTURE </h1>
-                        < p class="text-xl font-bold text-gray-700" > {{ invoice_number }
-} </p>
-    < p class="text-sm text-gray-500 mt-1" > Date : { { date } } </p>
+<div class="print-container bg-white min-h-screen p-12 max-w-4xl mx-auto text-gray-900 font-sans">
+    <div class="flex justify-between items-start mb-12">
+        <div>
+            <h1 class="text-3xl font-extrabold text-indigo-900 mb-2">FACTURE</h1>
+            <p class="text-xl font-bold text-gray-700">{{invoice_number}}</p>
+            <p class="text-sm text-gray-500 mt-1">Date: {{date}}</p>
         </div>
-        < div class="text-right" >
-            <h2 class="text-xl font-bold uppercase tracking-wider" > {{ clinic_name }}</h2>
-                < p class="text-sm text-gray-600" > Cabinet Dentaire </p>
-                    < p class="text-xs text-gray-500" > {{ clinic_address }}</p>
-                        </div>
-                        </div>
-
-                        < div class="grid grid-cols-2 gap-8 mb-12" >
-                            <div class="bg-gray-50 p-6 rounded-lg border border-gray-100" >
-                                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3" > Facturé à: </h3>
-                                    < p class="text-lg font-bold" > {{ patient_name }}</p>
-                                        < p class="text-sm text-gray-600 mt-1" > {{ patient_address }}<br>{{ patient_city }}</p>
-                                            </div>
-                                            < div class="flex flex-col justify-center text-right" >
-                                                <div class="inline-block ml-auto px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest {{#if is_paid}}bg-green-100 text-green-800{{else}}bg-yellow-100 text-yellow-800{{/if}}" >
-                                                    Statut : { { #if is_paid } }Payée{ {else } }En attente{ {/if } }
-</div>
-    </div>
+        <div class="text-right">
+            <h2 class="text-xl font-bold uppercase tracking-wider">{{clinic_name}}</h2>
+            <p class="text-sm text-gray-600">Cabinet Dentaire</p>
+            <p class="text-xs text-gray-500">{{clinic_address}}</p>
+        </div>
     </div>
 
-    < table class="min-w-full mb-12" >
-        <thead class="bg-gray-900 text-white" >
+    <div class="grid grid-cols-2 gap-8 mb-12">
+        <div class="bg-gray-50 p-6 rounded-lg border border-gray-100">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Facturé à:</h3>
+            <p class="text-lg font-bold">{{patient_name}}</p>
+            <p class="text-sm text-gray-600 mt-1">{{patient_address}}<br>{{patient_city}}</p>
+        </div>
+        <div class="flex flex-col justify-center text-right">
+            <div class="inline-block ml-auto px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest {{#if is_paid}}bg-green-100 text-green-800{{else}}bg-yellow-100 text-yellow-800{{/if}}">
+                Statut: {{#if is_paid}}Payée{{else}}En attente{{/if}}
+            </div>
+        </div>
+    </div>
+
+    <table class="min-w-full mb-12">
+        <thead class="bg-gray-900 text-white">
             <tr>
-            <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider" > Désignation </th>
-                < th class="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider" > Dent </th>
-                    < th class="px-6 py-4 text-right text-sm font-semibold uppercase tracking-wider" > Montant </th>
-                        </tr>
-                        </thead>
-                        < tbody class="divide-y divide-gray-200 border-b border-gray-200" >
-                            {{ #each items }}
-<tr>
-    <td class="px-6 py-4 text-sm text-gray-900 font-medium" > {{ description }}</td>
-        < td class="px-6 py-4 text-center text-sm text-gray-500" > {{ #if tooth_number }}{ { tooth_number } } { {else } } -{{
-            /if}}</td >
-            <td class="px-6 py-4 text-right text-sm font-bold" > {{../currency_symbol}}{{amount}}</td >
-                </tr>
-        { {/each } }
+                <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Désignation</th>
+                <th class="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider">Dent</th>
+                <th class="px-6 py-4 text-right text-sm font-semibold uppercase tracking-wider">Montant</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 border-b border-gray-200">
+            {{#each items}}
+            <tr>
+                <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{description}}</td>
+                <td class="px-6 py-4 text-center text-sm text-gray-500">{{#if tooth_number}}{{tooth_number}}{{else}}-{{/if}}</td>
+                <td class="px-6 py-4 text-right text-sm font-bold">{{../currency_symbol}}{{amount}}</td>
+            </tr>
+            {{/each}}
         </tbody>
-            </table>
+    </table>
 
-            < div class="flex justify-end" >
-                <div class="w-64 space-y-3" >
-                    <div class="flex justify-between text-sm text-gray-600" >
-                        <span>Total HT </span>
-                            < span > {{ currency_symbol }
-    } { { total_amount } } </span>
+    <div class="flex justify-end">
+        <div class="w-64 space-y-3">
+            <div class="flex justify-between text-sm text-gray-600">
+                <span>Total HT</span>
+                <span>{{currency_symbol}}{{total_amount}}</span>
+            </div>
+            <div class="flex justify-between text-sm text-gray-600">
+                <span>TVA (0%)</span>
+                <span>{{currency_symbol}}0.00</span>
+            </div>
+            <div class="flex justify-between text-xl font-bold text-gray-900 pt-3 border-t">
+                <span>TOTAL TTC</span>
+                <span>{{currency_symbol}}{{total_amount}}</span>
+            </div>
         </div>
-        < div class="flex justify-between text-sm text-gray-600" >
-            <span>TVA(0 %) </span>
-            < span > {{ currency_symbol }
-} 0.00 </span>
     </div>
-    < div class="flex justify-between text-xl font-bold text-gray-900 pt-3 border-t" >
-        <span>TOTAL TTC </span>
-            < span > {{ currency_symbol }}{ { total_amount } } </span>
-                </div>
-                </div>
-                </div>
-                </div>
-                    `;
+</div>
+`;
 
     const invoiceCss = `
-                    .print - container { width: 100 %; max - width: 800px; margin: auto; }
-table { width: 100 %; border - collapse: collapse; }
-th, td { border - bottom: 1px solid #eee; }
-.grid { display: grid; grid - template - columns: 1fr 1fr; gap: 2rem; }
-.text - right { text - align: right; }
-.font - bold { font - weight: bold; }
-.text - indigo - 900 { color: #312e81; }
-.bg - gray - 50 { background - color: #f9fafb; }
-.bg - gray - 900 { background - color: #111827; }
-.text - white { color: #ffffff; }
+.print-container { width: 100%; max-width: 800px; margin: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border-bottom: 1px solid #eee; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.text-right { text-align: right; }
+.font-bold { font-weight: bold; }
+.text-indigo-900 { color: #312e81; }
+.bg-gray-50 { background-color: #f9fafb; }
+.bg-gray-900 { background-color: #111827; }
+.text-white { color: #ffffff; }
 `;
 
     const prescriptionHtml = `
-    < div class="prescription-container relative" >
-        <div class="header flex justify-between border-bottom pb-4 mb-6" >
-            <div>
-            <h1 class="doctor-name uppercase font-black text-indigo-950" > Dr. { { doctor_name } } </h1>
-                < p class="specialties text-indigo-900 opacity-70" > {{ doctor_specialties }}</p>
-                    </div>
-                    < div class="text-right" >
-                        <h2 class="clinic-name font-black tracking-widest text-indigo-900" > {{ clinic_name }}</h2>
-                            < p class="text-xs" > {{ clinic_address }}</p>
-                                </div>
-                                </div>
+<div class="prescription-container relative">
+    <div class="header flex justify-between border-bottom pb-4 mb-6">
+        <div>
+            <h1 class="doctor-name uppercase font-black text-indigo-950">Dr. {{doctor_name}}</h1>
+            <p class="specialties text-indigo-900 opacity-70">{{doctor_specialties}}</p>
+        </div>
+        <div class="text-right">
+            <h2 class="clinic-name font-black tracking-widest text-indigo-900">{{clinic_name}}</h2>
+            <p class="text-xs">{{clinic_address}}</p>
+        </div>
+    </div>
 
-                                < div class="doc-info-bar flex justify-between bg-indigo-50 p-4 rounded-lg mb-8" >
-                                    <div>
-                                    <span class="label block text-[8px] uppercase tracking-widest opacity-50" > Date </span>
-                                        < span class="value font-black text-indigo-950" > {{ date }}</span>
-                                            </div>
-                                            < div class="text-right" >
-                                                <span class="label block text-[8px] uppercase tracking-widest opacity-50" > Nº Ordonnance </span>
-                                                    < span class="value font-black text-indigo-950" > {{ prescription_number }}</span>
-                                                        </div>
-                                                        </div>
+    <div class="doc-info-bar flex justify-between bg-indigo-50 p-4 rounded-lg mb-8">
+        <div>
+            <span class="label block text-[8px] uppercase tracking-widest opacity-50">Date</span>
+            <span class="value font-black text-indigo-950">{{date}}</span>
+        </div>
+        <div class="text-right">
+            <span class="label block text-[8px] uppercase tracking-widest opacity-50">Nº Ordonnance</span>
+            <span class="value font-black text-indigo-950">{{prescription_number}}</span>
+        </div>
+    </div>
 
-                                                        < div class="patient-info border-l-4 border-indigo-600 pl-4 mb-10" >
-                                                            <span class="label block text-[8px] uppercase tracking-widest opacity-50" > Patient </span>
-                                                                < h3 class="patient-name font-black text-indigo-950 text-xl" > {{ patient_name }} ({{ patient_age }} ans)</h3>
-                                                                    </div>
+    <div class="patient-info border-l-4 border-indigo-600 pl-4 mb-10">
+        <span class="label block text-[8px] uppercase tracking-widest opacity-50">Patient</span>
+        <h3 class="patient-name font-black text-indigo-950 text-xl">{{patient_name}} ({{patient_age}} ans)</h3>
+    </div>
 
-                                                                    < div class="treatments flex-grow min-h-[400px]" >
-                                                                        {{ #each items }}
-<div class="treatment-item border-bottom py-4" >
-    <div class="flex justify-between items-baseline mb-2" >
-        <h4 class="med-name font-black text-gray-900 uppercase" >#{ { index_plus_one } } { { medication_name } } </h4>
-            < span class="dosage font-black text-indigo-900" > {{ dosage }}</span>
-                </div>
-                < p class="instructions text-gray-700 ml-8" > {{ instructions }}</p>
-{ { #if duration } }
-<span class="duration inline-block bg-gray-100 px-2 py-1 rounded text-xs mt-2 ml-8" > Pendant { { duration } } </span>
-{ {/if } }
+    <div class="treatments flex-grow min-h-[400px]">
+        {{#each items}}
+        <div class="treatment-item border-bottom py-4">
+            <div class="flex justify-between items-baseline mb-2">
+                <h4 class="med-name font-black text-gray-900 uppercase">#{{index_plus_one}} {{medication_name}}</h4>
+                <span class="dosage font-black text-indigo-900">{{dosage}}</span>
+            </div>
+            <p class="instructions text-gray-700 ml-8">{{instructions}}</p>
+            {{#if duration}}
+            <span class="duration inline-block bg-gray-100 px-2 py-1 rounded text-xs mt-2 ml-8">Pendant {{duration}}</span>
+            {{/if}}
+        </div>
+        {{/each}}
+    </div>
+
+    <div class="footer mt-auto pt-10 border-top flex justify-between items-end">
+        <div class="notes max-w-xs italic text-gray-500 text-sm">
+            {{notes}}
+        </div>
+        <div class="signature text-center">
+            <div class="sig-box border-2 border-dashed border-gray-200 w-48 h-24 mb-2 bg-gray-50"></div>
+            <p class="font-black text-indigo-950 uppercase text-xs">Dr. {{doctor_name}}</p>
+        </div>
+    </div>
 </div>
-{ {/each } }
-</div>
-
-    < div class="footer mt-auto pt-10 border-top flex justify-between items-end" >
-        <div class="notes max-w-xs italic text-gray-500 text-sm" >
-            {{ notes }}
-</div>
-    < div class="signature text-center" >
-        <div class="sig-box border-2 border-dashed border-gray-200 w-48 h-24 mb-2 bg-gray-50" > </div>
-            < p class="font-black text-indigo-950 uppercase text-xs" > Dr. { { doctor_name } } </p>
-                </div>
-                </div>
-                </div>
-                    `;
+`;
 
     const prescriptionCss = `
-                    .prescription - container { padding: 40px; font - family: 'Inter', sans - serif; display: flex; flex - direction: column; min - height: 800px; }
-.border - bottom { border - bottom: 2px solid rgba(49, 46, 129, 0.1); }
-.border - top { border - top: 2px solid rgba(49, 46, 129, 0.1); }
+.prescription-container { padding: 40px; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; min-height: 800px; }
+.border-bottom { border-bottom: 2px solid rgba(49, 46, 129, 0.1); }
+.border-top { border-top: 2px solid rgba(49, 46, 129, 0.1); }
 .flex { display: flex; }
-.justify - between { justify - content: space - between; }
-.font - black { font - weight: 900; }
-.uppercase { text - transform: uppercase; }
-.text - indigo - 950 { color: #1e1b4b; }
-.text - indigo - 900 { color: #312e81; }
+.justify-between { justify-content: space-between; }
+.font-black { font-weight: 900; }
+.uppercase { text-transform: uppercase; }
+.text-indigo-950 { color: #1e1b4b; }
+.text-indigo-900 { color: #312e81; }
 `;
 
     upsertTemplate('Invoice', invoiceHtml, invoiceCss);

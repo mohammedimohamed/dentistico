@@ -14,8 +14,31 @@
     import FullCalendar from "$lib/components/FullCalendar.svelte";
     import { page } from "$app/stores";
     import ReasonSelector from "$lib/components/ReasonSelector.svelte";
+    import { logger } from "$lib/utils/logger";
 
     let { data } = $props<{ data: any }>();
+
+    // Helper for robust UTC date parsing
+    const parseDateUTC = (dateStr: string) => {
+        if (!dateStr) return new Date();
+        // If it looks like a standard ISO string but without Z, add it
+        if (
+            dateStr.includes(" ") &&
+            !dateStr.includes("Z") &&
+            !dateStr.includes("+")
+        ) {
+            return new Date(dateStr.replace(" ", "T") + "Z");
+        }
+        // If it's T but no Z
+        if (
+            dateStr.includes("T") &&
+            !dateStr.includes("Z") &&
+            !dateStr.includes("+")
+        ) {
+            return new Date(dateStr + "Z");
+        }
+        return new Date(dateStr);
+    };
 
     let chart: any = $state();
     let showNotesModal = $state(false);
@@ -339,29 +362,41 @@
 
     let localSessionStarted = $state(false);
 
+    // CRITICAL: Persist the timer baseline across invalidateAll() calls
+    // This prevents the timer from resetting when actions refresh the page
+    let timerBaseline = $state<number | null>(null);
+
     const isSessionActive = $derived(
         localSessionStarted ||
             (!!data.appointment.actual_start_time &&
                 !data.appointment.actual_end_time),
     );
 
-    // Reactive timer effect
+    // Reactive timer effect with persistent baseline
     $effect(() => {
         if (isSessionActive) {
             const startStr =
                 data.appointment.actual_start_time || new Date().toISOString();
-            const start = new Date(startStr).getTime();
-            // Immediate update
-            visitTimer = Math.floor((Date.now() - start) / 1000);
+            const start = parseDateUTC(startStr).getTime();
+
+            // Lock in the baseline on first activation, never recalculate
+            if (timerBaseline === null) {
+                timerBaseline = start;
+            }
+
+            // Immediate update using the locked baseline
+            visitTimer = Math.floor((Date.now() - timerBaseline) / 1000);
 
             // Clear any existing interval to prevent duplicates
             if (timerInterval) clearInterval(timerInterval);
 
             timerInterval = setInterval(() => {
-                visitTimer = Math.floor((Date.now() - start) / 1000);
+                visitTimer = Math.floor((Date.now() - timerBaseline!) / 1000);
             }, 1000);
         } else {
             if (timerInterval) clearInterval(timerInterval);
+            // Reset baseline when session ends
+            timerBaseline = null;
         }
         return () => {
             if (timerInterval) clearInterval(timerInterval);
@@ -446,26 +481,26 @@
     let calendarEvents = $state([]);
 
     async function loadCalendarEvents() {
-        console.log("🗓️ Journey: Fetching appointments for all doctors...");
+        logger.info("🗓️ Journey: Fetching appointments for all doctors...");
         try {
             const res = await fetch("/api/appointments?doctorId=all");
             if (res.ok) {
                 const fetched = await res.json();
-                console.log(
+                logger.info(
                     `🗓️ Journey: Successfully fetched ${fetched.length} appointments`,
                 );
                 if (fetched.length > 0) {
-                    console.log("🗓️ Journey: Sample appointment:", fetched[0]);
+                    logger.info("🗓️ Journey: Sample appointment:", fetched[0]);
                 }
                 calendarEvents = fetched;
             } else {
-                console.error(
+                logger.error(
                     "🗓️ Journey: API error fetching appointments",
                     res.status,
                 );
             }
         } catch (e) {
-            console.error("🗓️ Journey: Network error fetching appointments", e);
+            logger.error("🗓️ Journey: Network error fetching appointments", e);
         }
     }
 
@@ -576,6 +611,13 @@
         statusActionType = "postpone";
         showRescheduleModal = true;
     }
+    onMount(() => {
+        // Automatically call the patient if they were waiting
+        fetch("/api/appointments/call-patient", {
+            method: "POST",
+            body: JSON.stringify({ appointment_id: data.appointment.id }),
+        });
+    });
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -1012,7 +1054,7 @@
                 {:else}
                     <!-- COLLAPSED STATE -->
                     <div
-                        class="h-full w-full flex flex-col items-center py-6 gap-8 overflow-y-auto"
+                        class="h-full w-full flex flex-col items-center py-6 gap-8"
                         in:fade
                     >
                         <button

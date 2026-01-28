@@ -7,7 +7,11 @@
 
     import { onMount } from "svelte";
     import { page } from "$app/stores";
-    import { goto, invalidateAll } from "$app/navigation";
+    import { goto } from "$app/navigation";
+    import { logger } from "$lib/utils/logger";
+    import { createDebouncer } from "$lib/utils/debounce";
+
+    const invalidateDebouncer = createDebouncer(2000); // 2-second batching window
 
     let { data }: { data: any } = $props();
 
@@ -108,6 +112,12 @@
     let isNewPatient = $state(false);
     let patientCardUrl = $state<string | null>(null);
 
+    // Check-in state
+    let isCheckInModalOpen = $state(false);
+    let checkInAppointment = $state<any>(null);
+    let checkInNotes = $state("");
+    let isSubmittingCheckIn = $state(false);
+
     // Manual booking validation
     let unavailableDates = $state<string[]>([]);
     let nonWorkingDays = $state<number[]>([]);
@@ -119,7 +129,7 @@
             unavailableDates = data.closureDates || [];
             nonWorkingDays = data.nonWorkingDays || [];
         } catch (e) {
-            console.error("Failed to load unavailable dates:", e);
+            logger.error("Failed to load unavailable dates:", e);
         }
     }
 
@@ -136,9 +146,82 @@
         return false;
     }
 
+    let lastUpdateVersion = $state<string | null>(null);
+
     onMount(() => {
         loadUnavailableDates();
+
+        // Background polling for real-time updates - tuned for performance
+        const interval = setInterval(async () => {
+            if (!document.hidden) {
+                try {
+                    const statusRes = await fetch("/api/updates/status");
+                    if (statusRes.ok) {
+                        const { version } = await statusRes.json();
+                        if (version === lastUpdateVersion) {
+                            return; // No changes, keep UI responsive
+                        }
+                        lastUpdateVersion = version;
+                    }
+
+                    logger.info(
+                        "Assistant Dashboard: Pulse detected change, sync triggered",
+                    );
+                    const { invalidate } = await import("$app/navigation");
+                    await invalidate("appointments:today");
+                    await invalidate("waiting-room:status");
+                } catch (e) {
+                    logger.error("Assistant sync failed:", e);
+                }
+            }
+        }, 30000); // 30s check (lightweight)
+
+        return () => clearInterval(interval);
     });
+
+    function openCheckInModal(appt: any) {
+        checkInAppointment = appt;
+        checkInNotes = "";
+        isCheckInModalOpen = true;
+    }
+
+    async function handleCheckIn() {
+        if (!checkInAppointment) return;
+        isSubmittingCheckIn = true;
+
+        try {
+            const response = await fetch("/api/appointments/check-in", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    appointment_id: checkInAppointment.id,
+                    check_in_time: new Date().toISOString(),
+                    notes: checkInNotes,
+                }),
+            });
+
+            if (response.ok) {
+                isCheckInModalOpen = false;
+                const savedApptId = checkInAppointment.id;
+                checkInAppointment = null;
+
+                // Debounce invalidation to batch rapid manual actions
+                invalidateDebouncer(async () => {
+                    const { invalidate } = await import("$app/navigation");
+                    await invalidate("appointments:today");
+                    await invalidate("waiting-room:status");
+                });
+            } else {
+                const err = await response.json();
+                alert(`Check-in failed: ${err.error}`);
+            }
+        } catch (e: any) {
+            logger.error("Check-in error:", e);
+            alert(`Error: ${e.message}`);
+        } finally {
+            isSubmittingCheckIn = false;
+        }
+    }
 
     // Table view state
     let tableSortColumn = $state<string | null>(null);
@@ -599,6 +682,11 @@
             id: "payments",
             label: $t("assistant.dashboard.tabs.payments.label"),
             icon: $t("assistant.dashboard.tabs.payments.icon"),
+        },
+        {
+            id: "waiting_room",
+            label: $t("assistant.dashboard.tabs.waiting_room.label"),
+            icon: $t("assistant.dashboard.tabs.waiting_room.icon"),
         },
     ];
 
@@ -1089,6 +1177,28 @@
                                             )}
                                         </span>
                                         <div class="flex gap-2">
+                                            {#if appt.status !== "cancelled" && appt.status !== "no_show"}
+                                                {#if !appt.checked_in}
+                                                    <button
+                                                        onclick={() =>
+                                                            openCheckInModal(
+                                                                appt,
+                                                            )}
+                                                        class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-xs transition-all flex items-center gap-1"
+                                                    >
+                                                        ✓ Check-In
+                                                    </button>
+                                                {:else}
+                                                    <span
+                                                        class="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg font-bold text-xs flex items-center gap-1"
+                                                    >
+                                                        <span
+                                                            class="w-2 h-2 bg-green-500 rounded-full animate-pulse"
+                                                        ></span>
+                                                        Arrived
+                                                    </span>
+                                                {/if}
+                                            {/if}
                                             {#if appt.status === "scheduled"}
                                                 <form
                                                     method="POST"
@@ -1617,6 +1727,30 @@
                                             <div
                                                 class="flex items-center gap-4"
                                             >
+                                                {#if appt.status !== "cancelled" && appt.status !== "no_show"}
+                                                    {#if !appt.checked_in}
+                                                        <button
+                                                            onclick={() =>
+                                                                openCheckInModal(
+                                                                    appt,
+                                                                )}
+                                                            class="px-4 py-3 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors text-2xl font-bold min-w-[50px]"
+                                                            title="Check-In"
+                                                        >
+                                                            ✓
+                                                        </button>
+                                                    {:else}
+                                                        <span
+                                                            class="px-2 py-1 bg-green-100 text-green-700 rounded-lg font-bold text-[10px] flex items-center gap-1"
+                                                            title="Arrived"
+                                                        >
+                                                            <span
+                                                                class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"
+                                                            ></span>
+                                                            ARR
+                                                        </span>
+                                                    {/if}
+                                                {/if}
                                                 {#if appt.status === "scheduled"}
                                                     <form
                                                         method="POST"
@@ -2021,6 +2155,130 @@
                         {/each}
                     </tbody>
                 </table>
+            </div>
+        </div>
+    {/if}
+
+    <!-- WAITING ROOM TAB -->
+    {#if activeTab === "waiting_room"}
+        <div class="bg-white shadow rounded-xl overflow-hidden">
+            <div
+                class="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center"
+            >
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">
+                        {$t("assistant.dashboard.tabs.waiting_room.header")}
+                    </h3>
+                    <p class="text-xs text-gray-500 font-medium">
+                        Patients physically present and waiting for their
+                        appointment.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span
+                        class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-widest"
+                    >
+                        {filteredAppointments.filter(
+                            (a) =>
+                                a.waiting_room_status === "waiting" &&
+                                new Date(a.start_time).toDateString() ===
+                                    new Date().toDateString(),
+                        ).length} Patients
+                    </span>
+                </div>
+            </div>
+            <div class="p-6">
+                {#if filteredAppointments.filter((a) => a.waiting_room_status === "waiting" && new Date(a.start_time).toDateString() === new Date().toDateString()).length === 0}
+                    <div class="py-12 text-center">
+                        <div class="text-6xl mb-4">🏥</div>
+                        <h3 class="text-gray-500 italic">
+                            {$t("assistant.dashboard.tabs.waiting_room.empty")}
+                        </h3>
+                    </div>
+                {:else}
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                    >
+                        {#each filteredAppointments.filter((a) => a.waiting_room_status === "waiting" && new Date(a.start_time).toDateString() === new Date().toDateString()) as appt}
+                            <div
+                                class="p-4 border border-gray-100 rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all bg-white relative overflow-hidden"
+                            >
+                                <div class="absolute top-0 right-0 p-2">
+                                    <span
+                                        class="w-3 h-3 bg-green-500 rounded-full animate-pulse inline-block"
+                                    ></span>
+                                </div>
+                                <div class="flex items-start gap-3 mb-3">
+                                    <div
+                                        class="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 font-bold"
+                                    >
+                                        {appt.patient_name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-900">
+                                            {appt.patient_name}
+                                        </h4>
+                                        <p class="text-xs text-gray-500">
+                                            {appt.appointment_type.replace(
+                                                "_",
+                                                " ",
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2 mb-4">
+                                    <div
+                                        class="flex items-center justify-between text-xs"
+                                    >
+                                        <span class="text-gray-400"
+                                            >Scheduled:</span
+                                        >
+                                        <span class="font-bold text-indigo-600"
+                                            >{new Date(
+                                                appt.start_time,
+                                            ).toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })}</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between text-xs"
+                                    >
+                                        <span class="text-gray-400"
+                                            >Arrived:</span
+                                        >
+                                        <span class="font-bold text-green-600"
+                                            >{new Date(
+                                                appt.check_in_time,
+                                            ).toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })}</span
+                                        >
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="p-2 bg-gray-50 rounded-lg text-[10px] text-gray-600 italic mb-4"
+                                >
+                                    {appt.notes?.split("[Check-in]")[1] ||
+                                        "No arrival notes"}
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <button
+                                        onclick={() => openBookingModal(appt)}
+                                        class="flex-1 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold hover:bg-indigo-600 hover:text-white transition-colors"
+                                    >
+                                        👁️ View Details
+                                    </button>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
             </div>
         </div>
     {/if}
@@ -3117,6 +3375,126 @@
                                     Confirm
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
+
+    <!-- Modal: Patient Check-In -->
+    {#if isCheckInModalOpen && checkInAppointment}
+        <div
+            class="relative z-50 overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+        >
+            <div
+                class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
+                onclick={() => (isCheckInModalOpen = false)}
+            ></div>
+            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                <div
+                    class="flex min-h-full items-center justify-center p-4 text-center sm:p-0"
+                >
+                    <div
+                        class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+                    >
+                        <div class="bg-white px-6 pt-6 pb-6">
+                            <h3
+                                class="text-xl font-black text-gray-900 mb-6 border-b pb-4 flex items-center gap-2"
+                            >
+                                <span class="w-2 h-8 bg-blue-600 rounded-full"
+                                ></span>
+                                Patient Check-In
+                            </h3>
+
+                            <div class="space-y-4">
+                                <div
+                                    class="p-4 bg-gray-50 rounded-xl border border-gray-100"
+                                >
+                                    <p
+                                        class="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1"
+                                    >
+                                        Patient
+                                    </p>
+                                    <p class="text-lg font-bold text-gray-900">
+                                        {checkInAppointment.patient_name}
+                                    </p>
+
+                                    <div class="grid grid-cols-2 gap-4 mt-3">
+                                        <div>
+                                            <p
+                                                class="text-[10px] text-gray-400 uppercase font-bold"
+                                            >
+                                                Scheduled
+                                            </p>
+                                            <p
+                                                class="text-sm font-bold text-indigo-600"
+                                            >
+                                                {new Date(
+                                                    checkInAppointment.start_time,
+                                                ).toLocaleTimeString([], {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p
+                                                class="text-[10px] text-gray-400 uppercase font-bold"
+                                            >
+                                                Arrival Time
+                                            </p>
+                                            <p
+                                                class="text-sm font-bold text-green-600"
+                                            >
+                                                {new Date().toLocaleTimeString(
+                                                    [],
+                                                    {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    },
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label
+                                        class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1"
+                                        >Check-in Notes (Optional)</label
+                                    >
+                                    <textarea
+                                        bind:value={checkInNotes}
+                                        placeholder="e.g., Brought previous X-rays, needs referral..."
+                                        class="w-full rounded-xl border-gray-200 bg-gray-50 py-3 px-4 text-sm font-medium focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
+                                    ></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            class="bg-gray-50 px-6 py-4 flex flex-row-reverse gap-3"
+                        >
+                            <button
+                                type="button"
+                                disabled={isSubmittingCheckIn}
+                                onclick={handleCheckIn}
+                                class="inline-flex justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-black text-white shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:opacity-50"
+                            >
+                                {isSubmittingCheckIn
+                                    ? "Processsing..."
+                                    : "✓ Confirm Check-In"}
+                            </button>
+                            <button
+                                type="button"
+                                onclick={() => (isCheckInModalOpen = false)}
+                                class="inline-flex justify-center rounded-xl bg-white px-6 py-2.5 text-sm font-bold text-gray-700 shadow-sm border border-gray-200 hover:bg-gray-50 transition-all"
+                            >
+                                Cancel
+                            </button>
                         </div>
                     </div>
                 </div>

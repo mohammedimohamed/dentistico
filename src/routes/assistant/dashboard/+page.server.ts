@@ -21,7 +21,9 @@ import {
 import { createNotification, getAllAdminIds } from '$lib/server/notifications';
 import type { PageServerLoad, Actions } from './$types';
 
-export const load: PageServerLoad = async ({ locals, url }) => {
+export const load: PageServerLoad = async ({ locals, url, depends }) => {
+    depends('appointments:today');
+    depends('waiting-room:status');
     if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
         throw redirect(302, '/login');
     }

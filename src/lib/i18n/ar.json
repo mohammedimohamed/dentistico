@@ -45,7 +45,14 @@
         "confirm_cancel_title": "إلغاء الزيارة",
         "confirm_cancel_message": "هل أنت متأكد من أنك تريد إلغاء هذه الزيارة؟",
         "confirm_postpone_title": "تأجيل الموعد",
-        "confirm_postpone_message": "هل تريد حقاً إعادة هذا الموعد إلى قائمة الانتظار؟"
+        "confirm_postpone_message": "هل تريد حقاً إعادة هذا الموعد إلى قائمة الانتظار؟",
+        "status_ongoing": "قيد التنفيذ",
+        "status_overdue": "تأخير {min}د",
+        "status_upcoming": "وشيك",
+        "status_completed": "مكتمل",
+        "consult": "معاينة",
+        "start_treatment": "علاج",
+        "continue": "متابعة"
     },
     "inventory": {
         "title": "المخزون والمتجر",
@@ -228,14 +235,6 @@
         "legend_prosthesis": "تعويضات / تاج",
         "legend_planned": "مخطط له",
         "internal_notes_placeholder": "ملاحظات داخلية لهذا السن...",
-        "consultation": "استشارة",
-        "cleaning": "تنظيف",
-        "filling": "حشوة",
-        "root_canal": "علاج عصب",
-        "extraction": "خلع",
-        "crown": "تاج",
-        "whitening": "تبييض",
-        "x_ray": "أشعة سينية",
         "prescription_new_title": "وصفة طبية جديدة",
         "prescription_search_meds": "البحث عن دواء",
         "prescription_search_placeholder": "اكتب اسم الدواء...",
@@ -371,6 +370,12 @@
                     "empty": "لم يتم العثور على مدفوعات مستحقة.",
                     "collectPayment": "تحصيل الدفعة",
                     "balanceDue": "المبلغ المستحق"
+                },
+                "waiting_room": {
+                    "label": "قاعة الانتظار",
+                    "icon": "🏥",
+                    "header": "المرضى في الانتظار",
+                    "empty": "قاعة الانتظار فارغة حالياً."
                 }
             },
             "buttons": {
@@ -650,60 +655,6 @@
             "Low Stock Alert": "تنبيه انخفاض المخزون",
             "Appointment Booked": "تم حجز موعد",
             "Appointment Cancelled": "تم إلغاء الموعد"
-        }
-    },
-    "admin": {
-        "settings": {
-            "title": "إعدادات النظام",
-            "description": "تكوين الإعدادات العامة للعيادة",
-            "financial": {
-                "title": "التكوين المالي",
-                "description": "إدارة إعدادات العملة والفواتير",
-                "currencyCode": "رمز العملة",
-                "currencyPlaceholder": "مثال: DZD, EUR, USD",
-                "currencyHelp": "رمز ISO للعملة (3 أحرف)",
-                "currencySymbol": "رمز العملة",
-                "symbolPlaceholder": "مثال: دج, €, $",
-                "symbolHelp": "الرمز المعروض في الفواتير"
-            },
-            "booking": {
-                "mode": "وضع الحجز",
-                "freeform": "نموذج حر (الحالي)",
-                "availability": "بناءً على التوفر",
-                "help": "وضع 'التوفر' يعرض فقط الأوقات المتاحة للمرضى"
-            },
-            "advanced": {
-                "title": "إعدادات متقدمة",
-                "description": "هذه الإعدادات تتطلب تعديلات في الكود",
-                "clinicName": "اسم العيادة",
-                "bookingInterval": "فترة الحجز",
-                "bookingValue": "30 دقيقة",
-                "workHours": "ساعات العمل",
-                "workHoursValue": "9:00 - 18:00"
-            },
-            "saveButton": "حفظ التغييرات",
-            "success": "تم حفظ الإعدادات بنجاح"
-        },
-        "dashboard": {
-            "title": "لوحة تحكم المسؤول",
-            "stats": {
-                "totalUsers": "إجمالي المستخدمين",
-                "systemStatus": "حالة النظام",
-                "online": "متصل",
-                "dbVersion": "إصدار قاعدة البيانات"
-            },
-            "welcome": {
-                "title": "مرحباً بك في لوحة الإدارة",
-                "description": "إدارة المستخدمين، تكوين إعدادات النظام ومراقبة عمليات العيادة.",
-                "userManagement": "إدارة المستخدمين",
-                "systemSettings": "إعدادات النظام"
-            }
-        },
-        "nav": {
-            "dashboard": "لوحة التحكم",
-            "users": "المستخدمون",
-            "settings": "الإعدادات",
-            "inventory": "المخزون"
         }
     },
     "booking": {

@@ -64,7 +64,14 @@
         "prochain_rdv": "Next Appt",
         "note_clinique": "Clinical Note",
         "completed": "Visit Completed",
-        "waiting": "Waiting"
+        "waiting": "Waiting",
+        "status_ongoing": "Ongoing",
+        "status_overdue": "Delayed {min}m",
+        "status_upcoming": "Imminent",
+        "status_completed": "Completed",
+        "consult": "View Record",
+        "start_treatment": "Treat",
+        "continue": "Continue"
     },
     "inventory": {
         "title": "Inventory & Stock",
@@ -331,6 +338,12 @@
                     "empty": "No pending payments found.",
                     "collectPayment": "Collect Payment",
                     "balanceDue": "Balance Due"
+                },
+                "waiting_room": {
+                    "label": "Waiting Room",
+                    "icon": "🏥",
+                    "header": "Patients waiting",
+                    "empty": "The waiting room is empty."
                 }
             },
             "buttons": {

@@ -14,6 +14,8 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
     }
 
     depends('journey:stats');
+    depends('appointments:today');
+    depends('waiting-room:status');
 
     const todayStr = new Date().toISOString().split('T')[0];
     const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
