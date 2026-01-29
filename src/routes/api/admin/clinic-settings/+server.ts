@@ -55,7 +55,6 @@ export async function PUT({ request, locals }) {
         data.address || null,
         data.phone || null,
         data.email || null,
-        data.email || null,
         data.logo_url || null,
         data.timer_alert_1_minutes || 15,
         data.timer_alert_1_beeps || 1,
