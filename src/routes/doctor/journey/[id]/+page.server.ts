@@ -80,7 +80,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         config: {
             avgDuration: parseInt(avgDuration),
             currencySymbol: serverConfig.currencySymbol || 'DH',
-            paymentMethods: serverConfig.paymentMethods || []
+            paymentMethods: serverConfig.paymentMethods || [],
+            timer_alert_1_minutes: serverConfig.timer_alert_1_minutes,
+            timer_alert_1_beeps: serverConfig.timer_alert_1_beeps,
+            timer_alert_2_minutes: serverConfig.timer_alert_2_minutes,
+            timer_alert_2_beeps: serverConfig.timer_alert_2_beeps
         },
         cancellationReasons: getCancellationReasons('cancel'),
         postponeReasons: getCancellationReasons('postpone'),

@@ -391,17 +391,74 @@
             if (timerInterval) clearInterval(timerInterval);
 
             timerInterval = setInterval(() => {
-                visitTimer = Math.floor((Date.now() - timerBaseline!) / 1000);
+                const nowSecs = Math.floor(
+                    (Date.now() - timerBaseline!) / 1000,
+                );
+                visitTimer = nowSecs;
+                checkTimerAlerts(nowSecs);
             }, 1000);
         } else {
             if (timerInterval) clearInterval(timerInterval);
             // Reset baseline when session ends
             timerBaseline = null;
+            resetAlerts();
         }
         return () => {
             if (timerInterval) clearInterval(timerInterval);
         };
     });
+
+    // Alert Logic
+    let alert1Played = $state(false);
+    let alert2Played = $state(false);
+
+    function resetAlerts() {
+        alert1Played = false;
+        alert2Played = false;
+    }
+
+    function playBeeps(count: number) {
+        const audio = new Audio("/mixkit-clear-announce-tones-2861.wav");
+        let played = 0;
+
+        const playNext = () => {
+            if (played >= count) return;
+            audio.currentTime = 0;
+            audio.play().catch((e) => console.error("Audio play failed:", e));
+            played++;
+
+            audio.onended = () => {
+                if (played < count) {
+                    setTimeout(playNext, 200); // 200ms gap between beeps
+                }
+            };
+        };
+        playNext();
+    }
+
+    function checkTimerAlerts(seconds: number) {
+        const minutes = seconds / 60;
+
+        // Alert 1
+        const t1 = data.config?.timer_alert_1_minutes || 15;
+        const b1 = data.config?.timer_alert_1_beeps || 1;
+
+        // Check if we just crossed the threshold (with 5 sec buffer to avoid re-trigger on refresh if desired,
+        // but for now strict >= allows catch-up on refresh which is good)
+        if (minutes >= t1 && !alert1Played) {
+            playBeeps(b1);
+            alert1Played = true;
+        }
+
+        // Alert 2
+        const t2 = data.config?.timer_alert_2_minutes || 30;
+        const b2 = data.config?.timer_alert_2_beeps || 2;
+
+        if (minutes >= t2 && !alert2Played) {
+            playBeeps(b2);
+            alert2Played = true;
+        }
+    }
 
     function formatTime(seconds: number) {
         const totalSeconds = Math.floor(seconds);

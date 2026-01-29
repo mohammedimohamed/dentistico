@@ -6,8 +6,10 @@
     import { logger } from "$lib/utils/logger";
     import { browser } from "$app/environment";
     import StatisticsPanel from "$lib/components/doctor/journey/StatisticsPanel.svelte";
+    import WaitingRoomList from "$lib/components/doctor/journey/WaitingRoomList.svelte";
+    import { goto, invalidate } from "$app/navigation";
 
-    let { data } = $props();
+    let { data }: { data: any } = $props();
 
     let activeTab = $state("today");
     let loading = $state(false);
@@ -347,103 +349,15 @@
 
     <!-- Waiting Room & Statistics -->
     {#if isToday}
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 mt-8">
-            <!-- Waiting Room Section -->
-            <section
-                class="lg:col-span-4 bg-white rounded-3xl p-6 shadow-xl border border-blue-50 relative overflow-hidden"
-            >
-                <div class="flex items-center justify-between mb-6">
-                    <h3
-                        class="text-xl font-black text-slate-800 flex items-center gap-2"
-                    >
-                        <span class="text-2xl">🏥</span>
-                        {$t("assistant.dashboard.tabs.waiting_room.label")}
-                    </h3>
-                    <span
-                        class="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black uppercase tracking-widest"
-                    >
-                        {waitingPatients.length} Patients
-                    </span>
-                </div>
-
-                {#if waitingPatients.length === 0}
-                    <div
-                        class="py-12 text-center text-slate-400 italic text-sm"
-                    >
-                        <div class="text-4xl mb-4 opacity-20">🛋️</div>
-                        <p>
-                            {$t("assistant.dashboard.tabs.waiting_room.empty")}
-                        </p>
-                    </div>
-                {:else}
-                    <div
-                        class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"
-                    >
-                        {#each waitingPatients as appt}
-                            {@const waitTime = appt.wait_minutes}
-                            <div
-                                class="p-4 rounded-2xl border-l-4 transition-all hover:translate-x-1 shadow-sm
-                                {waitTime < 15
-                                    ? 'border-l-green-500 bg-green-50/30'
-                                    : waitTime < 30
-                                      ? 'border-l-amber-500 bg-amber-50/30'
-                                      : 'border-l-red-500 bg-red-50/30'}"
-                            >
-                                <div
-                                    class="flex justify-between items-start mb-2"
-                                >
-                                    <h4
-                                        class="font-bold text-slate-900 leading-tight"
-                                    >
-                                        {appt.patient_name}
-                                    </h4>
-                                    <div class="flex flex-col items-end">
-                                        <span
-                                            class="text-[10px] font-black {waitTime >
-                                            30
-                                                ? 'text-red-600 animate-pulse'
-                                                : 'text-slate-500'}"
-                                        >
-                                            ⏱️ {waitTime}m
-                                        </span>
-                                    </div>
-                                </div>
-                                <div
-                                    class="flex items-center gap-2 text-[10px] text-slate-500 mb-3"
-                                >
-                                    <span class="font-bold text-indigo-600"
-                                        >RDV: {new Date(
-                                            appt.start_time,
-                                        ).toLocaleTimeString([], {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                        })}</span
-                                    >
-                                    <span>•</span>
-                                    <span
-                                        >{appt.appointment_type.replace(
-                                            "_",
-                                            " ",
-                                        )}</span
-                                    >
-                                </div>
-                                <a
-                                    href="/doctor/journey/{appt.id}"
-                                    class="w-full flex items-center justify-center gap-2 py-2 bg-white text-indigo-600 border border-indigo-100 rounded-xl text-[10px] font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-                                >
-                                    ▶️ {$t("journey.start_treatment") ||
-                                        "Commencer"}
-                                </a>
-                            </div>
-                        {/each}
-                    </div>
-                {/if}
-            </section>
-
+        <div class="flex flex-col gap-4 mb-8 mt-8">
             <!-- Statistics Panel Overlay -->
-            <div class="lg:col-span-8">
-                <StatisticsPanel dashboardStats={data.stats} />
-            </div>
+            <StatisticsPanel dashboardStats={data.stats} />
+
+            <!-- Waiting Room Section -->
+            <WaitingRoomList
+                {waitingPatients}
+                onStartVisit={(id: number) => goto(`/doctor/journey/${id}`)}
+            />
         </div>
     {/if}
 

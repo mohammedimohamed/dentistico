@@ -302,6 +302,12 @@ export function init_db() {
     addColumnIfNotExists('appointments', 'checked_in_by', 'INTEGER REFERENCES users(id)');
     addColumnIfNotExists('appointments', 'waiting_room_status', "TEXT CHECK(waiting_room_status IN ('not_arrived', 'waiting', 'called_in', 'in_treatment')) DEFAULT 'not_arrived'");
 
+    // Timer Alert Settings Migrations
+    addColumnIfNotExists('clinic_settings', 'timer_alert_1_minutes', 'INTEGER DEFAULT 15');
+    addColumnIfNotExists('clinic_settings', 'timer_alert_1_beeps', 'INTEGER DEFAULT 1');
+    addColumnIfNotExists('clinic_settings', 'timer_alert_2_minutes', 'INTEGER DEFAULT 30');
+    addColumnIfNotExists('clinic_settings', 'timer_alert_2_beeps', 'INTEGER DEFAULT 2');
+
     db.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_checkin ON appointments(checked_in, waiting_room_status, check_in_time);`);
 
     db.exec(`

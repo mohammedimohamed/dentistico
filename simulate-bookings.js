@@ -135,10 +135,23 @@ async function simulateBooking() {
         // Get random doctor and assistant
         const doctor = db.prepare("SELECT id, full_name FROM users WHERE role = 'doctor' ORDER BY RANDOM() LIMIT 1").get();
         const assistant = db.prepare("SELECT id FROM users WHERE role = 'assistant' ORDER BY RANDOM() LIMIT 1").get();
-        const patient = db.prepare("SELECT id, full_name FROM patients ORDER BY RANDOM() LIMIT 1").get();
+
+        // Fix 1: Prevent Duplicate Patient Appointments
+        const patient = db.prepare(`
+            SELECT p.id, p.full_name 
+            FROM patients p
+            WHERE p.id NOT IN (
+                SELECT patient_id 
+                FROM appointments 
+                WHERE date(start_time) = date('now')
+                AND status NOT IN ('cancelled', 'completed', 'no_show')
+            )
+            ORDER BY RANDOM() 
+            LIMIT 1
+        `).get();
 
         if (!doctor || !patient) {
-            console.log('⚠️ Skipping booking: No doctors or patients available.');
+            console.log('⚠️ Skipping booking: No doctors or eligible patients available.');
             return;
         }
 
@@ -169,10 +182,10 @@ async function simulateBooking() {
             if (bookingDate.getDay() === 0 || bookingDate.getDay() === 6) continue;
 
             if (isTargetingNow) {
-                // IMPORTANT: Generate time around "Now" regardless of shop hours
-                // This allows testing the waiting room even at 23:00
+                // Fix 2: Only Create Future Appointments (No Past Appointments)
                 const now = new Date();
-                const randomOffset = Math.floor(Math.random() * 91) - 45; // -45 to +45 mins
+                // Only create appointments 5 to 120 minutes in the FUTURE
+                const randomOffset = Math.floor(Math.random() * 116) + 5; // +5 to +120 mins
                 bookingDate.setTime(now.getTime() + randomOffset * 60000);
             } else {
                 const hour = WORK_START_HOUR + Math.floor(Math.random() * (WORK_END_HOUR - WORK_START_HOUR));
@@ -221,11 +234,11 @@ async function simulateCheckIn() {
     }
 
     try {
-        // Find appointments for today that haven't checked in yet
-        // and are starting within a realistic window around "now"
         const now = new Date();
-        const winStart = formatSqlDate(new Date(now.getTime() - 90 * 60000));
-        const winEnd = formatSqlDate(new Date(now.getTime() + 90 * 60000));
+        // Fix 3: Realistic Check-In Window (Only Shortly Before Appointment)
+        // Realistic check-in window: 15 minutes before to 5 minutes after appointment
+        const winStart = formatSqlDate(new Date(now.getTime() - 5 * 60000));  // 5 min ago MAX
+        const winEnd = formatSqlDate(new Date(now.getTime() + 15 * 60000));   // 15 min ahead MAX
 
         const appt = db.prepare(`
             SELECT a.id, p.full_name as patient_name, a.start_time
@@ -233,7 +246,7 @@ async function simulateCheckIn() {
             JOIN patients p ON a.patient_id = p.id
             WHERE (a.checked_in IS NULL OR a.checked_in = 0)
             AND a.status IN ('scheduled', 'confirmed')
-            AND date(a.start_time) = date('now') -- CRITICAL: Today Only
+            AND date(a.start_time) = date('now')
             AND a.start_time BETWEEN ? AND ?
             ORDER BY RANDOM()
             LIMIT 1
@@ -241,23 +254,50 @@ async function simulateCheckIn() {
 
         if (!appt) {
             const totalToday = db.prepare("SELECT count(*) as c FROM appointments WHERE date(start_time) = date('now')").get().c;
-            console.log(`📭 No eligible patients in window. (Today total: ${totalToday})`);
+            console.log(`📭 No eligible patients in check-in window. (Today total: ${totalToday})`);
             return;
         }
+
+        // Fix 4: Add Realistic Check-In Timing Logic
+        // Calculate realistic check-in time (5-15 min before appointment)
+        const apptTime = new Date(appt.start_time);
+        const checkInOffset = Math.floor(Math.random() * 11) + 5; // 5-15 minutes before
+        const checkInTime = new Date(apptTime.getTime() - checkInOffset * 60000);
+
+        // Make sure check-in time isn't in the future
+        const actualCheckInTime = checkInTime > now ? now : checkInTime;
 
         db.prepare(`
             UPDATE appointments
             SET 
                 checked_in = 1,
-                check_in_time = datetime('now'),
+                check_in_time = ?,
                 waiting_room_status = 'waiting',
                 updated_at = datetime('now')
             WHERE id = ?
-        `).run(appt.id);
+        `).run(formatSqlDate(actualCheckInTime), appt.id);
 
-        console.log(`✅ CHECK-IN SIMULATED: ${appt.patient_name} (Scheduled: ${appt.start_time})`);
+        console.log(`✅ CHECK-IN: ${appt.patient_name} at ${formatSqlDate(actualCheckInTime)} (RDV: ${appt.start_time})`);
     } catch (error) {
         console.error('🔥 Check-in Simulation Error:', error);
+    }
+}
+
+// Fix 5: Clean Up Old Waiting Room Entries
+function cleanupExpiredWaitingRoom() {
+    // Auto-cancel appointments that are >30 minutes late and still in waiting room
+    const cutoff = formatSqlDate(new Date(Date.now() - 30 * 60000));
+
+    const result = db.prepare(`
+        UPDATE appointments
+        SET status = 'no_show', waiting_room_status = 'not_arrived'
+        WHERE waiting_room_status = 'waiting'
+        AND start_time < ?
+        AND checked_in = 1
+    `).run(cutoff);
+
+    if (result.changes > 0) {
+        console.log(`🧹 Cleaned up ${result.changes} expired waiting room entries (no-shows)`);
     }
 }
 
@@ -270,6 +310,7 @@ console.log('--------------------------------------------------');
 function runClinicalSimulation() {
     simulateBooking();
     simulateCheckIn();
+    cleanupExpiredWaitingRoom();
 }
 
 // Initial run

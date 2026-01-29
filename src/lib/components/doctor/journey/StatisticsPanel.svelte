@@ -127,19 +127,18 @@
     .stats-dashboard {
         display: grid;
         grid-template-columns: 1.5fr 1fr 1.2fr;
-        gap: 2.5rem;
-        padding: 2rem;
-        margin-bottom: 2.5rem;
+        gap: 1.5rem;
+        padding: 0.5rem;
         background: white;
-        border-radius: 2rem;
+        border-radius: 1.25rem;
         border: 1px solid #f1f5f9;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
     .stat-section {
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        gap: 0.75rem;
     }
 
     .section-title {
@@ -159,10 +158,10 @@
     .stat-mini {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
         background: #f8fafc;
-        border-radius: 1rem;
+        border-radius: 0.75rem;
         border: 1px solid #f1f5f9;
         transition: all 0.2s ease;
     }
@@ -245,11 +244,11 @@
     .comp-item {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        padding: 0.85rem;
+        gap: 0.75rem;
+        padding: 0.65rem;
         background: white;
         border: 1px solid #f1f5f9;
-        border-radius: 1.15rem;
+        border-radius: 0.85rem;
         transition: all 0.2s ease;
     }
 
@@ -288,14 +287,14 @@
     }
 
     .pipeline-minimal {
-        padding: 1.25rem;
+        padding: 0.75rem;
         background: #f8fafc;
-        border-radius: 1.5rem;
+        border-radius: 1rem;
         border: 1px solid #f1f5f9;
         height: 100%;
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        gap: 0.75rem;
     }
 
     .pipeline-header {

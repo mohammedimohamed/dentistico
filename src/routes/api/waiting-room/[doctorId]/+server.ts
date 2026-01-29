@@ -25,7 +25,7 @@ export async function GET({ params, locals }: { params: { doctorId: string }, lo
             WHERE a.doctor_id = ?
                 AND a.waiting_room_status = 'waiting'
                 AND a.start_time >= date('now') AND a.start_time < date('now', '+1 day')
-            ORDER BY a.check_in_time ASC
+            ORDER BY a.start_time ASC
         `).all(doctorId);
 
         const responseData = JSON.stringify(waitingPatients);

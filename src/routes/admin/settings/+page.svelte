@@ -18,6 +18,10 @@
         work_start_time: "09:00",
         work_end_time: "18:00",
         timezone: "UTC",
+        timer_alert_1_minutes: 15,
+        timer_alert_1_beeps: 1,
+        timer_alert_2_minutes: 30,
+        timer_alert_2_beeps: 2,
     });
 
     let workingDays = $state<any[]>([]);
@@ -240,6 +244,106 @@
                                     bind:value={settings.work_end_time}
                                     class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium font-mono"
                                 />
+                            </div>
+                        </div>
+
+                        <!-- Timer Alerts Configuration -->
+                        <div
+                            class="p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100"
+                        >
+                            <h3
+                                class="text-sm font-bold text-indigo-900 uppercase tracking-widest mb-2"
+                            >
+                                ⏱️ Timer Audio Alerts
+                            </h3>
+                            <p
+                                class="text-xs text-indigo-900/60 font-medium mb-6 leading-relaxed max-w-2xl"
+                            >
+                                Configure audible notifications for doctor
+                                visits. Set the specific times (in minutes)
+                                during a consultation when an audio alert should
+                                play, and customize the number of beeps for each
+                                alert to help doctors manage their time
+                                effectively.
+                            </p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Alert 1 -->
+                                <div class="space-y-4">
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2"
+                                            for="alert1_time"
+                                        >
+                                            First Alert (Minutes)
+                                        </label>
+                                        <input
+                                            id="alert1_time"
+                                            type="number"
+                                            min="1"
+                                            bind:value={
+                                                settings.timer_alert_1_minutes
+                                            }
+                                            class="w-full px-5 py-3 bg-white border border-indigo-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-indigo-900 font-bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2"
+                                            for="alert1_beeps"
+                                        >
+                                            Number of Beeps
+                                        </label>
+                                        <input
+                                            id="alert1_beeps"
+                                            type="number"
+                                            min="1"
+                                            max="5"
+                                            bind:value={
+                                                settings.timer_alert_1_beeps
+                                            }
+                                            class="w-full px-5 py-3 bg-white border border-indigo-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-indigo-900 font-bold"
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Alert 2 -->
+                                <div class="space-y-4">
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2"
+                                            for="alert2_time"
+                                        >
+                                            Second Alert (Minutes)
+                                        </label>
+                                        <input
+                                            id="alert2_time"
+                                            type="number"
+                                            min="1"
+                                            bind:value={
+                                                settings.timer_alert_2_minutes
+                                            }
+                                            class="w-full px-5 py-3 bg-white border border-indigo-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-indigo-900 font-bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2"
+                                            for="alert2_beeps"
+                                        >
+                                            Number of Beeps
+                                        </label>
+                                        <input
+                                            id="alert2_beeps"
+                                            type="number"
+                                            min="1"
+                                            max="5"
+                                            bind:value={
+                                                settings.timer_alert_2_beeps
+                                            }
+                                            class="w-full px-5 py-3 bg-white border border-indigo-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 text-indigo-900 font-bold"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

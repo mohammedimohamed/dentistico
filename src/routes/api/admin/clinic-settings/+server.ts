@@ -40,6 +40,10 @@ export async function PUT({ request, locals }) {
       phone = ?,
       email = ?,
       logo_url = ?,
+      timer_alert_1_minutes = ?,
+      timer_alert_1_beeps = ?,
+      timer_alert_2_minutes = ?,
+      timer_alert_2_beeps = ?,
       updated_at = datetime('now')
     WHERE id = 1
   `).run(
@@ -51,7 +55,12 @@ export async function PUT({ request, locals }) {
         data.address || null,
         data.phone || null,
         data.email || null,
-        data.logo_url || null
+        data.email || null,
+        data.logo_url || null,
+        data.timer_alert_1_minutes || 15,
+        data.timer_alert_1_beeps || 1,
+        data.timer_alert_2_minutes || 30,
+        data.timer_alert_2_beeps || 2
     );
 
     return json({ success: true });
