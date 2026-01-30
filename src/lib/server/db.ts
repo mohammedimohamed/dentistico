@@ -104,6 +104,7 @@ export function init_db() {
           work_start_time TEXT DEFAULT '09:00',
           work_end_time TEXT DEFAULT '18:00',
           timezone TEXT DEFAULT 'UTC',
+          allow_assistant_payments INTEGER DEFAULT 0,
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -910,6 +911,17 @@ export function init_db() {
         // For now, these migrations cover the missing columns which caused the crash.
     } catch (e) {
         console.error('Relationship migration failed:', e);
+    }
+
+    // Migration for allow_assistant_payments in clinic_settings
+    try {
+        const clinicSettingsCols = db.prepare("PRAGMA table_info(clinic_settings)").all() as any[];
+        if (!clinicSettingsCols.find(c => c.name === 'allow_assistant_payments')) {
+            db.exec('ALTER TABLE clinic_settings ADD COLUMN allow_assistant_payments INTEGER DEFAULT 0');
+            console.log('Added allow_assistant_payments column to clinic_settings');
+        }
+    } catch (e) {
+        console.error('Clinic settings migration failed:', e);
     }
 
     // Migration for new patient fields
@@ -2326,7 +2338,7 @@ export function getNextPrescriptionNumber() {
         WHERE prescription_number LIKE ?
         ORDER BY CAST(SUBSTR(prescription_number, 1, INSTR(prescription_number, '-') - 1) AS INTEGER) DESC 
         LIMIT 1
-        `).get(` % -${year} `) as { prescription_number: string };
+        `).get(`%-${year}`) as { prescription_number: string };
 
     let nextNum = 1;
     if (lastPrescr && lastPrescr.prescription_number) {
@@ -2334,7 +2346,7 @@ export function getNextPrescriptionNumber() {
         nextNum = parseInt(parts[0]) + 1;
     }
 
-    return `${nextNum.toString().padStart(3, '0')} -${year} `;
+    return `${nextNum.toString().padStart(3, '0')}-${year}`;
 }
 
 export function createPrescription(patientId: number, doctorId: number, items: any[], notes?: string, type: string = 'Standard') {

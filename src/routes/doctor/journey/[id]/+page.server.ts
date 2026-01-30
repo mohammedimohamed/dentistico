@@ -41,7 +41,8 @@ import path from 'path';
 import fs from 'fs';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-    if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+    // Allow doctors, admins, AND assistants
+    if (!locals.user || !['doctor', 'admin', 'assistant'].includes(locals.user.role)) {
         throw redirect(303, '/login');
     }
 
@@ -53,24 +54,33 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     }
 
     // @ts-ignore
-    if (appointment.doctor_id !== locals.user.id && locals.user.role !== 'admin') {
+    // Admins can see all, doctors can see their own, assistants can see all (for scheduling)
+    if (appointment.doctor_id !== locals.user.id && locals.user.role !== 'admin' && locals.user.role !== 'assistant') {
         throw redirect(303, '/doctor/journey');
     }
 
+    const isAssistant = locals.user.role === 'assistant';
     const patient = getPatientJourneySummary(appointment.patient_id);
     const todayStr = new Date().toISOString().split('T')[0];
     const session = getDailySession(locals.user.id, todayStr);
-    const clinicalNotes = getClinicalNotes(appointment.patient_id);
-    const labTracking = getLabTracking(appointment.patient_id);
-    const plannedActs = getPlannedActsForToday(appointment.patient_id);
-    const avgDuration = getAppSetting('avg_consultation_duration') || '20';
-    const currencySymbol = getAppSetting('currency_symbol') || 'DH';
-    const clinicalStandards = getAllClinicalStandards();
     const payments = getPaymentsByPatient(appointment.patient_id);
     const attachments = getAttachmentsByPatient(appointment.patient_id);
     const serverConfig = getServerConfig();
 
+    // Data filtering: Assistants get limited data for privacy/security
+    const clinicalNotes = isAssistant ? [] : getClinicalNotes(appointment.patient_id);
+    const labTracking = isAssistant ? [] : getLabTracking(appointment.patient_id);
+    const plannedActs = isAssistant ? [] : getPlannedActsForToday(appointment.patient_id);
+    const clinicalStandards = isAssistant ? [] : getAllClinicalStandards();
+    const prescriptions = isAssistant ? [] : getPrescriptionsByPatient(appointment.patient_id);
+    const medications = isAssistant ? [] : getAllMedications();
+    const prescriptionTemplates = isAssistant ? [] : getAllPrescriptionTemplates();
+    const uninvoicedTreatments = isAssistant ? [] : getUninvoicedTreatments(appointment.patient_id);
+
+    const avgDuration = getAppSetting('avg_consultation_duration') || '20';
+
     return {
+        user: locals.user, // Pass user object to frontend for role checking
         appointment,
         patient,
         session,
@@ -79,12 +89,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         plannedActs,
         clinicalStandards,
         payments,
-        prescriptions: getPrescriptionsByPatient(appointment.patient_id),
+        prescriptions,
         invoices: getInvoicesByPatient(appointment.patient_id),
-        uninvoicedTreatments: getUninvoicedTreatments(appointment.patient_id),
+        uninvoicedTreatments,
         billingSummary: getBillingSummary(appointment.patient_id),
-        medications: getAllMedications(),
-        prescriptionTemplates: getAllPrescriptionTemplates(),
+        medications,
+        prescriptionTemplates,
         config: {
             avgDuration: parseInt(avgDuration),
             currencySymbol: serverConfig.currencySymbol || 'DH',
@@ -92,7 +102,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
             timer_alert_1_minutes: serverConfig.timer_alert_1_minutes,
             timer_alert_1_beeps: serverConfig.timer_alert_1_beeps,
             timer_alert_2_minutes: serverConfig.timer_alert_2_minutes,
-            timer_alert_2_beeps: serverConfig.timer_alert_2_beeps
+            timer_alert_2_beeps: serverConfig.timer_alert_2_beeps,
+            allow_assistant_payments: serverConfig.allow_assistant_payments || 0
         },
         cancellationReasons: getCancellationReasons('cancel'),
         postponeReasons: getCancellationReasons('postpone'),

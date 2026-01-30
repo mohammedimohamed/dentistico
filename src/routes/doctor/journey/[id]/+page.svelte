@@ -46,6 +46,9 @@
     let DicomViewer = $state<any>(null);
     let activeWorkspace = $state<"chart" | "documents" | "split">("chart");
 
+    // Role-based UI control
+    const isAssistant = $derived(data.user?.role === "assistant");
+
     async function openDicom(file: any) {
         if (!DicomViewer) {
             const module = await import("$lib/components/DicomViewer.svelte");
@@ -344,7 +347,9 @@
 
     let isLeftSidebarOpen = $state(false);
     let isNotesSidebarOpen = $state(false);
-    let sidebarTab = $state("notes"); // 'notes' or 'finance'
+    let sidebarTab = $state(
+        data.user?.role === "assistant" ? "finance" : "notes",
+    ); // 'notes' or 'finance'
     const totalPaid = $derived(
         (data.payments || []).reduce(
             (sum: number, p: any) => sum + p.amount,
@@ -574,7 +579,7 @@
     }
 
     $effect(() => {
-        if (showRescheduleModal) {
+        if (showRescheduleModal || isAssistant) {
             loadCalendarEvents();
         }
     });
@@ -816,31 +821,33 @@
         <div class="flex items-center gap-4">
             <!-- Critical Info & Balance (High Visibility) -->
             <div class="flex gap-2">
-                {#if data.patient.allergies}
-                    <div class="alert-box critical scale-95 px-2.5 py-1">
-                        <span class="icon text-sm">⚠️</span>
-                        <div class="flex flex-col">
-                            <span class="label text-[8px]"
-                                >{$t("journey.allergies")}</span
-                            >
-                            <span class="value text-xs"
-                                >{data.patient.allergies}</span
-                            >
+                {#if !isAssistant}
+                    {#if data.patient.allergies}
+                        <div class="alert-box critical scale-95 px-2.5 py-1">
+                            <span class="icon text-sm">⚠️</span>
+                            <div class="flex flex-col">
+                                <span class="label text-[8px]"
+                                    >{$t("journey.allergies")}</span
+                                >
+                                <span class="value text-xs"
+                                    >{data.patient.allergies}</span
+                                >
+                            </div>
                         </div>
-                    </div>
-                {/if}
-                {#if data.patient.medical_conditions}
-                    <div class="alert-box warning scale-95 px-2.5 py-1">
-                        <span class="icon text-sm">🩺</span>
-                        <div class="flex flex-col">
-                            <span class="label text-[8px]"
-                                >{$t("journey.medical_conditions")}</span
-                            >
-                            <span class="value text-xs"
-                                >{data.patient.medical_conditions}</span
-                            >
+                    {/if}
+                    {#if data.patient.medical_conditions}
+                        <div class="alert-box warning scale-95 px-2.5 py-1">
+                            <span class="icon text-sm">🩺</span>
+                            <div class="flex flex-col">
+                                <span class="label text-[8px]"
+                                    >{$t("journey.medical_conditions")}</span
+                                >
+                                <span class="value text-xs"
+                                    >{data.patient.medical_conditions}</span
+                                >
+                            </div>
                         </div>
-                    </div>
+                    {/if}
                 {/if}
                 <button
                     class="alert-box balance cursor-pointer hover:scale-105 active:scale-95 transition-all text-left border-none bg-transparent p-0 scale-95 px-2.5 py-1"
@@ -993,32 +1000,36 @@
                                         >{$t("journey.acte_general")}</span
                                     >
                                 </button>
-                                <button
-                                    class="pos-btn-compact"
-                                    style="--color: #10b981"
-                                    onclick={async () => {
-                                        await autoStartVisit();
-                                        isPaymentModalOpen = true;
-                                    }}
-                                >
-                                    <span class="icon">💳</span>
-                                    <span class="label"
-                                        >{$t("journey.paiement")}</span
+                                {#if !isAssistant || (isAssistant && data.config.allow_assistant_payments)}
+                                    <button
+                                        class="pos-btn-compact"
+                                        style="--color: #10b981"
+                                        onclick={async () => {
+                                            await autoStartVisit();
+                                            isPaymentModalOpen = true;
+                                        }}
                                     >
-                                </button>
-                                <button
-                                    class="pos-btn-compact"
-                                    style="--color: #8b5cf6"
-                                    onclick={async () => {
-                                        await autoStartVisit();
-                                        showPrescriptionModal = true;
-                                    }}
-                                >
-                                    <span class="icon">📜</span>
-                                    <span class="label"
-                                        >{$t("journey.ordonnance")}</span
+                                        <span class="icon">💳</span>
+                                        <span class="label"
+                                            >{$t("journey.paiement")}</span
+                                        >
+                                    </button>
+                                {/if}
+                                {#if !isAssistant}
+                                    <button
+                                        class="pos-btn-compact"
+                                        style="--color: #8b5cf6"
+                                        onclick={async () => {
+                                            await autoStartVisit();
+                                            showPrescriptionModal = true;
+                                        }}
                                     >
-                                </button>
+                                        <span class="icon">📜</span>
+                                        <span class="label"
+                                            >{$t("journey.ordonnance")}</span
+                                        >
+                                    </button>
+                                {/if}
                                 <button
                                     class="pos-btn-compact"
                                     style="--color: #3b82f6"
@@ -1264,12 +1275,25 @@
 
             <div class="flex-1 overflow-auto relative">
                 {#if activeWorkspace === "chart"}
-                    <DentalChart
-                        bind:this={chart}
-                        patientId={data.patient.id}
-                        {patientAge}
-                        onTreatmentAdded={handleTreatmentAdded}
-                    />
+                    {#if isAssistant}
+                        <div
+                            class="p-4 h-full bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden"
+                        >
+                            <FullCalendar
+                                events={calendarEvents}
+                                initialView="timeGridDay"
+                                editable={false}
+                                onDateClick={handleDateClick}
+                            />
+                        </div>
+                    {:else}
+                        <DentalChart
+                            bind:this={chart}
+                            patientId={data.patient.id}
+                            {patientAge}
+                            onTreatmentAdded={handleTreatmentAdded}
+                        />
+                    {/if}
                 {:else if activeWorkspace === "documents"}
                     <div class="p-8 h-full overflow-y-auto">
                         <!-- Upload Area -->
@@ -1658,15 +1682,17 @@
                             <div
                                 class="flex p-0.5 bg-slate-100 rounded-lg gap-0.5"
                             >
-                                <button
-                                    class="flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all {sidebarTab ===
-                                    'notes'
-                                        ? 'bg-white text-indigo-600 shadow-sm'
-                                        : 'text-slate-400 hover:text-slate-600'}"
-                                    onclick={() => (sidebarTab = "notes")}
-                                >
-                                    📝 Notes
-                                </button>
+                                {#if !isAssistant}
+                                    <button
+                                        class="flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all {sidebarTab ===
+                                        'notes'
+                                            ? 'bg-white text-indigo-600 shadow-sm'
+                                            : 'text-slate-400 hover:text-slate-600'}"
+                                        onclick={() => (sidebarTab = "notes")}
+                                    >
+                                        📝 Notes
+                                    </button>
+                                {/if}
                                 <button
                                     class="flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all {sidebarTab ===
                                     'finance'
