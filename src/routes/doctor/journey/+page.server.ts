@@ -1,46 +1,35 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import {
-    getAppointmentsForDate,
+    getDoctorAppointmentsByDate,
     getDailySession,
     startDailySession,
     endDailySession,
     getJourneyDashboardStats
 } from '$lib/server/db';
 
-export const load: PageServerLoad = async ({ locals, depends }) => {
+export const load: PageServerLoad = async ({ locals, url, depends }) => {
     if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
         throw redirect(303, '/login');
     }
 
+    const requestedDate = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+
     depends('journey:stats');
     depends('appointments:today');
     depends('waiting-room:status');
+    depends('appointments:journey');
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-    const dayAfterStr = new Date(Date.now() + 172800000).toISOString().split('T')[0];
-
-    const session = getDailySession(locals.user.id, todayStr);
-    const todayAppts = getAppointmentsForDate(locals.user.id, todayStr);
-    const tomorrowAppts = getAppointmentsForDate(locals.user.id, tomorrowStr);
-    const dayAfterAppts = getAppointmentsForDate(locals.user.id, dayAfterStr);
-
+    const session = getDailySession(locals.user.id, requestedDate);
+    const appointments = getDoctorAppointmentsByDate(locals.user.id, requestedDate);
     const stats = getJourneyDashboardStats(locals.user.id);
 
     return {
         session,
         stats,
-        agenda: {
-            today: todayAppts,
-            tomorrow: tomorrowAppts,
-            dayAfter: dayAfterAppts
-        },
-        dates: {
-            today: todayStr,
-            tomorrow: tomorrowStr,
-            dayAfter: dayAfterStr
-        }
+        appointments,
+        selectedDate: requestedDate,
+        user: locals.user
     };
 };
 

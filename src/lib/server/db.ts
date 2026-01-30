@@ -995,6 +995,28 @@ export function init_db() {
         console.error('Migration for inventory fields failed:', e);
     }
 
+    // Migration for patient_attachments
+    try {
+        const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='patient_attachments'").get();
+        if (!tables) {
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS patient_attachments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    patient_id INTEGER NOT NULL,
+                    file_name TEXT NOT NULL,
+                    file_type TEXT NOT NULL,
+                    file_url TEXT NOT NULL,
+                    file_size INTEGER,
+                    created_at TEXT DEFAULT(datetime('now')),
+                    FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE
+                )
+            `);
+            console.log('Created patient_attachments table');
+        }
+    } catch (e) {
+        console.error('Migration for patient_attachments failed:', e);
+    }
+
     // Migration for phone on users
     try {
         const userCols = db.prepare("PRAGMA table_info(users)").all() as any[];
@@ -2783,6 +2805,24 @@ export function getAppointmentsForDate(doctorId: number, date: string) {
         WHERE a.doctor_id = ? AND a.start_time >= ? AND a.start_time <= ?
         ORDER BY a.start_time ASC
         `).all(doctorId, dayStart, dayEnd);
+}
+
+export function getDoctorAppointmentsByDate(doctorId: number, dateStr: string) {
+    return db.prepare(`
+    SELECT 
+      a.*,
+      p.id as patient_id,
+      p.full_name as patient_name,
+      p.phone as patient_phone,
+      p.email as patient_email,
+      p.date_of_birth as patient_dob,
+      p.gender as patient_gender
+    FROM appointments a
+    JOIN patients p ON a.patient_id = p.id
+    WHERE a.doctor_id = ? 
+      AND DATE(a.start_time) = ?
+    ORDER BY a.start_time ASC
+  `).all(doctorId, dateStr);
 }
 
 export function getDoctorJourneyStats(doctorId: number, date: string) {

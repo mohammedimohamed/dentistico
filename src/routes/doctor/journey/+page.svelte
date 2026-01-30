@@ -8,10 +8,56 @@
     import StatisticsPanel from "$lib/components/doctor/journey/StatisticsPanel.svelte";
     import WaitingRoomList from "$lib/components/doctor/journey/WaitingRoomList.svelte";
     import { goto, invalidate } from "$app/navigation";
+    import { page, navigating } from "$app/stores";
+    import {
+        ChevronLeft,
+        ChevronRight,
+        CalendarCheck,
+        CalendarX,
+        History,
+        Clock,
+        User,
+    } from "lucide-svelte";
 
     let { data }: { data: any } = $props();
 
-    let activeTab = $state("today");
+    // ============================================
+    // TIMEZONE-SAFE DATE HELPERS
+    // ============================================
+
+    function parseUTCDate(dateStr: string): Date {
+        return new Date(dateStr + "T00:00:00Z");
+    }
+
+    function formatUTCDate(date: Date): string {
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+        const day = String(date.getUTCDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+
+    function addDays(dateStr: string, days: number): string {
+        const date = parseUTCDate(dateStr);
+        date.setUTCDate(date.getUTCDate() + days);
+        return formatUTCDate(date);
+    }
+
+    // ============================================
+    // DATE NAVIGATION STATE (URL Driven)
+    // ============================================
+
+    let selectedDate = $derived.by(() => {
+        const urlDate = $page.url.searchParams.get("date");
+        if (urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate)) {
+            return urlDate;
+        }
+        return formatUTCDate(new Date());
+    });
+
+    let isToday = $derived(selectedDate === formatUTCDate(new Date()));
+    let selectedDateObj = $derived(parseUTCDate(selectedDate));
+    let isNavigating = $derived($navigating !== null);
+
     let loading = $state(false);
     let showUpdateIndicator = $state(false);
 
@@ -22,9 +68,9 @@
 
     // Performance Optimization: Adaptive Polling
     const POLLING_INTERVALS = {
-        ACTIVE: 60000, // 1 minute when user is active
-        IDLE: 120000, // 2 minutes when idle
-        BACKGROUND: 300000, // 5 minutes when tab is hidden
+        ACTIVE: 60000,
+        IDLE: 120000,
+        BACKGROUND: 300000,
     };
 
     let pollInterval: any = null;
@@ -37,30 +83,23 @@
         if (!isToday || !isPageVisible) return;
 
         try {
-            // Clever Optimization: Check if anything actually changed before invalidating
-            // This prevents SvelteKit from re-running the heavy PageServerLoad on every poll
             if (!data.user?.id) return;
             const statusRes = await fetch(
                 `/api/updates/status?doctorId=${data.user.id}`,
             );
             if (statusRes.ok) {
                 const { version } = await statusRes.json();
-                if (version === lastUpdateVersion) {
-                    // No changes detected, skip heavy processing
-                    return;
-                }
+                if (version === lastUpdateVersion) return;
                 lastUpdateVersion = version;
             }
 
             logger.perf("fetchWaitingRoom:heavySync", async () => {
-                if (!data.user?.id) return;
                 const res = await fetch(`/api/waiting-room/${data.user.id}`);
                 if (res.ok) {
                     waitingPatients = await res.json();
                 }
-                // Also invalidate appointments to sync the list
                 const { invalidate } = await import("$app/navigation");
-                await invalidate("appointments:today");
+                await invalidate("appointments:journey");
                 await invalidate("waiting-room:status");
 
                 showUpdateIndicator = true;
@@ -68,6 +107,66 @@
             });
         } catch (e) {
             logger.error("Failed to fetch waiting room:", e);
+        }
+    }
+
+    // ============================================
+    // NAVIGATION FUNCTIONS
+    // ============================================
+
+    function goToPreviousDay() {
+        const previousDate = addDays(selectedDate, -1);
+        navigateToDate(previousDate);
+    }
+
+    function goToNextDay() {
+        const nextDate = addDays(selectedDate, 1);
+        navigateToDate(nextDate);
+    }
+
+    function goToToday() {
+        navigateToDate(formatUTCDate(new Date()));
+    }
+
+    async function navigateToDate(dateStr: string) {
+        const url = new URL($page.url);
+        url.searchParams.set("date", dateStr);
+
+        await goto(url.toString(), {
+            replaceState: true,
+            noScroll: true,
+            keepFocus: true,
+        });
+
+        await invalidate("appointments:journey");
+    }
+
+    function formatDateDisplay(dateStr: string): string {
+        const date = parseUTCDate(dateStr);
+        const options: Intl.DateTimeFormatOptions = {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            timeZone: "UTC",
+        };
+
+        const formatted = date.toLocaleDateString("fr-FR", options);
+        return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    }
+
+    function handleKeydown(event: KeyboardEvent) {
+        if (event.target instanceof HTMLInputElement) return;
+
+        if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            goToPreviousDay();
+        } else if (event.key === "ArrowRight") {
+            event.preventDefault();
+            goToNextDay();
+        } else if (event.key === "t" || event.key === "T") {
+            event.preventDefault();
+            goToToday();
         }
     }
 
@@ -83,8 +182,6 @@
             }
             fetchWaitingRoom();
         }, interval);
-
-        logger.info(`Polling frequency adjusted: ${interval}ms`);
     }
 
     function handleUserActivity() {
@@ -97,7 +194,6 @@
     function checkActivityLevel() {
         const idleTime = Date.now() - lastUserActivity;
         if (idleTime > 300000 && currentInterval === POLLING_INTERVALS.ACTIVE) {
-            logger.info("User idle detected, slowing down polling");
             restartPolling(POLLING_INTERVALS.IDLE);
         }
     }
@@ -105,34 +201,26 @@
     function handleVisibilityChange() {
         isPageVisible = !document.hidden;
         if (isPageVisible) {
-            logger.info("Tab became visible, resuming active polling");
             fetchWaitingRoom();
             restartPolling(POLLING_INTERVALS.ACTIVE);
         } else {
-            logger.info("Tab hidden, entering background polling mode");
             restartPolling(POLLING_INTERVALS.BACKGROUND);
         }
     }
 
     $effect(() => {
-        if (typeof document !== "undefined") {
+        if (browser && typeof document !== "undefined") {
             document.addEventListener(
                 "visibilitychange",
                 handleVisibilityChange,
             );
-
-            // Track activity for smart backoff
             const activityEvents = ["click", "keydown", "scroll", "mousemove"];
             activityEvents.forEach((event) => {
                 document.addEventListener(event, handleUserActivity, {
                     passive: true,
                 });
             });
-
-            // Activity checker
             const activityChecker = setInterval(checkActivityLevel, 120000);
-
-            // Initial polling setup
             restartPolling(POLLING_INTERVALS.ACTIVE);
             fetchWaitingRoom();
 
@@ -150,24 +238,8 @@
         }
     });
 
-    const tabs = $derived([
-        { id: "today", label: "journey.today", date: data.dates.today },
-        {
-            id: "tomorrow",
-            label: "journey.tomorrow",
-            date: data.dates.tomorrow,
-        },
-        {
-            id: "dayAfter",
-            label: "journey.after_tomorrow",
-            date: data.dates.dayAfter,
-        },
-    ]);
+    const currentAppointments = $derived(data.appointments || []);
 
-    const currentAppointments = $derived((data.agenda as any)[activeTab] || []);
-    const isToday = $derived(activeTab === "today");
-
-    // Phase 2: Time Status Classification
     function getAppointmentTimeStatus(appt: any) {
         if (appt.status === "completed") return "completed";
         if (appt.status === "cancelled" || appt.status === "no_show")
@@ -178,21 +250,19 @@
         const duration = appt.duration_minutes || 30;
         const end = start + duration * 60000;
 
-        // 1. Ongoing: actual session started OR current time in range
         if (appt.actual_start_time && !appt.actual_end_time) return "ongoing";
-        if (nowMs >= start && nowMs <= end) return "ongoing";
+        if (isToday && nowMs >= start && nowMs <= end) return "ongoing";
 
-        // 2. Overdue: more than 15 mins late
-        if (nowMs > start + 15 * 60000) return "overdue";
+        if (isToday && nowMs > start + 15 * 60000) return "overdue";
 
-        // 3. Upcoming: within 15 mins
-        if (start - nowMs <= 15 * 60000 && start - nowMs > 0) return "upcoming";
+        if (isToday && start - nowMs <= 15 * 60000 && start - nowMs > 0)
+            return "upcoming";
 
-        // 4. Future
         return "future";
     }
 
     function getDelayMinutes(appt: any) {
+        if (!isToday) return 0;
         const start = new Date(appt.start_time).getTime();
         const nowMs = now.getTime();
         if (nowMs > start) {
@@ -207,7 +277,9 @@
             const isCurrent = appt.id === currentPatientId;
             const delay = getDelayMinutes(appt);
             const waitMins =
-                appt.checked_in && appt.waiting_room_status === "waiting"
+                isToday &&
+                appt.checked_in &&
+                appt.waiting_room_status === "waiting"
                     ? Math.floor(
                           (now.getTime() -
                               new Date(appt.check_in_time).getTime()) /
@@ -225,24 +297,20 @@
         });
     });
 
-    // Phase 1B: Current Patient Detection
     const currentPatientId = $derived.by(() => {
         if (!isToday) return null;
-        const appointments = (data.agenda as any).today || [];
+        const appointments = data.appointments || [];
 
-        // 1. First priority: Ongoing
         const ongoing = appointments.find(
             (a: any) => getAppointmentTimeStatus(a) === "ongoing",
         );
         if (ongoing) return ongoing.id;
 
-        // 2. Second priority: Overdue
         const overdue = appointments.find(
             (a: any) => getAppointmentTimeStatus(a) === "overdue",
         );
         if (overdue) return overdue.id;
 
-        // 3. Third priority: Closest upcoming
         const next = appointments.find(
             (a: any) => getAppointmentTimeStatus(a) === "upcoming",
         );
@@ -266,12 +334,15 @@
 
             if (response.ok) {
                 await invalidate("journey:stats");
+                await invalidate("appointments:journey");
             }
         } catch (err) {
             console.error("Failed to complete visit:", err);
         }
     }
 </script>
+
+<svelte:window on:keydown={handleKeydown} />
 
 <div class="journey-hub" in:fade>
     <!-- Header: Daily Session Management -->
@@ -363,196 +434,264 @@
 
     <!-- Agenda Content -->
     <div class="agenda-container">
-        <!-- Tabs -->
-        <div class="tabs-nav">
-            {#each tabs as tab}
-                <button
-                    class="tab-item"
-                    class:active={activeTab === tab.id}
-                    onclick={() => (activeTab = tab.id)}
-                >
-                    <span class="tab-label">{$t(tab.label)}</span>
-                    <span class="tab-date"
-                        >{new Date(tab.date).toLocaleDateString([], {
-                            day: "2-digit",
-                            month: "short",
-                        })}</span
+        <!-- New Date Navigation Bar -->
+        <div class="date-navigation-bar">
+            <!-- Previous Day Button -->
+            <button
+                class="nav-button nav-prev"
+                onclick={goToPreviousDay}
+                aria-label="Jour précédent"
+            >
+                <ChevronLeft size={20} />
+                <span class="button-label">Précédent</span>
+            </button>
+
+            <!-- Current Date Display -->
+            <div class="date-display-container">
+                <div class="calendar-picker-wrapper">
+                    <button
+                        class="date-display-btn"
+                        onclick={() =>
+                            document
+                                .getElementById("date-picker")
+                                ?.showPicker()}
+                        title="Choisir une date"
                     >
-                    {#if activeTab === tab.id}
-                        <div class="active-indicator"></div>
-                    {/if}
+                        <div class="date-display">
+                            {formatDateDisplay(selectedDate)}
+                        </div>
+                        <History size={18} class="text-slate-400" />
+                    </button>
+                    <input
+                        type="date"
+                        id="date-picker"
+                        class="hidden-date-input"
+                        value={selectedDate}
+                        onchange={(e) => navigateToDate(e.currentTarget.value)}
+                    />
+                </div>
+
+                {#if isToday}
+                    <div class="today-badge">Aujourd'hui</div>
+                {/if}
+            </div>
+
+            <!-- Next Day Button -->
+            <button
+                class="nav-button nav-next"
+                onclick={goToNextDay}
+                aria-label="Jour suivant"
+            >
+                <span class="button-label">Suivant</span>
+                <ChevronRight size={20} />
+            </button>
+
+            <!-- Quick Jump to Today -->
+            {#if !isToday}
+                <button
+                    class="today-jump-btn"
+                    onclick={goToToday}
+                    transition:scale
+                >
+                    <CalendarCheck size={18} />
+                    Aujourd'hui
                 </button>
-            {/each}
+            {/if}
         </div>
 
-        <div class="appointments-list">
-            {#if currentAppointments.length === 0}
-                <div class="empty-state" in:fade>
-                    <div class="empty-icon">📅</div>
-                    <h3>
-                        {$t("dashboard.no_appointments")}
-                    </h3>
-                </div>
-            {:else}
-                {#each enrichedAppointments as appt, i (appt.id)}
-                    <article
-                        class="appointment-card group {appt.timeStatus}"
-                        class:current-patient={appt.isCurrent}
-                        style="--delay: {i * 0.05}s"
-                        in:slide={{ axis: "y" }}
-                        aria-current={appt.isCurrent ? "true" : "false"}
+        <div class="appointments-container" class:loading-active={isNavigating}>
+            {#if isNavigating}
+                <div class="loading-overlay" transition:fade>
+                    <div class="loading-spinner"></div>
+                    <span class="ml-3 font-bold text-indigo-600"
+                        >Chargement...</span
                     >
-                        <div class="time-column">
-                            <time
-                                class="start-time"
-                                datetime={appt.start_time}
-                                class:text-red-600={appt.timeStatus ===
-                                    "overdue"}
-                                class:text-blue-600={appt.timeStatus ===
-                                    "ongoing"}
-                                class:text-green-600={appt.timeStatus ===
-                                    "completed"}
-                            >
-                                {new Date(appt.start_time).toLocaleTimeString(
-                                    [],
-                                    { hour: "2-digit", minute: "2-digit" },
-                                )}
-                            </time>
+                </div>
+            {/if}
 
-                            <div class="status-badge-container">
-                                {#if appt.timeStatus === "ongoing"}
-                                    <span class="status-badge ongoing">
-                                        <span class="pulse-dot"></span>
-                                        ▶️ {$t("journey.status_ongoing") ||
-                                            "En cours"}
-                                    </span>
-                                {:else if appt.timeStatus === "overdue"}
-                                    <span class="status-badge overdue">
-                                        🚨 {$t("journey.status_overdue", {
-                                            values: { min: appt.delay },
-                                        }) || `Retard ${appt.delay}m`}
-                                    </span>
-                                {:else if appt.timeStatus === "upcoming"}
-                                    <span class="status-badge upcoming">
-                                        ⏰ {$t("journey.status_upcoming") ||
-                                            "Imminent"}
-                                    </span>
-                                {:else if appt.timeStatus === "completed"}
-                                    <span class="status-badge completed">
-                                        ✅ {$t("journey.status_completed") ||
-                                            "Terminé"}
-                                    </span>
-                                {:else}
-                                    <span class="status-badge scheduled">
-                                        📅 Planifié
-                                    </span>
-                                {/if}
-                            </div>
+            <div class="appointments-list">
+                {#if enrichedAppointments.length === 0}
+                    <div class="empty-state" in:fade>
+                        <div class="empty-icon">
+                            <CalendarX size={64} />
                         </div>
-
-                        <div class="patient-info flex-1">
-                            <div class="flex items-center gap-2">
-                                <h4 class="patient-name">
-                                    {appt.patient_name}
-                                </h4>
-                                {#if appt.checked_in && appt.waiting_room_status === "waiting"}
-                                    <div
-                                        class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-widest"
-                                    >
-                                        <span
-                                            class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"
-                                        ></span>
-                                        🏥 Salle d'attente
-                                    </div>
-                                {/if}
-                            </div>
-                            <div class="appointment-meta">
-                                <span class="appointment-type"
-                                    >{appt.appointment_type.replace(
-                                        "_",
-                                        " ",
-                                    )}</span
-                                >
-                                <span class="separator">•</span>
-                                <span class="duration"
-                                    >{appt.duration_minutes}m</span
-                                >
-                            </div>
-                            {#if appt.notes}
-                                <p
-                                    class="notes-preview text-slate-400 text-xs mt-1 italic truncate max-w-md"
-                                >
-                                    {appt.notes}
-                                </p>
+                        <h3 class="empty-title">Aucun rendez-vous</h3>
+                        <p class="empty-description">
+                            {#if isToday}
+                                Vous n'avez aucun rendez-vous prévu aujourd'hui.
+                            {:else}
+                                Aucun rendez-vous prévu pour le {formatDateDisplay(
+                                    selectedDate,
+                                )}.
                             {/if}
-
-                            {#if appt.waitMins !== null}
-                                <p
-                                    class="text-[10px] mt-1 font-bold {appt.waitMins >
-                                    20
-                                        ? 'text-red-500'
-                                        : 'text-green-600'}"
+                        </p>
+                    </div>
+                {:else}
+                    {#each enrichedAppointments as appt, i (appt.id)}
+                        <article
+                            class="appointment-card group {appt.timeStatus}"
+                            class:current-patient={appt.isCurrent}
+                            style="--delay: {i * 0.05}s"
+                            in:slide={{ axis: "y" }}
+                            aria-current={appt.isCurrent ? "true" : "false"}
+                        >
+                            <div class="time-column">
+                                <time
+                                    class="start-time"
+                                    datetime={appt.start_time}
+                                    class:text-red-600={appt.timeStatus ===
+                                        "overdue"}
+                                    class:text-blue-600={appt.timeStatus ===
+                                        "ongoing"}
+                                    class:text-green-600={appt.timeStatus ===
+                                        "completed"}
                                 >
-                                    ↳ En attente depuis {appt.waitMins} min (arrivée
-                                    à
                                     {new Date(
-                                        appt.check_in_time,
+                                        appt.start_time,
                                     ).toLocaleTimeString([], {
                                         hour: "2-digit",
                                         minute: "2-digit",
-                                    })})
-                                </p>
-                            {/if}
-                        </div>
+                                    })}
+                                </time>
 
-                        <div class="actions-zone">
-                            {#if appt.status === "completed"}
-                                <a
-                                    href="/doctor/journey/{appt.id}"
-                                    class="action-btn ghost"
-                                    aria-label="Consulter le dossier"
-                                >
-                                    <span
-                                        >{$t("journey.consult") ||
-                                            "Consulter"}</span
-                                    >
-                                    <span class="icon">📄</span>
-                                </a>
-                            {:else}
-                                <a
-                                    href="/doctor/journey/{appt.id}"
-                                    class="action-btn primary"
-                                    class:ongoing={appt.timeStatus ===
-                                        "ongoing"}
-                                    aria-label="Commencer le traitement"
-                                >
-                                    <span
-                                        >{appt.timeStatus === "ongoing"
-                                            ? $t("journey.continue") ||
-                                              "Continuer"
-                                            : $t("journey.start_treatment") ||
-                                              "Traiter"}</span
-                                    >
-                                    <span
-                                        class="group-hover:translate-x-1 transition-transform inline-block"
-                                        >→</span
-                                    >
-                                </a>
-                            {/if}
+                                <div class="status-badge-container">
+                                    {#if appt.timeStatus === "ongoing"}
+                                        <span class="status-badge ongoing">
+                                            <span class="pulse-dot"></span>
+                                            ▶️ {$t("journey.status_ongoing") ||
+                                                "En cours"}
+                                        </span>
+                                    {:else if appt.timeStatus === "overdue"}
+                                        <span class="status-badge overdue">
+                                            🚨 {$t("journey.status_overdue", {
+                                                values: { min: appt.delay },
+                                            }) || `Retard ${appt.delay}m`}
+                                        </span>
+                                    {:else if appt.timeStatus === "upcoming"}
+                                        <span class="status-badge upcoming">
+                                            ⏰ {$t("journey.status_upcoming") ||
+                                                "Imminent"}
+                                        </span>
+                                    {:else if appt.timeStatus === "completed"}
+                                        <span class="status-badge completed">
+                                            ✅ {$t(
+                                                "journey.status_completed",
+                                            ) || "Terminé"}
+                                        </span>
+                                    {:else}
+                                        <span class="status-badge scheduled">
+                                            📅 Planifié
+                                        </span>
+                                    {/if}
+                                </div>
+                            </div>
 
-                            {#if isToday && appt.actual_start_time && !appt.actual_end_time}
-                                <button
-                                    class="finish-visit-hint"
-                                    onclick={(e) => completeVisit(e, appt.id)}
-                                    title="Terminer la visite"
-                                >
-                                    Terminer ✓
-                                </button>
-                            {/if}
-                        </div>
-                    </article>
-                {/each}
-            {/if}
+                            <div class="patient-info flex-1">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="patient-name">
+                                        {appt.patient_name}
+                                    </h4>
+                                    {#if isToday && appt.checked_in && appt.waiting_room_status === "waiting"}
+                                        <div
+                                            class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-widest"
+                                        >
+                                            <span
+                                                class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"
+                                            ></span>
+                                            🏥 Salle d'attente
+                                        </div>
+                                    {/if}
+                                </div>
+                                <div class="appointment-meta">
+                                    <span class="appointment-type"
+                                        >{appt.appointment_type.replace(
+                                            "_",
+                                            " ",
+                                        )}</span
+                                    >
+                                    <span class="separator">•</span>
+                                    <span class="duration"
+                                        >{appt.duration_minutes}m</span
+                                    >
+                                </div>
+                                {#if appt.notes}
+                                    <p
+                                        class="notes-preview text-slate-400 text-xs mt-1 italic truncate max-w-md"
+                                    >
+                                        {appt.notes}
+                                    </p>
+                                {/if}
+
+                                {#if isToday && appt.waitMins !== null}
+                                    <p
+                                        class="text-[10px] mt-1 font-bold {appt.waitMins >
+                                        20
+                                            ? 'text-red-500'
+                                            : 'text-green-600'}"
+                                    >
+                                        ↳ En attente depuis {appt.waitMins} min (arrivée
+                                        à
+                                        {new Date(
+                                            appt.check_in_time,
+                                        ).toLocaleTimeString([], {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                        })})
+                                    </p>
+                                {/if}
+                            </div>
+
+                            <div class="actions-zone">
+                                {#if appt.status === "completed"}
+                                    <a
+                                        href="/doctor/journey/{appt.id}"
+                                        class="action-btn ghost"
+                                        aria-label="Consulter le dossier"
+                                    >
+                                        <span
+                                            >{$t("journey.consult") ||
+                                                "Consulter"}</span
+                                        >
+                                        <span class="icon">📄</span>
+                                    </a>
+                                {:else}
+                                    <a
+                                        href="/doctor/journey/{appt.id}"
+                                        class="action-btn primary"
+                                        class:ongoing={appt.timeStatus ===
+                                            "ongoing"}
+                                        aria-label="Commencer le traitement"
+                                    >
+                                        <span
+                                            >{appt.timeStatus === "ongoing"
+                                                ? $t("journey.continue") ||
+                                                  "Continuer"
+                                                : $t(
+                                                      "journey.start_treatment",
+                                                  ) || "Traiter"}</span
+                                        >
+                                        <span
+                                            class="group-hover:translate-x-1 transition-transform inline-block"
+                                            >→</span
+                                        >
+                                    </a>
+                                {/if}
+
+                                {#if isToday && appt.actual_start_time && !appt.actual_end_time}
+                                    <button
+                                        class="finish-visit-hint"
+                                        onclick={(e) =>
+                                            completeVisit(e, appt.id)}
+                                        title="Terminer la visite"
+                                    >
+                                        Terminer ✓
+                                    </button>
+                                {/if}
+                            </div>
+                        </article>
+                    {/each}
+                {/if}
+            </div>
         </div>
     </div>
 </div>
@@ -668,60 +807,240 @@
     .agenda-container {
         background: white;
         border-radius: 2rem;
-        padding: 2rem;
+        padding: 2.5rem;
         box-shadow:
             0 20px 25px -5px rgba(0, 0, 0, 0.05),
             0 10px 10px -5px rgba(0, 0, 0, 0.02);
     }
 
-    .tabs-nav {
+    /* ============================================ */
+    /* DATE NAVIGATION BAR - Glassmorphism */
+    /* ============================================ */
+    .date-navigation-bar {
         display: flex;
-        gap: 1rem;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        padding: 1.25rem 2rem;
         margin-bottom: 2.5rem;
-        background: #f8fafc;
-        padding: 0.5rem;
-        border-radius: 1.25rem;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        position: sticky;
+        top: 0.5rem;
+        z-index: 50;
     }
 
-    .tab-item {
-        flex: 1;
-        padding: 1rem;
+    /* ============================================ */
+    /* NAVIGATION BUTTONS */
+    /* ============================================ */
+    .nav-button {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
         border-radius: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .nav-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .nav-button:active {
+        transform: translateY(0);
+    }
+
+    /* ============================================ */
+    /* DATE DISPLAY */
+    /* ============================================ */
+    .date-display-container {
+        flex: 1;
+        text-align: center;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.25rem;
-        transition: all 0.3s;
+    }
+
+    .calendar-picker-wrapper {
         position: relative;
-        border: none;
+    }
+
+    .date-display-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
         background: transparent;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.75rem;
         cursor: pointer;
+        transition: all 0.2s;
     }
 
-    .tab-item.active {
-        background: white;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    .date-display-btn:hover {
+        background: rgba(0, 0, 0, 0.03);
+        transform: scale(1.02);
     }
 
-    .tab-label {
+    .hidden-date-input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+
+    .date-display {
+        font-size: 1.5rem;
         font-weight: 800;
+        color: #1e293b;
+        letter-spacing: -0.03em;
+        line-height: 1;
+    }
+
+    .today-badge {
+        display: inline-block;
+        margin-top: 0.5rem;
+        padding: 0.25rem 0.875rem;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        border-radius: 9999px;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    /* ============================================ */
+    /* TODAY QUICK JUMP BUTTON */
+    /* ============================================ */
+    .today-jump-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: white;
+        border: 2px solid #10b981;
+        color: #059669;
+        border-radius: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
         font-size: 0.875rem;
-        color: #64748b;
     }
 
-    .active .tab-label {
-        color: #4f46e5;
+    /* Responsive: Hide labels on mobile */
+    @media (max-width: 640px) {
+        .button-label {
+            display: none;
+        }
+        .date-display {
+            font-size: 1.125rem;
+        }
+        .nav-button {
+            padding: 0.75rem 1rem;
+        }
     }
 
-    .tab-date {
-        font-size: 0.75rem;
+    .today-jump-btn:hover {
+        background: #f0fdf4;
+        transform: translateY(-2px);
+    }
+
+    /* ============================================ */
+    /* EMPTY STATE */
+    /* ============================================ */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 6rem 2rem;
+        text-align: center;
+        background: #fcfdfe;
+        border: 2px dashed #e2e8f0;
+        border-radius: 2rem;
+    }
+
+    .empty-icon {
+        margin-bottom: 2rem;
+        color: #cbd5e1;
+        opacity: 0.8;
+    }
+
+    .empty-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #475569;
+        margin-bottom: 0.75rem;
+        letter-spacing: -0.02em;
+    }
+
+    .empty-description {
         color: #94a3b8;
+        font-size: 1.125rem;
+        max-width: 400px;
+        line-height: 1.6;
+    }
+
+    .appointments-container {
+        position: relative;
+        min-height: 400px;
+        transition: opacity 0.3s ease;
+    }
+
+    .appointments-container.loading-active {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .loading-overlay {
+        position: absolute;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        background: white;
+        padding: 1rem 2rem;
+        border-radius: 9999px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+        border: 1px solid #eef2ff;
+    }
+
+    .loading-spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid #e0e7ff;
+        border-top-color: #4f46e5;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .appointments-list {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 1.25rem;
     }
 
     /* Phase 2 & 4: Enhanced Appointment Card Styles */
@@ -798,105 +1117,105 @@
         font-weight: 600;
     }
 
-    .appointment-type {
-        text-transform: capitalize;
+    .status-badge-container {
+        display: flex;
     }
 
-    .separator {
-        opacity: 0.3;
-    }
-
-    /* Phase 3B: Badge System */
     .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
         display: inline-flex;
         align-items: center;
         gap: 0.375rem;
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.7rem;
-        font-weight: 800;
-        letter-spacing: 0.025em;
-        text-transform: uppercase;
-        width: fit-content;
     }
 
     .status-badge.ongoing {
-        background: #eff6ff;
-        color: #1d4ed8;
+        background: #dbeafe;
+        color: #2563eb;
     }
     .status-badge.overdue {
-        background: #fef2f2;
-        color: #b91c1c;
+        background: #fee2e2;
+        color: #dc2626;
+        animation: pulse 2s infinite;
     }
     .status-badge.upcoming {
-        background: #fffbeb;
-        color: #b45309;
+        background: #fef3c7;
+        color: #d97706;
     }
     .status-badge.completed {
-        background: #f0fdf4;
-        color: #15803d;
+        background: #dcfce7;
+        color: #166534;
     }
     .status-badge.scheduled {
-        background: #f8fafc;
-        color: #475569;
-    }
-
-    /* Phase 4B: Pulse Indicator */
-    .pulse-dot {
-        width: 8px;
-        height: 8px;
-        background: #3b82f6;
-        border-radius: 50%;
-        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        background: #f1f5f9;
+        color: #64748b;
     }
 
     @keyframes pulse {
         0%,
         100% {
             opacity: 1;
-            transform: scale(1);
         }
         50% {
-            opacity: 0.5;
-            transform: scale(1.4);
+            opacity: 0.8;
         }
+    }
+
+    .pulse-dot {
+        width: 6px;
+        height: 6px;
+        background: currentColor;
+        border-radius: 50%;
+        position: relative;
+    }
+
+    .pulse-dot::after {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: inherit;
+        border-radius: inherit;
+        animation: pulse-ring 1.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
     }
 
     /* Actions Zone */
     .actions-zone {
+        margin-left: auto;
         display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 0.5rem;
-        min-width: 180px;
+        align-items: center;
+        gap: 1rem;
     }
 
     .action-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.25rem;
+        padding: 0.75rem 1.5rem;
         border-radius: 1rem;
         font-weight: 800;
         font-size: 0.875rem;
-        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         transition: all 0.2s;
+        text-decoration: none;
     }
 
     .action-btn.primary {
-        background: #4f46e5;
+        background: #1e293b;
         color: white;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
     }
 
     .action-btn.primary:hover {
-        background: #4338ca;
+        background: #0f172a;
         transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .action-btn.primary.ongoing {
-        background: #3b82f6;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        background: #2563eb;
     }
 
     .action-btn.ghost {
@@ -909,27 +1228,49 @@
     }
 
     .finish-visit-hint {
-        font-size: 0.7rem;
+        background: transparent;
+        border: 2px solid #10b981;
+        color: #10b981;
+        padding: 0.5rem 1rem;
+        border-radius: 0.75rem;
+        font-size: 0.75rem;
         font-weight: 800;
-        color: #f59e0b;
-        background: none;
-        border: none;
         cursor: pointer;
-        transition: color 0.2s;
+        transition: all 0.2s;
     }
 
     .finish-visit-hint:hover {
-        color: #d97706;
-        text-decoration: underline;
+        background: #10b981;
+        color: white;
     }
 
     /* Responsive Grid Layout */
     @media (max-width: 1024px) {
-        .time-column {
-            min-width: 120px;
+        .appointment-card {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1.5rem;
         }
+
+        .time-column {
+            flex-direction: row;
+            align-items: center;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .patient-info {
+            margin-left: 0;
+        }
+
         .actions-zone {
-            min-width: 140px;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .action-btn {
+            flex: 1;
+            justify-content: center;
         }
     }
 
@@ -955,18 +1296,6 @@
         .action-btn {
             justify-content: center;
         }
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 5rem 0;
-        color: #94a3b8;
-    }
-
-    .empty-icon {
-        font-size: 4rem;
-        margin-bottom: 1.5rem;
-        opacity: 0.5;
     }
 
     .custom-scrollbar::-webkit-scrollbar {

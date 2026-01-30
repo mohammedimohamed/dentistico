@@ -9,6 +9,7 @@
         "assistant": "مساعد",
         "doctor": "طبيب",
         "user": "مستخدم",
+        "journey": "اليوم",
         "save": "حفظ",
         "cancel": "إلغاء",
         "abort": "تراجع",
@@ -41,6 +42,7 @@
         "disabled": "معطل"
     },
     "journey": {
+        "title": "اليوم السريري",
         "planned_today": "العمليات المخطط لها اليوم",
         "confirm_cancel_title": "إلغاء الزيارة",
         "confirm_cancel_message": "هل أنت متأكد من أنك تريد إلغاء هذه الزيارة؟",

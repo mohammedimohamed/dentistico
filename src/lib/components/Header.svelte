@@ -2,7 +2,7 @@
     import { t, locale } from "svelte-i18n";
     import NotificationBell from "./NotificationBell.svelte";
 
-    import type { Snippet } from "svelte";
+    import { Maximize, Minimize } from "lucide-svelte";
 
     let {
         title = "",
@@ -10,10 +10,42 @@
         children,
     }: { title?: string; roleLabel?: string; children?: Snippet } = $props();
 
+    let isFullscreen = $state(false);
+
     async function setLanguage(lang: string) {
         document.cookie = `lang=${lang}; path=/; max-age=31536000`;
         window.location.reload();
     }
+
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch((err) => {
+                console.error(
+                    `Error attempting to enable full-screen mode: ${err.message}`,
+                );
+            });
+            isFullscreen = true;
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                isFullscreen = false;
+            }
+        }
+    }
+
+    import { onMount } from "svelte";
+    onMount(() => {
+        const handleFullscreenChange = () => {
+            isFullscreen = !!document.fullscreenElement;
+        };
+        document.addEventListener("fullscreenchange", handleFullscreenChange);
+        return () => {
+            document.removeEventListener(
+                "fullscreenchange",
+                handleFullscreenChange,
+            );
+        };
+    });
 </script>
 
 <header
@@ -49,6 +81,20 @@
             </svg>
         </a>
         <NotificationBell />
+
+        <!-- Full Screen Toggle -->
+        <button
+            onclick={toggleFullscreen}
+            class="p-2 rounded-full hover:bg-gray-100 transition text-gray-600 hover:text-gray-900"
+            aria-label="Plein écran"
+            title="Plein écran"
+        >
+            {#if isFullscreen}
+                <Minimize size={20} />
+            {:else}
+                <Maximize size={20} />
+            {/if}
+        </button>
 
         <!-- Language Toggle -->
         <div class="flex gap-2 bg-gray-100 rounded-lg p-1">

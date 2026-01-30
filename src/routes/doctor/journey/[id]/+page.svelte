@@ -41,6 +41,18 @@
     };
 
     let chart: any = $state();
+    let previewFile = $state<any>(null);
+    let previewDicom = $state<any>(null);
+    let DicomViewer = $state<any>(null);
+    let activeWorkspace = $state<"chart" | "documents" | "split">("chart");
+
+    async function openDicom(file: any) {
+        if (!DicomViewer) {
+            const module = await import("$lib/components/DicomViewer.svelte");
+            DicomViewer = module.default;
+        }
+        previewDicom = file;
+    }
     let showNotesModal = $state(false);
     let clinicalNote = $state("");
     let noteImportance = $state("low");
@@ -1221,13 +1233,313 @@
         </section>
 
         <!-- Center Section: Interactive Odontogram (Flexible) -->
-        <section class="bg-white relative border-r-2 border-slate-100">
-            <DentalChart
-                bind:this={chart}
-                patientId={data.patient.id}
-                {patientAge}
-                onTreatmentAdded={handleTreatmentAdded}
-            />
+        <section
+            class="bg-white relative border-r-2 border-slate-100 flex flex-col h-full overflow-hidden"
+        >
+            <!-- Mode Switch Header -->
+            <div
+                class="px-6 py-3 border-b border-slate-100 flex justify-between items-center bg-white z-10"
+            >
+                <div class="flex bg-slate-100/80 p-1 rounded-xl">
+                    <button
+                        class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all {activeWorkspace ===
+                        'chart'
+                            ? 'bg-white shadow-sm text-indigo-600'
+                            : 'text-slate-500 hover:text-slate-700'}"
+                        onclick={() => (activeWorkspace = "chart")}
+                    >
+                        🦷 Odontogramme
+                    </button>
+                    <button
+                        class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all {activeWorkspace ===
+                        'documents'
+                            ? 'bg-white shadow-sm text-indigo-600'
+                            : 'text-slate-500 hover:text-slate-700'}"
+                        onclick={() => (activeWorkspace = "documents")}
+                    >
+                        📁 Documents
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-auto relative">
+                {#if activeWorkspace === "chart"}
+                    <DentalChart
+                        bind:this={chart}
+                        patientId={data.patient.id}
+                        {patientAge}
+                        onTreatmentAdded={handleTreatmentAdded}
+                    />
+                {:else if activeWorkspace === "documents"}
+                    <div class="p-8 h-full overflow-y-auto">
+                        <!-- Upload Area -->
+                        <form
+                            method="POST"
+                            action="?/uploadAttachment"
+                            enctype="multipart/form-data"
+                            use:enhance
+                            class="mb-8"
+                        >
+                            <label
+                                class="border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center hover:border-indigo-400 hover:bg-indigo-50/10 transition-all cursor-pointer block group"
+                            >
+                                <input
+                                    type="file"
+                                    name="file"
+                                    accept="image/*,application/pdf,.dcm"
+                                    class="hidden"
+                                    onchange={(e) =>
+                                        e.target.form.requestSubmit()}
+                                />
+                                <div
+                                    class="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-sm group-hover:shadow-md"
+                                >
+                                    <span
+                                        class="text-3xl text-slate-300 group-hover:text-indigo-500 transition-colors"
+                                        >☁️</span
+                                    >
+                                </div>
+                                <h3
+                                    class="text-lg font-bold text-slate-700 mb-1"
+                                >
+                                    {$t("patient_details.upload_files")}
+                                </h3>
+                                <p
+                                    class="text-xs text-slate-400 font-medium uppercase tracking-wide"
+                                >
+                                    PNG, JPG, PDF, DICOM
+                                </p>
+                            </label>
+                        </form>
+
+                        <!-- Gallery Grid -->
+                        {#if data.attachments && data.attachments.length > 0}
+                            <div
+                                class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                            >
+                                {#each data.attachments as file}
+                                    <div
+                                        class="group relative bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col aspect-square"
+                                    >
+                                        <!-- Preview -->
+                                        <div
+                                            class="flex-1 w-full flex items-center justify-center bg-slate-50 overflow-hidden relative"
+                                        >
+                                            {#if file.file_type?.startsWith("image/")}
+                                                <img
+                                                    src={file.file_path}
+                                                    alt={file.file_name}
+                                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                            {:else if file.file_name
+                                                ?.toLowerCase()
+                                                .endsWith(".dcm")}
+                                                <div
+                                                    class="flex flex-col items-center justify-center bg-slate-900 w-full h-full text-white"
+                                                >
+                                                    <span
+                                                        class="text-indigo-400 font-black text-xs uppercase border border-indigo-500 px-2 py-0.5 rounded mb-2"
+                                                        >DICOM</span
+                                                    >
+                                                    <span
+                                                        class="text-[10px] text-slate-400 uppercase tracking-widest"
+                                                        >Medical Imaging</span
+                                                    >
+                                                </div>
+                                            {:else}
+                                                <div
+                                                    class="flex flex-col items-center"
+                                                >
+                                                    <span class="text-4xl mb-2"
+                                                        >📄</span
+                                                    >
+                                                    <span
+                                                        class="text-[10px] font-bold text-slate-400 uppercase"
+                                                        >{file.file_type?.split(
+                                                            "/",
+                                                        )[1] || "FILE"}</span
+                                                    >
+                                                </div>
+                                            {/if}
+
+                                            <!-- Overlay Actions -->
+                                            <div
+                                                class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px]"
+                                            >
+                                                <button
+                                                    class="w-10 h-10 rounded-full bg-white text-slate-700 hover:text-indigo-600 flex items-center justify-center shadow-lg transform hover:scale-110 transition-all font-bold"
+                                                    onclick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (
+                                                            file.file_type?.startsWith(
+                                                                "image/",
+                                                            )
+                                                        )
+                                                            previewFile = file;
+                                                        else if (
+                                                            file.file_name
+                                                                ?.toLowerCase()
+                                                                .endsWith(
+                                                                    ".dcm",
+                                                                )
+                                                        )
+                                                            openDicom(file);
+                                                        else
+                                                            window.open(
+                                                                file.file_path,
+                                                                "_blank",
+                                                            );
+                                                    }}
+                                                >
+                                                    👁️
+                                                </button>
+                                                <form
+                                                    method="POST"
+                                                    action="?/deleteAttachment"
+                                                    use:enhance
+                                                >
+                                                    <input
+                                                        type="hidden"
+                                                        name="id"
+                                                        value={file.id}
+                                                    />
+                                                    <button
+                                                        class="w-10 h-10 rounded-full bg-white text-slate-700 hover:text-red-500 flex items-center justify-center shadow-lg transform hover:scale-110 transition-all font-bold"
+                                                        title="Delete"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+
+                                        <!-- Footer -->
+                                        <div
+                                            class="p-3 bg-white border-t border-slate-50 w-full"
+                                        >
+                                            <p
+                                                class="text-xs font-bold text-slate-700 truncate"
+                                                title={file.file_name}
+                                            >
+                                                {file.file_name}
+                                            </p>
+                                            <p
+                                                class="text-[10px] text-slate-400 font-bold uppercase mt-1"
+                                            >
+                                                {new Date(
+                                                    file.upload_date,
+                                                ).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                {/each}
+                            </div>
+                        {:else}
+                            <div
+                                class="flex flex-col items-center justify-center h-64 text-slate-300"
+                            >
+                                <span class="text-5xl mb-4">📂</span>
+                                <span
+                                    class="font-bold text-sm uppercase tracking-wider"
+                                    >No documents found</span
+                                >
+                            </div>
+                        {/if}
+                    </div>
+                {:else if activeWorkspace === "split"}
+                    <div
+                        class="grid grid-cols-2 h-full divide-x divide-slate-100"
+                    >
+                        <!-- Left: Chart -->
+                        <div class="relative overflow-hidden">
+                            <DentalChart
+                                bind:this={chart}
+                                patientId={data.patient.id}
+                                {patientAge}
+                                onTreatmentAdded={handleTreatmentAdded}
+                            />
+                        </div>
+                        <!-- Right: Last Image -->
+                        <div
+                            class="bg-slate-50 p-4 flex flex-col items-center justify-center relative overflow-hidden"
+                        >
+                            {#if data.attachments && data.attachments.filter((f) => f.file_type?.startsWith("image/") || f.file_name?.endsWith(".dcm")).length > 0}
+                                {@const lastMedia = data.attachments.filter(
+                                    (f) =>
+                                        f.file_type?.startsWith("image/") ||
+                                        f.file_name?.endsWith(".dcm"),
+                                )[0]}
+                                <div
+                                    class="w-full h-full flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
+                                >
+                                    <div
+                                        class="p-3 border-b border-slate-100 bg-white flex justify-between items-center"
+                                    >
+                                        <span
+                                            class="text-xs font-bold text-slate-700 uppercase tracking-widest"
+                                            >Latest Imaging</span
+                                        >
+                                        <span
+                                            class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md font-bold"
+                                            >{lastMedia.file_name}</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="flex-1 bg-black relative flex items-center justify-center overflow-hidden group"
+                                    >
+                                        {#if lastMedia.file_type?.startsWith("image/")}
+                                            <img
+                                                src={lastMedia.file_path}
+                                                alt={lastMedia.file_name}
+                                                class="max-w-full max-h-full object-contain"
+                                            />
+                                        {:else}
+                                            <!-- Simple placeholder for DICOM in split view if viewer not loaded, or direct viewer -->
+                                            <div class="text-white text-center">
+                                                <p class="font-bold mb-2">
+                                                    DICOM File
+                                                </p>
+                                                <button
+                                                    class="px-4 py-2 bg-indigo-600 rounded-lg text-xs font-bold"
+                                                    onclick={() =>
+                                                        openDicom(lastMedia)}
+                                                    >Open Viewer</button
+                                                >
+                                            </div>
+                                        {/if}
+                                        <button
+                                            class="absolute bottom-4 right-4 bg-white/90 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onclick={() => {
+                                                if (
+                                                    lastMedia.file_type?.startsWith(
+                                                        "image/",
+                                                    )
+                                                )
+                                                    previewFile = lastMedia;
+                                                else if (
+                                                    lastMedia.file_name
+                                                        ?.toLowerCase()
+                                                        .endsWith(".dcm")
+                                                )
+                                                    openDicom(lastMedia);
+                                            }}
+                                        >
+                                            <span class="text-xl">🔍</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            {:else}
+                                <div class="text-center text-slate-400">
+                                    <span class="text-4xl block mb-2">📷</span>
+                                    <span class="text-xs font-bold uppercase"
+                                        >No imaging data available</span
+                                    >
+                                </div>
+                            {/if}
+                        </div>
+                    </div>
+                {/if}
+            </div>
         </section>
 
         <!-- Right Section: Collapsible Clinical Sidebar -->
@@ -3056,6 +3368,55 @@
                     </div>
                 </div>
             </div>
+        </div>
+    {/if}
+
+    <!-- Image Preview Modal -->
+    {#if previewFile}
+        <div
+            class="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onclick={() => (previewFile = null)}
+            transition:fade={{ duration: 200 }}
+        >
+            <div
+                class="relative max-w-5xl max-h-[90vh] w-full bg-transparent flex flex-col items-center"
+                onclick={(e) => e.stopPropagation()}
+                in:scale={{ start: 0.95, duration: 300 }}
+            >
+                <img
+                    src={previewFile.file_path}
+                    alt={previewFile.file_name}
+                    class="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
+                />
+                <button
+                    class="absolute -top-12 right-0 text-white/70 hover:text-white"
+                    onclick={() => (previewFile = null)}
+                >
+                    <span class="text-4xl">×</span>
+                </button>
+                <div class="mt-4 text-center">
+                    <p class="text-white font-bold text-lg">
+                        {previewFile.file_name}
+                    </p>
+                </div>
+            </div>
+        </div>
+    {/if}
+
+    <!-- DICOM Viewer Overlay -->
+    {#if previewDicom && DicomViewer}
+        <div class="fixed inset-0 z-[250] bg-black">
+            <button
+                class="absolute top-4 right-4 z-[260] text-white/70 hover:text-white bg-black/50 p-2 rounded-full"
+                onclick={() => (previewDicom = null)}
+            >
+                <span class="text-2xl">✕</span>
+            </button>
+            <DicomViewer
+                fileUrl={previewDicom.file_path}
+                fileName={previewDicom.file_name}
+                onClose={() => (previewDicom = null)}
+            />
         </div>
     {/if}
 </div>

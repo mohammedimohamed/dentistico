@@ -30,8 +30,14 @@ import {
     getCancellationReasons,
     getReasonRequirements,
     cancelAppointmentWithReason,
-    postponeAppointmentWithReason
+    postponeAppointmentWithReason,
+    getAttachmentsByPatient,
+    createAttachment,
+    getAttachmentById,
+    deleteAttachment
 } from '$lib/server/db';
+import path from 'path';
+import fs from 'fs';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
     if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
@@ -60,6 +66,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     const currencySymbol = getAppSetting('currency_symbol') || 'DH';
     const clinicalStandards = getAllClinicalStandards();
     const payments = getPaymentsByPatient(appointment.patient_id);
+    const attachments = getAttachmentsByPatient(appointment.patient_id);
     const serverConfig = getServerConfig();
 
     return {
@@ -88,7 +95,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         },
         cancellationReasons: getCancellationReasons('cancel'),
         postponeReasons: getCancellationReasons('postpone'),
-        reasonRequirements: getReasonRequirements()
+        reasonRequirements: getReasonRequirements(),
+        attachments
     };
 };
 
@@ -388,6 +396,87 @@ export const actions: Actions = {
         } catch (e) {
             console.error(e);
             return fail(500, { error: 'Failed to create invoice' });
+        }
+    },
+    uploadAttachment: async ({ request, params, locals }) => {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const apptId = Number(params.id);
+        const appointment = getAppointmentById(apptId) as any;
+        if (!appointment) return fail(404, { error: 'Appointment not found' });
+
+        const patientId = appointment.patient_id;
+        const formData = await request.formData();
+        const file = formData.get('file') as File;
+        const category = formData.get('category') as string || 'General';
+
+        if (!file || file.size === 0) {
+            return fail(400, { error: 'No file uploaded' });
+        }
+
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            return fail(400, { error: 'File too large (Max 10MB)' });
+        }
+
+        try {
+            const uploadDir = path.resolve('static/uploads/attachments');
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+            }
+
+            const timestamp = Date.now();
+            const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const fileName = `patient_${patientId}_${timestamp}_${safeName}`;
+            const filePath = path.join(uploadDir, fileName);
+
+            // Convert File to Buffer
+            const arrayBuffer = await file.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+
+            fs.writeFileSync(filePath, buffer);
+
+            createAttachment({
+                patient_id: patientId,
+                file_name: file.name,
+                file_path: `/uploads/attachments/${fileName}`,
+                file_type: file.type,
+                category: category
+            });
+
+            return { success: true };
+        } catch (e: any) {
+            console.error('Upload failed:', e);
+            return fail(500, { error: 'Upload failed: ' + e.message });
+        }
+    },
+
+    deleteAttachment: async ({ request, locals }) => {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const attachmentId = parseInt(formData.get('id') as string);
+
+        try {
+            const attachment = getAttachmentById(attachmentId);
+            if (attachment) {
+                const fullPath = path.resolve('static' + (attachment as any).file_path);
+                if (fs.existsSync(fullPath)) {
+                    try {
+                        fs.unlinkSync(fullPath);
+                    } catch (err) {
+                        console.error('Failed to delete file from disk, but removing DB entry:', err);
+                    }
+                }
+                deleteAttachment(attachmentId);
+            }
+            return { success: true };
+        } catch (e) {
+            console.error('Delete attachment failed:', e);
+            return fail(500, { error: 'Failed to delete attachment' });
         }
     }
 };

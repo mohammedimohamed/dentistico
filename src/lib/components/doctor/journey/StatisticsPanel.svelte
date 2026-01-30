@@ -23,7 +23,7 @@
     <!-- TODAY'S FUNNEL -->
     <div class="stat-section">
         <h3 class="section-title">
-            {dashboardStats.today.total} Patients aujourd'hui
+            Patients aujourd'hui ({dashboardStats.today.total})
         </h3>
 
         <div class="stat-grid">
@@ -142,11 +142,11 @@
     }
 
     .section-title {
-        font-size: 0.65rem;
+        font-size: 1rem;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.15em;
-        color: #94a3b8;
+        letter-spacing: 0.1em;
+        color: #475569;
     }
 
     .stat-grid {

@@ -9,7 +9,7 @@
         "assistant": "Assistant",
         "doctor": "Docteur",
         "user": "Utilisateur",
-        "journey": "Le Voyage",
+        "journey": "La Journée",
         "save": "Enregistrer",
         "cancel": "Annuler",
         "abort": "Abandonner",
@@ -42,7 +42,7 @@
         "disabled": "Désactivé"
     },
     "journey": {
-        "title": "Le Voyage Clinique",
+        "title": "La Journée Clinique",
         "status": "Statut",
         "start_day": "Commencer la Journée",
         "end_day": "Terminer la Journée",

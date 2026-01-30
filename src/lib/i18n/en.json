@@ -9,7 +9,7 @@
         "assistant": "Assistant",
         "doctor": "Doctor",
         "user": "User",
-        "journey": "The Journey",
+        "journey": "The Day",
         "save": "Save",
         "cancel": "Cancel",
         "abort": "Abort",
@@ -42,7 +42,7 @@
         "disabled": "Disabled"
     },
     "journey": {
-        "title": "The Clinical Journey",
+        "title": "The Clinical Day",
         "status": "Status",
         "start_day": "Start the Day",
         "end_day": "End the Day",
