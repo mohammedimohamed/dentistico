@@ -78,7 +78,8 @@
         "status_completed": "Terminé",
         "consult": "Consulter",
         "start_treatment": "Traiter",
-        "continue": "Continuer"
+        "continue": "Continuer",
+        "add_note": "Ajouter Note"
     },
     "inventory": {
         "title": "Inventaire & Stock",

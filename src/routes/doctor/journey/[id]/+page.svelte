@@ -1549,7 +1549,7 @@
         >
             <div
                 class="h-full transition-all duration-300 ease-out flex flex-col bg-slate-50 {isNotesSidebarOpen
-                    ? 'absolute top-0 right-0 h-full w-[280px] shadow-2xl border-l border-slate-200 z-[100]'
+                    ? 'absolute top-0 right-0 h-full w-[50vw] max-w-2xl shadow-2xl border-l border-slate-200 z-[100]'
                     : 'w-full'}"
                 onclick={(e) => e.stopPropagation()}
                 role="presentation"
@@ -1630,12 +1630,16 @@
                                 </div>
                                 {#if sidebarTab === "notes"}
                                     <button
-                                        class="w-7 h-7 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                        class="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm group"
                                         onclick={() => (showNotesModal = true)}
                                     >
                                         <span
-                                            class="text-base leading-none pb-0.5"
+                                            class="text-lg leading-none font-bold"
                                             >+</span
+                                        >
+                                        <span
+                                            class="text-xs font-bold uppercase tracking-wider"
+                                            >{$t("journey.add_note")}</span
                                         >
                                     </button>
                                 {:else}
@@ -1693,9 +1697,27 @@
 
                                 {#each highPriorityNotes as note}
                                     <div
-                                        class="post-it {note.importance} pointer-events-auto"
+                                        class="post-it {note.importance} pointer-events-auto group relative"
                                         in:slide
                                     >
+                                        <form
+                                            action="?/deleteNote"
+                                            method="POST"
+                                            use:enhance
+                                            class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        >
+                                            <input
+                                                type="hidden"
+                                                name="id"
+                                                value={note.id}
+                                            />
+                                            <button
+                                                class="w-6 h-6 flex items-center justify-center rounded-full bg-white/50 hover:bg-red-500 hover:text-white text-slate-500 transition-all shadow-sm"
+                                                title="Supprimer cette note"
+                                            >
+                                                ✕
+                                            </button>
+                                        </form>
                                         <div
                                             class="flex items-center justify-between mb-2"
                                         >

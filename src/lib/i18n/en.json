@@ -71,7 +71,8 @@
         "status_completed": "Completed",
         "consult": "View Record",
         "start_treatment": "Treat",
-        "continue": "Continue"
+        "continue": "Continue",
+        "add_note": "Add Note"
     },
     "inventory": {
         "title": "Inventory & Stock",

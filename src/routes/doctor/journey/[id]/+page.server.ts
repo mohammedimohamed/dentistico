@@ -34,7 +34,8 @@ import {
     getAttachmentsByPatient,
     createAttachment,
     getAttachmentById,
-    deleteAttachment
+    deleteAttachment,
+    deleteClinicalNote
 } from '$lib/server/db';
 import path from 'path';
 import fs from 'fs';
@@ -162,6 +163,15 @@ export const actions: Actions = {
         }
 
         addClinicalNote(appointment.patient_id, locals.user.id, apptId, content, importance);
+        return { success: true };
+    },
+    deleteNote: async ({ request, locals }) => {
+        if (!locals.user) return fail(401);
+        const formData = await request.formData();
+        const id = Number(formData.get('id'));
+        if (!id) return fail(400, { message: 'Note ID is required' });
+
+        deleteClinicalNote(id);
         return { success: true };
     },
     reschedule: async ({ request, params, locals }) => {

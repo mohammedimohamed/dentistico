@@ -54,7 +54,8 @@
         "status_completed": "مكتمل",
         "consult": "معاينة",
         "start_treatment": "علاج",
-        "continue": "متابعة"
+        "continue": "متابعة",
+        "add_note": "إضافة ملاحظة"
     },
     "inventory": {
         "title": "المخزون والمتجر",

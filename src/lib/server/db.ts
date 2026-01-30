@@ -3025,6 +3025,10 @@ export function addClinicalNote(patientId: number, doctorId: number, appointment
         `).run(patientId, doctorId, appointmentId, content, importance);
 }
 
+export function deleteClinicalNote(id: number) {
+    return db.prepare('DELETE FROM clinical_notes WHERE id = ?').run(id);
+}
+
 export function getLabTracking(patientId: number) {
     return db.prepare('SELECT * FROM lab_tracking WHERE patient_id = ? ORDER BY updated_at DESC').all(patientId);
 }
