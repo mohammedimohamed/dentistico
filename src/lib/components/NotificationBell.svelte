@@ -12,11 +12,21 @@
 
     function playNotificationSound() {
         if (audio) {
+            console.log("🔔 Attempting to play notification sound...");
             audio.currentTime = 0;
-            audio.play().catch((e) => {
-                // Browsers often block audio until first user interaction
-                console.log("Audio playback deferred or blocked:", e.message);
-            });
+            audio
+                .play()
+                .then(() => {
+                    console.log("🔊 Sound played successfully");
+                })
+                .catch((e) => {
+                    console.warn(
+                        "🔇 Audio playback failed (blocked by browser?):",
+                        e.message,
+                    );
+                });
+        } else {
+            console.error("❌ Audio element not found");
         }
     }
 
@@ -26,6 +36,9 @@
             const data = await res.json();
 
             if (!isInitialLoad && data.count > previousCount) {
+                console.log(
+                    `🆕 New notification detected: ${data.count} > ${previousCount}`,
+                );
                 playNotificationSound();
             }
 
@@ -89,8 +102,8 @@
     onMount(() => {
         fetchUnreadCount();
 
-        // Poll every 30 seconds
-        const interval = setInterval(fetchUnreadCount, 30000);
+        // Poll every 15 seconds
+        const interval = setInterval(fetchUnreadCount, 15000);
 
         return () => clearInterval(interval);
     });

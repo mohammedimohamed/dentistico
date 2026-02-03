@@ -391,14 +391,17 @@
                     "confirmed": "Confirmé",
                     "cancelled": "Annulé",
                     "no_show": "Absent",
-                    "completed": "Terminé"
+                    "completed": "Terminé",
+                    "in_progress": "En cours",
+                    "arrived": "Arrivé"
                 },
                 "type": {
                     "consultation": "Consultation",
                     "checkup": "Contrôle",
                     "cleaning": "Nettoyage",
                     "emergency": "Urgence",
-                    "root_canal": "Traitement de Canal"
+                    "root_canal": "Traitement de Canal",
+                    "cosmetic": "Cosmétique"
                 },
                 "modals": {
                     "new": "Nouveau Rendez-vous",

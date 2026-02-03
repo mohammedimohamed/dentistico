@@ -219,6 +219,46 @@ export const actions: Actions = {
         }
     },
 
+    createWalkIn: async ({ request, locals }) => {
+        if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const patientId = parseInt(formData.get('patient_id') as string);
+        const doctorId = parseInt(formData.get('doctor_id') as string);
+        const reason = formData.get('reason') as string;
+
+        if (!patientId || !doctorId) {
+            return fail(400, { error: 'Patient and Doctor are required' });
+        }
+
+        const now = new Date();
+        const startTime = now.toISOString();
+        const endTime = new Date(now.getTime() + 15 * 60000).toISOString();
+
+        try {
+            createAppointment({
+                patient_id: patientId,
+                doctor_id: doctorId,
+                start_time: startTime,
+                end_time: endTime,
+                status: 'confirmed',
+                appointment_type: 'emergency',
+                notes: reason ? `🚨 Sans RDV: ${reason}` : '🚨 Sans RDV',
+                created_by_user_id: locals.user.id,
+                checked_in: 1,
+                check_in_time: startTime,
+                waiting_room_status: 'waiting'
+            });
+
+            return { success: true, message: 'Walk-in added directly to waiting room' };
+        } catch (e: any) {
+            console.error(e);
+            return fail(500, { error: 'Failed to create walk-in appointment' });
+        }
+    },
+
     updateStatus: async ({ request, locals }) => {
         if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
@@ -238,6 +278,13 @@ export const actions: Actions = {
             if (status === 'confirmed') {
                 updateData.confirmed_by_user_id = locals.user.id;
             }
+
+            // If marking as cancelled or no_show, reset check-in status
+            if (status === 'cancelled' || status === 'no_show') {
+                updateData.checked_in = 0;
+                updateData.waiting_room_status = 'not_arrived';
+            }
+
             updateAppointment(appointmentId, updateData);
 
             // If confirmed, handle user creation
@@ -331,6 +378,12 @@ export const actions: Actions = {
                 updateData.confirmed_by_user_id = locals.user.id;
             }
 
+            // If marking as cancelled or no_show, reset check-in status
+            if (status === 'cancelled' || status === 'no_show') {
+                updateData.checked_in = 0;
+                updateData.waiting_room_status = 'not_arrived';
+            }
+
             // Update all appointments
             for (const appointmentId of appointmentIds) {
                 updateAppointment(appointmentId, updateData);
@@ -388,6 +441,8 @@ export const actions: Actions = {
         const date = formData.get('payment_date') as string;
         const notes = formData.get('notes') as string;
 
+        const doctorId = formData.get('doctor_id') ? parseInt(formData.get('doctor_id') as string) : null;
+
         if (!patientId || amount <= 0) {
             return fail(400, { error: 'Invalid payment details' });
         }
@@ -399,7 +454,8 @@ export const actions: Actions = {
                 payment_method: method,
                 payment_date: date || new Date().toISOString(),
                 notes,
-                recorded_by: locals.user.id
+                recorded_by: locals.user.id,
+                doctor_id: doctorId
             });
 
             // Get patient name for notification

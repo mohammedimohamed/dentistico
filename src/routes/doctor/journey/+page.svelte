@@ -68,9 +68,9 @@
 
     // Performance Optimization: Adaptive Polling
     const POLLING_INTERVALS = {
-        ACTIVE: 60000,
-        IDLE: 120000,
-        BACKGROUND: 300000,
+        ACTIVE: 15000,
+        IDLE: 60000,
+        BACKGROUND: 180000,
     };
 
     let pollInterval: any = null;
@@ -175,7 +175,6 @@
         if (pollInterval) clearInterval(pollInterval);
 
         pollInterval = setInterval(() => {
-            const date = new Date();
             if (date.getMinutes() !== lastMinute) {
                 now = date;
                 lastMinute = date.getMinutes();

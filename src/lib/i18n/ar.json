@@ -396,14 +396,17 @@
                     "confirmed": "مؤكد",
                     "cancelled": "ملغى",
                     "no_show": "لم يحضر",
-                    "completed": "مكتمل"
+                    "completed": "مكتمل",
+                    "in_progress": "قيد التنفيذ",
+                    "arrived": "وصل"
                 },
                 "type": {
                     "consultation": "استشارة",
                     "checkup": "فحص دوري",
                     "cleaning": "تنظيف",
                     "emergency": "طوارئ",
-                    "root_canal": "علاج عصب"
+                    "root_canal": "علاج عصب",
+                    "cosmetic": "تجميلي"
                 },
                 "modals": {
                     "new": "موعد جديد",

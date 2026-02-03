@@ -17,7 +17,8 @@ export async function POST({ request, locals }: { request: Request, locals: any 
                 check_in_time = ?,
                 checked_in_by = ?,
                 waiting_room_status = 'waiting',
-                notes = COALESCE(notes, '') || ?
+                notes = COALESCE(notes, '') || ?,
+                updated_at = datetime('now')
             WHERE id = ?
         `).run(check_in_time, locals.user.id, `\n[Check-in] ${notes}`, appointment_id);
 

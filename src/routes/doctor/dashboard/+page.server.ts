@@ -1,8 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { getDoctorAppointmentsToday, getDoctorUpcomingAppointments, updateAppointment, getAppointmentById } from '$lib/server/db';
+import { getDoctorAppointmentsToday, getDoctorUpcomingAppointments, updateAppointment, getAppointmentById, db } from '$lib/server/db';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, depends }) => {
+    depends('appointments:today');
+    depends('waiting-room:status');
     if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
         throw redirect(303, '/login');
     }
@@ -11,11 +13,20 @@ export const load: PageServerLoad = async ({ locals }) => {
     const appointments = getDoctorAppointmentsToday(locals.user.id);
     const upcomingAppointments = getDoctorUpcomingAppointments(locals.user.id);
 
+    const waitingRoomCount = db.prepare(`
+        SELECT COUNT(*) as count 
+        FROM appointments 
+        WHERE doctor_id = ? 
+        AND waiting_room_status = 'waiting' 
+        AND start_time >= date('now') AND start_time < date('now', '+1 day')
+    `).get(locals.user.id) as { count: number };
+
     return {
         user: locals.user,
         appointments,
         upcomingAppointments,
-        today: new Date().toLocaleDateString()
+        today: new Date().toLocaleDateString(),
+        waitingRoomCount: waitingRoomCount.count
     };
 };
 

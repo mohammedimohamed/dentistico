@@ -362,14 +362,17 @@
                     "confirmed": "Confirmed",
                     "cancelled": "Cancelled",
                     "no_show": "No Show",
-                    "completed": "Completed"
+                    "completed": "Completed",
+                    "in_progress": "In Progress",
+                    "arrived": "Arrived"
                 },
                 "type": {
                     "consultation": "Consultation",
                     "checkup": "Checkup",
                     "cleaning": "Cleaning",
                     "emergency": "Emergency",
-                    "root_canal": "Root Canal"
+                    "root_canal": "Root Canal",
+                    "cosmetic": "Cosmetic"
                 },
                 "modals": {
                     "new": "New Appointment",

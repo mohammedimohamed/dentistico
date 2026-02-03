@@ -3,6 +3,8 @@
     import { enhance } from "$app/forms";
     import FullCalendar from "$lib/components/FullCalendar.svelte";
     import { t } from "svelte-i18n";
+    import { onMount } from "svelte";
+    import { logger } from "$lib/utils/logger";
 
     let { data }: { data: PageData } = $props();
 
@@ -21,6 +23,36 @@
     let isEditing = $state(false);
     let activeTab = $state("today");
     let searchQuery = $state("");
+    let lastUpdateVersion = $state<string | null>(null);
+
+    onMount(() => {
+        // Background polling for real-time updates
+        const interval = setInterval(async () => {
+            if (!document.hidden) {
+                try {
+                    const statusRes = await fetch(
+                        `/api/updates/status?doctorId=${data.user.id}`,
+                    );
+                    if (statusRes.ok) {
+                        const { version } = await statusRes.json();
+                        if (version === lastUpdateVersion) {
+                            return; // No changes
+                        }
+                        lastUpdateVersion = version;
+                    }
+
+                    logger.info("Doctor Dashboard: Refreshing data...");
+                    const { invalidate } = await import("$app/navigation");
+                    await invalidate("appointments:today");
+                    await invalidate("waiting-room:status");
+                } catch (e) {
+                    logger.error("Doctor dashboard sync failed:", e);
+                }
+            }
+        }, 15000); // 15s check
+
+        return () => clearInterval(interval);
+    });
 
     function openModal(appt: any) {
         selectedAppointment = appt;
@@ -132,18 +164,29 @@
     <div
         class="px-4 py-4 sm:px-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
     >
-        <div class="text-start">
+        <div class="flex items-center gap-3">
             <h1 class="text-2xl font-bold text-gray-900">
                 {$t("dashboard.welcome", {
                     values: { name: data.user?.full_name },
                 })}
             </h1>
-            <p class="text-sm text-gray-500">
-                {$t("dashboard.appointments_count", {
-                    values: { count: data.appointments.length },
-                })}
-            </p>
+            {#if data.waitingRoomCount > 0}
+                <a
+                    href="/doctor/journey"
+                    class="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-black uppercase tracking-widest shadow-sm hover:bg-green-200 transition-all animate-pulse"
+                >
+                    <span
+                        class="w-1.5 h-1.5 bg-green-500 rounded-full margin-inline-end-2"
+                    ></span>
+                    🏥 Salle d'Attente ({data.waitingRoomCount})
+                </a>
+            {/if}
         </div>
+        <p class="text-sm text-gray-500">
+            {$t("dashboard.appointments_count", {
+                values: { count: data.appointments.length },
+            })}
+        </p>
 
         <div class="flex items-center gap-4 w-full md:w-auto">
             <div class="relative flex-1 md:w-64">

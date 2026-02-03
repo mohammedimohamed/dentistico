@@ -10,6 +10,7 @@
     import { goto } from "$app/navigation";
     import { logger } from "$lib/utils/logger";
     import { createDebouncer } from "$lib/utils/debounce";
+    import { fly, fade } from "svelte/transition";
 
     const invalidateDebouncer = createDebouncer(2000); // 2-second batching window
 
@@ -82,6 +83,7 @@
     let selectedAppointment = $state<any>(null); // For booking/editing
     let searchPatientQuery = $state(patientSearch);
     let errorMessage = $state("");
+    let isFabOpen = $state(false);
 
     // Confirmation modal state
     let isConfirmModalOpen = $state(false);
@@ -145,6 +147,9 @@
 
         return false;
     }
+
+    let selectedDoctorId = $state("");
+    let isWalkInModalOpen = $state(false);
 
     let lastUpdateVersion = $state<string | null>(null);
 
@@ -259,9 +264,19 @@
                           .includes(searchQuery.toLowerCase()))
                 : true;
             const matchesStatus = statusFilter
-                ? appt.status === statusFilter
+                ? statusFilter === "arrived"
+                    ? appt.checked_in === 1
+                    : appt.status === statusFilter
                 : true;
-            return matchesTime && matchesSearch && matchesStatus;
+            const matchesDoctorFilter = selectedDoctorId
+                ? appt.doctor_id == selectedDoctorId
+                : true;
+            return (
+                matchesTime &&
+                matchesSearch &&
+                matchesStatus &&
+                matchesDoctorFilter
+            );
         });
     });
 
@@ -285,8 +300,10 @@
             );
         }
         if (columnFilters.status) {
-            result = result.filter(
-                (appt: any) => appt.status === columnFilters.status,
+            result = result.filter((appt: any) =>
+                columnFilters.status === "arrived"
+                    ? appt.checked_in === 1
+                    : appt.status === columnFilters.status,
             );
         }
         if (columnFilters.type) {
@@ -794,22 +811,9 @@
                 start: a.start_time.replace(" ", "T"),
                 end: a.end_time.replace(" ", "T"),
                 extendedProps: a,
-                backgroundColor:
-                    a.status === "confirmed"
-                        ? "#10b981" // green-500
-                        : a.status === "cancelled"
-                          ? "#ef4444" // red-500
-                          : a.status === "no_show"
-                            ? "#6b7280" // gray-500
-                            : "#3b82f6", // blue-500 (scheduled)
-                borderColor:
-                    a.status === "confirmed"
-                        ? "#059669" // green-600
-                        : a.status === "cancelled"
-                          ? "#dc2626" // red-600
-                          : a.status === "no_show"
-                            ? "#4b5563" // gray-600
-                            : "#2563eb", // blue-600
+                backgroundColor: a.doctor_color || "#3b82f6",
+                borderColor: a.doctor_color || "#2563eb",
+                textColor: "#ffffff",
             };
         }),
     );
@@ -944,9 +948,9 @@
                         />
                         <select
                             bind:value={statusFilter}
-                            class="px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            class="px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                         >
-                            <option value="">All statuses</option>
+                            <option value="">Tous les statuts</option>
                             <option value="scheduled"
                                 >{$t(
                                     "assistant.dashboard.appointment.status.scheduled",
@@ -955,6 +959,21 @@
                             <option value="confirmed"
                                 >{$t(
                                     "assistant.dashboard.appointment.status.confirmed",
+                                )}</option
+                            >
+                            <option value="arrived"
+                                >{$t(
+                                    "assistant.dashboard.appointment.status.arrived",
+                                )}</option
+                            >
+                            <option value="in_progress"
+                                >{$t(
+                                    "assistant.dashboard.appointment.status.in_progress",
+                                )}</option
+                            >
+                            <option value="completed"
+                                >{$t(
+                                    "assistant.dashboard.appointment.status.completed",
                                 )}</option
                             >
                             <option value="cancelled"
@@ -981,13 +1000,20 @@
                             )}
                         </button>
                     </div>
-                    <button
-                        onclick={() => openBookingModal()}
-                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-bold shadow-lg transition-all flex items-center gap-2"
-                    >
-                        <span class="text-xl">+</span>
-                        {$t("assistant.dashboard.buttons.bookNew")}
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <!-- Practitioner Filter -->
+                        <select
+                            bind:value={selectedDoctorId}
+                            class="px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+                        >
+                            <option value="">Tous les Docteurs</option>
+                            {#each data.doctors as dr}
+                                <option value={dr.id.toString()}
+                                    >{dr.full_name}</option
+                                >
+                            {/each}
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -997,14 +1023,9 @@
                         {#each filteredAppointments as appt}
                             <li class="group">
                                 <div
-                                    class="px-4 py-5 transition-colors rounded-xl flex items-center justify-between border-l-4
-                                    {appt.status === 'confirmed'
-                                        ? 'border-l-green-500 bg-green-50/30 hover:bg-green-50'
-                                        : appt.status === 'cancelled'
-                                          ? 'border-l-red-500 bg-red-50/30 hover:bg-red-50'
-                                          : appt.status === 'no_show'
-                                            ? 'border-l-gray-500 bg-gray-50/30 hover:bg-gray-100'
-                                            : 'border-l-blue-500 bg-blue-50/30 hover:bg-blue-50'}"
+                                    class="px-4 py-5 transition-colors rounded-xl flex items-center justify-between border-l-4"
+                                    style="border-left-color: {appt.doctor_color ||
+                                        '#6366f1'}; background-color: {appt.doctor_color}10"
                                 >
                                     <div class="flex flex-col">
                                         <div
@@ -1168,9 +1189,17 @@
                                             class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest
                                             {appt.status === 'confirmed'
                                                 ? 'bg-green-100 text-green-800'
-                                                : appt.status === 'cancelled'
-                                                  ? 'bg-red-100 text-red-800'
-                                                  : 'bg-blue-100 text-blue-800'}"
+                                                : appt.status === 'in_progress'
+                                                  ? 'bg-amber-100 text-amber-800'
+                                                  : appt.status === 'completed'
+                                                    ? 'bg-slate-100 text-slate-600'
+                                                    : appt.status ===
+                                                        'cancelled'
+                                                      ? 'bg-red-100 text-red-800'
+                                                      : appt.status ===
+                                                          'no_show'
+                                                        ? 'bg-gray-100 text-gray-700'
+                                                        : 'bg-blue-100 text-blue-800'}"
                                         >
                                             {$t(
                                                 `assistant.dashboard.appointment.status.${appt.status}`,
@@ -1242,577 +1271,694 @@
                         {/each}
                     </ul>
                 {:else if viewMode === "calendar"}
-                    <!-- Calendar Legend -->
                     <div
-                        class="flex flex-wrap gap-4 mb-4 p-4 bg-gray-50 rounded-lg justify-center sm:justify-start"
+                        class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden min-h-[700px]"
                     >
-                        <div class="flex items-center gap-2">
-                            <span class="w-3 h-3 rounded-full bg-blue-500"
-                            ></span>
-                            <span class="text-xs font-medium text-gray-700"
-                                >{$t(
-                                    "assistant.dashboard.appointment.status.scheduled",
-                                )}</span
-                            >
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-3 h-3 rounded-full bg-green-500"
-                            ></span>
-                            <span class="text-xs font-medium text-gray-700"
-                                >{$t(
-                                    "assistant.dashboard.appointment.status.confirmed",
-                                )}</span
-                            >
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-3 h-3 rounded-full bg-red-500"
-                            ></span>
-                            <span class="text-xs font-medium text-gray-700"
-                                >{$t(
-                                    "assistant.dashboard.appointment.status.cancelled",
-                                )}</span
-                            >
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-3 h-3 rounded-full bg-gray-500"
-                            ></span>
-                            <span class="text-xs font-medium text-gray-700"
-                                >{$t(
-                                    "assistant.dashboard.appointment.status.no_show",
-                                )}</span
-                            >
-                        </div>
-                    </div>
-
-                    {#key filteredAppointments}
-                        <Calendar
+                        <FullCalendar
                             events={calendarEvents}
+                            initialView="timeGridWeek"
                             onEventClick={handleEventClick}
                             onEventDrop={handleEventChange}
                             onEventResize={handleEventChange}
                             onDateClick={handleDateClick}
                             onEventMouseEnter={handleEventMouseEnter}
                             onEventMouseLeave={handleEventMouseLeave}
-                            editable={false}
+                            editable={true}
                         />
-                    {/key}
+                    </div>
                 {:else if viewMode === "table"}
                     <!-- Table View -->
-                    <div class="overflow-x-auto">
-                        <!-- Bulk Actions Bar -->
-                        {#if selectedRows.size > 0}
+                    <div
+                        class="flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+                    >
+                        <!-- Sticky Filters Header -->
+                        <div
+                            class="p-4 border-b border-gray-100 bg-gray-50/50 space-y-4 sticky top-0 z-40"
+                        >
+                            <!-- Bulk Actions Bar -->
+                            {#if selectedRows.size > 0}
+                                <div
+                                    class="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center justify-between"
+                                >
+                                    <span
+                                        class="text-sm font-bold text-indigo-900"
+                                    >
+                                        {selectedRows.size} appointment{selectedRows.size ===
+                                        1
+                                            ? ""
+                                            : "s"} selected
+                                    </span>
+                                    <div class="flex gap-2">
+                                        <form
+                                            method="POST"
+                                            action="?/bulkUpdateStatus"
+                                            use:enhance
+                                            class="inline"
+                                            id="bulk-confirm-form"
+                                        >
+                                            <input
+                                                type="hidden"
+                                                name="appointment_ids"
+                                                value={Array.from(
+                                                    selectedRows,
+                                                ).join(",")}
+                                            />
+                                            <input
+                                                type="hidden"
+                                                name="status"
+                                                value="confirmed"
+                                            />
+                                            <button
+                                                type="button"
+                                                onclick={(e) =>
+                                                    showConfirmation(
+                                                        e,
+                                                        "bulk",
+                                                        "confirmed",
+                                                        undefined,
+                                                        Array.from(
+                                                            selectedRows,
+                                                        ),
+                                                    )}
+                                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm transition-colors"
+                                            >
+                                                Confirm Selected
+                                            </button>
+                                        </form>
+                                        <form
+                                            method="POST"
+                                            action="?/bulkUpdateStatus"
+                                            use:enhance
+                                            class="inline"
+                                            id="bulk-cancel-form"
+                                        >
+                                            <input
+                                                type="hidden"
+                                                name="appointment_ids"
+                                                value={Array.from(
+                                                    selectedRows,
+                                                ).join(",")}
+                                            />
+                                            <input
+                                                type="hidden"
+                                                name="status"
+                                                value="cancelled"
+                                            />
+                                            <button
+                                                type="button"
+                                                onclick={(e) =>
+                                                    showConfirmation(
+                                                        e,
+                                                        "bulk",
+                                                        "cancelled",
+                                                        undefined,
+                                                        Array.from(
+                                                            selectedRows,
+                                                        ),
+                                                    )}
+                                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-sm transition-colors"
+                                            >
+                                                Cancel Selected
+                                            </button>
+                                        </form>
+                                        <button
+                                            onclick={() =>
+                                                (selectedRows = new Set())}
+                                            class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-bold text-sm transition-colors"
+                                        >
+                                            Clear Selection
+                                        </button>
+                                    </div>
+                                </div>
+                            {/if}
+
+                            <!-- Column Filters -->
                             <div
-                                class="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center justify-between"
+                                class="p-4 bg-gray-50 rounded-lg border border-gray-200"
                             >
-                                <span class="text-sm font-bold text-indigo-900">
-                                    {selectedRows.size} appointment{selectedRows.size ===
-                                    1
-                                        ? ""
-                                        : "s"} selected
-                                </span>
-                                <div class="flex gap-2">
-                                    <form
-                                        method="POST"
-                                        action="?/bulkUpdateStatus"
-                                        use:enhance
-                                        class="inline"
-                                        id="bulk-confirm-form"
-                                    >
-                                        <input
-                                            type="hidden"
-                                            name="appointment_ids"
-                                            value={Array.from(
-                                                selectedRows,
-                                            ).join(",")}
-                                        />
-                                        <input
-                                            type="hidden"
-                                            name="status"
-                                            value="confirmed"
-                                        />
-                                        <button
-                                            type="button"
-                                            onclick={(e) =>
-                                                showConfirmation(
-                                                    e,
-                                                    "bulk",
-                                                    "confirmed",
-                                                    undefined,
-                                                    Array.from(selectedRows),
-                                                )}
-                                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm transition-colors"
-                                        >
-                                            Confirm Selected
-                                        </button>
-                                    </form>
-                                    <form
-                                        method="POST"
-                                        action="?/bulkUpdateStatus"
-                                        use:enhance
-                                        class="inline"
-                                        id="bulk-cancel-form"
-                                    >
-                                        <input
-                                            type="hidden"
-                                            name="appointment_ids"
-                                            value={Array.from(
-                                                selectedRows,
-                                            ).join(",")}
-                                        />
-                                        <input
-                                            type="hidden"
-                                            name="status"
-                                            value="cancelled"
-                                        />
-                                        <button
-                                            type="button"
-                                            onclick={(e) =>
-                                                showConfirmation(
-                                                    e,
-                                                    "bulk",
-                                                    "cancelled",
-                                                    undefined,
-                                                    Array.from(selectedRows),
-                                                )}
-                                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-sm transition-colors"
-                                        >
-                                            Cancel Selected
-                                        </button>
-                                    </form>
+                                <div
+                                    class="flex items-center justify-between mb-2"
+                                >
+                                    <h4 class="text-sm font-bold text-gray-700">
+                                        Column Filters
+                                    </h4>
                                     <button
-                                        onclick={() =>
-                                            (selectedRows = new Set())}
-                                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-bold text-sm transition-colors"
+                                        onclick={clearFilters}
+                                        class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
                                     >
-                                        Clear Selection
+                                        Clear All
                                     </button>
                                 </div>
-                            </div>
-                        {/if}
-
-                        <!-- Column Filters -->
-                        <div
-                            class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
-                        >
-                            <div class="flex items-center justify-between mb-2">
-                                <h4 class="text-sm font-bold text-gray-700">
-                                    Column Filters
-                                </h4>
-                                <button
-                                    onclick={clearFilters}
-                                    class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
+                                <div
+                                    class="grid grid-cols-2 md:grid-cols-5 gap-2"
                                 >
-                                    Clear All
-                                </button>
-                            </div>
-                            <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
-                                <input
-                                    type="text"
-                                    placeholder="Filter Patient..."
-                                    bind:value={columnFilters.patient}
-                                    class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Filter Doctor..."
-                                    bind:value={columnFilters.doctor}
-                                    class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                />
-                                <select
-                                    bind:value={columnFilters.status}
-                                    class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                >
-                                    <option value="">All Statuses</option>
-                                    <option value="scheduled">Scheduled</option>
-                                    <option value="confirmed">Confirmed</option>
-                                    <option value="cancelled">Cancelled</option>
-                                    <option value="no_show">No Show</option>
-                                </select>
-                                <select
-                                    bind:value={columnFilters.type}
-                                    class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                >
-                                    <option value="">All Types</option>
-                                    <option value="consultation"
-                                        >Consultation</option
+                                    <input
+                                        type="text"
+                                        placeholder="Filter Patient..."
+                                        bind:value={columnFilters.patient}
+                                        class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Filter Doctor..."
+                                        bind:value={columnFilters.doctor}
+                                        class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <select
+                                        bind:value={columnFilters.status}
+                                        class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     >
-                                    <option value="checkup">Checkup</option>
-                                    <option value="cleaning">Cleaning</option>
-                                    <option value="cosmetic">Cosmetic</option>
-                                    <option value="emergency">Emergency</option>
-                                </select>
-                                <input
-                                    type="date"
-                                    bind:value={columnFilters.date}
-                                    class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                />
+                                        <option value=""
+                                            >Tous les Statuts</option
+                                        >
+                                        <option value="scheduled"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.status.scheduled",
+                                            )}</option
+                                        >
+                                        <option value="confirmed"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.status.confirmed",
+                                            )}</option
+                                        >
+                                        <option value="arrived"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.status.arrived",
+                                            )}</option
+                                        >
+                                        <option value="in_progress"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.status.in_progress",
+                                            )}</option
+                                        >
+                                        <option value="completed"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.status.completed",
+                                            )}</option
+                                        >
+                                        <option value="cancelled"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.status.cancelled",
+                                            )}</option
+                                        >
+                                        <option value="no_show"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.status.no_show",
+                                            )}</option
+                                        >
+                                    </select>
+                                    <select
+                                        bind:value={columnFilters.type}
+                                        class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    >
+                                        <option value="">Tous les Types</option>
+                                        <option value="consultation"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.type.consultation",
+                                            )}</option
+                                        >
+                                        <option value="checkup"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.type.checkup",
+                                            )}</option
+                                        >
+                                        <option value="cleaning"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.type.cleaning",
+                                            )}</option
+                                        >
+                                        <option value="emergency"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.type.emergency",
+                                            )}</option
+                                        >
+                                        <option value="root_canal"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.type.root_canal",
+                                            )}</option
+                                        >
+                                        <option value="cosmetic"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.type.cosmetic",
+                                            )}</option
+                                        >
+                                    </select>
+                                    <input
+                                        type="date"
+                                        bind:value={columnFilters.date}
+                                        class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Table -->
-                        <table
-                            class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden"
+                        <!-- Table Inner Scroll Area -->
+                        <div
+                            class="overflow-auto max-h-[calc(100vh-420px)] relative"
                         >
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-4 py-3 text-left">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedRows.size ===
-                                                tableAppointments.length &&
-                                                tableAppointments.length > 0}
-                                            onchange={toggleSelectAll}
-                                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                        onclick={() => toggleSort("date")}
-                                    >
-                                        <div class="flex items-center gap-2">
-                                            Date
-                                            {#if tableSortColumn === "date"}
-                                                {tableSortDirection === "asc"
-                                                    ? "↑"
-                                                    : "↓"}
-                                            {/if}
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                        onclick={() => toggleSort("time")}
-                                    >
-                                        <div class="flex items-center gap-2">
-                                            Time
-                                            {#if tableSortColumn === "time"}
-                                                {tableSortDirection === "asc"
-                                                    ? "↑"
-                                                    : "↓"}
-                                            {/if}
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                        onclick={() => toggleSort("patient")}
-                                    >
-                                        <div class="flex items-center gap-2">
-                                            Patient
-                                            {#if tableSortColumn === "patient"}
-                                                {tableSortDirection === "asc"
-                                                    ? "↑"
-                                                    : "↓"}
-                                            {/if}
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                        onclick={() => toggleSort("doctor")}
-                                    >
-                                        <div class="flex items-center gap-2">
-                                            Doctor
-                                            {#if tableSortColumn === "doctor"}
-                                                {tableSortDirection === "asc"
-                                                    ? "↑"
-                                                    : "↓"}
-                                            {/if}
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                        onclick={() => toggleSort("type")}
-                                    >
-                                        <div class="flex items-center gap-2">
-                                            Type
-                                            {#if tableSortColumn === "type"}
-                                                {tableSortDirection === "asc"
-                                                    ? "↑"
-                                                    : "↓"}
-                                            {/if}
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                        onclick={() => toggleSort("status")}
-                                    >
-                                        <div class="flex items-center gap-2">
-                                            Status
-                                            {#if tableSortColumn === "status"}
-                                                {tableSortDirection === "asc"
-                                                    ? "↑"
-                                                    : "↓"}
-                                            {/if}
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"
-                                    >
-                                        Notes
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"
-                                    >
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                {#each tableAppointments as appt}
-                                    <tr
-                                        class="hover:bg-gray-50 {selectedRows.has(
-                                            appt.id,
-                                        )
-                                            ? 'bg-indigo-50'
-                                            : ''} cursor-pointer"
-                                        ondblclick={() =>
-                                            openBookingModal(appt)}
-                                        title="Double-click to edit appointment"
-                                    >
-                                        <td
-                                            class="px-4 py-3 whitespace-nowrap"
-                                            onclick={(e) => e.stopPropagation()}
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead
+                                    class="bg-gray-50 sticky top-0 z-40 shadow-sm"
+                                >
+                                    <tr>
+                                        <th
+                                            scope="col"
+                                            class="px-4 py-3 text-left"
                                         >
                                             <input
                                                 type="checkbox"
-                                                checked={selectedRows.has(
-                                                    appt.id,
-                                                )}
-                                                onchange={() =>
-                                                    toggleRowSelection(appt.id)}
-                                                ondblclick={(e) =>
-                                                    e.stopPropagation()}
+                                                checked={selectedRows.size ===
+                                                    tableAppointments.length &&
+                                                    tableAppointments.length >
+                                                        0}
+                                                onchange={toggleSelectAll}
                                                 class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                             />
-                                        </td>
-                                        <td
-                                            class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
-                                        >
-                                            {new Date(
-                                                appt.start_time,
-                                            ).toLocaleDateString()}
-                                        </td>
-                                        <td
-                                            class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
-                                        >
-                                            {new Date(
-                                                appt.start_time,
-                                            ).toLocaleTimeString([], {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
-                                        </td>
-                                        <td
-                                            class="px-4 py-3 text-sm text-gray-900"
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                            onclick={() => toggleSort("date")}
                                         >
                                             <div
                                                 class="flex items-center gap-2"
                                             >
-                                                {#if appt.relationship_to_primary}
-                                                    <span
-                                                        title="Child/Dependent"
-                                                        >👶</span
-                                                    >
-                                                {:else}
-                                                    <span title="Adult">👤</span
-                                                    >
-                                                {/if}
-                                                <span class="font-semibold"
-                                                    >{appt.patient_name}</span
-                                                >
-                                                {#if appt.gender === "Male"}
-                                                    <span
-                                                        class="text-blue-500 text-xs"
-                                                        title={$t(
-                                                            "patients.male",
-                                                        )}>♂️</span
-                                                    >
-                                                {:else if appt.gender === "Female"}
-                                                    <span
-                                                        class="text-pink-500 text-xs"
-                                                        title={$t(
-                                                            "patients.female",
-                                                        )}>♀️</span
-                                                    >
-                                                {:else if appt.gender === "Other"}
-                                                    <span
-                                                        class="text-purple-500 text-xs"
-                                                        title={$t(
-                                                            "patients.other",
-                                                        )}>⚧️</span
-                                                    >
+                                                Date
+                                                {#if tableSortColumn === "date"}
+                                                    {tableSortDirection ===
+                                                    "asc"
+                                                        ? "↑"
+                                                        : "↓"}
                                                 {/if}
                                             </div>
-                                            {#if appt.date_of_birth}
-                                                {@const birth = new Date(
-                                                    appt.date_of_birth,
-                                                )}
-                                                {@const now = new Date()}
-                                                {@const diffMonths =
-                                                    (now.getFullYear() -
-                                                        birth.getFullYear()) *
-                                                        12 +
-                                                    now.getMonth() -
-                                                    birth.getMonth() -
-                                                    (now.getDate() <
-                                                    birth.getDate()
-                                                        ? 1
-                                                        : 0)}
-                                                {@const years = Math.floor(
-                                                    diffMonths / 12,
-                                                )}
-                                                {@const months =
-                                                    diffMonths % 12}
-                                                <span
-                                                    class="text-xs text-gray-500"
-                                                    >({years > 0
-                                                        ? `${years} ${years === 1 ? "year" : "years"}`
-                                                        : ""}{years > 0 &&
-                                                    months > 0
-                                                        ? " "
-                                                        : ""}{months > 0
-                                                        ? `${months} ${months === 1 ? "month" : "months"}`
-                                                        : ""}{years === 0 &&
-                                                    months === 0
-                                                        ? "Newborn"
-                                                        : ""})</span
-                                                >
-                                            {/if}
-                                        </td>
-                                        <td
-                                            class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
-                                        >
-                                            {appt.doctor_name || "N/A"}
-                                        </td>
-                                        <td
-                                            class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
-                                        >
-                                            {$t(
-                                                `assistant.dashboard.appointment.type.${appt.appointment_type}`,
-                                            )}
-                                        </td>
-                                        <td class="px-4 py-3 whitespace-nowrap">
-                                            <span
-                                                class="px-2 py-1 text-xs font-bold rounded-full uppercase
-                                                {appt.status === 'confirmed'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : appt.status ===
-                                                        'cancelled'
-                                                      ? 'bg-red-100 text-red-800'
-                                                      : appt.status ===
-                                                          'no_show'
-                                                        ? 'bg-gray-100 text-gray-800'
-                                                        : 'bg-blue-100 text-blue-800'}"
-                                            >
-                                                {$t(
-                                                    `assistant.dashboard.appointment.status.${appt.status}`,
-                                                )}
-                                            </span>
-                                        </td>
-                                        <td
-                                            class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate"
-                                        >
-                                            {appt.notes || "-"}
-                                        </td>
-                                        <td
-                                            class="px-4 py-3 whitespace-nowrap text-sm font-medium"
-                                            onclick={(e) => e.stopPropagation()}
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                            onclick={() => toggleSort("time")}
                                         >
                                             <div
-                                                class="flex items-center gap-4"
+                                                class="flex items-center gap-2"
                                             >
-                                                {#if appt.status !== "cancelled" && appt.status !== "no_show"}
-                                                    {#if !appt.checked_in}
-                                                        <button
-                                                            onclick={() =>
-                                                                openCheckInModal(
-                                                                    appt,
-                                                                )}
-                                                            class="px-4 py-3 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors text-2xl font-bold min-w-[50px]"
-                                                            title="Check-In"
-                                                        >
-                                                            ✓
-                                                        </button>
-                                                    {:else}
-                                                        <span
-                                                            class="px-2 py-1 bg-green-100 text-green-700 rounded-lg font-bold text-[10px] flex items-center gap-1"
-                                                            title="Arrived"
-                                                        >
-                                                            <span
-                                                                class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"
-                                                            ></span>
-                                                            ARR
-                                                        </span>
-                                                    {/if}
+                                                Time
+                                                {#if tableSortColumn === "time"}
+                                                    {tableSortDirection ===
+                                                    "asc"
+                                                        ? "↑"
+                                                        : "↓"}
                                                 {/if}
-                                                {#if appt.status === "scheduled"}
-                                                    <form
-                                                        method="POST"
-                                                        action="?/updateStatus"
-                                                        use:enhance
-                                                        class="inline"
-                                                    >
-                                                        <input
-                                                            type="hidden"
-                                                            name="appointment_id"
-                                                            value={appt.id}
-                                                        />
-                                                        <input
-                                                            type="hidden"
-                                                            name="status"
-                                                            value="confirmed"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onclick={(e) =>
-                                                                showConfirmation(
-                                                                    e,
-                                                                    "single",
-                                                                    "confirmed",
-                                                                    appt.id,
-                                                                )}
-                                                            class="px-4 py-3 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-colors text-2xl font-bold min-w-[50px]"
-                                                            title="Confirm"
-                                                            ondblclick={(e) =>
-                                                                e.stopPropagation()}
-                                                        >
-                                                            ✓
-                                                        </button>
-                                                    </form>
+                                            </div>
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            class="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        >
+                                            Praticien
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                            onclick={() =>
+                                                toggleSort("patient")}
+                                        >
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
+                                                Patient
+                                                {#if tableSortColumn === "patient"}
+                                                    {tableSortDirection ===
+                                                    "asc"
+                                                        ? "↑"
+                                                        : "↓"}
                                                 {/if}
-                                                <button
-                                                    onclick={() =>
-                                                        openBookingModal(appt)}
-                                                    class="px-4 py-3 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition-colors text-2xl font-bold min-w-[50px]"
-                                                    title="Edit"
+                                            </div>
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                            onclick={() => toggleSort("doctor")}
+                                        >
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
+                                                Doctor
+                                                {#if tableSortColumn === "doctor"}
+                                                    {tableSortDirection ===
+                                                    "asc"
+                                                        ? "↑"
+                                                        : "↓"}
+                                                {/if}
+                                            </div>
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                            onclick={() => toggleSort("type")}
+                                        >
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
+                                                Type
+                                                {#if tableSortColumn === "type"}
+                                                    {tableSortDirection ===
+                                                    "asc"
+                                                        ? "↑"
+                                                        : "↓"}
+                                                {/if}
+                                            </div>
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                            onclick={() => toggleSort("status")}
+                                        >
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
+                                                Status
+                                                {#if tableSortColumn === "status"}
+                                                    {tableSortDirection ===
+                                                    "asc"
+                                                        ? "↑"
+                                                        : "↓"}
+                                                {/if}
+                                            </div>
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            class="px-3 py-2 text-left text-[10px] font-bold text-gray-700 uppercase tracking-wider"
+                                        >
+                                            Notes
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            class="px-3 py-2 text-left text-[10px] font-bold text-gray-700 uppercase tracking-wider sticky right-0 bg-gray-50 z-30 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.1)]"
+                                        >
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody
+                                    class="bg-white divide-y divide-gray-200"
+                                >
+                                    {#each tableAppointments as appt}
+                                        <tr
+                                            class="group hover:bg-slate-50 {selectedRows.has(
+                                                appt.id,
+                                            )
+                                                ? 'bg-indigo-50'
+                                                : 'bg-white'} cursor-pointer transition-colors"
+                                            ondblclick={() =>
+                                                openBookingModal(appt)}
+                                            title="Double-click to edit appointment"
+                                        >
+                                            <td
+                                                class="px-3 py-2 whitespace-nowrap"
+                                                onclick={(e) =>
+                                                    e.stopPropagation()}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedRows.has(
+                                                        appt.id,
+                                                    )}
+                                                    onchange={() =>
+                                                        toggleRowSelection(
+                                                            appt.id,
+                                                        )}
                                                     ondblclick={(e) =>
                                                         e.stopPropagation()}
+                                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+                                                />
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 whitespace-nowrap text-xs text-gray-900"
+                                            >
+                                                {new Date(
+                                                    appt.start_time,
+                                                ).toLocaleDateString()}
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 font-medium"
+                                            >
+                                                {new Date(
+                                                    appt.start_time,
+                                                ).toLocaleTimeString([], {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })}
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 whitespace-nowrap"
+                                            >
+                                                <div
+                                                    class="flex items-center gap-1.5"
                                                 >
-                                                    ✎
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {:else}
-                                    <tr>
-                                        <td
-                                            colspan="9"
-                                            class="px-4 py-12 text-center text-gray-500 italic"
-                                        >
-                                            {$t(
-                                                "assistant.dashboard.tabs.schedule.empty",
-                                            )}
-                                        </td>
-                                    </tr>
-                                {/each}
-                            </tbody>
-                        </table>
+                                                    <span
+                                                        class="w-2 h-2 rounded-full"
+                                                        style="background-color: {appt.doctor_color ||
+                                                            '#6366f1'}"
+                                                    ></span>
+                                                    <span
+                                                        class="text-[10px] font-bold text-gray-700 capitalize"
+                                                        >{appt.doctor_name ||
+                                                            "N/A"}</span
+                                                    >
+                                                </div>
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 text-xs text-gray-900"
+                                            >
+                                                <div
+                                                    class="flex items-center gap-2"
+                                                >
+                                                    {#if appt.relationship_to_primary}
+                                                        <span
+                                                            title="Child/Dependent"
+                                                            >👶</span
+                                                        >
+                                                    {:else}
+                                                        <span title="Adult"
+                                                            >👤</span
+                                                        >
+                                                    {/if}
+                                                    <span
+                                                        class="font-bold max-w-[120px] truncate block"
+                                                        title={appt.patient_name}
+                                                        >{appt.patient_name}</span
+                                                    >
+                                                    {#if appt.gender === "Male"}
+                                                        <span
+                                                            class="text-blue-500 text-xs"
+                                                            title={$t(
+                                                                "patients.male",
+                                                            )}>♂️</span
+                                                        >
+                                                    {:else if appt.gender === "Female"}
+                                                        <span
+                                                            class="text-pink-500 text-xs"
+                                                            title={$t(
+                                                                "patients.female",
+                                                            )}>♀️</span
+                                                        >
+                                                    {:else if appt.gender === "Other"}
+                                                        <span
+                                                            class="text-purple-500 text-xs"
+                                                            title={$t(
+                                                                "patients.other",
+                                                            )}>⚧️</span
+                                                        >
+                                                    {/if}
+                                                </div>
+                                                {#if appt.date_of_birth}
+                                                    {@const birth = new Date(
+                                                        appt.date_of_birth,
+                                                    )}
+                                                    {@const now = new Date()}
+                                                    {@const diffMonths =
+                                                        (now.getFullYear() -
+                                                            birth.getFullYear()) *
+                                                            12 +
+                                                        now.getMonth() -
+                                                        birth.getMonth() -
+                                                        (now.getDate() <
+                                                        birth.getDate()
+                                                            ? 1
+                                                            : 0)}
+                                                    {@const years = Math.floor(
+                                                        diffMonths / 12,
+                                                    )}
+                                                    {@const months =
+                                                        diffMonths % 12}
+                                                    <span
+                                                        class="text-xs text-gray-500"
+                                                        >({years > 0
+                                                            ? `${years} ${years === 1 ? "year" : "years"}`
+                                                            : ""}{years > 0 &&
+                                                        months > 0
+                                                            ? " "
+                                                            : ""}{months > 0
+                                                            ? `${months} ${months === 1 ? "month" : "months"}`
+                                                            : ""}{years === 0 &&
+                                                        months === 0
+                                                            ? "Newborn"
+                                                            : ""})</span
+                                                    >
+                                                {/if}
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 whitespace-nowrap text-xs text-gray-700"
+                                            >
+                                                <span
+                                                    class="max-w-[100px] truncate block"
+                                                    title={appt.doctor_name ||
+                                                        ""}
+                                                >
+                                                    {appt.doctor_name || "N/A"}
+                                                </span>
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 whitespace-nowrap text-xs text-gray-600"
+                                            >
+                                                {$t(
+                                                    `assistant.dashboard.appointment.type.${appt.appointment_type}`,
+                                                )}
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 whitespace-nowrap"
+                                            >
+                                                <span
+                                                    class="px-1.5 py-0.5 text-[10px] font-bold rounded-full uppercase
+                                                {appt.status === 'confirmed'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : appt.status ===
+                                                            'in_progress'
+                                                          ? 'bg-amber-100 text-amber-800'
+                                                          : appt.status ===
+                                                              'completed'
+                                                            ? 'bg-slate-100 text-slate-600'
+                                                            : appt.status ===
+                                                                'cancelled'
+                                                              ? 'bg-red-100 text-red-800'
+                                                              : appt.status ===
+                                                                  'no_show'
+                                                                ? 'bg-gray-100 text-gray-700'
+                                                                : 'bg-blue-100 text-blue-800'}"
+                                                >
+                                                    {$t(
+                                                        `assistant.dashboard.appointment.status.${appt.status}`,
+                                                    )}
+                                                </span>
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 text-xs text-gray-500 max-w-[120px] truncate italic"
+                                                title={appt.notes || ""}
+                                            >
+                                                {appt.notes || "-"}
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 whitespace-nowrap text-xs font-medium sticky right-0 z-20 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.1)] group-hover:bg-slate-50 transition-colors {selectedRows.has(
+                                                    appt.id,
+                                                )
+                                                    ? 'bg-indigo-50'
+                                                    : 'bg-white'}"
+                                                onclick={(e) =>
+                                                    e.stopPropagation()}
+                                            >
+                                                <div
+                                                    class="flex items-center gap-2"
+                                                >
+                                                    {#if appt.status !== "cancelled" && appt.status !== "no_show"}
+                                                        {#if !appt.checked_in}
+                                                            <button
+                                                                onclick={() =>
+                                                                    openCheckInModal(
+                                                                        appt,
+                                                                    )}
+                                                                class="p-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors text-lg border border-blue-100 flex items-center justify-center min-w-[32px]"
+                                                                title="Enregistrer l'arrivée (Check-in)"
+                                                            >
+                                                                📥
+                                                            </button>
+                                                        {:else}
+                                                            <span
+                                                                class="px-2 py-1 bg-green-100 text-green-700 rounded-lg font-bold text-[10px] flex items-center gap-1"
+                                                                title="Arrived"
+                                                            >
+                                                                <span
+                                                                    class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"
+                                                                ></span>
+                                                                ARR
+                                                            </span>
+                                                        {/if}
+                                                    {/if}
+                                                    {#if appt.status === "scheduled"}
+                                                        <form
+                                                            method="POST"
+                                                            action="?/updateStatus"
+                                                            use:enhance
+                                                            class="inline"
+                                                        >
+                                                            <input
+                                                                type="hidden"
+                                                                name="appointment_id"
+                                                                value={appt.id}
+                                                            />
+                                                            <input
+                                                                type="hidden"
+                                                                name="status"
+                                                                value="confirmed"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onclick={(e) =>
+                                                                    showConfirmation(
+                                                                        e,
+                                                                        "single",
+                                                                        "confirmed",
+                                                                        appt.id,
+                                                                    )}
+                                                                class="p-1.5 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-md transition-colors text-lg border border-green-100 flex items-center justify-center min-w-[32px]"
+                                                                title="Confirmer le rendez-vous"
+                                                                ondblclick={(
+                                                                    e,
+                                                                ) =>
+                                                                    e.stopPropagation()}
+                                                            >
+                                                                ✅
+                                                            </button>
+                                                        </form>
+                                                    {/if}
+                                                    <button
+                                                        onclick={() =>
+                                                            openBookingModal(
+                                                                appt,
+                                                            )}
+                                                        class="p-1.5 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md transition-colors text-lg border border-indigo-100 flex items-center justify-center min-w-[32px]"
+                                                        title="Modifier le rendez-vous"
+                                                        ondblclick={(e) =>
+                                                            e.stopPropagation()}
+                                                    >
+                                                        📝
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {:else}
+                                        <tr>
+                                            <td
+                                                colspan="9"
+                                                class="px-4 py-12 text-center text-gray-500 italic"
+                                            >
+                                                {$t(
+                                                    "assistant.dashboard.tabs.schedule.empty",
+                                                )}
+                                            </td>
+                                        </tr>
+                                    {/each}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 {/if}
             </div>
@@ -1828,12 +1974,6 @@
                 <h3 class="text-lg font-bold text-gray-900">
                     {$t("assistant.dashboard.tabs.patients.header")}
                 </h3>
-                <button
-                    onclick={() => (isPatientModalOpen = true)}
-                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-bold shadow-lg transition-all"
-                >
-                    {$t("assistant.dashboard.tabs.patients.addButton")}
-                </button>
             </div>
             <div class="p-6">
                 <!-- Stats Section -->
@@ -2178,8 +2318,8 @@
                     <span
                         class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-widest"
                     >
-                        {filteredAppointments.filter(
-                            (a) =>
+                        {data.appointments.filter(
+                            (a: any) =>
                                 a.waiting_room_status === "waiting" &&
                                 new Date(a.start_time).toDateString() ===
                                     new Date().toDateString(),
@@ -2188,7 +2328,7 @@
                 </div>
             </div>
             <div class="p-6">
-                {#if filteredAppointments.filter((a) => a.waiting_room_status === "waiting" && new Date(a.start_time).toDateString() === new Date().toDateString()).length === 0}
+                {#if data.appointments.filter((a: any) => a.waiting_room_status === "waiting" && new Date(a.start_time).toDateString() === new Date().toDateString()).length === 0}
                     <div class="py-12 text-center">
                         <div class="text-6xl mb-4">🏥</div>
                         <h3 class="text-gray-500 italic">
@@ -2199,7 +2339,7 @@
                     <div
                         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
                     >
-                        {#each filteredAppointments.filter((a) => a.waiting_room_status === "waiting" && new Date(a.start_time).toDateString() === new Date().toDateString()) as appt}
+                        {#each data.appointments.filter((a: any) => a.waiting_room_status === "waiting" && new Date(a.start_time).toDateString() === new Date().toDateString()) as appt}
                             <div
                                 class="p-4 border border-gray-100 rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all bg-white relative overflow-hidden"
                             >
@@ -2224,6 +2364,27 @@
                                                 " ",
                                             )}
                                         </p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between"
+                                >
+                                    <span
+                                        class="text-[10px] font-bold text-gray-400 uppercase tracking-widest"
+                                        >Praticien</span
+                                    >
+                                    <div
+                                        class="flex items-center gap-1.5 bg-gray-50 px-2 py-0.5 rounded-full"
+                                    >
+                                        <span
+                                            class="w-2 h-2 rounded-full"
+                                            style="background-color: {appt.doctor_color ||
+                                                '#6366f1'}"
+                                        ></span>
+                                        <span
+                                            class="text-[10px] font-bold text-gray-700"
+                                            >{appt.doctor_name}</span
+                                        >
                                     </div>
                                 </div>
 
@@ -3243,6 +3404,25 @@
                                     <div>
                                         <label
                                             class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
+                                            >Docteur concerné</label
+                                        >
+                                        <select
+                                            name="doctor_id"
+                                            class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-bold"
+                                        >
+                                            <option value=""
+                                                >Tous / Non spécifié</option
+                                            >
+                                            {#each data.doctors as dr}
+                                                <option value={dr.id}
+                                                    >{dr.full_name}</option
+                                                >
+                                            {/each}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
                                             >{$t(
                                                 "assistant.dashboard.payment.fields.paymentMethod",
                                             )}</label
@@ -3540,5 +3720,264 @@
                 {/if}
             </div>
         </div>
+    {/if}
+
+    <!-- WALK-IN MODAL -->
+    {#if isWalkInModalOpen}
+        <div
+            class="relative z-[60] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+        >
+            <div
+                class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"
+                onclick={() => (isWalkInModalOpen = false)}
+            ></div>
+            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                <div
+                    class="flex min-h-full items-center justify-center p-4 text-center sm:p-0"
+                >
+                    <div
+                        class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+                    >
+                        <form
+                            method="POST"
+                            action="?/createWalkIn"
+                            use:enhance={() => {
+                                errorMessage = "";
+                                return async ({ result, update }) => {
+                                    if (result.type === "success") {
+                                        isWalkInModalOpen = false;
+                                        const { invalidate } = await import(
+                                            "$app/navigation"
+                                        );
+                                        await invalidate("appointments:today");
+                                        await invalidate("waiting-room:status");
+                                    } else {
+                                        errorMessage =
+                                            (result.data as any)?.error ||
+                                            "Failed to create walk-in";
+                                    }
+                                    await update();
+                                };
+                            }}
+                        >
+                            <div class="p-6">
+                                <div
+                                    class="flex items-center justify-between mb-6"
+                                >
+                                    <h3
+                                        class="text-xl font-black text-gray-900 flex items-center gap-2"
+                                    >
+                                        <span
+                                            class="w-2 h-8 bg-orange-500 rounded-full"
+                                        ></span>
+                                        🚨 Urgence / Sans RDV
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        onclick={() =>
+                                            (isWalkInModalOpen = false)}
+                                        class="text-gray-400 hover:text-gray-600 font-black"
+                                        >✕</button
+                                    >
+                                </div>
+
+                                {#if errorMessage}
+                                    <div
+                                        class="mb-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm font-bold"
+                                    >
+                                        {errorMessage}
+                                    </div>
+                                {/if}
+
+                                <div class="space-y-5">
+                                    <div>
+                                        <label
+                                            class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5"
+                                            >Patient</label
+                                        >
+                                        <select
+                                            name="patient_id"
+                                            required
+                                            class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-bold focus:ring-2 focus:ring-orange-500 transition-all"
+                                        >
+                                            <option value=""
+                                                >Sélectionner un patient</option
+                                            >
+                                            {#each data.patients as p}
+                                                <option value={p.id}
+                                                    >{p.full_name} ({p.phone})</option
+                                                >
+                                            {/each}
+                                        </select>
+                                        <p
+                                            class="mt-1.5 text-[10px] text-gray-400 font-medium"
+                                        >
+                                            Le patient n'est pas dans la liste ?
+                                            Créez-le d'abord dans l'onglet
+                                            "Patients".
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label
+                                            class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5"
+                                            >Docteur à Assigné</label
+                                        >
+                                        <select
+                                            name="doctor_id"
+                                            required
+                                            class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-bold focus:ring-2 focus:ring-orange-500 transition-all"
+                                        >
+                                            <option value=""
+                                                >Sélectionner un docteur</option
+                                            >
+                                            {#each data.doctors as dr}
+                                                <option value={dr.id}
+                                                    >{dr.full_name}</option
+                                                >
+                                            {/each}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label
+                                            class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5"
+                                            >Motif ou Note Rapide</label
+                                        >
+                                        <textarea
+                                            name="reason"
+                                            rows="2"
+                                            class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium focus:ring-2 focus:ring-orange-500 transition-all"
+                                            placeholder="Ex: Rage de dent, consultation urgente..."
+                                        ></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                class="bg-gray-50 px-6 py-4 flex flex-row-reverse gap-3"
+                            >
+                                <button
+                                    type="submit"
+                                    class="inline-flex justify-center rounded-xl bg-orange-600 px-6 py-3 text-xs font-black text-white shadow-lg hover:bg-orange-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 transition-all uppercase tracking-widest"
+                                >
+                                    Admettre en Salle d'Attente
+                                </button>
+                                <button
+                                    type="button"
+                                    onclick={() => (isWalkInModalOpen = false)}
+                                    class="inline-flex justify-center rounded-xl bg-white px-6 py-3 text-xs font-black text-gray-700 shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-gray-50 transition-all uppercase tracking-widest"
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
+
+    <!-- Speed Dial FAB -->
+    <div class="fixed bottom-8 right-8 z-[101] flex flex-col items-end gap-3">
+        {#if isFabOpen}
+            <div class="flex flex-col items-end gap-3 mb-2">
+                <!-- Action 1: Urgence -->
+                <div
+                    class="flex items-center gap-3 group"
+                    transition:fly={{ y: 20, duration: 200, delay: 0 }}
+                >
+                    <span
+                        class="bg-slate-800 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg shadow-xl whitespace-nowrap uppercase tracking-widest"
+                    >
+                        Urgence / Sans RDV
+                    </span>
+                    <button
+                        type="button"
+                        onclick={() => {
+                            isWalkInModalOpen = true;
+                            isFabOpen = false;
+                        }}
+                        class="w-12 h-12 bg-rose-500 text-white rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-xl hover:bg-rose-600"
+                    >
+                        🚨
+                    </button>
+                </div>
+
+                <!-- Action 2: Nouveau RDV -->
+                <div
+                    class="flex items-center gap-3 group"
+                    transition:fly={{ y: 20, duration: 200, delay: 50 }}
+                >
+                    <span
+                        class="bg-slate-800 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg shadow-xl whitespace-nowrap uppercase tracking-widest"
+                    >
+                        Nouveau RDV
+                    </span>
+                    <button
+                        type="button"
+                        onclick={() => {
+                            openBookingModal();
+                            isFabOpen = false;
+                        }}
+                        class="w-12 h-12 bg-indigo-500 text-white rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-xl hover:bg-indigo-600"
+                    >
+                        📅
+                    </button>
+                </div>
+
+                <!-- Action 3: Nouveau Patient -->
+                <div
+                    class="flex items-center gap-3 group"
+                    transition:fly={{ y: 20, duration: 200, delay: 100 }}
+                >
+                    <span
+                        class="bg-slate-800 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg shadow-xl whitespace-nowrap uppercase tracking-widest"
+                    >
+                        Nouveau Patient
+                    </span>
+                    <button
+                        type="button"
+                        onclick={() => {
+                            isPatientModalOpen = true;
+                            isFabOpen = false;
+                        }}
+                        class="w-12 h-12 bg-emerald-500 text-white rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-xl hover:bg-emerald-600"
+                    >
+                        👤
+                    </button>
+                </div>
+            </div>
+        {/if}
+
+        <!-- Main Trigger -->
+        <button
+            type="button"
+            onclick={(e) => {
+                e.stopPropagation();
+                isFabOpen = !isFabOpen;
+            }}
+            class="w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl shadow-indigo-500/50 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 group relative z-[101]"
+        >
+            <span
+                class="text-3xl font-light transition-transform duration-300 {isFabOpen
+                    ? 'rotate-45'
+                    : 'rotate-0'}"
+                style="margin-top: -2px;">+</span
+            >
+        </button>
+    </div>
+
+    <!-- Backdrop to close FAB on outside click -->
+    {#if isFabOpen}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+            class="fixed inset-0 z-[100] bg-gray-900/10 backdrop-blur-[2px]"
+            transition:fade={{ duration: 200 }}
+            onclick={() => (isFabOpen = false)}
+        ></div>
     {/if}
 </div>

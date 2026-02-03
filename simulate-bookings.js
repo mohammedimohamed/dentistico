@@ -21,11 +21,25 @@ function ensureSeedData() {
     const patients = db.prepare("SELECT count(*) as count FROM patients").get();
 
     if (!doctor) {
-        console.log('🌱 Seeding sample doctor...');
+        console.log('🌱 Seeding sample doctors...');
         db.prepare(`
-            INSERT INTO users (username, password_hash, full_name, role)
-            VALUES ('doctor_sim', 'simulated_hash', 'Dr. Simone Lator', 'doctor')
+            INSERT INTO users (username, password_hash, full_name, role, color_code)
+            VALUES ('dr_benali', 'simulated_hash', 'Dr. Benali', 'doctor', '#4F46E5')
         `).run();
+        db.prepare(`
+            INSERT INTO users (username, password_hash, full_name, role, color_code)
+            VALUES ('dr_messaoudi', 'simulated_hash', 'Dr. Messaoudi', 'doctor', '#8B5CF6')
+        `).run();
+    } else {
+        // Check if we have at least 2 doctors for better simulation
+        const doctorsCount = db.prepare("SELECT count(*) as count FROM users WHERE role = 'doctor'").get().count;
+        if (doctorsCount < 2) {
+            console.log('🌱 Adding second doctor for multi-doctor simulation...');
+            db.prepare(`
+                INSERT INTO users (username, password_hash, full_name, role, color_code)
+                VALUES ('dr_alt', 'simulated_hash', 'Dr. Messaoudi (Sim)', 'doctor', '#EC4899')
+            `).run();
+        }
     }
 
     if (patients.count === 0) {
@@ -79,8 +93,8 @@ function ensureSeedData() {
     // Force today appointments for simulation victims
     const todayAppts = db.prepare("SELECT count(*) as count FROM appointments WHERE date(start_time) = date('now')").get();
     if (todayAppts.count < 3) {
-        console.log('🌱 Creating immediate appointments for today...');
-        const docId = db.prepare("SELECT id FROM users WHERE role = 'doctor' LIMIT 1").get().id;
+        console.log('🌱 Creating immediate appointments for today across multiple doctors...');
+        const doctors = db.prepare("SELECT id FROM users WHERE role = 'doctor'").all();
         const patientIds = db.prepare("SELECT id FROM patients").all().map(p => p.id);
 
         const now = new Date();
@@ -88,6 +102,7 @@ function ensureSeedData() {
             const start = new Date(now.getTime() + offset * 60000);
             const end = new Date(start.getTime() + 30 * 60000);
             const pId = patientIds[Math.floor(Math.random() * patientIds.length)];
+            const dId = doctors[Math.floor(Math.random() * doctors.length)].id;
 
             db.prepare(`
                 INSERT INTO appointments (
@@ -95,7 +110,7 @@ function ensureSeedData() {
                     duration_minutes, status, appointment_type, notes, 
                     created_by_user_id, created_at
                 ) VALUES (?, ?, ?, ?, 30, 'confirmed', 'consultation', 'Simulated today booking', ?, datetime('now'))
-            `).run(pId, docId, formatSqlDate(start), formatSqlDate(end), docId);
+            `).run(pId, dId, formatSqlDate(start), formatSqlDate(end), dId);
         });
     }
 }

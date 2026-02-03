@@ -50,25 +50,22 @@
                 "events",
             );
 
-            // Using batchRendering for performance and reliability
             calendar.batchRendering(() => {
-                // Remove all existing dynamic event sources
+                // Remove all existing event sources
                 const sources = calendar.getEventSources();
-                sources.forEach((source) => {
-                    if (source.id === "dynamic-events") source.remove();
-                });
+                sources.forEach((source) => source.remove());
 
-                // Add new events source
+                // Add new events as a source
                 calendar.addEventSource({
                     id: "dynamic-events",
                     events: events,
                 });
             });
 
-            // Force update size to handle visibility changes (like modal opening/transitions)
+            // Force update size after a short delay
             setTimeout(() => {
                 if (calendar) calendar.updateSize();
-            }, 300);
+            }, 500);
         }
     });
 
@@ -82,6 +79,7 @@
 
     function toggleFullscreen() {
         isFullscreen = !isFullscreen;
+        // Immediate size update for responsive feel
         if (calendar) {
             setTimeout(() => {
                 calendar.updateSize();
@@ -90,12 +88,6 @@
     }
 
     onMount(async () => {
-        console.log(
-            "📅 FullCalendar: Initializing with",
-            events.length,
-            "events",
-        );
-
         calendar = new Calendar(calendarEl, {
             plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
             initialView,
@@ -115,7 +107,8 @@
             dateClick: onDateClick,
             eventMouseEnter: onEventMouseEnter,
             eventMouseLeave: onEventMouseLeave,
-            height: isFullscreen ? "100vh" : height,
+            height: "auto",
+            contentHeight: "auto",
             nowIndicator: true,
             allDaySlot: false,
             slotMinTime: "08:00:00",
@@ -136,89 +129,51 @@
                 minute: "2-digit",
                 hour12: false,
             },
-            // Add initial events
-            events: events,
+            events: [],
         });
 
         calendar.render();
-        console.log("📅 FullCalendar: Rendered");
 
-        // Specific clinic settings fetch to override slot boundaries and working days
+        // Specific clinic settings
         try {
             const res = await fetch("/api/admin/clinic-settings");
             const data = await res.json();
-
-            if (calendar) {
-                if (data.settings) {
-                    const start = data.settings.work_start_time || "09:00";
-                    const end = data.settings.work_end_time || "18:00";
-
-                    calendar.setOption(
-                        "slotMinTime",
-                        `${start.split(":")[0].padStart(2, "0")}:00:00`,
-                    );
-                    calendar.setOption(
-                        "slotMaxTime",
-                        `${(parseInt(end.split(":")[0]) + 1).toString().padStart(2, "0")}:00:00`,
-                    );
-                }
-
-                if (data.workingDays) {
-                    const hiddenDays = data.workingDays
-                        .filter((d: any) => d.is_working === 0)
-                        .map((d: any) => d.day_of_week);
-
-                    calendar.setOption("hiddenDays", hiddenDays);
-
-                    const businessHours = data.workingDays
-                        .filter((d: any) => d.is_working === 1)
-                        .map((d: any) => ({
-                            daysOfWeek: [d.day_of_week],
-                            startTime:
-                                d.custom_start_time ||
-                                data.settings?.work_start_time ||
-                                "09:00",
-                            endTime:
-                                d.custom_end_time ||
-                                data.settings?.work_end_time ||
-                                "18:00",
-                        }));
-
-                    calendar.setOption("businessHours", businessHours);
-                }
+            if (calendar && data.settings) {
+                const start = data.settings.work_start_time || "09:00";
+                const end = data.settings.work_end_time || "18:00";
+                calendar.setOption(
+                    "slotMinTime",
+                    `${start.split(":")[0].padStart(2, "0")}:00:00`,
+                );
+                calendar.setOption(
+                    "slotMaxTime",
+                    `${(parseInt(end.split(":")[0]) + 1).toString().padStart(2, "0")}:00:00`,
+                );
             }
         } catch (e) {
-            console.warn("Could not load clinic settings for calendar", e);
+            console.warn("Could not load clinic settings", e);
         }
     });
 
     onDestroy(() => {
-        if (calendar) {
-            calendar.destroy();
-        }
+        if (calendar) calendar.destroy();
     });
 </script>
 
-<div class="relative {isFullscreen ? 'fixed inset-0 z-50 bg-white p-4' : ''}">
-    {#if isFullscreen}
-        <button
-            onclick={toggleFullscreen}
-            class="absolute top-6 right-6 z-10 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-sm shadow-lg transition-all flex items-center gap-2"
-        >
-            <span>✕</span>
-            <span>Exit Fullscreen</span>
-        </button>
-    {:else}
-        <button
-            onclick={toggleFullscreen}
-            class="absolute top-2 right-2 z-10 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-xs shadow-md transition-all flex items-center gap-1"
-        >
-            <span>⛶</span>
-            <span>Fullscreen</span>
-        </button>
-    {/if}
+<div
+    class={isFullscreen
+        ? "fixed inset-0 z-[9999] bg-white h-screen w-screen p-6 overflow-hidden"
+        : "relative min-h-[700px]"}
+>
+    <button
+        class="absolute top-2 left-2 z-[50] px-3 py-1.5 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 text-xs font-bold transition-all flex items-center gap-2"
+        onclick={toggleFullscreen}
+    >
+        <span>{isFullscreen ? "✕" : "⛶"}</span>
+        <span>{isFullscreen ? "Quitter Plein Écran" : "Plein Écran"}</span>
+    </button>
 
-    <div bind:this={calendarEl} class="full-calendar-container"></div>
+    <div bind:this={calendarEl} class="full-calendar-container h-full"></div>
 </div>
 
 <style>

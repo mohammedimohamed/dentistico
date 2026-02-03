@@ -289,25 +289,7 @@ export function init_db() {
     };
 
     // Apply necessary columns that might be missing in older DB versions
-    addColumnIfNotExists('users', 'phone', 'TEXT');
-    addColumnIfNotExists('clinic_settings', 'require_postpone_reason', 'INTEGER DEFAULT 0');
-    addColumnIfNotExists('clinic_settings', 'require_cancel_reason', 'INTEGER DEFAULT 0');
-    addColumnIfNotExists('appointments', 'cancellation_reason_id', 'INTEGER REFERENCES cancellation_reasons(id)');
-    addColumnIfNotExists('appointments', 'cancellation_custom_reason', 'TEXT');
-    addColumnIfNotExists('appointments', 'cancellation_timestamp', 'TEXT');
-    addColumnIfNotExists('appointments', 'cancelled_by_user_id', 'INTEGER REFERENCES users(id)');
 
-    // Check-in tracking migrations
-    addColumnIfNotExists('appointments', 'checked_in', 'INTEGER DEFAULT 0');
-    addColumnIfNotExists('appointments', 'check_in_time', 'TEXT');
-    addColumnIfNotExists('appointments', 'checked_in_by', 'INTEGER REFERENCES users(id)');
-    addColumnIfNotExists('appointments', 'waiting_room_status', "TEXT CHECK(waiting_room_status IN ('not_arrived', 'waiting', 'called_in', 'in_treatment')) DEFAULT 'not_arrived'");
-
-    // Timer Alert Settings Migrations
-    addColumnIfNotExists('clinic_settings', 'timer_alert_1_minutes', 'INTEGER DEFAULT 15');
-    addColumnIfNotExists('clinic_settings', 'timer_alert_1_beeps', 'INTEGER DEFAULT 1');
-    addColumnIfNotExists('clinic_settings', 'timer_alert_2_minutes', 'INTEGER DEFAULT 30');
-    addColumnIfNotExists('clinic_settings', 'timer_alert_2_beeps', 'INTEGER DEFAULT 2');
 
     db.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_checkin ON appointments(checked_in, waiting_room_status, check_in_time);`);
 
@@ -655,6 +637,30 @@ export function init_db() {
         COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
         FROM patients p;
     `);
+
+    // Apply necessary columns that might be missing in older DB versions
+    addColumnIfNotExists('users', 'phone', 'TEXT');
+    addColumnIfNotExists('users', 'color_code', "TEXT DEFAULT '#3B82F6'");
+    addColumnIfNotExists('clinic_settings', 'require_postpone_reason', 'INTEGER DEFAULT 0');
+    addColumnIfNotExists('clinic_settings', 'require_cancel_reason', 'INTEGER DEFAULT 0');
+    addColumnIfNotExists('appointments', 'cancellation_reason_id', 'INTEGER REFERENCES cancellation_reasons(id)');
+    addColumnIfNotExists('appointments', 'cancellation_custom_reason', 'TEXT');
+    addColumnIfNotExists('appointments', 'cancellation_timestamp', 'TEXT');
+    addColumnIfNotExists('appointments', 'cancelled_by_user_id', 'INTEGER REFERENCES users(id)');
+    addColumnIfNotExists('appointments', 'created_by_user_id', 'INTEGER REFERENCES users(id)');
+
+    // Check-in tracking migrations
+    addColumnIfNotExists('appointments', 'checked_in', 'INTEGER DEFAULT 0');
+    addColumnIfNotExists('appointments', 'check_in_time', 'TEXT');
+    addColumnIfNotExists('appointments', 'checked_in_by', 'INTEGER REFERENCES users(id)');
+    addColumnIfNotExists('appointments', 'waiting_room_status', "TEXT CHECK(waiting_room_status IN ('not_arrived', 'waiting', 'called_in', 'in_treatment')) DEFAULT 'not_arrived'");
+
+    // Timer Alert Settings Migrations
+    addColumnIfNotExists('clinic_settings', 'timer_alert_1_minutes', 'INTEGER DEFAULT 15');
+    addColumnIfNotExists('clinic_settings', 'timer_alert_1_beeps', 'INTEGER DEFAULT 1');
+    addColumnIfNotExists('clinic_settings', 'timer_alert_2_minutes', 'INTEGER DEFAULT 30');
+    addColumnIfNotExists('clinic_settings', 'timer_alert_2_beeps', 'INTEGER DEFAULT 2');
+    addColumnIfNotExists('payments', 'doctor_id', 'INTEGER REFERENCES users(id)');
 
     // Insert default categories
     const defaultCategories = [
@@ -1716,7 +1722,7 @@ export function updateUserPassword(id: number, passwordHash: string) {
 }
 
 export function getDoctors() {
-    return db.prepare("SELECT id, full_name FROM users WHERE role = 'doctor'").all();
+    return db.prepare("SELECT id, full_name, color_code FROM users WHERE role = 'doctor'").all();
 }
 
 export function getClinicSettings() {
@@ -1749,8 +1755,9 @@ export function getPatientsEnhanced({
     const params: any[] = [];
 
     if (searchTerm) {
-        whereClause += ' AND p.full_name LIKE ?';
-        params.push(`% ${searchTerm}% `);
+        whereClause += ' AND (p.full_name LIKE ? OR p.phone LIKE ? OR p.email LIKE ? OR p.secondary_phone LIKE ?)';
+        const searchPattern = `%${searchTerm}%`;
+        params.push(searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
     const ageExpr = `((strftime('%Y', 'now') - strftime('%Y', p.date_of_birth)) - (strftime('%m-%d', 'now') < strftime('%m-%d', p.date_of_birth)))`;
@@ -1796,8 +1803,9 @@ export function getPatientsCount(searchTerm?: string, filter?: string) {
     const params: any[] = [];
 
     if (searchTerm) {
-        whereClause += ' AND p.full_name LIKE ?';
-        params.push(`% ${searchTerm}% `);
+        whereClause += ' AND (p.full_name LIKE ? OR p.phone LIKE ? OR p.email LIKE ? OR p.secondary_phone LIKE ?)';
+        const searchPattern = `%${searchTerm}%`;
+        params.push(searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
     if (filter) {
@@ -1932,7 +1940,7 @@ export function searchPatientsByNameLimited(searchTerm: string) {
         WHERE p.is_archived = 0 AND p.full_name LIKE ?
         ORDER BY p.full_name ASC
         LIMIT 100
-        `).all(` % ${searchTerm}% `);
+        `).all(`%${searchTerm}%`);
 }
 
 export function getArchivedPatientsLimited() {
@@ -2041,6 +2049,7 @@ export function getAllUpcomingAppointments() {
         p.email as patient_email, p.date_of_birth, p.gender,
         p.secondary_email, p.secondary_phone,
         u.full_name as doctor_name,
+        u.color_code as doctor_color,
         b.full_name as booked_by_name,
         p.relationship_to_primary,
         creator.full_name as created_by_name,
@@ -2072,6 +2081,16 @@ export function getPatientAppointments(patientId: number) {
         JOIN users u ON a.doctor_id = u.id
         WHERE a.patient_id = ?
         ORDER BY a.start_time DESC
+            `).all(patientId);
+}
+
+export function getPatientPayments(patientId: number) {
+    return db.prepare(`
+        SELECT p.*, u.full_name as doctor_name 
+        FROM payments p
+        LEFT JOIN users u ON p.doctor_id = u.id
+        WHERE p.patient_id = ?
+        ORDER BY p.payment_date DESC
             `).all(patientId);
 }
 
@@ -2200,50 +2219,56 @@ export function updateTreatment(id: number, treatmentData: any) {
 export function getTreatmentsByPatient(patientId: number) {
     return db.prepare(`
         SELECT
-        ('general_' || id) as unique_id,
-        id,
-        treatment_date,
-        tooth_number,
-        treatment_type,
-        description,
-        cost,
-        status,
+        ('general_' || t.id) as unique_id,
+        t.id,
+        t.treatment_date,
+        t.tooth_number,
+        t.treatment_type,
+        t.description,
+        t.cost,
+        t.status,
         'general' as source,
         NULL as surfaces,
-        '#6B7280' as color, --Default gray for general acts
-            diagnosis,
+        '#6B7280' as color, -- Default gray for general acts
+        t.diagnosis,
         '' as cdt_code,
         0 as is_custom,
         '' as notes,
-        cost as fee,
-        id as treatment_id,
-        NULL as dental_treatment_id
-        FROM treatments 
-        WHERE patient_id = ?
+        t.cost as fee,
+        t.id as treatment_id,
+        NULL as dental_treatment_id,
+        u.full_name as doctor_name,
+        u.color_code as doctor_color
+        FROM treatments t
+        LEFT JOIN users u ON t.doctor_id = u.id
+        WHERE t.patient_id = ?
 
         UNION ALL
 
-    SELECT
-        ('dental_' || id) as unique_id,
-        id,
-        COALESCE(date_performed, created_at) as treatment_date,
-        tooth_number,
-        treatment_type,
-        notes as description,
-        fee as cost,
-        status,
+        SELECT
+        ('dental_' || dt.id) as unique_id,
+        dt.id,
+        COALESCE(dt.date_performed, dt.created_at) as treatment_date,
+        dt.tooth_number,
+        dt.treatment_type,
+        dt.notes as description,
+        dt.fee as cost,
+        dt.status,
         'dental' as source,
-        surfaces,
-        color,
-        diagnosis,
-        cdt_code,
-        is_custom,
-        notes,
-        fee,
+        dt.surfaces,
+        dt.color,
+        dt.diagnosis,
+        dt.cdt_code,
+        dt.is_custom,
+        dt.notes,
+        dt.fee,
         NULL as treatment_id,
-        id as dental_treatment_id
-        FROM dental_treatments 
-        WHERE patient_id = ?
+        dt.id as dental_treatment_id,
+        u.full_name as doctor_name,
+        u.color_code as doctor_color
+        FROM dental_treatments dt
+        LEFT JOIN users u ON dt.provider_id = u.id
+        WHERE dt.patient_id = ?
 
         ORDER BY treatment_date DESC
     `).all(patientId, patientId);
@@ -2277,9 +2302,13 @@ export function createPayment(paymentData: any) {
 
 export function getPaymentsByPatient(patientId: number) {
     return db.prepare(`
-        SELECT p.*, u.full_name as recorded_by_name 
+        SELECT p.*, 
+               u1.full_name as recorded_by_name,
+               u2.full_name as doctor_name,
+               u2.color_code as doctor_color
         FROM payments p
-        JOIN users u ON p.recorded_by = u.id
+        LEFT JOIN users u1 ON p.recorded_by = u1.id
+        LEFT JOIN users u2 ON p.doctor_id = u2.id
         WHERE p.patient_id = ?
         ORDER BY p.payment_date DESC
             `).all(patientId);
@@ -2437,7 +2466,7 @@ export function deletePrescriptionTemplate(id: number) {
 // --- Invoices ---
 export function getNextInvoiceNumber() {
     const year = new Date().getFullYear();
-    const lastInvoice = db.prepare("SELECT invoice_number FROM invoices WHERE invoice_number LIKE ? ORDER BY id DESC LIMIT 1").get(`FAC - ${year} -% `) as { invoice_number: string };
+    const lastInvoice = db.prepare("SELECT invoice_number FROM invoices WHERE invoice_number LIKE ? ORDER BY id DESC LIMIT 1").get(`FAC - ${year} -%`) as { invoice_number: string };
 
     let nextNum = 1;
     if (lastInvoice) {
@@ -2445,7 +2474,7 @@ export function getNextInvoiceNumber() {
         nextNum = parseInt(parts[2]) + 1;
     }
 
-    return `FAC - ${year} -${nextNum.toString().padStart(4, '0')} `;
+    return `FAC - ${year} -${nextNum.toString().padStart(4, '0')}`;
 }
 
 export function createInvoice(patientId: number, items: any[], type: 'detailed' | 'global' = 'detailed', globalDescription?: string) {
@@ -2564,7 +2593,7 @@ export function getAllInvoices(filters?: { search?: string; startDate?: string; 
 
     if (filters?.search) {
         sql += ` AND(p.full_name LIKE ? OR i.invoice_number LIKE ?)`;
-        params.push(`% ${filters.search}% `, ` % ${filters.search}% `);
+        params.push(`%${filters.search}%`, `%${filters.search}%`);
     }
 
     if (filters?.startDate) {

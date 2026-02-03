@@ -798,6 +798,10 @@
                                     >
                                     <th
                                         class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest"
+                                        >{$t("common.doctor")}</th
+                                    >
+                                    <th
+                                        class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest"
                                         >{$t("patient_details.type")}</th
                                     >
                                     <th
@@ -830,6 +834,26 @@
                                                 : treatment.tooth_number ||
                                                   "-"}</td
                                         >
+                                        <td
+                                            class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                                        >
+                                            {#if treatment.doctor_name}
+                                                <div
+                                                    class="flex items-center gap-2"
+                                                >
+                                                    <span
+                                                        class="w-2 h-2 rounded-full"
+                                                        style="background-color: {treatment.doctor_color ||
+                                                            '#6366f1'}"
+                                                    ></span>
+                                                    {treatment.doctor_name}
+                                                </div>
+                                            {:else}
+                                                <span class="text-gray-400"
+                                                    >-</span
+                                                >
+                                            {/if}
+                                        </td>
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700"
                                             >{treatment.treatment_type}</td
@@ -1614,6 +1638,10 @@
                                     >
                                     <th
                                         class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest"
+                                        >{$t("common.doctor")}</th
+                                    >
+                                    <th
+                                        class="px-6 py-4 text-inline-start text-[10px] font-bold text-gray-400 uppercase tracking-widest"
                                         >{$t("patient_details.recorded_by")}</th
                                     >
                                     <th
@@ -1642,6 +1670,26 @@
                                             class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700 capitalize"
                                             >{payment.payment_method}</td
                                         >
+                                        <td
+                                            class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                                        >
+                                            {#if payment.doctor_name}
+                                                <div
+                                                    class="flex items-center gap-2"
+                                                >
+                                                    <span
+                                                        class="w-2 h-2 rounded-full"
+                                                        style="background-color: {payment.doctor_color ||
+                                                            '#6366f1'}"
+                                                    ></span>
+                                                    {payment.doctor_name}
+                                                </div>
+                                            {:else}
+                                                <span class="text-gray-400"
+                                                    >-</span
+                                                >
+                                            {/if}
+                                        </td>
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500"
                                             >{payment.recorded_by_name}</td
