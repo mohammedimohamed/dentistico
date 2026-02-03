@@ -3,6 +3,7 @@
     import { enhance } from "$app/forms";
     import { APP_CONFIG } from "$lib/config/app.config";
     import FullCalendar from "$lib/components/FullCalendar.svelte";
+    import SlotPicker from "$lib/components/common/SlotPicker.svelte";
     import { t } from "svelte-i18n";
 
     import { onMount } from "svelte";
@@ -10,7 +11,7 @@
     import { goto } from "$app/navigation";
     import { logger } from "$lib/utils/logger";
     import { createDebouncer } from "$lib/utils/debounce";
-    import { fly, fade } from "svelte/transition";
+    import { fly, fade, slide } from "svelte/transition";
 
     const invalidateDebouncer = createDebouncer(2000); // 2-second batching window
 
@@ -18,7 +19,18 @@
 
     function calculateAge(dob: string) {
         if (!dob) return "N/A";
-        const birthDate = new Date(dob);
+        let birthDate: Date;
+        if (dob.includes("/")) {
+            const parts = dob.split("/");
+            birthDate = new Date(
+                parseInt(parts[2]),
+                parseInt(parts[1]) - 1,
+                parseInt(parts[0]),
+            );
+        } else {
+            birthDate = new Date(dob);
+        }
+        if (isNaN(birthDate.getTime())) return "N/A";
         const ageDifMs = Date.now() - birthDate.getTime();
         const ageDate = new Date(ageDifMs);
         return Math.abs(ageDate.getUTCFullYear() - 1970);
@@ -119,6 +131,150 @@
     let checkInAppointment = $state<any>(null);
     let checkInNotes = $state("");
     let isSubmittingCheckIn = $state(false);
+    let isSubmittingPatient = $state(false);
+    let isImminentModalOpen = $state(false);
+    let imminentAppointment = $state<any>(null);
+
+    // SlotPicker state for visual appointment booking
+    let modalDoctorId = $state<string>("");
+    let slotPickerDate = $state("");
+    let slotPickerTime = $state("");
+
+    // Patient Creation Modal State
+    let patientFullName = $state("");
+    let patientPhone = $state("");
+    let patientEmail = $state("");
+    let patientDob = $state("");
+    let isDependent = $state(false);
+    let guardianName = $state("");
+    let guardianRole = $state("Father");
+    let guardianPhone = $state("");
+    let guardianEmail = $state("");
+    let showSuccessView = $state(false);
+    let createdPatientData = $state<{ id: number; name: string } | null>(null);
+
+    // Live searches
+    let manageSearchQuery = $state("");
+    let guardianSearchQuery = $state("");
+    let guardianResults = $state<any[]>([]);
+    let isGuardianSearching = $state(false);
+
+    // Left panel list filtering (Existing patients + Did you mean?)
+    const filteredGlobalPatients = $derived.by(() => {
+        const query =
+            manageSearchQuery.toLowerCase() || patientFullName.toLowerCase();
+        if (!query) return data.patients.slice(0, 10);
+        return data.patients
+            .filter(
+                (p: any) =>
+                    p.full_name.toLowerCase().includes(query) ||
+                    (p.phone && p.phone.includes(query)),
+            )
+            .slice(0, 20);
+    });
+
+    async function searchGuardians(q: string) {
+        if (q.length < 2) {
+            guardianResults = [];
+            return;
+        }
+        isGuardianSearching = true;
+        try {
+            const res = await fetch(
+                `/api/patients/search?q=${encodeURIComponent(q)}`,
+            );
+            guardianResults = await res.json();
+        } catch (e) {
+            logger.error("Guardian search failed:", e);
+        } finally {
+            isGuardianSearching = false;
+        }
+    }
+
+    function selectGuardian(p: any) {
+        guardianName = p.full_name;
+        guardianPhone = p.phone || "";
+        guardianEmail = p.email || "";
+        guardianSearchQuery = "";
+        guardianResults = [];
+    }
+
+    function handleDobInput(e: Event) {
+        const input = e.target as HTMLInputElement;
+        let value = input.value.replace(/\D/g, "");
+        if (value.length > 8) value = value.slice(0, 8);
+
+        let formatted = "";
+        if (value.length > 0) {
+            formatted += value.slice(0, 2);
+            if (value.length > 2) {
+                formatted += "/" + value.slice(2, 4);
+                if (value.length > 4) {
+                    formatted += "/" + value.slice(4, 8);
+                }
+            }
+        }
+        patientDob = formatted;
+    }
+
+    let patientAge = $derived.by(() => {
+        if (!patientDob || patientDob.length < 10) return null;
+        const parts = patientDob.split("/");
+        if (parts.length !== 3) return null;
+        const day = parseInt(parts[0]);
+        const month = parseInt(parts[1]);
+        const year = parseInt(parts[2]);
+        if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+
+        const birthDate = new Date(year, month - 1, day);
+        if (isNaN(birthDate.getTime())) return null;
+
+        const ageDifMs = Date.now() - birthDate.getTime();
+        const ageDate = new Date(ageDifMs);
+        return Math.abs(ageDate.getUTCFullYear() - 1970);
+    });
+
+    $effect(() => {
+        if (patientAge !== null && patientAge < 18) {
+            isDependent = true;
+        }
+    });
+
+    $effect(() => {
+        if (guardianSearchQuery) {
+            const timer = setTimeout(
+                () => searchGuardians(guardianSearchQuery),
+                300,
+            );
+            return () => clearTimeout(timer);
+        }
+    });
+
+    function planAppointment(type: string) {
+        if (!createdPatientData) return;
+
+        // Pre-fill booking modal
+        selectedPatient = {
+            id: createdPatientData.id,
+            full_name: createdPatientData.name,
+        };
+        isNewPatient = false;
+        patientSearchQuery = createdPatientData.name;
+
+        // Open booking modal
+        isBookingModalOpen = true;
+        selectedAppointment = {
+            appointment_type: type,
+            duration_minutes: type === "emergency" ? 15 : 30,
+        };
+
+        // Reset and close patient modal
+        isPatientModalOpen = false;
+        setTimeout(() => {
+            showSuccessView = false;
+            createdPatientData = null;
+        }, 500);
+    }
 
     // Manual booking validation
     let unavailableDates = $state<string[]>([]);
@@ -152,6 +308,25 @@
     let isWalkInModalOpen = $state(false);
 
     let lastUpdateVersion = $state<string | null>(null);
+
+    function openPatientModal() {
+        patientFullName = "";
+        patientPhone = "";
+        patientEmail = "";
+        patientDob = "";
+        isDependent = false;
+        guardianName = "";
+        guardianPhone = "";
+        guardianEmail = "";
+        guardianRole = "Father";
+        manageSearchQuery = "";
+        guardianSearchQuery = "";
+        guardianResults = [];
+        showSuccessView = false;
+        createdPatientData = null;
+        errorMessage = "";
+        isPatientModalOpen = true;
+    }
 
     onMount(() => {
         loadUnavailableDates();
@@ -207,7 +382,6 @@
 
             if (response.ok) {
                 isCheckInModalOpen = false;
-                const savedApptId = checkInAppointment.id;
                 checkInAppointment = null;
 
                 // Debounce invalidation to batch rapid manual actions
@@ -223,6 +397,33 @@
         } catch (e: any) {
             logger.error("Check-in error:", e);
             alert(`Error: ${e.message}`);
+        } finally {
+            isSubmittingCheckIn = false;
+        }
+    }
+
+    async function handleCheckInAndNotify() {
+        if (!imminentAppointment) return;
+        isSubmittingCheckIn = true;
+
+        const formData = new FormData();
+        formData.append("appointment_id", imminentAppointment.id.toString());
+
+        try {
+            const response = await fetch("?/checkInAndNotify", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (response.ok) {
+                isImminentModalOpen = false;
+                imminentAppointment = null;
+                const { invalidate } = await import("$app/navigation");
+                await invalidate("appointments:today");
+                await invalidate("waiting-room:status");
+            }
+        } catch (e) {
+            logger.error("Check-in and notify failed:", e);
         } finally {
             isSubmittingCheckIn = false;
         }
@@ -462,6 +663,9 @@
         isNewPatient = false;
         patientSearchQuery = "";
         patientCardUrl = null;
+        modalDoctorId = "";
+        slotPickerDate = "";
+        slotPickerTime = "";
     }
 
     async function generatePatientCard(patientId: number) {
@@ -767,6 +971,9 @@
     function closeModal() {
         isBookingModalOpen = false;
         selectedAppointment = null;
+        modalDoctorId = "";
+        slotPickerDate = "";
+        slotPickerTime = "";
     }
 
     function openBookingModal(
@@ -775,6 +982,14 @@
     ) {
         if (appt) {
             selectedAppointment = appt;
+            modalDoctorId = appt.doctor_id ? appt.doctor_id.toString() : "";
+            if (appt.start_time) {
+                const dt = new Date(appt.start_time);
+                slotPickerDate = dt.toISOString().split("T")[0];
+                slotPickerTime = appt.start_time.includes("T")
+                    ? appt.start_time
+                    : appt.start_time.replace(" ", "T");
+            }
             // Auto-populate patient
             if (appt.patient_id) {
                 const foundPatient = data.patients.find(
@@ -787,9 +1002,19 @@
         } else if (startTime) {
             selectedAppointment = { start_time: startTime };
             selectedPatient = null;
+            modalDoctorId = "";
+            if (startTime) {
+                slotPickerDate = startTime.split("T")[0].split(" ")[0];
+                slotPickerTime = startTime.includes("T")
+                    ? startTime
+                    : startTime.replace(" ", "T");
+            }
         } else {
             selectedAppointment = null;
             selectedPatient = null;
+            modalDoctorId = "";
+            slotPickerDate = "";
+            slotPickerTime = "";
         }
         isBookingModalOpen = true;
     }
@@ -2483,6 +2708,39 @@
                                     if (result.type === "success") {
                                         const resultData = result.data as any;
 
+                                        // Time Detection for Imminent Check-in
+                                        const appt = resultData.appointment;
+                                        if (appt) {
+                                            const apptDate = new Date(
+                                                appt.start_time,
+                                            );
+                                            const diffMins =
+                                                (apptDate.getTime() -
+                                                    new Date().getTime()) /
+                                                60000;
+
+                                            // If appointment is between -30 mins (late) and +60 mins (early)
+                                            if (
+                                                diffMins > -30 &&
+                                                diffMins < 60
+                                            ) {
+                                                const patientName =
+                                                    selectedPatient?.full_name ||
+                                                    (
+                                                        document.querySelector(
+                                                            'input[name="new_patient_name"]',
+                                                        ) as HTMLInputElement
+                                                    )?.value ||
+                                                    "le patient";
+
+                                                imminentAppointment = {
+                                                    ...appt,
+                                                    patientName,
+                                                };
+                                                isImminentModalOpen = true;
+                                            }
+                                        }
+
                                         if (
                                             resultData.action === "schedule_new"
                                         ) {
@@ -2877,11 +3135,15 @@
                                                 name="doctor_id"
                                                 required
                                                 class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium"
-                                                value={selectedAppointment?.doctor_id ||
-                                                    ""}
+                                                bind:value={modalDoctorId}
                                             >
+                                                <option value=""
+                                                    >-- Sélectionner un médecin
+                                                    --</option
+                                                >
                                                 {#each data.doctors as doctor}
-                                                    <option value={doctor.id}
+                                                    <option
+                                                        value={doctor.id.toString()}
                                                         >{$t(
                                                             "assistant.dashboard.time.dr",
                                                         )}
@@ -2928,51 +3190,46 @@
                                         </div>
                                     </div>
 
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label
-                                                class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
-                                                >{$t(
-                                                    "assistant.dashboard.appointment.fields.startTime",
-                                                )}</label
-                                            >
-                                            <input
-                                                type="datetime-local"
-                                                name="start_time"
-                                                required
-                                                class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium"
-                                                value={selectedAppointment?.start_time
-                                                    ? new Date(
-                                                          new Date(
-                                                              selectedAppointment.start_time,
-                                                          ).getTime() -
-                                                              new Date().getTimezoneOffset() *
-                                                                  60000,
-                                                      )
-                                                          .toISOString()
-                                                          .slice(0, 16)
-                                                    : ""}
-                                                onchange={(e) => {
-                                                    const val =
-                                                        e.currentTarget.value;
-                                                    if (isDateDisabled(val)) {
-                                                        alert(
-                                                            "Impossible de planifier le rendez-vous: La clinique est fermée ou c'est un jour non-ouvré à cette date.",
-                                                        );
-                                                        e.currentTarget.value =
-                                                            "";
-                                                    }
-                                                }}
+                                    <!-- Visual Slot Picker -->
+                                    <div>
+                                        <label
+                                            class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2"
+                                            >{$t(
+                                                "assistant.dashboard.appointment.fields.startTime",
+                                            )}</label
+                                        >
+                                        {#if modalDoctorId}
+                                            <SlotPicker
+                                                doctorId={modalDoctorId}
+                                                bind:selectedDate={
+                                                    slotPickerDate
+                                                }
+                                                bind:selectedTime={
+                                                    slotPickerTime
+                                                }
+                                                compact={true}
                                             />
-                                            {#if selectedAppointment?.start_time && isDateDisabled(selectedAppointment.start_time)}
+                                            <input
+                                                type="hidden"
+                                                name="start_time"
+                                                value={slotPickerTime}
+                                                required
+                                            />
+                                        {:else}
+                                            <div
+                                                class="bg-amber-50 border-2 border-amber-100 rounded-xl p-4 text-center"
+                                            >
                                                 <p
-                                                    class="text-xs text-red-500 mt-1 font-bold"
+                                                    class="text-amber-700 text-sm font-bold"
                                                 >
-                                                    ⚠️ Attention: La clinique
-                                                    est fermée à cette date.
+                                                    👆 Veuillez d'abord
+                                                    sélectionner un médecin.
                                                 </p>
-                                            {/if}
-                                        </div>
+                                            </div>
+                                        {/if}
+                                    </div>
+
+                                    <div class="grid grid-cols-1 gap-4">
                                         <div>
                                             <label
                                                 class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
@@ -3126,7 +3383,8 @@
                                     type="submit"
                                     name="action"
                                     value="schedule_close"
-                                    class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all"
+                                    disabled={!slotPickerTime}
+                                    class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {$t(
                                         "assistant.dashboard.buttons.scheduleAndClose",
@@ -3137,7 +3395,8 @@
                                         type="submit"
                                         name="action"
                                         value="schedule_new"
-                                        class="px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-200 transition-all"
+                                        disabled={!slotPickerTime}
+                                        class="px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg shadow-green-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {$t(
                                             "assistant.dashboard.buttons.scheduleAndNew",
@@ -3174,128 +3433,622 @@
                     class="flex min-h-full items-center justify-center p-4 text-center sm:p-0"
                 >
                     <div
-                        class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+                        class="bg-white rounded-[2.5rem] shadow-2xl w-[85vw] max-w-[1600px] h-[90vh] flex overflow-hidden transform transition-all border border-white/20"
                     >
-                        <form
-                            method="POST"
-                            action="?/createPatient"
-                            use:enhance={() => {
-                                errorMessage = "";
-                                return async ({ result, update }) => {
-                                    if (result.type === "success") {
-                                        isPatientModalOpen = false;
-                                    } else {
-                                        errorMessage =
-                                            (result.data as any)?.error ||
-                                            "Registration failed";
-                                    }
-                                    await update();
-                                };
-                            }}
+                        <div
+                            class="w-[30%] bg-gray-50/50 border-r border-gray-100 flex flex-col"
                         >
-                            <div class="p-6">
-                                <h3
-                                    class="text-xl font-black text-gray-900 mb-6 border-b pb-4 flex items-center gap-2"
+                            <div class="p-6 pb-2">
+                                <h4
+                                    class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4"
                                 >
+                                    Patient Manager
+                                </h4>
+                                <div class="relative group">
                                     <span
-                                        class="w-2 h-8 bg-indigo-600 rounded-full"
-                                    ></span>
-                                    {$t(
-                                        "assistant.dashboard.patient.modals.new",
-                                    )}
-                                </h3>
-                                {#if errorMessage}
-                                    <div
-                                        class="mb-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm"
+                                        class="absolute left-4 top-1/2 -translate-y-1/2 text-lg"
+                                        >🔍</span
                                     >
-                                        {errorMessage}
-                                    </div>
-                                {/if}
-                                <div class="space-y-4">
-                                    <div>
-                                        <label
-                                            class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
-                                            >{$t(
-                                                "assistant.dashboard.patient.fields.fullName",
-                                            )}</label
-                                        >
-                                        <input
-                                            name="full_name"
-                                            required
-                                            class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium"
-                                            placeholder={$t(
-                                                "assistant.dashboard.patient.fields.namePlaceholder",
-                                            )}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label
-                                            class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
-                                            >{$t(
-                                                "assistant.dashboard.patient.fields.phone",
-                                            )}</label
-                                        >
-                                        <input
-                                            name="phone"
-                                            required
-                                            class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium"
-                                            placeholder={$t(
-                                                "assistant.dashboard.patient.fields.phonePlaceholder",
-                                            )}
-                                        />
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label
-                                                class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
-                                                >{$t(
-                                                    "assistant.dashboard.patient.fields.dob",
-                                                )}</label
-                                            >
-                                            <input
-                                                type="date"
-                                                name="date_of_birth"
-                                                required
-                                                max={maxDateOfBirth}
-                                                class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label
-                                                class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
-                                                >{$t(
-                                                    "assistant.dashboard.patient.fields.email",
-                                                )}</label
-                                            >
-                                            <input
-                                                name="email"
-                                                class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium"
-                                                placeholder={$t(
-                                                    "assistant.dashboard.patient.fields.emailPlaceholder",
-                                                )}
-                                            />
-                                        </div>
-                                    </div>
+                                    <input
+                                        bind:value={manageSearchQuery}
+                                        class="w-full bg-white border-0 ring-1 ring-gray-200 rounded-2xl py-3 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
+                                        placeholder="Rechercher dossiers..."
+                                    />
                                 </div>
                             </div>
+
                             <div
-                                class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3"
+                                class="flex-1 overflow-y-auto px-6 pb-6 space-y-3 custom-scrollbar"
                             >
-                                <button
-                                    type="submit"
-                                    class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl shadow-lg"
-                                    >{$t(
-                                        "assistant.dashboard.patient.modals.register",
-                                    )}</button
+                                <p
+                                    class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-4 mb-2"
                                 >
-                                <button
-                                    type="button"
-                                    class="px-6 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-100"
-                                    onclick={() => (isPatientModalOpen = false)}
-                                    >{$t("common.cancel")}</button
-                                >
+                                    {manageSearchQuery || patientFullName
+                                        ? "Résultats / Doublons potentiels"
+                                        : "Patients récents"}
+                                </p>
+
+                                {#each filteredGlobalPatients as p}
+                                    <div
+                                        class="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all cursor-default group relative overflow-hidden"
+                                    >
+                                        <div class="flex items-center gap-4">
+                                            <div
+                                                class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-sm font-black text-indigo-600"
+                                            >
+                                                {p.full_name.charAt(0)}
+                                            </div>
+                                            <div class="flex-1">
+                                                <p
+                                                    class="text-sm font-black text-gray-900 leading-none mb-1"
+                                                >
+                                                    {p.full_name}
+                                                </p>
+                                                <p
+                                                    class="text-[10px] font-bold text-gray-400 font-mono tracking-tighter"
+                                                >
+                                                    {p.phone || "Pas de numéro"}
+                                                </p>
+                                            </div>
+                                            <!-- Warning badge if matching current input -->
+                                            {#if patientFullName && p.full_name
+                                                    .toLowerCase()
+                                                    .includes(patientFullName.toLowerCase()) && patientFullName.length > 3}
+                                                <div
+                                                    class="absolute top-2 right-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-[8px] font-black rounded-full uppercase tracking-tighter animate-pulse"
+                                                >
+                                                    Doublon ?
+                                                </div>
+                                            {/if}
+                                        </div>
+                                        <div
+                                            class="mt-3 pt-3 border-t border-gray-50 flex gap-2"
+                                        >
+                                            <button
+                                                type="button"
+                                                class="text-[9px] font-extrabold text-indigo-600 uppercase tracking-widest hover:underline"
+                                                onclick={() => {
+                                                    isPatientModalOpen = false;
+                                                    goto(
+                                                        `/assistant/patients/${p.id}`,
+                                                    );
+                                                }}>Détails</button
+                                            >
+                                            <button
+                                                type="button"
+                                                class="text-[9px] font-extrabold text-green-600 uppercase tracking-widest hover:underline ml-auto"
+                                                onclick={() => {
+                                                    openBookingModal(null);
+                                                    selectedPatient = p;
+                                                    selectedAppointment = {
+                                                        patient_id: p.id,
+                                                    };
+                                                }}>RDV</button
+                                            >
+                                        </div>
+                                    </div>
+                                {:else}
+                                    <div class="text-center py-12">
+                                        <span
+                                            class="text-4xl opacity-20 filter grayscale mb-4 block"
+                                            >📂</span
+                                        >
+                                        <p
+                                            class="text-xs font-bold text-gray-400 italic"
+                                        >
+                                            Aucun patient correspondant
+                                        </p>
+                                    </div>
+                                {/each}
                             </div>
-                        </form>
+                        </div>
+
+                        <!-- RIGHT PANEL: Creation Form (70%) -->
+                        <div
+                            class="w-[70%] flex flex-col bg-white overflow-hidden"
+                        >
+                            <form
+                                method="POST"
+                                action="?/createPatient"
+                                class="flex flex-col h-full"
+                                use:enhance={() => {
+                                    errorMessage = "";
+                                    isSubmittingPatient = true;
+                                    return async ({ result, update }) => {
+                                        isSubmittingPatient = false;
+                                        if (result.type === "success") {
+                                            const data = result.data as any;
+                                            createdPatientData = {
+                                                id: data.patientId,
+                                                name: data.patientName,
+                                            };
+                                            showSuccessView = true;
+                                        } else {
+                                            errorMessage =
+                                                (result.data as any)?.error ||
+                                                "Registration failed";
+                                        }
+                                        await update();
+                                    };
+                                }}
+                            >
+                                <div
+                                    class="flex-1 overflow-y-auto custom-scrollbar p-8"
+                                >
+                                    {#if showSuccessView}
+                                        <div
+                                            class="max-w-xl mx-auto py-20 text-center"
+                                            in:fly={{ y: 20 }}
+                                        >
+                                            <div
+                                                class="mb-10 relative inline-block"
+                                            >
+                                                <div
+                                                    class="absolute inset-0 bg-green-200 blur-3xl opacity-30 animate-pulse"
+                                                ></div>
+                                                <div
+                                                    class="w-32 h-32 bg-green-500 rounded-[2.5rem] flex items-center justify-center text-5xl shadow-2xl shadow-green-200 relative"
+                                                >
+                                                    ✅
+                                                </div>
+                                            </div>
+                                            <h4
+                                                class="text-2xl font-black text-gray-900 mb-4 tracking-tight"
+                                            >
+                                                C'est fait !
+                                            </h4>
+                                            <p
+                                                class="text-xl text-gray-500 mb-12"
+                                            >
+                                                Le dossier de <span
+                                                    class="text-gray-900 font-black decoration-green-500 decoration-4 underline underline-offset-4"
+                                                    >{createdPatientData?.name}</span
+                                                > a été créé.
+                                            </p>
+
+                                            <div
+                                                class="bg-gray-50 p-8 rounded-[2rem] border border-gray-100"
+                                            >
+                                                <p
+                                                    class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6"
+                                                >
+                                                    Prochaine étape ?
+                                                </p>
+                                                <div
+                                                    class="grid grid-cols-3 gap-4"
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        onclick={() =>
+                                                            planAppointment(
+                                                                "consultation",
+                                                            )}
+                                                        class="group p-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-indigo-600 transition-all text-center"
+                                                    >
+                                                        <div
+                                                            class="text-2xl mb-2 group-hover:scale-125 transition-transform"
+                                                        >
+                                                            🔵
+                                                        </div>
+                                                        <span
+                                                            class="text-[10px] font-black uppercase tracking-widest text-indigo-600"
+                                                            >Consultation</span
+                                                        >
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onclick={() =>
+                                                            planAppointment(
+                                                                "emergency",
+                                                            )}
+                                                        class="group p-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-red-600 transition-all text-center"
+                                                    >
+                                                        <div
+                                                            class="text-2xl mb-2 group-hover:scale-125 transition-transform"
+                                                        >
+                                                            🔴
+                                                        </div>
+                                                        <span
+                                                            class="text-[10px] font-black uppercase tracking-widest text-red-600"
+                                                            >Urgence</span
+                                                        >
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onclick={() =>
+                                                            planAppointment(
+                                                                "checkup",
+                                                            )}
+                                                        class="group p-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-green-600 transition-all text-center"
+                                                    >
+                                                        <div
+                                                            class="text-2xl mb-2 group-hover:scale-125 transition-transform"
+                                                        >
+                                                            🟢
+                                                        </div>
+                                                        <span
+                                                            class="text-[10px] font-black uppercase tracking-widest text-green-600"
+                                                            >Contrôle</span
+                                                        >
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {:else}
+                                        <div class="max-w-3xl mx-auto">
+                                            <div
+                                                class="flex items-center justify-between mb-8"
+                                            >
+                                                <div>
+                                                    <h3
+                                                        class="text-2xl font-black text-gray-900 tracking-tight mb-2"
+                                                    >
+                                                        Nouveau Dossier
+                                                    </h3>
+                                                    <p
+                                                        class="text-gray-400 font-bold uppercase text-[10px] tracking-[0.2em]"
+                                                    >
+                                                        Patient Onboarding &
+                                                        File Creation
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onclick={() =>
+                                                        (isPatientModalOpen = false)}
+                                                    class="w-12 h-12 flex items-center justify-center bg-gray-50 rounded-full text-xl hover:bg-gray-100 transition-colors"
+                                                    >✕</button
+                                                >
+                                            </div>
+
+                                            {#if errorMessage}
+                                                <div
+                                                    class="p-6 bg-rose-50 border-l-4 border-rose-500 text-rose-700 rounded-2xl mb-10 flex items-center gap-4"
+                                                >
+                                                    <span
+                                                        class="text-2xl font-black"
+                                                        >⚠️</span
+                                                    >
+                                                    <div
+                                                        class="text-sm font-black tracking-tight"
+                                                    >
+                                                        {errorMessage}
+                                                    </div>
+                                                </div>
+                                            {/if}
+
+                                            <div class="space-y-10">
+                                                <!-- Section: Identity -->
+                                                <section class="space-y-6">
+                                                    <p
+                                                        class="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-3"
+                                                    >
+                                                        <span
+                                                            class="w-8 h-[1px] bg-indigo-100"
+                                                        ></span> Identité & Naissance
+                                                    </p>
+                                                    <div
+                                                        class="grid grid-cols-2 gap-8"
+                                                    >
+                                                        <div class="col-span-2">
+                                                            <label
+                                                                class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2"
+                                                                >Nom & Prénom du
+                                                                Patient</label
+                                                            >
+                                                            <input
+                                                                name="full_name"
+                                                                required
+                                                                bind:value={
+                                                                    patientFullName
+                                                                }
+                                                                class="w-full bg-gray-50 border-0 ring-1 ring-gray-100 rounded-2xl py-4 px-6 text-xl font-black placeholder:text-gray-200 focus:ring-2 focus:ring-indigo-600 transition-all"
+                                                                placeholder="ex: Amine Benali"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label
+                                                                class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2"
+                                                                >Date de
+                                                                Naissance</label
+                                                            >
+                                                            <input
+                                                                type="text"
+                                                                name="date_of_birth"
+                                                                required
+                                                                value={patientDob}
+                                                                oninput={handleDobInput}
+                                                                placeholder="JJ/MM/AAAA"
+                                                                class="w-full bg-gray-50 border-0 ring-1 ring-gray-100 rounded-2xl py-4 px-6 text-sm font-bold focus:ring-2 focus:ring-indigo-600 transition-all"
+                                                            />
+                                                        </div>
+                                                        <div
+                                                            class="flex items-end pb-4"
+                                                        >
+                                                            <label
+                                                                class="flex items-center gap-3 cursor-pointer group"
+                                                            >
+                                                                <div
+                                                                    class="relative"
+                                                                >
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        name="is_dependent"
+                                                                        bind:checked={
+                                                                            isDependent
+                                                                        }
+                                                                        class="sr-only"
+                                                                    />
+                                                                    <div
+                                                                        class="w-14 h-7 bg-gray-200 rounded-full transition-colors group-hover:bg-gray-300 {isDependent
+                                                                            ? 'bg-indigo-600 text-white'
+                                                                            : ''}"
+                                                                    ></div>
+                                                                    <div
+                                                                        class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-all shadow-md {isDependent
+                                                                            ? 'translate-x-7'
+                                                                            : ''}"
+                                                                    ></div>
+                                                                </div>
+                                                                <span
+                                                                    class="text-xs font-black text-gray-500 uppercase tracking-widest"
+                                                                    >Client
+                                                                    Dépendant
+                                                                    (Enfant/Senior)</span
+                                                                >
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </section>
+
+                                                <!-- Section: Guardian (Conditional) -->
+                                                {#if isDependent}
+                                                    <section
+                                                        class="p-6 bg-indigo-50/30 border border-indigo-100/50 rounded-[2.5rem] space-y-4"
+                                                        transition:slide
+                                                    >
+                                                        <p
+                                                            class="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-3"
+                                                        >
+                                                            <span>👪</span> Informations
+                                                            du Tuteur / Responsable
+                                                        </p>
+
+                                                        <!-- Guardian Search Interface -->
+                                                        <div class="relative">
+                                                            <label
+                                                                class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2"
+                                                                >Rechercher un
+                                                                dossier parent
+                                                                existant</label
+                                                            >
+                                                            <div
+                                                                class="relative"
+                                                            >
+                                                                <input
+                                                                    bind:value={
+                                                                        guardianSearchQuery
+                                                                    }
+                                                                    class="w-full bg-white border border-indigo-100 rounded-2xl py-4 px-6 text-sm font-bold shadow-sm focus:ring-2 focus:ring-indigo-600 pr-12"
+                                                                    placeholder="Taper un nom ou téléphone..."
+                                                                />
+                                                                {#if isGuardianSearching}
+                                                                    <div
+                                                                        class="absolute right-4 top-1/2 -translate-y-1/2 animate-spin w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full"
+                                                                    ></div>
+                                                                {/if}
+                                                            </div>
+
+                                                            {#if guardianResults.length > 0}
+                                                                <div
+                                                                    class="absolute z-10 w-full mt-2 bg-white rounded-2xl shadow-2xl border border-indigo-100 p-2 space-y-1 max-h-60 overflow-y-auto"
+                                                                    in:fly={{
+                                                                        y: 10,
+                                                                    }}
+                                                                >
+                                                                    <p
+                                                                        class="text-[8px] font-black text-gray-400 uppercase tracking-widest p-2"
+                                                                    >
+                                                                        Résultats
+                                                                        de
+                                                                        recherche
+                                                                    </p>
+                                                                    {#each guardianResults as p}
+                                                                        <button
+                                                                            type="button"
+                                                                            class="w-full text-left p-3 hover:bg-indigo-50 rounded-xl transition-colors flex items-center justify-between group"
+                                                                            onclick={() =>
+                                                                                selectGuardian(
+                                                                                    p,
+                                                                                )}
+                                                                        >
+                                                                            <div
+                                                                            >
+                                                                                <p
+                                                                                    class="text-sm font-black text-gray-900 group-hover:text-indigo-600"
+                                                                                >
+                                                                                    {p.full_name}
+                                                                                </p>
+                                                                                <p
+                                                                                    class="text-[10px] text-gray-400 font-bold"
+                                                                                >
+                                                                                    {p.phone}
+                                                                                </p>
+                                                                            </div>
+                                                                            <span
+                                                                                class="text-[10px] font-black text-indigo-400 bg-indigo-50 px-2 py-1 rounded-lg"
+                                                                                >Sélectionner</span
+                                                                            >
+                                                                        </button>
+                                                                    {/each}
+                                                                </div>
+                                                            {/if}
+                                                        </div>
+
+                                                        <div
+                                                            class="grid grid-cols-2 gap-6"
+                                                        >
+                                                            <div>
+                                                                <label
+                                                                    class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2"
+                                                                    >Rôle</label
+                                                                >
+                                                                <select
+                                                                    name="guardian_role"
+                                                                    bind:value={
+                                                                        guardianRole
+                                                                    }
+                                                                    class="w-full rounded-2xl border-indigo-100 bg-white py-3 px-6 text-sm font-black"
+                                                                >
+                                                                    <option
+                                                                        value="Father"
+                                                                        >Père</option
+                                                                    >
+                                                                    <option
+                                                                        value="Mother"
+                                                                        >Mère</option
+                                                                    >
+                                                                    <option
+                                                                        value="Other"
+                                                                        >Tuteur
+                                                                        / Autre</option
+                                                                    >
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label
+                                                                    class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2"
+                                                                    >Nom Complet
+                                                                    Tuteur</label
+                                                                >
+                                                                <input
+                                                                    name="guardian_name"
+                                                                    required
+                                                                    bind:value={
+                                                                        guardianName
+                                                                    }
+                                                                    class="w-full rounded-2xl border-indigo-100 bg-white py-3 px-6 text-sm font-black"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label
+                                                                    class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2"
+                                                                    >Téléphone
+                                                                    Tuteur</label
+                                                                >
+                                                                <input
+                                                                    name="guardian_phone"
+                                                                    required={guardianRole !==
+                                                                        "Father"}
+                                                                    bind:value={
+                                                                        guardianPhone
+                                                                    }
+                                                                    class="w-full rounded-2xl border-indigo-100 bg-white py-3 px-6 text-sm font-black"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label
+                                                                    class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2"
+                                                                    >Email
+                                                                    Tuteur</label
+                                                                >
+                                                                <input
+                                                                    type="email"
+                                                                    name="guardian_email"
+                                                                    required={guardianRole !==
+                                                                        "Father"}
+                                                                    bind:value={
+                                                                        guardianEmail
+                                                                    }
+                                                                    class="w-full rounded-2xl border-indigo-100 bg-white py-3 px-6 text-sm font-black"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </section>
+                                                {/if}
+
+                                                <!-- Section: Contact Patient -->
+                                                <section class="space-y-6">
+                                                    <p
+                                                        class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-3"
+                                                    >
+                                                        <span
+                                                            class="w-8 h-[1px] bg-gray-100"
+                                                        ></span> Coordonnées Patient
+                                                    </p>
+                                                    <div
+                                                        class="grid grid-cols-2 gap-8"
+                                                    >
+                                                        <div>
+                                                            <label
+                                                                class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2"
+                                                                >Téléphone {isDependent
+                                                                    ? "(Facultatif si enfant)"
+                                                                    : "*"}</label
+                                                            >
+                                                            <input
+                                                                name="phone"
+                                                                required={!isDependent}
+                                                                bind:value={
+                                                                    patientPhone
+                                                                }
+                                                                class="w-full bg-gray-50 border-0 ring-1 ring-gray-100 rounded-2xl py-4 px-6 text-sm font-bold focus:ring-2 focus:ring-indigo-600 transition-all"
+                                                                placeholder="0XXXXXXXXX"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label
+                                                                class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2"
+                                                                >Email Personnel</label
+                                                            >
+                                                            <input
+                                                                name="email"
+                                                                type="email"
+                                                                bind:value={
+                                                                    patientEmail
+                                                                }
+                                                                class="w-full bg-gray-50 border-0 ring-1 ring-gray-100 rounded-2xl py-4 px-6 text-sm font-bold focus:ring-2 focus:ring-indigo-600 transition-all"
+                                                                placeholder="email@example.com"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </section>
+                                            </div>
+                                        </div>
+                                    {/if}
+                                </div>
+
+                                <div
+                                    class="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between"
+                                >
+                                    <button
+                                        type="button"
+                                        class="text-[11px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors"
+                                        onclick={() =>
+                                            (isPatientModalOpen = false)}
+                                    >
+                                        Annuler & Fermer
+                                    </button>
+
+                                    {#if !showSuccessView}
+                                        <button
+                                            type="submit"
+                                            disabled={isSubmittingPatient}
+                                            class="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-2xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-4"
+                                        >
+                                            {#if isSubmittingPatient}
+                                                <div
+                                                    class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                                                ></div>
+                                                Traitement...
+                                            {:else}
+                                                Enregistrer le Patient
+                                            {/if}
+                                        </button>
+                                    {/if}
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3682,6 +4435,68 @@
         </div>
     {/if}
 
+    <!-- Modal: Imminent Appointment Prompt -->
+    {#if isImminentModalOpen && imminentAppointment}
+        <div class="relative z-[60]" role="dialog" aria-modal="true">
+            <div
+                class="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity"
+                onclick={() => (isImminentModalOpen = false)}
+            ></div>
+            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                <div
+                    class="flex min-h-full items-center justify-center p-4 text-center sm:p-0"
+                >
+                    <div
+                        class="relative transform overflow-hidden rounded-[2.5rem] bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-gray-100"
+                    >
+                        <div class="p-8">
+                            <div
+                                class="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center text-3xl mb-6 animate-bounce"
+                            >
+                                🔔
+                            </div>
+                            <h3 class="text-2xl font-black text-gray-900 mb-2">
+                                Rendez-vous imminent
+                            </h3>
+                            <p
+                                class="text-gray-500 font-medium leading-relaxed"
+                            >
+                                Le rendez-vous de <span
+                                    class="text-indigo-600 font-black"
+                                    >{imminentAppointment.patientName}</span
+                                > est pour maintenant. Le patient est-il présent
+                                ?
+                            </p>
+                        </div>
+                        <div class="bg-gray-50 p-6 flex flex-col gap-3">
+                            <button
+                                type="button"
+                                disabled={isSubmittingCheckIn}
+                                onclick={handleCheckInAndNotify}
+                                class="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+                            >
+                                {#if isSubmittingCheckIn}
+                                    <div
+                                        class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                                    ></div>
+                                {:else}
+                                    ✅ Oui, Salle d'Attente
+                                {/if}
+                            </button>
+                            <button
+                                type="button"
+                                onclick={() => (isImminentModalOpen = false)}
+                                class="w-full py-4 bg-white text-gray-400 font-black rounded-2xl hover:text-gray-600 transition-all uppercase text-[10px] tracking-widest"
+                            >
+                                Pas encore / Non
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
+
     <!-- Tooltip for Calendar Events -->
     {#if tooltip.visible}
         <div
@@ -3941,7 +4756,7 @@
                     <button
                         type="button"
                         onclick={() => {
-                            isPatientModalOpen = true;
+                            openPatientModal();
                             isFabOpen = false;
                         }}
                         class="w-12 h-12 bg-emerald-500 text-white rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-xl hover:bg-emerald-600"

@@ -210,6 +210,12 @@ export function init_db() {
         oral_habits TEXT, --e.g., 'Smoking: Yes, 1 pack/day; Bruxism: Yes'
             substance_use TEXT, --e.g., 'Alcohol: Moderate; Drugs: None'
 
+            -- Guardian Logic
+            guardian_name TEXT,
+            guardian_role TEXT CHECK(guardian_role IN ('Father', 'Mother', 'Other')),
+            guardian_phone TEXT,
+            guardian_email TEXT,
+
     --Dental History
             previous_dentist TEXT,
         last_visit_date TEXT,
@@ -259,7 +265,7 @@ export function init_db() {
                 end_time TEXT NOT NULL,
                 duration_minutes INTEGER DEFAULT 30,
                 appointment_type TEXT DEFAULT 'consultation',
-                status TEXT DEFAULT 'scheduled' CHECK(status IN('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show', 'in_progress')),
+                status TEXT DEFAULT 'scheduled' CHECK(status IN('scheduled', 'confirmed', 'completed', 'cancelled', 'no_show', 'in_progress', 'waiting_room')),
                 notes TEXT,
                 actual_start_time TEXT,
                 actual_end_time TEXT,
@@ -268,7 +274,7 @@ export function init_db() {
                 checked_in INTEGER DEFAULT 0,
                 check_in_time TEXT,
                 checked_in_by INTEGER REFERENCES users(id),
-                waiting_room_status TEXT CHECK(waiting_room_status IN ('not_arrived', 'waiting', 'called_in', 'in_treatment')) DEFAULT 'not_arrived',
+                waiting_room_status TEXT CHECK(waiting_room_status IN ('not_arrived', 'waiting', 'called_in', 'in_treatment', 'arrived')) DEFAULT 'not_arrived',
 
                 created_at TEXT DEFAULT(datetime('now')),
                 updated_at TEXT DEFAULT(datetime('now')),
@@ -653,7 +659,13 @@ export function init_db() {
     addColumnIfNotExists('appointments', 'checked_in', 'INTEGER DEFAULT 0');
     addColumnIfNotExists('appointments', 'check_in_time', 'TEXT');
     addColumnIfNotExists('appointments', 'checked_in_by', 'INTEGER REFERENCES users(id)');
-    addColumnIfNotExists('appointments', 'waiting_room_status', "TEXT CHECK(waiting_room_status IN ('not_arrived', 'waiting', 'called_in', 'in_treatment')) DEFAULT 'not_arrived'");
+    addColumnIfNotExists('appointments', 'waiting_room_status', "TEXT CHECK(waiting_room_status IN ('not_arrived', 'waiting', 'called_in', 'in_treatment', 'arrived')) DEFAULT 'not_arrived'");
+
+    // Guardian logic columns
+    addColumnIfNotExists('patients', 'guardian_name', 'TEXT');
+    addColumnIfNotExists('patients', 'guardian_role', 'TEXT');
+    addColumnIfNotExists('patients', 'guardian_phone', 'TEXT');
+    addColumnIfNotExists('patients', 'guardian_email', 'TEXT');
 
     // Timer Alert Settings Migrations
     addColumnIfNotExists('clinic_settings', 'timer_alert_1_minutes', 'INTEGER DEFAULT 15');

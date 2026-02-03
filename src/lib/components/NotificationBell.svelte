@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { t } from "svelte-i18n";
+    import Toast from "./Toast.svelte";
 
     let unreadCount = $state(0);
     let previousCount = 0;
@@ -9,6 +10,13 @@
     let notifications = $state<any[]>([]);
     let loading = $state(false);
     let audio: HTMLAudioElement;
+
+    // Toast state
+    let toast = $state<{
+        visible: boolean;
+        message: string;
+        type: string;
+    } | null>(null);
 
     function playNotificationSound() {
         if (audio) {
@@ -40,6 +48,24 @@
                     `🆕 New notification detected: ${data.count} > ${previousCount}`,
                 );
                 playNotificationSound();
+
+                // Fetch latest notifications to check for urgent ones (like patient arrival)
+                const unreadRes = await fetch("/api/notifications?type=unread");
+                const unreadData = await unreadRes.json();
+
+                // Check for patient arrival in the newest items
+                const arrivalNotif = unreadData.notifications.find(
+                    (n: any) => n.type === "patient_arrival",
+                );
+                if (arrivalNotif) {
+                    toast = {
+                        visible: true,
+                        message: `🔔 ${arrivalNotif.message}`,
+                        type: "success",
+                    };
+                    // Mark as read immediately to "consume" the alert as requested
+                    markAsRead(arrivalNotif.id);
+                }
             }
 
             unreadCount = data.count;
@@ -88,6 +114,7 @@
             low_stock: "📦",
             payment_received: "💰",
             appointment_reminder: "🔔",
+            patient_arrival: "👋",
         };
         return icons[type] || "🔔";
     }
@@ -215,6 +242,14 @@
         </div>
     {/if}
     <audio bind:this={audio} src="/notification.mp3" preload="auto"></audio>
+
+    {#if toast && toast.visible}
+        <Toast
+            message={toast.message}
+            type={toast.type}
+            onclose={() => (toast = null)}
+        />
+    {/if}
 </div>
 
 <svelte:window

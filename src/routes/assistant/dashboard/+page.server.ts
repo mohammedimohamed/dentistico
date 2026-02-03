@@ -75,44 +75,86 @@ export const actions: Actions = {
         const emergencyName = formData.get('emergency_contact_name') as string;
         const emergencyPhone = formData.get('emergency_contact_phone') as string;
 
-        if (!fullName || !phone || !dobRaw) {
-            return fail(400, { error: 'Name, phone, and date of birth are required' });
+        // Guardian fields
+        const guardianName = formData.get('guardian_name') as string;
+        const guardianRole = formData.get('guardian_role') as string;
+        const guardianPhone = formData.get('guardian_phone') as string;
+        const guardianEmail = formData.get('guardian_email') as string;
+        const isDependent = formData.get('is_dependent') === 'on';
+
+        if (!fullName || !dobRaw) {
+            return fail(400, { error: 'Name and date of birth are required' });
+        }
+
+        // If not dependent, phone is required
+        if (!isDependent && !phone) {
+            return fail(400, { error: 'Phone is required for independent patients' });
         }
 
         // Validate date of birth is not in the future
-        const birthDate = new Date(dobRaw);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (birthDate > today) {
-            return fail(400, { error: 'Date of birth cannot be in the future' });
+        let birthDate: Date;
+        if (dobRaw.includes('/')) {
+            const [day, month, year] = dobRaw.split('/').map(Number);
+            birthDate = new Date(year, month - 1, day);
+        } else {
+            birthDate = new Date(dobRaw);
         }
 
-        const dob = dobRaw;
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        today.setHours(0, 0, 0, 0);
+
+        if (isNaN(birthDate.getTime())) {
+            return fail(400, { error: 'Format de date invalide (JJ/MM/AAAA)' });
+        }
+
+        if (birthDate > today) {
+            return fail(400, { error: 'La date de naissance ne peut pas être dans le futur' });
+        }
+
+        const dob = birthDate.toISOString().split('T')[0];
+
+        // Inheritance logic for children
+        let finalPhone = phone;
+        let finalEmail = email;
+        if (isDependent && age < 18) {
+            if (!finalPhone) finalPhone = guardianPhone;
+            if (!finalEmail) finalEmail = guardianEmail;
+        }
 
         // Only check uniqueness if it's NOT a secondary contact
-        if (!isSecondary) {
-            const existingPatient = getPatientByPhoneOrEmail(phone, email);
+        if (!isSecondary && finalPhone) {
+            const existingPatient = getPatientByPhoneOrEmail(finalPhone, finalEmail || '') as any;
             if (existingPatient) {
-                return fail(400, { error: 'A patient with this phone or email already exists' });
+                // If it's a dependent using a guardian's phone, allow it
+                if (isDependent && finalPhone === guardianPhone) {
+                    // ALLOW
+                } else {
+                    return fail(400, { error: `Un patient avec ce numéro ou email existe déjà (${existingPatient.full_name})` });
+                }
             }
         }
 
         try {
             const patientId = createPatient({
                 full_name: fullName,
-                phone: isSecondary ? '' : phone,
-                email: isSecondary ? '' : email,
-                secondary_phone: isSecondary ? phone : null,
-                secondary_email: isSecondary ? email : null,
+                phone: isSecondary ? '' : finalPhone,
+                email: isSecondary ? '' : finalEmail,
+                secondary_phone: isSecondary ? finalPhone : null,
+                secondary_email: isSecondary ? finalEmail : null,
                 date_of_birth: dob,
                 address,
                 city,
                 postal_code: postalCode,
                 emergency_contact_name: emergencyName,
                 emergency_contact_phone: emergencyPhone,
+                guardian_name: guardianName,
+                guardian_role: guardianRole,
+                guardian_phone: guardianPhone,
+                guardian_email: guardianEmail,
                 created_by: locals.user.id
             });
-            return { success: true, message: 'Patient created successfully', patientId };
+            return { success: true, message: 'Patient created successfully', patientId, patientName: fullName };
         } catch (e) {
             console.error(e);
             return fail(500, { error: 'Failed to create patient' });
@@ -189,7 +231,7 @@ export const actions: Actions = {
         const endTimeStr = new Date(end.getTime() - tzOffset).toISOString().slice(0, 19).replace('T', ' ');
 
         try {
-            createAppointment({
+            const appointmentId = Number(createAppointment({
                 patient_id: patientId,
                 doctor_id: doctorId,
                 start_time: startTimeStr, // Ensure format is YYYY-MM-DD HH:MM:SS or ISO
@@ -199,14 +241,31 @@ export const actions: Actions = {
                 status: 'scheduled',
                 notes,
                 created_by_user_id: locals.user.id
-            });
+            }));
 
             // Return different response based on action
             if (action === 'schedule_new') {
-                return { success: true, message: 'Appointment scheduled successfully', action: 'schedule_new' };
+                return {
+                    success: true,
+                    message: 'Appointment scheduled successfully',
+                    action: 'schedule_new',
+                    appointment: {
+                        id: appointmentId,
+                        start_time: startTimeStr,
+                        doctor_id: doctorId
+                    }
+                };
             }
 
-            return { success: true, message: 'Appointment scheduled successfully' };
+            return {
+                success: true,
+                message: 'Appointment scheduled successfully',
+                appointment: {
+                    id: appointmentId,
+                    start_time: startTimeStr,
+                    doctor_id: doctorId
+                }
+            };
         } catch (e: any) {
             console.error(e);
 
@@ -346,6 +405,55 @@ export const actions: Actions = {
         } catch (e) {
             console.error(e);
             return fail(500, { error: 'Failed to update status' });
+        }
+    },
+
+    checkInAndNotify: async ({ request, locals }) => {
+        if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const appointmentId = parseInt(formData.get('appointment_id') as string);
+
+        if (!appointmentId) {
+            return fail(400, { error: 'Missing appointment ID' });
+        }
+
+        try {
+            const appt = getAppointmentById(appointmentId) as any;
+            if (!appt) {
+                return fail(404, { error: 'Appointment not found' });
+            }
+
+            const patient = getPatientByIdLimited(appt.patient_id) as any;
+            const patientName = patient?.full_name || 'Patient';
+
+            // 1. Update Appointment status = 'waiting_room'
+            // 2. Update waiting_room_status = 'arrived'
+            updateAppointment(appointmentId, {
+                status: 'waiting_room',
+                waiting_room_status: 'arrived',
+                checked_in: 1,
+                check_in_time: new Date().toISOString(),
+                checked_in_by: locals.user.id
+            });
+
+            // 3. CRITICAL: Insert a notification for the Doctor
+            if (appt.doctor_id) {
+                createNotification({
+                    userIds: [appt.doctor_id],
+                    type: 'patient_arrival',
+                    title: 'Patient Arrivé',
+                    message: `Patient ${patientName} est en salle d'attente.`,
+                    link: `/doctor/dashboard`
+                });
+            }
+
+            return { success: true, message: 'Patient marqué comme arrivé et Docteur notifié' };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Failed to check in patient' });
         }
     },
 
