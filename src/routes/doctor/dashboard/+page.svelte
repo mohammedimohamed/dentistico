@@ -16,6 +16,17 @@
         return Math.abs(ageDate.getUTCFullYear() - 1970);
     }
 
+    function isRetroactive(appointment: any) {
+        if (!appointment?.created_at || !appointment?.start_time) return false;
+        const startTimeStr = appointment.start_time.includes("T")
+            ? appointment.start_time
+            : appointment.start_time.replace(" ", "T");
+        const created = new Date(appointment.created_at).getTime();
+        const start = new Date(startTimeStr).getTime();
+        const diffMinutes = (created - start) / 1000 / 60;
+        return diffMinutes > 30;
+    }
+
     let viewMode = $state("list"); // 'list' or 'calendar'
 
     // UI State
@@ -318,6 +329,16 @@
                                                         >
                                                     {/if}
                                                     {appt.patient_name}
+                                                    {#if isRetroactive(appt)}
+                                                        <span
+                                                            class="px-1.5 py-0.5 text-[8px] font-black rounded bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-0.5 cursor-help"
+                                                            title="Saisie Différée: Créé le {new Date(
+                                                                appt.created_at,
+                                                            ).toLocaleString()} (Après coup)"
+                                                        >
+                                                            ⏳ REPRO
+                                                        </span>
+                                                    {/if}
                                                 </p>
                                             </div>
                                             <div
@@ -519,6 +540,16 @@
                                                     >
                                                 {/if}
                                                 {selectedAppointment.patient_name}
+                                                {#if isRetroactive(selectedAppointment)}
+                                                    <span
+                                                        class="px-1.5 py-0.5 text-[10px] font-black rounded bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-0.5 cursor-help"
+                                                        title="Saisie Différée: Créé le {new Date(
+                                                            selectedAppointment.created_at,
+                                                        ).toLocaleString()} (Après coup)"
+                                                    >
+                                                        ⌛ SAISIE DIFFÉRÉE
+                                                    </span>
+                                                {/if}
                                             </p>
                                             <a
                                                 href="/doctor/patients/{selectedAppointment.patient_id}"

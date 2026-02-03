@@ -2006,7 +2006,7 @@ export function getDoctorAppointmentsToday(doctorId: number) {
             `
         SELECT
             a.id, a.start_time, a.end_time, a.duration_minutes,
-            a.status, a.appointment_type, a.notes,
+            a.status, a.appointment_type, a.notes, a.created_at,
             p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone, p.date_of_birth as patient_dob, p.gender as patient_gender
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
@@ -2022,7 +2022,7 @@ export function getDoctorAppointmentsToday(doctorId: number) {
 export function getDoctorAppointments(doctorId: number, dateStr: string) {
     return db.prepare(`
     SELECT
-    a.id, a.start_time, a.duration_minutes, a.status, a.notes,
+    a.id, a.start_time, a.duration_minutes, a.status, a.notes, a.created_at,
         p.full_name as patient_name, p.phone as patient_phone, p.email as patient_email, p.date_of_birth as patient_dob
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
@@ -2037,7 +2037,7 @@ export function getDoctorUpcomingAppointments(doctorId: number) {
     return db.prepare(`
     SELECT
     a.id, a.start_time, a.end_time, a.duration_minutes,
-        a.status, a.appointment_type, a.notes,
+        a.status, a.appointment_type, a.notes, a.created_at,
         p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone,
         p.email as patient_email, p.date_of_birth as patient_dob, p.gender as patient_gender,
         p.secondary_phone, p.secondary_email
@@ -2057,6 +2057,7 @@ export function getAllUpcomingAppointments() {
         a.status, a.appointment_type, a.doctor_id, a.notes,
         a.created_by_user_id, a.confirmed_by_user_id,
         a.checked_in, a.check_in_time, a.waiting_room_status,
+        a.created_at,
         p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone,
         p.email as patient_email, p.date_of_birth, p.gender,
         p.secondary_email, p.secondary_phone,

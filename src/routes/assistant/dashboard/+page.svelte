@@ -140,6 +140,25 @@
     let slotPickerDate = $state("");
     let slotPickerTime = $state("");
 
+    /**
+     * Detection of "Saisie Rétroactive" (Backdated Entry)
+     * Returns true if created_at is more than 30 mins after start_time
+     */
+    function isRetroactive(appointment: any) {
+        if (!appointment?.created_at || !appointment?.start_time) return false;
+
+        // Clean start_time if it's from SQLite (space instead of T)
+        const startTimeStr = appointment.start_time.includes("T")
+            ? appointment.start_time
+            : appointment.start_time.replace(" ", "T");
+
+        const created = new Date(appointment.created_at).getTime();
+        const start = new Date(startTimeStr).getTime();
+        const diffMinutes = (created - start) / 1000 / 60;
+
+        return diffMinutes > 30;
+    }
+
     // Patient Creation Modal State
     let patientFullName = $state("");
     let patientPhone = $state("");
@@ -1293,9 +1312,19 @@
                                                 </span>
                                             {/if}
                                             <p
-                                                class="text-base font-bold text-gray-900"
+                                                class="text-base font-bold text-gray-900 flex items-center gap-2"
                                             >
                                                 {appt.patient_name}
+                                                {#if isRetroactive(appt)}
+                                                    <span
+                                                        class="px-1.5 py-0.5 text-[8px] font-black rounded bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-0.5 cursor-help"
+                                                        title="Saisie Différée: Créé le {new Date(
+                                                            appt.created_at,
+                                                        ).toLocaleString()} (Après coup)"
+                                                    >
+                                                        ⏳ REPRO
+                                                    </span>
+                                                {/if}
                                             </p>
                                         </div>
                                         <div
@@ -2074,6 +2103,16 @@
                                                         `assistant.dashboard.appointment.status.${appt.status}`,
                                                     )}
                                                 </span>
+                                                {#if isRetroactive(appt)}
+                                                    <span
+                                                        class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-100 text-amber-800 border border-amber-200 cursor-help"
+                                                        title="Saisie Différée: Créé le {new Date(
+                                                            appt.created_at,
+                                                        ).toLocaleString()} (Après coup)"
+                                                    >
+                                                        ⏳ REPRO
+                                                    </span>
+                                                {/if}
                                             </td>
                                             <td
                                                 class="px-3 py-2 text-xs text-gray-500 max-w-[120px] truncate italic"
@@ -3350,6 +3389,30 @@
                                                             >
                                                             {selectedAppointment.confirmed_by_name}
                                                         </p>
+                                                    {/if}
+                                                    {#if isRetroactive(selectedAppointment)}
+                                                        <div
+                                                            class="mt-2 pt-2 border-t border-amber-100"
+                                                        >
+                                                            <p
+                                                                class="text-xs text-amber-700 bg-amber-50/50 p-2 rounded-lg border border-amber-100 flex items-center gap-2 font-bold"
+                                                            >
+                                                                <span
+                                                                    >⌛ Saisie
+                                                                    Différée
+                                                                    (Retroactive)</span
+                                                                >
+                                                            </p>
+                                                            <p
+                                                                class="text-[10px] text-amber-600 italic mt-1 px-1"
+                                                            >
+                                                                * Enregistré le {new Date(
+                                                                    selectedAppointment.created_at,
+                                                                ).toLocaleString()}
+                                                                - Soit après le début
+                                                                prévu.
+                                                            </p>
+                                                        </div>
                                                     {/if}
                                                 </div>
                                             </div>
