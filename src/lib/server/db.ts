@@ -297,6 +297,9 @@ export function init_db() {
     // Apply necessary columns that might be missing in older DB versions
 
 
+    addColumnIfNotExists('clinic_settings', 'shift_start_mandatory', 'INTEGER DEFAULT 0');
+    addColumnIfNotExists('clinic_settings', 'shift_cash_tracking', 'INTEGER DEFAULT 0');
+
     db.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_checkin ON appointments(checked_in, waiting_room_status, check_in_time);`);
 
     db.exec(`
@@ -617,6 +620,22 @@ export function init_db() {
         FOREIGN KEY(doctor_id) REFERENCES users(id),
         FOREIGN KEY(treatment_id) REFERENCES treatments(id) ON DELETE SET NULL
     );
+    `);
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS work_shifts(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            start_time TEXT NOT NULL,
+            end_time TEXT,
+            start_cash_amount REAL DEFAULT 0,
+            end_cash_amount REAL,
+            status TEXT DEFAULT 'open' CHECK(status IN('open', 'closed')),
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        );
+    `);
+
+    db.exec(`
 
         DROP VIEW IF EXISTS patient_balance;
         CREATE VIEW patient_balance AS
@@ -3326,6 +3345,47 @@ th, td { border-bottom: 1px solid #eee; }
 
     upsertTemplate('Invoice', invoiceHtml, invoiceCss);
     upsertTemplate('Prescription', prescriptionHtml, prescriptionCss);
+}
+
+
+// --- Work Shifts ---
+export function getCurrentShift(userId: number) {
+    return db.prepare("SELECT * FROM work_shifts WHERE user_id = ? AND status = 'open' ORDER BY start_time DESC LIMIT 1").get(userId) as any;
+}
+
+export function startShift(userId: number, startCashAmount: number = 0) {
+    const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const stmt = db.prepare(`
+        INSERT INTO work_shifts (user_id, start_time, start_cash_amount, status)
+        VALUES (?, ?, ?, 'open')
+    `);
+    const info = stmt.run(userId, startTime, startCashAmount);
+    return info.lastInsertRowid;
+}
+
+export function endShift(shiftId: number, endCashAmount: number) {
+    const endTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const stmt = db.prepare(`
+        UPDATE work_shifts
+        SET end_time = ?, end_cash_amount = ?, status = 'closed'
+        WHERE id = ?
+    `);
+    return stmt.run(endTime, endCashAmount, shiftId);
+}
+
+export function getShiftPaymentsTotal(userId: number, startTime: string, method?: string) {
+    let sql = `
+        SELECT SUM(amount) as total
+        FROM payments
+        WHERE recorded_by = ? AND payment_date >= ?
+    `;
+    const params: any[] = [userId, startTime];
+    if (method) {
+        sql += ' AND payment_method = ?';
+        params.push(method);
+    }
+    const result = db.prepare(sql).get(...params) as { total: number };
+    return result.total || 0;
 }
 
 // Run init

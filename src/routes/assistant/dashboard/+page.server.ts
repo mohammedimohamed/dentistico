@@ -16,9 +16,14 @@ import {
     getUserByUsername,
     createUser,
     db,
-    getServerConfig
+    getServerConfig,
+    getCurrentShift,
+    startShift,
+    endShift,
+    getShiftPaymentsTotal
 } from '$lib/server/db';
 import { createNotification, getAllAdminIds } from '$lib/server/notifications';
+import { getClinicSettings } from '$lib/server/clinic-settings';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url, depends }) => {
@@ -41,6 +46,13 @@ export const load: PageServerLoad = async ({ locals, url, depends }) => {
     });
     const doctors = getDoctors();
     const pendingPayments = getPendingPayments();
+    const currentShift = getCurrentShift(locals.user.id);
+    const clinicSettings = getClinicSettings();
+
+    let shiftPaymentsTotal = 0;
+    if (currentShift && currentShift.status === 'open') {
+        shiftPaymentsTotal = getShiftPaymentsTotal(locals.user.id, currentShift.start_time, 'cash');
+    }
 
     return {
         appointments,
@@ -50,6 +62,9 @@ export const load: PageServerLoad = async ({ locals, url, depends }) => {
         patientSearch,
         patientFilter,
         user: locals.user,
+        currentShift,
+        clinicSettings,
+        shiftPaymentsTotal,
         config: {
             paymentMethods: getServerConfig().paymentMethods || []
         }
@@ -57,6 +72,28 @@ export const load: PageServerLoad = async ({ locals, url, depends }) => {
 };
 
 export const actions: Actions = {
+    startShift: async ({ request, locals }) => {
+        if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+        const formData = await request.formData();
+        const startCash = parseFloat(formData.get('start_cash_amount') as string) || 0;
+        startShift(locals.user.id, startCash);
+        return { success: true };
+    },
+    endShift: async ({ request, locals }) => {
+        if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+        const formData = await request.formData();
+        const shiftId = parseInt(formData.get('shift_id') as string);
+        const endCash = parseFloat(formData.get('end_cash_amount') as string) || 0;
+
+        if (!shiftId) return fail(400, { error: 'Missing shift ID' });
+
+        endShift(shiftId, endCash);
+        return { success: true };
+    },
     createPatient: async ({ request, locals }) => {
         if (!locals.user || !['assistant', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });

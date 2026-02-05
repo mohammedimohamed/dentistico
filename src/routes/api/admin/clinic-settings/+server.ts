@@ -44,6 +44,8 @@ export async function PUT({ request, locals }) {
       timer_alert_1_beeps = ?,
       timer_alert_2_minutes = ?,
       timer_alert_2_beeps = ?,
+      shift_start_mandatory = ?,
+      shift_cash_tracking = ?,
       updated_at = datetime('now')
     WHERE id = 1
   `).run(
@@ -59,7 +61,9 @@ export async function PUT({ request, locals }) {
         data.timer_alert_1_minutes || 15,
         data.timer_alert_1_beeps || 1,
         data.timer_alert_2_minutes || 30,
-        data.timer_alert_2_beeps || 2
+        data.timer_alert_2_beeps || 2,
+        data.shift_start_mandatory ? 1 : 0,
+        data.shift_cash_tracking ? 1 : 0
     );
 
     return json({ success: true });

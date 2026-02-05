@@ -496,6 +496,104 @@
                 </div>
             </div>
 
+            <!-- Shift Management Settings -->
+            <div
+                class="bg-white shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden border border-gray-100"
+            >
+                <div class="px-8 py-6 bg-gray-50/50 border-b border-gray-100">
+                    <h2
+                        class="text-xl font-bold text-gray-900 flex items-center gap-2"
+                    >
+                        <span>🕒</span> Work Shift & Cash Control
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Mandatory Shift Start -->
+                        <div
+                            class="p-6 rounded-2xl border {settings.shift_start_mandatory
+                                ? 'bg-indigo-50/30 border-indigo-100'
+                                : 'bg-gray-50 border-gray-100'} transition-all"
+                        >
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="space-y-1">
+                                    <h3 class="font-black text-gray-900">
+                                        Forcer l'ouverture de journée
+                                    </h3>
+                                    <p
+                                        class="text-xs text-gray-500 leading-relaxed"
+                                    >
+                                        Si activé, les assistants sont bloqués
+                                        sur un écran de démarrage tant qu'ils
+                                        n'ont pas ouvert leur session de
+                                        travail.
+                                    </p>
+                                </div>
+                                <div
+                                    class="relative inline-flex items-center cursor-pointer"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        bind:checked={
+                                            settings.shift_start_mandatory
+                                        }
+                                        class="sr-only peer"
+                                    />
+                                    <div
+                                        class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cash Tracking -->
+                        <div
+                            class="p-6 rounded-2xl border {settings.shift_cash_tracking
+                                ? 'bg-emerald-50/30 border-emerald-100'
+                                : 'bg-gray-50 border-gray-100'} transition-all"
+                        >
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="space-y-1">
+                                    <h3 class="font-black text-gray-900">
+                                        Suivi du fond de caisse
+                                    </h3>
+                                    <p
+                                        class="text-xs text-gray-500 leading-relaxed"
+                                    >
+                                        Demande aux assistants de compter et
+                                        valider leur fond de caisse à
+                                        l'ouverture et à la clôture de journée.
+                                    </p>
+                                </div>
+                                <div
+                                    class="relative inline-flex items-center cursor-pointer"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        bind:checked={
+                                            settings.shift_cash_tracking
+                                        }
+                                        class="sr-only peer"
+                                    />
+                                    <div
+                                        class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-600"
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end mt-8">
+                        <button
+                            onclick={saveClinicSettings}
+                            class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
+                        >
+                            Save Shift Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Working Days -->
             <div
                 class="bg-white shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden border border-gray-100"

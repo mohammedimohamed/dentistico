@@ -6,6 +6,8 @@ export interface ClinicSettings {
     work_start_time: string;
     work_end_time: string;
     timezone: string;
+    shift_start_mandatory: number;
+    shift_cash_tracking: number;
 }
 
 export function getClinicSettings(): ClinicSettings {

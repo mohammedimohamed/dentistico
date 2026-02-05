@@ -178,6 +178,51 @@
     let guardianResults = $state<any[]>([]);
     let isGuardianSearching = $state(false);
 
+    // Shift Management State
+    let isStartShiftModalOpen = $state(false);
+    let isEndShiftModalOpen = $state(false);
+    let startCashAmount = $state(0);
+    let endCashAmount = $state(0);
+    let shiftDuration = $state("00:00:00");
+    let shiftTimerInterval: any;
+
+    const currentShift = $derived(data.currentShift);
+    const clinicSettings = $derived(data.clinicSettings);
+    const shiftPaymentsTotal = $derived(data.shiftPaymentsTotal || 0);
+
+    $effect(() => {
+        if (currentShift && currentShift.status === "open") {
+            const startTime = new Date(
+                currentShift.start_time.replace(" ", "T") + "Z",
+            ).getTime();
+
+            clearInterval(shiftTimerInterval);
+            shiftTimerInterval = setInterval(() => {
+                const now = new Date().getTime();
+                const diff = now - startTime;
+
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor(
+                    (diff % (1000 * 60 * 60)) / (1000 * 60),
+                );
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                shiftDuration = [
+                    hours.toString().padStart(2, "0"),
+                    minutes.toString().padStart(2, "0"),
+                    seconds.toString().padStart(2, "0"),
+                ].join(":");
+            }, 1000);
+        } else {
+            clearInterval(shiftTimerInterval);
+            shiftDuration = "00:00:00";
+        }
+    });
+
+    onMount(() => {
+        return () => clearInterval(shiftTimerInterval);
+    });
+
     // Left panel list filtering (Existing patients + Did you mean?)
     const filteredGlobalPatients = $derived.by(() => {
         const query =
@@ -1124,7 +1169,94 @@
     }
 </script>
 
-<div>
+<div class="relative min-h-screen">
+    {#if clinicSettings?.shift_start_mandatory && (!currentShift || currentShift.status !== "open")}
+        <!-- BLOCKING OVERLAY -->
+        <div
+            class="fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/60 backdrop-blur-md"
+            transition:fade
+        >
+            <div
+                class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10 text-center scale-up-center"
+                transition:fly={{ y: 20, duration: 400 }}
+            >
+                <div
+                    class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-8"
+                >
+                    <span class="text-5xl">☀️</span>
+                </div>
+                <h2 class="text-3xl font-black text-gray-900 mb-4">
+                    Prêt à commencer ?
+                </h2>
+                <p class="text-gray-600 mb-8 text-lg">
+                    Veuillez ouvrir votre session de travail pour accéder aux
+                    outils et commencer votre journée.
+                </p>
+                <button
+                    onclick={() => (isStartShiftModalOpen = true)}
+                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-2xl transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg flex items-center justify-center gap-3"
+                >
+                    <span class="text-xl">🚀</span>
+                    Ouvrir ma journée
+                </button>
+            </div>
+        </div>
+    {/if}
+
+    <!-- SHIFT WIDGET -->
+    <div class="absolute top-4 right-6 flex items-center gap-4 z-[50]">
+        {#if currentShift && currentShift.status === "open"}
+            <div
+                class="flex items-center gap-3 bg-white/90 backdrop-blur border border-indigo-100 px-4 py-2 rounded-2xl shadow-sm border-b-2"
+            >
+                <div class="flex flex-col pr-3 border-r border-indigo-50">
+                    <span
+                        class="text-[10px] uppercase font-bold text-indigo-300 tracking-wider"
+                        >Service en cours</span
+                    >
+                    <span class="text-sm font-black font-mono text-indigo-600"
+                        >{shiftDuration}</span
+                    >
+                </div>
+
+                {#if clinicSettings?.shift_cash_tracking}
+                    <div class="flex flex-col pr-3 border-r border-indigo-50">
+                        <span
+                            class="text-[10px] uppercase font-bold text-emerald-300 tracking-wider"
+                            >Caisse</span
+                        >
+                        <span class="text-sm font-bold text-emerald-600"
+                            >{formatCurrency(
+                                currentShift.start_cash_amount,
+                            )}</span
+                        >
+                    </div>
+                {/if}
+
+                <button
+                    onclick={() => (isEndShiftModalOpen = true)}
+                    class="bg-rose-50 hover:bg-rose-100 text-rose-600 p-2 rounded-xl transition-all group active:scale-95"
+                    title="Clôturer la journée"
+                >
+                    <span
+                        class="text-lg group-hover:rotate-12 transition-transform inline-block"
+                        >🌙</span
+                    >
+                </button>
+            </div>
+        {:else}
+            <button
+                onclick={() => (isStartShiftModalOpen = true)}
+                class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-2xl font-bold transition-all shadow-md group active:scale-95"
+            >
+                <span class="text-lg group-hover:rotate-12 transition-transform"
+                    >☀️</span
+                >
+                Ouvrir la journée
+            </button>
+        {/if}
+    </div>
+
     <div class="mb-6 border-b border-gray-200">
         <nav class="-mb-px flex space-x-8" aria-label="Tabs">
             {#each tabs as tab}
@@ -4857,5 +4989,209 @@
             transition:fade={{ duration: 200 }}
             onclick={() => (isFabOpen = false)}
         ></div>
+    {/if}
+
+    <!-- START SHIFT MODAL -->
+    {#if isStartShiftModalOpen}
+        <div
+            class="fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/40 backdrop-blur-sm"
+            transition:fade
+        >
+            <div
+                class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+                transition:fly={{ y: 20 }}
+            >
+                <div class="bg-emerald-600 p-8 text-white">
+                    <h3 class="text-2xl font-black mb-2">
+                        ☀️ Début de Service
+                    </h3>
+                    <p class="opacity-80">
+                        Initialisez votre caisse pour commencer la journée.
+                    </p>
+                </div>
+                <form
+                    action="?/startShift"
+                    method="POST"
+                    use:enhance={() => {
+                        return async ({ result }) => {
+                            if (result.type === "success") {
+                                isStartShiftModalOpen = false;
+                            }
+                        };
+                    }}
+                    class="p-8"
+                >
+                    <div class="mb-8">
+                        <label
+                            class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3"
+                            >Fond de caisse initial (MAD)</label
+                        >
+                        <div class="relative">
+                            <span
+                                class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold"
+                                >💰</span
+                            >
+                            <input
+                                type="number"
+                                name="start_cash_amount"
+                                step="0.01"
+                                bind:value={startCashAmount}
+                                class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 pl-12 pr-4 font-bold text-xl focus:border-emerald-500 focus:ring-0 transition-all"
+                                placeholder="0.00"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button
+                            type="button"
+                            onclick={() => (isStartShiftModalOpen = false)}
+                            class="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-500 hover:bg-gray-50 transition-all"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            type="submit"
+                            class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-emerald-200 transition-all active:scale-95"
+                        >
+                            Confirmer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {/if}
+
+    <!-- END SHIFT MODAL -->
+    {#if isEndShiftModalOpen}
+        <div
+            class="fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/40 backdrop-blur-sm"
+            transition:fade
+        >
+            <div
+                class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
+                transition:fly={{ y: 20 }}
+            >
+                <div class="bg-rose-600 p-8 text-white">
+                    <h3 class="text-2xl font-black mb-2">
+                        🌙 Clôture de Service
+                    </h3>
+                    <p class="opacity-80">
+                        Vérifiez vos comptes avant de terminer votre session.
+                    </p>
+                </div>
+
+                <form
+                    action="?/endShift"
+                    method="POST"
+                    use:enhance={() => {
+                        return async ({ result }) => {
+                            if (result.type === "success") {
+                                isEndShiftModalOpen = false;
+                            }
+                        };
+                    }}
+                    class="p-8"
+                >
+                    <input
+                        type="hidden"
+                        name="shift_id"
+                        value={currentShift?.id}
+                    />
+
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div
+                            class="bg-gray-50 p-4 rounded-2xl border border-gray-100"
+                        >
+                            <span
+                                class="block text-[10px] uppercase font-bold text-gray-400 mb-1"
+                                >Fond initial</span
+                            >
+                            <span class="text-lg font-black text-gray-700"
+                                >{formatCurrency(
+                                    currentShift?.start_cash_amount || 0,
+                                )}</span
+                            >
+                        </div>
+                        <div
+                            class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100"
+                        >
+                            <span
+                                class="block text-[10px] uppercase font-bold text-indigo-400 mb-1"
+                                >Total Encaissé</span
+                            >
+                            <span class="text-lg font-black text-indigo-600"
+                                >+{formatCurrency(shiftPaymentsTotal)}</span
+                            >
+                        </div>
+                    </div>
+
+                    <div
+                        class="mb-8 p-6 bg-emerald-50 rounded-3xl border-2 border-dashed border-emerald-200"
+                    >
+                        <div class="flex items-center justify-between mb-4">
+                            <label
+                                class="block text-xs font-bold text-emerald-600 uppercase tracking-widest"
+                                >Calcul Théorique (Espèces)</label
+                            >
+                            <span
+                                class="bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold"
+                                >SMART CALC</span
+                            >
+                        </div>
+                        <div class="text-3xl font-black text-emerald-700 mb-2">
+                            {formatCurrency(
+                                (currentShift?.start_cash_amount || 0) +
+                                    shiftPaymentsTotal,
+                            )}
+                        </div>
+                        <p
+                            class="text-[10px] text-emerald-600/60 leading-tight"
+                        >
+                            Ce montant correspond au fond initial plus tous les
+                            paiements enregistrés durant votre session.
+                        </p>
+                    </div>
+
+                    <div class="mb-8">
+                        <label
+                            class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3"
+                            >Montant Réel en Caisse (Audit)</label
+                        >
+                        <div class="relative">
+                            <span
+                                class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold"
+                                >📋</span
+                            >
+                            <input
+                                type="number"
+                                name="end_cash_amount"
+                                step="0.01"
+                                bind:value={endCashAmount}
+                                class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 pl-12 pr-4 font-bold text-xl focus:border-rose-500 focus:ring-0 transition-all [&::-webkit-inner-spin-button]:appearance-none"
+                                placeholder="0.00"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button
+                            type="button"
+                            onclick={() => (isEndShiftModalOpen = false)}
+                            class="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-500 hover:bg-gray-50 transition-all"
+                        >
+                            Continuer à travailler
+                        </button>
+                        <button
+                            type="submit"
+                            class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-rose-200 transition-all active:scale-95"
+                        >
+                            Terminer le service
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     {/if}
 </div>
