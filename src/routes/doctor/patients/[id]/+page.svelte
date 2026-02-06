@@ -12,6 +12,8 @@
 
     const tabs = $derived([
         { id: "overview", label: $t("patient_details.overview") },
+        { id: "timeline", label: "Activité" },
+        { id: "notes", label: "Notes" },
         { id: "medical", label: $t("patient_details.medical_history") },
         { id: "dental", label: $t("patient_details.dental_records") },
         { id: "appointments", label: $t("patient_details.appointments") },
@@ -57,6 +59,8 @@
     }
 
     let isToothModalOpen = $state(false);
+    let isNoteModalOpen = $state(false);
+    let chart = $state();
     let selectedTooth = $state<string | null>(null);
     let toothForm = $state({
         treatments: "",
@@ -79,6 +83,65 @@
             : 0,
     );
     const isChild = $derived(age < 18);
+
+    let timelineFilter = $state("all"); // all, clinical, admin, financial
+    let timelineSearch = $state("");
+    let timelineAuthorFilter = $state(""); // username
+
+    const filteredTimeline = $derived(
+        data.timeline?.filter((item: any) => {
+            const matchesType =
+                timelineFilter === "all" ||
+                (timelineFilter === "clinical" &&
+                    ["treatment", "prescription", "note"].includes(
+                        item.type,
+                    )) ||
+                (timelineFilter === "admin" &&
+                    ["appointment", "document"].includes(item.type)) ||
+                (timelineFilter === "financial" &&
+                    ["payment"].includes(item.type));
+
+            const matchesSearch =
+                timelineSearch === "" ||
+                item.title
+                    .toLowerCase()
+                    .includes(timelineSearch.toLowerCase()) ||
+                item.description
+                    .toLowerCase()
+                    .includes(timelineSearch.toLowerCase());
+
+            const matchesAuthor =
+                timelineAuthorFilter === "" ||
+                (item.user_name || "")
+                    .toLowerCase()
+                    .includes(timelineAuthorFilter.toLowerCase());
+
+            return matchesType && matchesSearch && matchesAuthor;
+        }) || [],
+    );
+
+    const timelineAuthors = $derived([
+        ...new Set(data.timeline?.map((i: any) => i.user_name).filter(Boolean)),
+    ] as string[]);
+
+    function getTimelineIconColor(type: string) {
+        switch (type) {
+            case "payment":
+                return "bg-emerald-100 text-emerald-600 border-emerald-200";
+            case "treatment":
+                return "bg-blue-100 text-blue-600 border-blue-200";
+            case "appointment":
+                return "bg-purple-100 text-purple-600 border-purple-200";
+            case "prescription":
+                return "bg-teal-100 text-teal-600 border-teal-200";
+            case "note":
+                return "bg-amber-100 text-amber-600 border-amber-200";
+            case "document":
+                return "bg-gray-100 text-gray-600 border-gray-200";
+            default:
+                return "bg-gray-100 text-gray-600 border-gray-200";
+        }
+    }
 
     function openToothModal(toothNum: string) {
         selectedTooth = toothNum;
@@ -159,10 +222,51 @@
                     )}: {data.patient.date_of_birth} ({age}
                     {$t("patients.age")})
                 </p>
+                <!-- Smart Alerts & Family Link -->
+                <div class="flex flex-wrap gap-2 mt-3">
+                    {#if data.patient.allergies}
+                        <span
+                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200 animate-pulse"
+                        >
+                            ⚠️ Allergies
+                        </span>
+                    {/if}
+                    {#if data.patient.medical_conditions}
+                        <span
+                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200"
+                        >
+                            🩺 Cond. Médicale
+                        </span>
+                    {/if}
+                    {#if data.family?.primaries?.length > 0}
+                        {#each data.family.primaries as primary}
+                            <a
+                                href="/doctor/patients/{primary.id}"
+                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200 transition-colors"
+                            >
+                                👨‍👩‍👧 Lié à {primary.full_name} ({$t(
+                                    `patients.relationship.${primary.relationship_to_primary}`,
+                                ) || "Parent"})
+                            </a>
+                        {/each}
+                    {/if}
+                    {#if data.family?.dependants?.length > 0}
+                        <span
+                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-600 border border-indigo-100"
+                        >
+                            🏠 Chef de famille ({data.family.dependants.length} membres)
+                        </span>
+                    {/if}
+                </div>
             </div>
             <div class="flex flex-wrap gap-3">
                 <button
-                    onclick={() => chart.openGeneralTreatment()}
+                    onclick={() => {
+                        activeTab = "dental";
+                        setTimeout(() => {
+                            chart?.openGeneralTreatment();
+                        }, 50);
+                    }}
                     class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-100 transition-all text-sm"
                 >
                     + Acte (CDT)
@@ -542,7 +646,267 @@
             </div>
         {/if}
 
-        <!-- MEDICAL TAB -->
+        <!-- TIMELINE TAB -->
+        {#if activeTab === "timeline"}
+            <div
+                class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100"
+            >
+                <div
+                    class="px-6 py-5 sm:px-8 border-b border-gray-50 bg-gray-50/30 flex flex-col md:flex-row justify-between items-center gap-4"
+                >
+                    <h3
+                        class="text-lg font-bold text-gray-900 flex items-center gap-2"
+                    >
+                        <span>⏳</span> Activité (360°)
+                    </h3>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <div class="flex bg-gray-100 rounded-lg p-1">
+                            <button
+                                onclick={() => (timelineFilter = "all")}
+                                class="px-3 py-1.5 rounded-md text-xs font-bold transition-all {timelineFilter ===
+                                'all'
+                                    ? 'bg-white shadow text-gray-900'
+                                    : 'text-gray-500 hover:text-gray-700'}"
+                                >Tout</button
+                            >
+                            <button
+                                onclick={() => (timelineFilter = "clinical")}
+                                class="px-3 py-1.5 rounded-md text-xs font-bold transition-all {timelineFilter ===
+                                'clinical'
+                                    ? 'bg-white shadow text-blue-600'
+                                    : 'text-gray-500 hover:text-gray-700'}"
+                                >Clinique</button
+                            >
+                            <button
+                                onclick={() => (timelineFilter = "admin")}
+                                class="px-3 py-1.5 rounded-md text-xs font-bold transition-all {timelineFilter ===
+                                'admin'
+                                    ? 'bg-white shadow text-purple-600'
+                                    : 'text-gray-500 hover:text-gray-700'}"
+                                >Admin</button
+                            >
+                            <button
+                                onclick={() => (timelineFilter = "financial")}
+                                class="px-3 py-1.5 rounded-md text-xs font-bold transition-all {timelineFilter ===
+                                'financial'
+                                    ? 'bg-white shadow text-emerald-600'
+                                    : 'text-gray-500 hover:text-gray-700'}"
+                                >Compta</button
+                            >
+                        </div>
+                        <div class="relative">
+                            <input
+                                type="text"
+                                bind:value={timelineSearch}
+                                placeholder="Rechercher..."
+                                class="pl-8 pr-4 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:ring-indigo-500 w-32 md:w-48"
+                            />
+                            <span
+                                class="absolute left-2.5 top-1.5 text-gray-400 text-xs"
+                                >🔍</span
+                            >
+                        </div>
+                        <!-- Author Filter -->
+                        <div class="relative">
+                            <select
+                                bind:value={timelineAuthorFilter}
+                                class="pl-8 pr-4 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:ring-indigo-500 cursor-pointer appearance-none md:w-32"
+                            >
+                                <option value="">Tous les auteurs</option>
+                                {#each timelineAuthors as author}
+                                    <option value={author}>{author}</option>
+                                {/each}
+                            </select>
+                            <span
+                                class="absolute left-2.5 top-1.5 text-gray-400 text-xs"
+                                >👤</span
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-8 sm:px-8 relative min-h-[400px]">
+                    <div
+                        class="absolute top-8 bottom-8 left-[27px] w-0.5 bg-gray-100"
+                    ></div>
+
+                    <div class="space-y-8">
+                        {#each filteredTimeline as item}
+                            <div class="relative pl-12 group">
+                                <!-- Node -->
+                                <div
+                                    class="absolute left-0 top-1 w-14 h-14 flex items-center justify-center"
+                                >
+                                    <div
+                                        class="w-10 h-10 rounded-full border-4 border-white shadow-sm flex items-center justify-center text-lg z-10 {getTimelineIconColor(
+                                            item.type,
+                                        )}"
+                                    >
+                                        {item.icon}
+                                    </div>
+                                </div>
+
+                                <!-- Content -->
+                                <div
+                                    class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group-hover:border-indigo-100"
+                                >
+                                    <div
+                                        class="flex justify-between items-start"
+                                    >
+                                        <div>
+                                            <h4
+                                                class="font-bold text-gray-900 text-sm flex items-center gap-2"
+                                            >
+                                                {item.title}
+                                                {#if item.user_name}
+                                                    <span
+                                                        class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-normal"
+                                                    >
+                                                        par {item.user_name}
+                                                    </span>
+                                                {/if}
+                                            </h4>
+                                            <p
+                                                class="text-sm text-gray-600 mt-1"
+                                            >
+                                                {item.description}
+                                            </p>
+                                        </div>
+                                        <time
+                                            class="text-xs font-bold text-gray-400 whitespace-nowrap bg-gray-50 px-2 py-1 rounded-lg"
+                                        >
+                                            {new Date(item.date).toLocaleString(
+                                                [],
+                                                {
+                                                    dateStyle: "short",
+                                                    timeStyle: "short",
+                                                },
+                                            )}
+                                        </time>
+                                    </div>
+                                    {#if item.type === "treatment"}
+                                        <div class="mt-2 flex gap-1">
+                                            {#if item.description.includes("Extraction")}
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800"
+                                                >
+                                                    Chirurgie
+                                                </span>
+                                            {/if}
+                                        </div>
+                                    {/if}
+                                </div>
+                            </div>
+                        {/each}
+
+                        {#if filteredTimeline.length === 0}
+                            <div class="text-center py-12 text-gray-400">
+                                <p>Aucune activité trouvée pour ces filtres.</p>
+                            </div>
+                        {/if}
+                    </div>
+                </div>
+            </div>
+        {/if}
+
+        <!-- NOTES TAB -->
+        {#if activeTab === "notes"}
+            <div class="space-y-6">
+                <div class="flex justify-between items-center px-4 sm:px-0">
+                    <h3
+                        class="text-xl font-bold text-gray-900 flex items-center gap-2"
+                    >
+                        📝 Notes Cliniques (Smart Notes)
+                    </h3>
+                    <button
+                        class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow hover:bg-indigo-700 transition flex items-center gap-2"
+                        onclick={() => (isNoteModalOpen = true)}
+                    >
+                        <span>+</span> Nouvelle Note
+                    </button>
+                </div>
+
+                {#if data.notes && data.notes.length > 0}
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    >
+                        {#each data.notes as note}
+                            <div
+                                class="group relative bg-yellow-50 p-6 rounded-2xl shadow-sm border border-yellow-100 hover:-translate-y-1 transition-transform duration-300"
+                            >
+                                <div
+                                    class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <form
+                                        method="POST"
+                                        action="?/deleteNote"
+                                        use:enhance
+                                    >
+                                        <input
+                                            type="hidden"
+                                            name="id"
+                                            value={note.id}
+                                        />
+                                        <button
+                                            type="submit"
+                                            class="p-1.5 bg-white/50 hover:bg-white rounded-full text-red-500 hover:text-red-700 shadow-sm transition-colors"
+                                            title="Supprimer"
+                                        >
+                                            <svg
+                                                class="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                                ><path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                ></path></svg
+                                            >
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <div
+                                    class="flex justify-between items-start mb-4"
+                                >
+                                    <span
+                                        class="bg-yellow-200/50 text-yellow-800 text-[10px] uppercase font-black px-2 py-1 rounded-lg tracking-wider"
+                                    >
+                                        {note.importance === "critical"
+                                            ? "CRITIQUE"
+                                            : note.importance === "high"
+                                              ? "IMPORTANT"
+                                              : "NORMAL"}
+                                    </span>
+                                    <span
+                                        class="text-[10px] font-bold text-yellow-800/60"
+                                    >
+                                        {new Date(
+                                            note.created_at,
+                                        ).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                <p
+                                    class="font-handwriting text-gray-800 text-lg leading-relaxed whitespace-pre-wrap font-medium"
+                                >
+                                    {note.content}
+                                </p>
+                            </div>
+                        {/each}
+                    </div>
+                {:else}
+                    <div
+                        class="py-12 text-center text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200"
+                    >
+                        <p class="text-xl opacity-20 mb-2">📒</p>
+                        <p>Aucune note post-it pour ce patient.</p>
+                    </div>
+                {/if}
+            </div>
+        {/if}
+
         {#if activeTab === "medical"}
             <div
                 class="bg-white shadow-sm overflow-hidden rounded-3xl border border-gray-100"
@@ -2049,6 +2413,112 @@
                                         {$t("common.cancel")}
                                     </button>
                                 </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
+
+    <!-- Create Note Modal -->
+    {#if isNoteModalOpen}
+        <div class="relative z-50" role="dialog" aria-modal="true">
+            <div
+                class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
+                onclick={() => (isNoteModalOpen = false)}
+            ></div>
+            <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <div
+                        class="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white shadow-2xl transition-all p-6"
+                    >
+                        <h3 class="text-2xl font-black text-gray-900 mb-6">
+                            Nouvelle Note
+                        </h3>
+                        <form
+                            method="POST"
+                            action="?/createNote"
+                            use:enhance={() => {
+                                return async ({ result, update }) => {
+                                    if (result.type === "success")
+                                        isNoteModalOpen = false;
+                                    await update();
+                                };
+                            }}
+                        >
+                            <div class="space-y-4">
+                                <div>
+                                    <label
+                                        class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
+                                        >Contenu</label
+                                    >
+                                    <textarea
+                                        name="content"
+                                        rows="5"
+                                        class="w-full rounded-xl border-gray-200 bg-yellow-50 focus:bg-white focus:ring-yellow-400 focus:border-yellow-400 font-handwriting text-lg"
+                                        placeholder="Écrivez votre note ici..."
+                                        required
+                                    ></textarea>
+                                </div>
+                                <div class="flex gap-4">
+                                    <label
+                                        class="flex items-center gap-2 cursor-pointer"
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="importance"
+                                            value="low"
+                                            checked
+                                            class="text-yellow-400 focus:ring-yellow-400"
+                                        />
+                                        <span
+                                            class="text-sm font-medium text-gray-700"
+                                            >Normal</span
+                                        >
+                                    </label>
+                                    <label
+                                        class="flex items-center gap-2 cursor-pointer"
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="importance"
+                                            value="high"
+                                            class="text-orange-500 focus:ring-orange-500"
+                                        />
+                                        <span
+                                            class="text-sm font-medium text-gray-700"
+                                            >Important</span
+                                        >
+                                    </label>
+                                    <label
+                                        class="flex items-center gap-2 cursor-pointer"
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="importance"
+                                            value="critical"
+                                            class="text-red-600 focus:ring-red-600"
+                                        />
+                                        <span
+                                            class="text-sm font-medium text-gray-700"
+                                            >Critique</span
+                                        >
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mt-8 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    class="px-4 py-2 rounded-xl text-gray-600 font-bold hover:bg-gray-100 transition"
+                                    onclick={() => (isNoteModalOpen = false)}
+                                    >Annuler</button
+                                >
+                                <button
+                                    type="submit"
+                                    class="px-6 py-2 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100"
+                                    >Enregistrer</button
+                                >
                             </div>
                         </form>
                     </div>

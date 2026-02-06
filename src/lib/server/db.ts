@@ -1871,7 +1871,23 @@ export function getArchivedPatientsFull() {
 }
 
 export function getPatientByIdFull(id: number) {
-    return db.prepare('SELECT * FROM patients WHERE id = ?').get(id);
+    return db.prepare('SELECT * FROM patients WHERE id = ?').get(id) as any;
+}
+
+export function getFamilyMembers(patientId: number) {
+    const patient = getPatientByIdFull(patientId);
+    if (!patient) return { primaries: [], dependants: [] };
+
+    // If I am a dependant, who is my primary?
+    let primaries: any[] = [];
+    if (patient.primary_contract_id) {
+        primaries = db.prepare('SELECT id, full_name, relationship_to_primary FROM patients WHERE id = ?').all(patient.primary_contract_id);
+    }
+
+    // If I am a primary, who are my dependants?
+    const dependants = db.prepare('SELECT id, full_name, relationship_to_primary FROM patients WHERE primary_contract_id = ?').all(patientId);
+
+    return { primaries, dependants };
 }
 
 
@@ -3391,3 +3407,102 @@ export function getShiftPaymentsTotal(userId: number, startTime: string, method?
 // Run init
 init_db();
 seedDefaultTemplates();
+
+// --- Timeline Aggregation ---
+
+export function getPatientTimeline(patientId: number) {
+    const timeline: any[] = [];
+
+    // 1. Appointments
+    const appointments = db.prepare(`
+        SELECT 
+            'appointment' as type,
+            a.created_at as date,
+            'Rendez-vous' as title,
+            a.appointment_type || ' (' || a.status || ')' as description,
+            '📅' as icon,
+            'Assistant' as user_name
+        FROM appointments a
+        WHERE a.patient_id = ?
+    `).all(patientId) as any[];
+    timeline.push(...appointments);
+
+    // 2. Treatments
+    const treatments = db.prepare(`
+        SELECT 
+            'treatment' as type,
+            COALESCE(t.date_performed, t.created_at) as date,
+            'Acte Clinique' as title,
+            t.treatment_type || (CASE WHEN t.tooth_number THEN ' (Dent ' || t.tooth_number || ')' ELSE '' END) as description,
+            '🦷' as icon,
+            u.username as user_name
+        FROM dental_treatments t
+        LEFT JOIN users u ON t.provider_id = u.id
+        WHERE t.patient_id = ?
+    `).all(patientId) as any[];
+    timeline.push(...treatments);
+
+    // 3. Clinical Notes
+    const notes = db.prepare(`
+        SELECT 
+            'note' as type,
+            n.created_at as date,
+            'Note Clinique' as title,
+            n.content as description,
+            '📝' as icon,
+            u.username as user_name
+        FROM clinical_notes n
+        LEFT JOIN users u ON n.doctor_id = u.id
+        WHERE n.patient_id = ?
+    `).all(patientId) as any[];
+    timeline.push(...notes);
+
+    // 4. Payments
+    const payments = db.prepare(`
+        SELECT 
+            'payment' as type,
+            p.payment_date as date,
+            'Paiement' as title,
+            p.amount || ' ' || 'DZD' || ' (' || p.payment_method || ')' as description,
+            '💰' as icon,
+            u.username as user_name
+        FROM payments p
+        LEFT JOIN users u ON p.recorded_by = u.id
+        WHERE p.patient_id = ?
+    `).all(patientId) as any[];
+    timeline.push(...payments);
+
+    // 5. Prescriptions
+    const prescriptions = db.prepare(`
+        SELECT 
+            'prescription' as type,
+            pr.prescription_date as date,
+            'Ordonnance' as title,
+            'Ordonnance générée' as description,
+            '💊' as icon,
+            u.username as user_name
+        FROM prescriptions pr
+        LEFT JOIN users u ON pr.doctor_id = u.id
+        WHERE pr.patient_id = ?
+    `).all(patientId) as any[];
+    timeline.push(...prescriptions);
+
+    // 6. Documents
+    const documents = db.prepare(`
+        SELECT 
+            'document' as type,
+            doc.upload_date as date,
+            'Document' as title,
+            doc.file_name as description,
+            '📎' as icon,
+            'System' as user_name
+        FROM attachments doc
+        WHERE doc.patient_id = ?
+    `).all(patientId) as any[];
+    timeline.push(...documents);
+
+    // Sort by date DESC
+    timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return timeline;
+}

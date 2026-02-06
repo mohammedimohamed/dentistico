@@ -20,7 +20,11 @@ import {
     createAttachment,
     getAttachmentById,
     deleteAttachment,
-    getBillingSummary
+    getBillingSummary,
+    getPatientTimeline,
+    getClinicalNotes,
+    getFamilyMembers,
+    deleteClinicalNote
 } from '$lib/server/db';
 import fs from 'fs';
 import type { PageServerLoad, Actions } from './$types';
@@ -79,6 +83,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         attachments,
         appConfig,
         billingSummary: getBillingSummary(patientId),
+        timeline: getPatientTimeline(patientId),
+        notes: getClinicalNotes(patientId),
+        family: getFamilyMembers(patientId),
         user: locals.user
     };
 };
@@ -376,6 +383,43 @@ export const actions: Actions = {
         } catch (e) {
             console.error('Delete attachment failed:', e);
             return fail(500, { error: 'Failed to delete attachment' });
+        }
+    },
+
+    deleteNote: async ({ request, locals }) => {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+        const formData = await request.formData();
+        const noteId = parseInt(formData.get('id') as string);
+        if (!noteId) return fail(400, { error: 'Invalid note ID' });
+
+        try {
+            deleteClinicalNote(noteId);
+            return { success: true };
+        } catch (e) {
+            console.error('Failed to delete note:', e);
+            return fail(500, { error: 'Failed to delete note' });
+        }
+    },
+
+    createNote: async ({ request, params, locals }) => {
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+        const patientId = parseInt(params.id);
+        const formData = await request.formData();
+        const content = formData.get('content') as string;
+        const importance = formData.get('importance') as string || 'low';
+
+        if (!content) return fail(400, { error: 'Content required' });
+
+        try {
+            await (await import('$lib/server/db')).addClinicalNote(patientId, locals.user.id, null, content, importance);
+            return { success: true };
+        } catch (e) {
+            console.error('Failed to create note:', e);
+            return fail(500, { error: 'Failed to create note' });
         }
     }
 };
