@@ -450,42 +450,54 @@ export function init_db() {
         FOREIGN KEY(dental_treatment_id) REFERENCES dental_treatments(id) ON DELETE SET NULL
     );
 
-        CREATE TABLE IF NOT EXISTS suppliers(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        contact_name TEXT,
-        phone TEXT,
-        email TEXT,
-        address TEXT,
-        created_at TEXT DEFAULT(datetime('now'))
-    );
+        CREATE TABLE IF NOT EXISTS units(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE
+        );
 
-        CREATE TABLE IF NOT EXISTS inventory_items(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        sku TEXT UNIQUE,
-        category TEXT,
-        current_quantity INTEGER DEFAULT 0,
-        min_threshold INTEGER DEFAULT 5,
-        unit TEXT,
-        unit_cost REAL DEFAULT 0.0,
-        expiry_date TEXT,
-        supplier_id INTEGER,
-        last_updated TEXT DEFAULT(datetime('now')),
-        FOREIGN KEY(supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
-    );
+        CREATE TABLE IF NOT EXISTS inventory_suppliers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            contact_phone TEXT,
+            tax_id TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
 
-        CREATE TABLE IF NOT EXISTS stock_moves(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_id INTEGER NOT NULL,
-        type TEXT CHECK(type IN('IN', 'OUT')) NOT NULL,
-        quantity INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        reason TEXT,
-        move_date TEXT DEFAULT(datetime('now')),
-        FOREIGN KEY(item_id) REFERENCES inventory_items(id) ON DELETE CASCADE,
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    );
+        CREATE TABLE IF NOT EXISTS inventory_products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            barcode TEXT UNIQUE,
+            min_threshold INTEGER DEFAULT 5,
+            category TEXT,
+            unit TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS inventory_batches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER NOT NULL,
+            supplier_id INTEGER,
+            batch_number TEXT NOT NULL,
+            expiration_date TEXT NOT NULL,
+            unit_cost REAL DEFAULT 0.0,
+            initial_quantity INTEGER NOT NULL,
+            current_quantity INTEGER NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(product_id) REFERENCES inventory_products(id) ON DELETE CASCADE,
+            FOREIGN KEY(supplier_id) REFERENCES inventory_suppliers(id) ON DELETE SET NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS inventory_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            batch_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            type TEXT CHECK(type IN ('PURCHASE', 'USAGE', 'ADJUSTMENT', 'RETURN')) NOT NULL,
+            quantity_change INTEGER NOT NULL,
+            reason TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(batch_id) REFERENCES inventory_batches(id) ON DELETE CASCADE,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        );
 
         CREATE TABLE IF NOT EXISTS notifications(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1552,20 +1564,6 @@ function seed_db() {
     }
     console.log('✅ Medications seeded');
 
-    // Seed Suppliers (Reference Data)
-    const suppliers = [
-        ['DentaLogistics', 'John Doe', '555-9988', 'contact@dentalog.com', '12 Industrial Way, Paris'],
-        ['MediSupply', 'Jane Smith', '555-7722', 'sales@medisupply.com', '45 Biotech Blvd, Lyon']
-    ];
-    const insertSupplier = db.prepare('INSERT INTO suppliers (name, contact_name, phone, email, address) VALUES (?, ?, ?, ?, ?)');
-    for (const s of suppliers) {
-        insertSupplier.run(...s);
-    }
-
-    const s1 = db.prepare("SELECT id FROM suppliers WHERE name = 'DentaLogistics'").get() as { id: number };
-    const s2 = db.prepare("SELECT id FROM suppliers WHERE name = 'MediSupply'").get() as { id: number };
-    console.log('✅ Suppliers seeded');
-
     // Seed Prescription Templates
     const templates = [
         {
@@ -1606,19 +1604,38 @@ function seed_db() {
     }
     console.log('✅ Prescription templates seeded');
 
-    // Seed Inventory Items (Reference Data)
-    const inventory = [
-        ['Gants (Taille M)', 'BOX-G-M', 'Consommables', 50, 10, 'Boîte de 100', 12.50, '2026-12-31', s1.id],
-        ['Masques Chirurgicaux', 'MSK-CHIR', 'Consommables', 100, 20, 'Unité', 0.45, '2027-06-30', s1.id],
-        ['Articaine (Anesthésiant)', 'ANES-ART', 'Produits', 40, 5, 'Cartouche 1.8ml', 2.10, '2025-05-15', s2.id],
-        ['Composites A2', 'COMP-A2', 'Restaurations', 15, 3, 'Seringue', 45.00, '2026-08-20', s2.id],
-        ['Lames de scalpel #15', 'SCAL-15', 'Chirurgie', 4, 5, 'Unité', 1.20, '2028-01-01', s1.id]
+    // Seed Inventory (Batch-Based WMS)
+    const suppliersData = [
+        ['DentaLogistics', '555-9988', 'FR123456789'],
+        ['MediSupply', '555-7722', 'FR987654321']
     ];
-    const insertInv = db.prepare('INSERT INTO inventory_items (name, sku, category, current_quantity, min_threshold, unit, unit_cost, expiry_date, supplier_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    for (const i of inventory) {
-        insertInv.run(...i);
-    }
-    console.log('✅ Inventory items seeded');
+    const insertSupp = db.prepare('INSERT INTO inventory_suppliers (name, contact_phone, tax_id) VALUES (?, ?, ?)');
+    for (const s of suppliersData) insertSupp.run(...s);
+
+    const s1Id = db.prepare("SELECT id FROM inventory_suppliers WHERE name = 'DentaLogistics'").get() as { id: number };
+    const s2Id = db.prepare("SELECT id FROM inventory_suppliers WHERE name = 'MediSupply'").get() as { id: number };
+
+    const productsData = [
+        ['Gants (Taille M)', 'BOX-G-M', 10, 'Consommables', 'Boîte de 100'],
+        ['Masques Chirurgicaux', 'MSK-CHIR', 20, 'Consommables', 'Unité'],
+        ['Articaine (Anesthésiant)', 'ANES-ART', 5, 'Produits', 'Cartouche 1.8ml'],
+        ['Composites A2', 'COMP-A2', 3, 'Restaurations', 'Seringue'],
+        ['Lames de scalpel #15', 'SCAL-15', 5, 'Chirurgie', 'Unité']
+    ];
+    const insertProd = db.prepare('INSERT INTO inventory_products (name, barcode, min_threshold, category, unit) VALUES (?, ?, ?, ?, ?)');
+    for (const p of productsData) insertProd.run(...p);
+
+    const p1Id = db.prepare("SELECT id FROM inventory_products WHERE name = 'Gants (Taille M)'").get() as { id: number };
+    const p3Id = db.prepare("SELECT id FROM inventory_products WHERE name = 'Articaine (Anesthésiant)'").get() as { id: number };
+
+    const batchesData = [
+        [p1Id.id, s1Id.id, 'BATCH-001', '2026-12-31', 12.50, 50, 50],
+        [p3Id.id, s2Id.id, 'BATCH-002', '2025-05-15', 2.10, 40, 40]
+    ];
+    const insertBatch = db.prepare('INSERT INTO inventory_batches (product_id, supplier_id, batch_number, expiration_date, unit_cost, initial_quantity, current_quantity) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    for (const b of batchesData) insertBatch.run(...b);
+
+    console.log('✅ Inventory (Products & Batches) seeded');
 
     // Seed CDT codes
     seedAlgerianCDTCodes();
@@ -2696,73 +2713,240 @@ export function markInvoiceAsPaid(invoiceId: number, paymentData: { amount: numb
 }
 
 // --- Inventory ---
-export function getAllInventoryItems() {
-    return db.prepare('SELECT * FROM inventory_items ORDER BY name ASC').all();
+// --- Inventory ---
+export function getAllInventoryItems(filters?: any) {
+    let sql = `
+        SELECT 
+            p.*,
+            COALESCE(SUM(b.current_quantity), 0) as total_quantity,
+            AVG(b.unit_cost) as avg_unit_cost
+        FROM inventory_products p
+        LEFT JOIN inventory_batches b ON p.id = b.product_id
+        WHERE 1 = 1
+    `;
+    const params: any[] = [];
+
+    if (filters?.search) {
+        const searchPattern = `%${filters.search}%`;
+        sql += ` AND (p.name LIKE ? OR p.barcode LIKE ? OR EXISTS (SELECT 1 FROM inventory_batches b2 WHERE b2.product_id = p.id AND b2.batch_number LIKE ?))`;
+        params.push(searchPattern, searchPattern, searchPattern);
+    }
+
+    sql += ` GROUP BY p.id`;
+
+    let havingClauses = [];
+    if (filters?.status === 'low_stock') {
+        havingClauses.push(`total_quantity <= p.min_threshold AND total_quantity > 0`);
+    } else if (filters?.status === 'out_of_stock') {
+        havingClauses.push(`total_quantity = 0`);
+    }
+
+    if (havingClauses.length > 0) {
+        sql += ` HAVING ` + havingClauses.join(' AND ');
+    }
+
+    sql += ` ORDER BY p.name ASC`;
+
+    let products = db.prepare(sql).all(...params) as any[];
+
+    // Additional filtering for batches (supplier, expiration)
+    for (let i = 0; i < products.length; i++) {
+        let batchSql = `
+            SELECT b.*, s.name as supplier_name
+            FROM inventory_batches b
+            LEFT JOIN inventory_suppliers s ON b.supplier_id = s.id
+            WHERE b.product_id = ? AND b.current_quantity > 0
+        `;
+        const batchParams: any[] = [products[i].id];
+
+        if (filters?.supplier_id) {
+            batchSql += ` AND b.supplier_id = ?`;
+            batchParams.push(filters.supplier_id);
+        }
+
+        if (filters?.expiration === 'expired') {
+            batchSql += ` AND date(b.expiration_date) < date('now')`;
+        } else if (filters?.expiration === 'soon') {
+            batchSql += ` AND date(b.expiration_date) BETWEEN date('now') AND date('now', '+30 days')`;
+        }
+
+        batchSql += ` ORDER BY b.expiration_date ASC`;
+
+        const batches = db.prepare(batchSql).all(...batchParams) as any[];
+        products[i].batches = batches;
+
+        // Recalculate total quantity if batch filtering was applied
+        if (filters?.supplier_id || filters?.expiration) {
+            products[i].total_quantity = batches.reduce((sum, b) => sum + b.current_quantity, 0);
+        }
+    }
+
+    // Post-filter products with 0 batches if supplier/expiration filter was applied
+    if (filters?.supplier_id || filters?.expiration) {
+        products = products.filter(p => p.batches.length > 0);
+    }
+
+    return products;
 }
 
-export function getInventoryItemById(id: number) {
-    return db.prepare('SELECT * FROM inventory_items WHERE id = ?').get(id);
+export function getInventoryKPIs() {
+    const totalValue = db.prepare(`
+        SELECT SUM(current_quantity * unit_cost) as total
+        FROM inventory_batches
+    `).get() as { total: number };
+
+    const expiringSoon = db.prepare(`
+        SELECT COUNT(*) as count
+        FROM inventory_batches
+        WHERE date(expiration_date) BETWEEN date('now') AND date('now', '+30 days')
+          AND current_quantity > 0
+    `).get() as { count: number };
+
+    const expired = db.prepare(`
+        SELECT COUNT(*) as count
+        FROM inventory_batches
+        WHERE date(expiration_date) < date('now')
+          AND current_quantity > 0
+    `).get() as { count: number };
+
+    const lowStock = db.prepare(`
+        SELECT COUNT(*) as count
+        FROM (
+            SELECT p.id
+            FROM inventory_products p
+            LEFT JOIN inventory_batches b ON p.id = b.product_id
+            GROUP BY p.id
+            HAVING COALESCE(SUM(b.current_quantity), 0) <= p.min_threshold
+        )
+    `).get() as { count: number };
+
+    return {
+        totalValue: totalValue.total || 0,
+        expiringSoon: expiringSoon.count || 0,
+        expired: expired.count || 0,
+        lowStock: lowStock.count || 0
+    };
 }
 
-export function recordStockMove(moveData: { item_id: number; type: 'IN' | 'OUT'; quantity: number; user_id: number; reason?: string }) {
+export function deductStockFEFO(productId: number, quantity: number, userId: number, reason: string) {
+    const txn = db.transaction(() => {
+        let remainingToDeduct = quantity;
+
+        const batches = db.prepare(`
+            SELECT * FROM inventory_batches
+            WHERE product_id = ? AND current_quantity > 0
+            ORDER BY date(expiration_date) ASC
+        `).all(productId) as any[];
+
+        for (const batch of batches) {
+            if (remainingToDeduct <= 0) break;
+
+            const deductFromThisBatch = Math.min(batch.current_quantity, remainingToDeduct);
+
+            db.prepare(`
+                UPDATE inventory_batches
+                SET current_quantity = current_quantity - ?
+                WHERE id = ?
+            `).run(deductFromThisBatch, batch.id);
+
+            db.prepare(`
+                INSERT INTO inventory_transactions (batch_id, user_id, type, quantity_change, reason)
+                VALUES (?, ?, 'USAGE', ?, ?)
+            `).run(batch.id, userId, -deductFromThisBatch, reason);
+
+            remainingToDeduct -= deductFromThisBatch;
+        }
+
+        if (remainingToDeduct > 0) {
+            throw new Error(`Stock insuffisant. Manque ${remainingToDeduct} unités.`);
+        }
+    });
+
+    return txn();
+}
+
+export function addStockBatch(batchData: {
+    product_id: number;
+    supplier_id: number | null;
+    batch_number: string;
+    expiration_date: string;
+    unit_cost: number;
+    quantity: number;
+    user_id: number;
+    reason: string;
+}) {
+    const txn = db.transaction(() => {
+        const batchId = db.prepare(`
+            INSERT INTO inventory_batches (product_id, supplier_id, batch_number, expiration_date, unit_cost, initial_quantity, current_quantity)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            batchData.product_id,
+            batchData.supplier_id,
+            batchData.batch_number,
+            batchData.expiration_date,
+            batchData.unit_cost,
+            batchData.quantity,
+            batchData.quantity
+        ).lastInsertRowid;
+
+        db.prepare(`
+            INSERT INTO inventory_transactions (batch_id, user_id, type, quantity_change, reason)
+            VALUES (?, ?, 'PURCHASE', ?, ?)
+        `).run(batchId, batchData.user_id, batchData.quantity, batchData.reason);
+
+        return batchId;
+    });
+
+    return txn();
+}
+
+export function getAllSuppliers() {
+    return db.prepare('SELECT * FROM inventory_suppliers ORDER BY name ASC').all();
+}
+
+export function createSupplier(data: any) {
+    const keys = Object.keys(data);
+    const columns = keys.join(', ');
+    const placeholders = keys.map(() => '?').join(', ');
+    return db.prepare(`INSERT INTO inventory_suppliers(${columns}) VALUES(${placeholders})`).run(...Object.values(data)).lastInsertRowid;
+}
+
+export function createInventoryProduct(data: any) {
+    const keys = Object.keys(data);
+    const columns = keys.join(', ');
+    const placeholders = keys.map(() => '?').join(', ');
+    return db.prepare(`INSERT INTO inventory_products(${columns}) VALUES(${placeholders})`).run(...Object.values(data)).lastInsertRowid;
+}
+
+export function updateBatch(batchId: number, data: {
+    batch_number?: string;
+    expiration_date?: string;
+    unit_cost?: number;
+    supplier_id?: number | null;
+}) {
+    const keys = Object.keys(data);
+    if (keys.length === 0) return;
+
+    const setClause = keys.map(k => `${k} = ?`).join(', ');
+    const values = [...Object.values(data), batchId];
+
+    return db.prepare(`UPDATE inventory_batches SET ${setClause} WHERE id = ?`).run(...values);
+}
+
+export function adjustStock(batchId: number, userId: number, delta: number, reason: string) {
     const txn = db.transaction(() => {
         db.prepare(`
-            INSERT INTO stock_moves(item_id, type, quantity, user_id, reason)
-    VALUES(?, ?, ?, ?, ?)
-        `).run(moveData.item_id, moveData.type, moveData.quantity, moveData.user_id, moveData.reason || null);
-
-        const adjustment = moveData.type === 'IN' ? moveData.quantity : -moveData.quantity;
-        db.prepare(`
-            UPDATE inventory_items 
-            SET current_quantity = current_quantity + ?, last_updated = datetime('now')
+            UPDATE inventory_batches
+            SET current_quantity = current_quantity + ?
             WHERE id = ?
-        `).run(adjustment, moveData.item_id);
+        `).run(delta, batchId);
+
+        db.prepare(`
+            INSERT INTO inventory_transactions (batch_id, user_id, type, quantity_change, reason)
+            VALUES (?, ?, 'ADJUSTMENT', ?, ?)
+        `).run(batchId, userId, delta, reason);
     });
-    txn();
-}
-
-export function createInventoryItem(itemData: any) {
-    const keys = Object.keys(itemData);
-    const columns = keys.join(', ');
-    const placeholders = keys.map(() => '?').join(', ');
-    const values = Object.values(itemData);
-
-    const stmt = db.prepare(`INSERT INTO inventory_items(${columns}) VALUES(${placeholders})`);
-    const info = stmt.run(...values);
-    return info.lastInsertRowid;
-}
-
-export function getStockMoves(itemId?: number) {
-    if (itemId) {
-        return db.prepare(`
-            SELECT m.*, u.full_name as user_name, i.name as item_name
-            FROM stock_moves m
-            JOIN users u ON m.user_id = u.id
-            JOIN inventory_items i ON m.item_id = i.id
-            WHERE m.item_id = ?
-        ORDER BY m.move_date DESC
-            `).all(itemId);
-    }
-    return db.prepare(`
-        SELECT m.*, u.full_name as user_name, i.name as item_name
-        FROM stock_moves m
-        JOIN users u ON m.user_id = u.id
-        JOIN inventory_items i ON m.item_id = i.id
-        ORDER BY m.move_date DESC
-        LIMIT 100
-    `).all();
-}
-
-// --- Suppliers ---
-export function getAllSuppliers() {
-    return db.prepare('SELECT * FROM suppliers ORDER BY name ASC').all();
-}
-
-export function createSupplier(supplierData: any) {
-    const keys = Object.keys(supplierData);
-    const columns = keys.join(', ');
-    const placeholders = keys.map(() => '?').join(', ');
-    return db.prepare(`INSERT INTO suppliers(${columns}) VALUES(${placeholders})`).run(...Object.values(supplierData)).lastInsertRowid;
+    return txn();
 }
 
 // Treatment Type functions removed (Deprecated)

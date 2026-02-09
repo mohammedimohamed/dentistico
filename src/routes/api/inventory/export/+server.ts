@@ -34,36 +34,58 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
     if (reportType === 'global') {
         data = db.prepare(`
-            SELECT i.*, s.name as supplier_name 
-            FROM inventory_items i
-            LEFT JOIN suppliers s ON i.supplier_id = s.id
-            ORDER BY i.name ASC
+            SELECT 
+                p.id, p.name, p.barcode as sku, p.category, p.unit, p.min_threshold,
+                COALESCE(SUM(b.current_quantity), 0) as current_quantity,
+                AVG(b.unit_cost) as unit_cost,
+                MAX(b.expiration_date) as expiry_date,
+                GROUP_CONCAT(DISTINCT s.name) as supplier_name
+            FROM inventory_products p
+            LEFT JOIN inventory_batches b ON p.id = b.product_id
+            LEFT JOIN inventory_suppliers s ON b.supplier_id = s.id
+            GROUP BY p.id
+            ORDER BY p.name ASC
         `).all();
         title = isAR ? 'حالة المخزون العامة' : 'Statut Global de l\'Inventaire';
     } else if (reportType === 'low_stock') {
         data = db.prepare(`
-            SELECT i.*, s.name as supplier_name 
-            FROM inventory_items i
-            LEFT JOIN suppliers s ON i.supplier_id = s.id
-            WHERE i.current_quantity <= i.min_threshold
-            ORDER BY i.current_quantity ASC
+            SELECT 
+                p.id, p.name, p.barcode as sku, p.category, p.unit, p.min_threshold,
+                COALESCE(SUM(b.current_quantity), 0) as current_quantity,
+                AVG(b.unit_cost) as unit_cost,
+                MAX(b.expiration_date) as expiry_date,
+                GROUP_CONCAT(DISTINCT s.name) as supplier_name
+            FROM inventory_products p
+            LEFT JOIN inventory_batches b ON p.id = b.product_id
+            LEFT JOIN inventory_suppliers s ON b.supplier_id = s.id
+            GROUP BY p.id
+            HAVING current_quantity <= p.min_threshold
+            ORDER BY current_quantity ASC
         `).all();
         title = isAR ? 'قائمة الطلبيات / مخزون منخفض' : 'Liste de Réapprovisionnement / Stock Bas';
     } else if (reportType === 'expiry') {
         data = db.prepare(`
-            SELECT i.*, s.name as supplier_name 
-            FROM inventory_items i
-            LEFT JOIN suppliers s ON i.supplier_id = s.id
-            WHERE i.expiry_date IS NOT NULL
-            ORDER BY i.expiry_date ASC
+            SELECT 
+                p.name, p.barcode as sku, p.category, p.unit, p.min_threshold,
+                b.current_quantity, b.unit_cost, b.expiration_date as expiry_date,
+                s.name as supplier_name
+            FROM inventory_products p
+            JOIN inventory_batches b ON p.id = b.product_id
+            LEFT JOIN inventory_suppliers s ON b.supplier_id = s.id
+            WHERE b.expiration_date IS NOT NULL
+            ORDER BY b.expiration_date ASC
         `).all();
         title = isAR ? 'تدقيق تاريخ الانتهاء' : 'Audit des Dates d\'Expiration';
     } else if (reportType === 'supplier') {
         data = db.prepare(`
-            SELECT i.*, s.name as supplier_name 
-            FROM inventory_items i
-            LEFT JOIN suppliers s ON i.supplier_id = s.id
-            ORDER BY s.name ASC, i.name ASC
+            SELECT 
+                p.name, p.barcode as sku, p.category, p.unit, p.min_threshold,
+                b.current_quantity, b.unit_cost, b.expiration_date as expiry_date,
+                s.name as supplier_name
+            FROM inventory_products p
+            JOIN inventory_batches b ON p.id = b.product_id
+            JOIN inventory_suppliers s ON b.supplier_id = s.id
+            ORDER BY s.name ASC, p.name ASC
         `).all();
         title = isAR ? 'المخزون حسب المورد' : 'Inventaire par Fournisseur';
     }

@@ -50,7 +50,20 @@
         const res = await fetch("/api/admin/clinic-settings");
         const resData = await res.json();
         if (resData.settings) {
-            settings = resData.settings;
+            settings = {
+                ...resData.settings,
+                shift_start_mandatory:
+                    resData.settings.shift_start_mandatory === 1,
+                shift_cash_tracking: resData.settings.shift_cash_tracking === 1,
+                allow_doctor_create_product:
+                    resData.settings.allow_doctor_create_product === 1,
+                allow_assistant_create_product:
+                    resData.settings.allow_assistant_create_product === 1,
+                allow_doctor_create_supplier:
+                    resData.settings.allow_doctor_create_supplier === 1,
+                allow_assistant_create_supplier:
+                    resData.settings.allow_assistant_create_supplier === 1,
+            };
             workingDays = resData.workingDays;
             closures = resData.closures;
         }
@@ -529,7 +542,7 @@
                                         travail.
                                     </p>
                                 </div>
-                                <div
+                                <label
                                     class="relative inline-flex items-center cursor-pointer"
                                 >
                                     <input
@@ -542,7 +555,7 @@
                                     <div
                                         class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
                                     ></div>
-                                </div>
+                                </label>
                             </div>
                         </div>
 
@@ -565,7 +578,7 @@
                                         l'ouverture et à la clôture de journée.
                                     </p>
                                 </div>
-                                <div
+                                <label
                                     class="relative inline-flex items-center cursor-pointer"
                                 >
                                     <input
@@ -578,7 +591,7 @@
                                     <div
                                         class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-600"
                                     ></div>
-                                </div>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -589,6 +602,169 @@
                             class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
                         >
                             Save Shift Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Permissions Settings -->
+            <div
+                class="bg-white shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden border border-gray-100"
+            >
+                <div class="px-8 py-6 bg-gray-50/50 border-b border-gray-100">
+                    <h2
+                        class="text-xl font-bold text-gray-900 flex items-center gap-2"
+                    >
+                        <span>📦</span> Inventory Permissions
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Product Creation -->
+                        <div
+                            class="p-8 bg-gray-50/50 rounded-3xl border border-gray-100 space-y-6"
+                        >
+                            <h3
+                                class="flex items-center gap-2 text-sm font-black text-gray-900 uppercase tracking-widest border-b pb-4"
+                            >
+                                <span>🏷️</span> Catalog Creation (Products)
+                            </h3>
+
+                            <div
+                                class="flex items-center justify-between p-4 bg-white rounded-2xl border {settings.allow_doctor_create_product
+                                    ? 'border-indigo-100'
+                                    : 'border-gray-100'}"
+                            >
+                                <div>
+                                    <p class="font-bold text-gray-900 text-sm">
+                                        Doctors
+                                    </p>
+                                    <p class="text-[10px] text-gray-400">
+                                        Can add new product references
+                                    </p>
+                                </div>
+                                <label
+                                    class="relative inline-flex items-center cursor-pointer"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        bind:checked={
+                                            settings.allow_doctor_create_product
+                                        }
+                                        class="sr-only peer"
+                                    />
+                                    <div
+                                        class="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"
+                                    ></div>
+                                </label>
+                            </div>
+
+                            <div
+                                class="flex items-center justify-between p-4 bg-white rounded-2xl border {settings.allow_assistant_create_product
+                                    ? 'border-indigo-100'
+                                    : 'border-gray-100'}"
+                            >
+                                <div>
+                                    <p class="font-bold text-gray-900 text-sm">
+                                        Assistants
+                                    </p>
+                                    <p class="text-[10px] text-gray-400">
+                                        Can add new product references
+                                    </p>
+                                </div>
+                                <label
+                                    class="relative inline-flex items-center cursor-pointer"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        bind:checked={
+                                            settings.allow_assistant_create_product
+                                        }
+                                        class="sr-only peer"
+                                    />
+                                    <div
+                                        class="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"
+                                    ></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Supplier Creation -->
+                        <div
+                            class="p-8 bg-gray-50/50 rounded-3xl border border-gray-100 space-y-6"
+                        >
+                            <h3
+                                class="flex items-center gap-2 text-sm font-black text-gray-900 uppercase tracking-widest border-b pb-4"
+                            >
+                                <span>🤝</span> Supplier Registry
+                            </h3>
+
+                            <div
+                                class="flex items-center justify-between p-4 bg-white rounded-2xl border {settings.allow_doctor_create_supplier
+                                    ? 'border-indigo-100'
+                                    : 'border-gray-100'}"
+                            >
+                                <div>
+                                    <p class="font-bold text-gray-900 text-sm">
+                                        Doctors
+                                    </p>
+                                    <p class="text-[10px] text-gray-400">
+                                        Can register new suppliers
+                                    </p>
+                                </div>
+                                <label
+                                    class="relative inline-flex items-center cursor-pointer"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        bind:checked={
+                                            settings.allow_doctor_create_supplier
+                                        }
+                                        class="sr-only peer"
+                                    />
+                                    <div
+                                        class="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"
+                                    ></div>
+                                </label>
+                            </div>
+
+                            <div
+                                class="flex items-center justify-between p-4 bg-white rounded-2xl border {settings.allow_assistant_create_supplier
+                                    ? 'border-indigo-100'
+                                    : 'border-gray-100'}"
+                            >
+                                <div>
+                                    <p class="font-bold text-gray-900 text-sm">
+                                        Assistants
+                                    </p>
+                                    <p class="text-[10px] text-gray-400">
+                                        Can register new suppliers
+                                    </p>
+                                </div>
+                                <label
+                                    class="relative inline-flex items-center cursor-pointer"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        bind:checked={
+                                            settings.allow_assistant_create_supplier
+                                        }
+                                        class="sr-only peer"
+                                    />
+                                    <div
+                                        class="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"
+                                    ></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end mt-8">
+                        <button
+                            onclick={saveClinicSettings}
+                            class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
+                        >
+                            Save Inventory Permissions
                         </button>
                     </div>
                 </div>
