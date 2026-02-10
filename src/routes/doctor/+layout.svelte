@@ -3,6 +3,7 @@
     import type { Snippet } from "svelte";
     import PortalShell from "$lib/components/PortalShell.svelte";
     import { NAVIGATION } from "$lib/config/navigation";
+    import { enhance } from "$app/forms";
     let { children, data }: { children: Snippet; data: any } = $props();
 
     const navItems = $derived(NAVIGATION.doctor);
@@ -10,7 +11,162 @@
         navItems.find((i) => page.url.pathname.startsWith(i.href))?.label ||
             "common.portal",
     );
+
+    const showRoomSelection = $derived(
+        data.clinicSettings?.require_room_selection === 1 &&
+            !data.currentShift &&
+            data.user?.role === "doctor" &&
+            !page.url.pathname.includes("/profile"), // Allow profile access
+    );
+
+    const currentRoom = $derived(
+        data.activeRooms?.find((r: any) => r.id === data.currentShift?.room_id),
+    );
+
+    let isChangingRoom = $state(false);
 </script>
+
+{#if showRoomSelection}
+    <div
+        class="fixed inset-0 z-[999] bg-gray-900/80 backdrop-blur-md flex items-center justify-center p-4"
+    >
+        <div
+            class="bg-white rounded-[2.5rem] shadow-2xl max-w-2xl w-full p-10 border border-white/20 animate-in fade-in zoom-in duration-300"
+        >
+            <div class="text-center mb-10">
+                <div
+                    class="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center text-5xl mx-auto mb-6 shadow-sm"
+                >
+                    🏢
+                </div>
+                <h2 class="text-3xl font-black text-gray-900 mb-2">
+                    Ouverture de Cabinet
+                </h2>
+                <p class="text-gray-500 font-medium">
+                    Veuillez sélectionner votre salle pour commencer la journée.
+                </p>
+            </div>
+
+            <!-- Quick Selection Dropdown (with optgroup) -->
+            <form
+                method="POST"
+                action="/doctor/dashboard?/startShift"
+                use:enhance
+                class="mb-8"
+            >
+                <label
+                    for="room-quick-select"
+                    class="block text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-2 px-1"
+                    >Sélection rapide</label
+                >
+                <div class="flex gap-2">
+                    <select
+                        id="room-quick-select"
+                        name="room_id"
+                        class="flex-1 px-5 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-gray-700 transition-all cursor-pointer"
+                        required
+                    >
+                        <option value="">-- Choisir une salle --</option>
+                        {#each Object.entries(data.groupedRooms || {}) as [groupName, rooms]}
+                            <optgroup label={groupName}>
+                                {#each rooms as room}
+                                    <option value={room.id}
+                                        >{room.name} ({room.type})</option
+                                    >
+                                {/each}
+                            </optgroup>
+                        {/each}
+                    </select>
+                    <button
+                        type="submit"
+                        class="px-8 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all uppercase tracking-widest text-xs"
+                    >
+                        Valider
+                    </button>
+                </div>
+            </form>
+
+            <div
+                class="space-y-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar"
+            >
+                {#each Object.entries(data.groupedRooms || {}) as [groupName, rooms]}
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2">
+                            <div class="h-px flex-1 bg-gray-100"></div>
+                            <span
+                                class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 whitespace-nowrap bg-white px-3"
+                            >
+                                {groupName}
+                            </span>
+                            <div class="h-px flex-1 bg-gray-100"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {#each rooms as room}
+                                <form
+                                    method="POST"
+                                    action="/doctor/dashboard?/startShift"
+                                    use:enhance
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="room_id"
+                                        value={room.id}
+                                    />
+                                    <button
+                                        type="submit"
+                                        class="w-full text-left p-6 rounded-3xl border-2 border-gray-100 hover:border-indigo-500 hover:bg-indigo-50/50 transition-all group relative overflow-hidden active:scale-[0.98]"
+                                    >
+                                        <div
+                                            class="flex items-center gap-4 relative z-10"
+                                        >
+                                            <div
+                                                class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm"
+                                                style="background-color: {room.color}20; color: {room.color}"
+                                            >
+                                                {#if room.type === "consultation"}🛋️{:else if room.type === "surgery"}💉{:else if room.type === "xray"}☢️{:else}🚪{/if}
+                                            </div>
+                                            <div>
+                                                <h4
+                                                    class="font-bold text-gray-900 group-hover:text-indigo-700 transition-colors"
+                                                >
+                                                    {room.name}
+                                                </h4>
+                                                <p
+                                                    class="text-[10px] text-gray-400 font-black uppercase tracking-widest"
+                                                >
+                                                    {room.type}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0 text-indigo-500 font-bold text-xl"
+                                        >
+                                            →
+                                        </div>
+                                    </button>
+                                </form>
+                            {/each}
+                        </div>
+                    </div>
+                {/each}
+            </div>
+
+            {#if !data.activeRooms || data.activeRooms.length === 0}
+                <div
+                    class="text-center py-8 bg-amber-50 rounded-3xl border border-amber-100"
+                >
+                    <p class="text-amber-700 font-bold">
+                        ⚠️ Aucune salle active configurée.
+                    </p>
+                    <p class="text-amber-600 text-sm mt-1">
+                        Veuillez contacter l'administrateur.
+                    </p>
+                </div>
+            {/if}
+        </div>
+    </div>
+{/if}
 
 <PortalShell
     {navItems}
@@ -20,5 +176,151 @@
     roleLabel="common.doctor"
     noPadding={page.url.pathname.includes("/journey/")}
 >
+    {#snippet headerChildren()}
+        {#if data.currentShift && currentRoom}
+            <div
+                class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 shadow-sm mr-4 group relative"
+            >
+                <div
+                    class="w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-sm"
+                    style="background-color: {currentRoom.color}20; color: {currentRoom.color}"
+                >
+                    {#if currentRoom.type === "consultation"}🛋️{:else if currentRoom.type === "surgery"}💉{:else if currentRoom.type === "xray"}☢️{:else}🚪{/if}
+                </div>
+                <div class="flex flex-col text-start">
+                    <span
+                        class="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1"
+                        >Salle Actuelle</span
+                    >
+                    <span class="text-sm font-bold text-gray-900 leading-none"
+                        >{currentRoom.name}</span
+                    >
+                </div>
+                <button
+                    onclick={() => (isChangingRoom = true)}
+                    class="ml-2 p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-400 hover:text-indigo-600"
+                    title="Changer de salle"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><path d="M17 2.1l4 4-4 4" /><path
+                            d="M3 12.2v-2a4 4 0 0 1 4-4h14"
+                        /><path d="M7 21.9l-4-4 4-4" /><path
+                            d="M21 11.8v2a4 4 0 0 1-4 4H3"
+                        /></svg
+                    >
+                </button>
+            </div>
+        {/if}
+    {/snippet}
+
     {@render children()}
 </PortalShell>
+
+{#if isChangingRoom}
+    <!-- Change Room Modal -->
+    <div
+        class="fixed inset-0 z-[1000] bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+    >
+        <div
+            class="bg-white rounded-[2rem] shadow-2xl max-w-lg w-full p-8 border border-gray-100 animate-in fade-in slide-in-from-bottom-4 duration-300"
+        >
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <h3 class="text-2xl font-black text-gray-900">
+                        Changer de salle
+                    </h3>
+                    <p class="text-gray-500 text-sm mt-1">
+                        Sélectionnez votre nouvelle salle de consultation.
+                    </p>
+                </div>
+                <button
+                    onclick={() => (isChangingRoom = false)}
+                    class="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                    >✕</button
+                >
+            </div>
+
+            <div
+                class="space-y-6 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"
+            >
+                {#each Object.entries(data.groupedRooms || {}) as [groupName, rooms]}
+                    <div class="space-y-3">
+                        <div
+                            class="text-[9px] font-black uppercase tracking-widest text-gray-400 px-1"
+                        >
+                            {groupName}
+                        </div>
+                        <div class="grid grid-cols-1 gap-2">
+                            {#each rooms as room}
+                                <form
+                                    method="POST"
+                                    action="/doctor/dashboard?/changeRoom"
+                                    use:enhance={() => {
+                                        return async ({ result, update }) => {
+                                            isChangingRoom = false;
+                                            await update();
+                                        };
+                                    }}
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="shift_id"
+                                        value={data.currentShift?.id}
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="room_id"
+                                        value={room.id}
+                                    />
+                                    <button
+                                        type="submit"
+                                        class="w-full flex items-center justify-between p-4 rounded-2xl border-2 {room.id ===
+                                        data.currentShift?.room_id
+                                            ? 'border-indigo-600 bg-indigo-50/30'
+                                            : 'border-gray-50 hover:bg-gray-50'} transition-all group"
+                                    >
+                                        <div class="flex items-center gap-4">
+                                            <div
+                                                class="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                                                style="background-color: {room.color}20; color: {room.color}"
+                                            >
+                                                {#if room.type === "consultation"}🛋️{:else if room.type === "surgery"}💉{:else if room.type === "xray"}☢️{:else}🚪{/if}
+                                            </div>
+                                            <div class="text-start">
+                                                <h5
+                                                    class="font-bold text-gray-900"
+                                                >
+                                                    {room.name}
+                                                </h5>
+                                                <p
+                                                    class="text-[9px] text-gray-400 font-black uppercase tracking-widest"
+                                                >
+                                                    {room.type}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {#if room.id === data.currentShift?.room_id}
+                                            <span
+                                                class="bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest"
+                                                >Actuel</span
+                                            >
+                                        {/if}
+                                    </button>
+                                </form>
+                            {/each}
+                        </div>
+                    </div>
+                {/each}
+            </div>
+        </div>
+    </div>
+{/if}

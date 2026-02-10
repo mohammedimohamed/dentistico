@@ -9,7 +9,8 @@ import {
     createCancellationReason,
     deleteCancellationReason,
     updateReasonRequirements,
-    getAllCancellationReasons
+    getAllCancellationReasons,
+    getAllRooms
 } from '$lib/server/db';
 
 export const load = async () => {
@@ -40,7 +41,8 @@ export const load = async () => {
         reasonRequirements: {
             postponeRequired: clinicSettings?.require_postpone_reason === 1,
             cancelRequired: clinicSettings?.require_cancel_reason === 1
-        }
+        },
+        rooms: getAllRooms()
     };
 };
 

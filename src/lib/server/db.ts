@@ -105,6 +105,7 @@ export function init_db() {
           work_end_time TEXT DEFAULT '18:00',
           timezone TEXT DEFAULT 'UTC',
           allow_assistant_payments INTEGER DEFAULT 0,
+          require_room_selection INTEGER DEFAULT 1,
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -124,6 +125,35 @@ export function init_db() {
           closure_date TEXT NOT NULL UNIQUE,
           reason TEXT NOT NULL,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        -- Facility Hierarchy
+        CREATE TABLE IF NOT EXISTS buildings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            address TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS floors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            building_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            level_number INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (building_id) REFERENCES buildings (id) ON DELETE CASCADE
+        );
+
+        -- Rooms management
+        CREATE TABLE IF NOT EXISTS rooms (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            floor_id INTEGER,
+            name TEXT NOT NULL,
+            type TEXT CHECK(type IN ('consultation', 'surgery', 'xray', 'waiting')) NOT NULL,
+            color TEXT NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (floor_id) REFERENCES floors (id) ON DELETE CASCADE
         );
 
         -- Insert default settings
@@ -299,6 +329,7 @@ export function init_db() {
 
     addColumnIfNotExists('clinic_settings', 'shift_start_mandatory', 'INTEGER DEFAULT 0');
     addColumnIfNotExists('clinic_settings', 'shift_cash_tracking', 'INTEGER DEFAULT 0');
+    addColumnIfNotExists('clinic_settings', 'require_room_selection', 'INTEGER DEFAULT 1');
 
     db.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_checkin ON appointments(checked_in, waiting_room_status, check_in_time);`);
 
@@ -637,13 +668,15 @@ export function init_db() {
         CREATE TABLE IF NOT EXISTS work_shifts(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
+            room_id INTEGER,
             start_time TEXT NOT NULL,
             end_time TEXT,
             start_cash_amount REAL DEFAULT 0,
             end_cash_amount REAL,
             status TEXT DEFAULT 'open' CHECK(status IN('open', 'closed')),
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(user_id) REFERENCES users(id)
+            FOREIGN KEY(user_id) REFERENCES users(id),
+            FOREIGN KEY(room_id) REFERENCES rooms(id)
         );
     `);
 
@@ -704,6 +737,8 @@ export function init_db() {
     addColumnIfNotExists('clinic_settings', 'timer_alert_2_minutes', 'INTEGER DEFAULT 30');
     addColumnIfNotExists('clinic_settings', 'timer_alert_2_beeps', 'INTEGER DEFAULT 2');
     addColumnIfNotExists('payments', 'doctor_id', 'INTEGER REFERENCES users(id)');
+    addColumnIfNotExists('work_shifts', 'room_id', 'INTEGER REFERENCES rooms(id)');
+    addColumnIfNotExists('rooms', 'floor_id', 'INTEGER REFERENCES floors(id)');
 
     // Insert default categories
     const defaultCategories = [
@@ -1524,6 +1559,101 @@ export function deleteCancellationReason(id: number) {
     `).run(id);
 }
 
+// --- Facility & Room Management ---
+export function getAllBuildings() {
+    return db.prepare('SELECT * FROM buildings ORDER BY name').all();
+}
+
+export function createBuilding(name: string, address: string | null) {
+    const stmt = db.prepare('INSERT INTO buildings (name, address) VALUES (?, ?)');
+    return stmt.run(name, address);
+}
+
+export function updateBuilding(id: number, name: string, address: string | null) {
+    const stmt = db.prepare('UPDATE buildings SET name = ?, address = ? WHERE id = ?');
+    return stmt.run(name, address, id);
+}
+
+export function deleteBuilding(id: number) {
+    return db.prepare('DELETE FROM buildings WHERE id = ?').run(id);
+}
+
+export function getFloorsByBuilding(buildingId: number) {
+    return db.prepare('SELECT * FROM floors WHERE building_id = ? ORDER BY level_number, name').all(buildingId);
+}
+
+export function createFloor(buildingId: number, name: string, levelNumber: number) {
+    const stmt = db.prepare('INSERT INTO floors (building_id, name, level_number) VALUES (?, ?, ?)');
+    return stmt.run(buildingId, name, levelNumber);
+}
+
+export function updateFloor(id: number, name: string, levelNumber: number) {
+    const stmt = db.prepare('UPDATE floors SET name = ?, level_number = ? WHERE id = ?');
+    return stmt.run(name, levelNumber, id);
+}
+
+export function deleteFloor(id: number) {
+    return db.prepare('DELETE FROM floors WHERE id = ?').run(id);
+}
+
+export function getRoomsByFloor(floorId: number) {
+    return db.prepare('SELECT * FROM rooms WHERE floor_id = ? ORDER BY name').all(floorId);
+}
+
+export function getFacilityHierarchy() {
+    const buildings = db.prepare('SELECT * FROM buildings ORDER BY name').all() as any[];
+    const floors = db.prepare('SELECT * FROM floors ORDER BY level_number, name').all() as any[];
+    const rooms = db.prepare('SELECT * FROM rooms ORDER BY name').all() as any[];
+
+    return buildings.map(b => ({
+        ...b,
+        floors: floors.filter(f => f.building_id === b.id).map(f => ({
+            ...f,
+            rooms: rooms.filter(r => r.floor_id === f.id)
+        }))
+    }));
+}
+
+export function getAllRooms() {
+    return db.prepare(`
+        SELECT r.*, f.name as floor_name, b.name as building_name, f.level_number
+        FROM rooms r
+        LEFT JOIN floors f ON r.floor_id = f.id
+        LEFT JOIN buildings b ON f.building_id = b.id
+        ORDER BY b.name, f.level_number, r.name
+    `).all();
+}
+
+export function getActiveRooms() {
+    return db.prepare(`
+        SELECT r.*, f.name as floor_name, b.name as building_name, f.level_number
+        FROM rooms r
+        LEFT JOIN floors f ON r.floor_id = f.id
+        LEFT JOIN buildings b ON f.building_id = b.id
+        WHERE r.is_active = 1
+        ORDER BY b.name, f.level_number, r.name
+    `).all();
+}
+
+export function createRoom(room: { floor_id: number | null, name: string, type: string, color: string, is_active: number }) {
+    return db.prepare(`
+        INSERT INTO rooms (floor_id, name, type, color, is_active)
+        VALUES (?, ?, ?, ?, ?)
+    `).run(room.floor_id, room.name, room.type, room.color, room.is_active);
+}
+
+export function updateRoom(id: number, room: { floor_id: number | null, name: string, type: string, color: string, is_active: number }) {
+    return db.prepare(`
+        UPDATE rooms 
+        SET floor_id = ?, name = ?, type = ?, color = ?, is_active = ?
+        WHERE id = ?
+    `).run(room.floor_id, room.name, room.type, room.color, room.is_active, id);
+}
+
+export function deleteRoom(id: number) {
+    return db.prepare('DELETE FROM rooms WHERE id = ?').run(id);
+}
+
 function seed_db() {
     console.log('🌱 Seeding essential users and reference data...');
 
@@ -2105,11 +2235,7 @@ export function getDoctorUpcomingAppointments(doctorId: number) {
 export function getAllUpcomingAppointments() {
     return db.prepare(`
     SELECT
-    a.id, a.start_time, a.end_time, a.duration_minutes,
-        a.status, a.appointment_type, a.doctor_id, a.notes,
-        a.created_by_user_id, a.confirmed_by_user_id,
-        a.checked_in, a.check_in_time, a.waiting_room_status,
-        a.created_at,
+        a.*,
         p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone,
         p.email as patient_email, p.date_of_birth, p.gender,
         p.secondary_email, p.secondary_phone,
@@ -2118,13 +2244,17 @@ export function getAllUpcomingAppointments() {
         b.full_name as booked_by_name,
         p.relationship_to_primary,
         creator.full_name as created_by_name,
-        confirmer.full_name as confirmed_by_name
+        confirmer.full_name as confirmed_by_name,
+        r.name as room_name,
+        r.color as room_color
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
         LEFT JOIN users u ON a.doctor_id = u.id
         LEFT JOIN patients b ON a.booked_by_id = b.id
         LEFT JOIN users creator ON a.created_by_user_id = creator.id
         LEFT JOIN users confirmer ON a.confirmed_by_user_id = confirmer.id
+        LEFT JOIN work_shifts ws ON ws.user_id = a.doctor_id AND ws.status = 'open' AND ws.end_time IS NULL
+        LEFT JOIN rooms r ON ws.room_id = r.id
         WHERE a.start_time >= date('now', '-30 days')
         ORDER BY a.start_time ASC
         LIMIT 500
@@ -3561,6 +3691,25 @@ export function startShift(userId: number, startCashAmount: number = 0) {
     `);
     const info = stmt.run(userId, startTime, startCashAmount);
     return info.lastInsertRowid;
+}
+
+export function startDoctorShift(userId: number, roomId: number) {
+    const startTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const stmt = db.prepare(`
+        INSERT INTO work_shifts (user_id, room_id, start_time, status)
+        VALUES (?, ?, ?, 'open')
+    `);
+    const info = stmt.run(userId, roomId, startTime);
+    return info.lastInsertRowid;
+}
+
+export function updateShiftRoom(shiftId: number, roomId: number) {
+    const stmt = db.prepare(`
+        UPDATE work_shifts 
+        SET room_id = ? 
+        WHERE id = ?
+    `);
+    return stmt.run(roomId, shiftId);
 }
 
 export function endShift(shiftId: number, endCashAmount: number) {

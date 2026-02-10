@@ -1998,6 +1998,12 @@
                                         </th>
                                         <th
                                             scope="col"
+                                            class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"
+                                        >
+                                            Salle
+                                        </th>
+                                        <th
+                                            scope="col"
                                             class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                                             onclick={() => toggleSort("type")}
                                         >
@@ -2202,6 +2208,26 @@
                                                 >
                                                     {appt.doctor_name || "N/A"}
                                                 </span>
+                                            </td>
+                                            <td
+                                                class="px-3 py-2 whitespace-nowrap text-xs"
+                                            >
+                                                {#if appt.room_name}
+                                                    <div
+                                                        class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg border shadow-sm"
+                                                        style="background-color: {appt.room_color}10; border-color: {appt.room_color}30; color: {appt.room_color}"
+                                                    >
+                                                        <span
+                                                            class="text-[10px]"
+                                                            >{appt.room_name}</span
+                                                        >
+                                                    </div>
+                                                {:else}
+                                                    <span
+                                                        class="text-gray-300 text-[10px] italic"
+                                                        >Non affecté</span
+                                                    >
+                                                {/if}
                                             </td>
                                             <td
                                                 class="px-3 py-2 whitespace-nowrap text-xs text-gray-600"

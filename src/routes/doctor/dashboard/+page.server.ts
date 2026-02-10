@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { getDoctorAppointmentsToday, getDoctorUpcomingAppointments, updateAppointment, getAppointmentById, db } from '$lib/server/db';
+import { getDoctorAppointmentsToday, getDoctorUpcomingAppointments, updateAppointment, getAppointmentById, db, startDoctorShift, endShift, updateShiftRoom } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals, depends }) => {
     depends('appointments:today');
@@ -85,6 +85,36 @@ export const actions = {
             updated_at: new Date().toISOString()
         });
 
+        return { success: true };
+    },
+    startShift: async ({ request, locals }) => {
+        if (!locals.user || locals.user.role !== 'doctor') {
+            return fail(403, { message: 'Unauthorized' });
+        }
+        const data = await request.formData();
+        const roomId = Number(data.get('room_id'));
+        if (!roomId) return fail(400, { message: 'Room ID required' });
+
+        startDoctorShift(locals.user.id, roomId);
+        return { success: true };
+    },
+    endShift: async ({ request, locals }) => {
+        if (!locals.user) return fail(403, { message: 'Unauthorized' });
+        const data = await request.formData();
+        const shiftId = Number(data.get('shift_id'));
+        if (!shiftId) return fail(400, { message: 'Shift ID required' });
+
+        endShift(shiftId, 0); // Doctors don't track cash usually
+        return { success: true };
+    },
+    changeRoom: async ({ request, locals }) => {
+        if (!locals.user) return fail(403, { message: 'Unauthorized' });
+        const data = await request.formData();
+        const shiftId = Number(data.get('shift_id'));
+        const roomId = Number(data.get('room_id'));
+        if (!shiftId || !roomId) return fail(400, { message: 'Missing fields' });
+
+        updateShiftRoom(shiftId, roomId);
         return { success: true };
     }
 } satisfies Actions;

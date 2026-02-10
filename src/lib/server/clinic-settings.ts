@@ -8,6 +8,7 @@ export interface ClinicSettings {
     timezone: string;
     shift_start_mandatory: number;
     shift_cash_tracking: number;
+    require_room_selection: number;
 }
 
 export function getClinicSettings(): ClinicSettings {

@@ -22,6 +22,17 @@
         timer_alert_1_beeps: 1,
         timer_alert_2_minutes: 30,
         timer_alert_2_beeps: 2,
+        require_room_selection: 1,
+    });
+
+    let rooms = $state(data.rooms || []);
+    let isRoomModalOpen = $state(false);
+    let editingRoom = $state<any>(null);
+    let roomForm = $state({
+        name: "",
+        type: "consultation",
+        color: "#3B82F6",
+        is_active: 1,
     });
 
     let workingDays = $state<any[]>([]);
@@ -63,6 +74,8 @@
                     resData.settings.allow_doctor_create_supplier === 1,
                 allow_assistant_create_supplier:
                     resData.settings.allow_assistant_create_supplier === 1,
+                require_room_selection:
+                    resData.settings.require_room_selection === 1,
             };
             workingDays = resData.workingDays;
             closures = resData.closures;
@@ -161,6 +174,50 @@
     let cancelRequired = $state(
         data.reasonRequirements?.cancelRequired || false,
     );
+
+    async function saveRoom() {
+        const method = editingRoom ? "PUT" : "POST";
+        const body = editingRoom
+            ? { id: editingRoom.id, ...roomForm }
+            : roomForm;
+
+        const res = await fetch("/api/admin/rooms", {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+
+        if (res.ok) {
+            isRoomModalOpen = false;
+            // Reload rooms
+            const resRooms = await fetch("/api/admin/rooms");
+            const dataRooms = await resRooms.json();
+            rooms = dataRooms.rooms;
+            editingRoom = null;
+            roomForm = {
+                name: "",
+                type: "consultation",
+                color: "#3B82F6",
+                is_active: 1,
+            };
+        }
+    }
+
+    function openEditRoom(room: any) {
+        editingRoom = room;
+        roomForm = { ...room };
+        isRoomModalOpen = true;
+    }
+
+    async function handleDeleteRoom(id: number) {
+        if (!confirm("Delete this room?")) return;
+        const res = await fetch(`/api/admin/rooms?id=${id}`, {
+            method: "DELETE",
+        });
+        if (res.ok) {
+            rooms = rooms.filter((r: any) => r.id !== id);
+        }
+    }
 </script>
 
 <div class="py-6 min-h-screen bg-gray-50">
@@ -195,6 +252,34 @@
                     >
                         <span>🏥</span> Clinic Information Settings
                     </h2>
+                </div>
+                <!-- Facility Manager Banner -->
+                <div
+                    class="px-8 py-4 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center group"
+                >
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform"
+                        >
+                            🏢
+                        </div>
+                        <div>
+                            <h3 class="font-black text-indigo-900 leading-none">
+                                Gestion des Locaux
+                            </h3>
+                            <p
+                                class="text-xs text-indigo-600/70 mt-1 font-bold"
+                            >
+                                Bâtiments, Étages et Salles
+                            </p>
+                        </div>
+                    </div>
+                    <a
+                        href="/admin/settings/facilities"
+                        class="px-6 py-3 bg-white text-indigo-600 font-black rounded-xl border border-indigo-200 shadow-sm hover:bg-indigo-600 hover:text-white transition-all uppercase tracking-widest text-[10px]"
+                    >
+                        Ouvrir le Manager
+                    </a>
                 </div>
                 <div class="p-8">
                     <div class="space-y-6">
@@ -559,6 +644,42 @@
                             </div>
                         </div>
 
+                        <!-- Require Room Selection -->
+                        <div
+                            class="p-6 rounded-2xl border {settings.require_room_selection
+                                ? 'bg-indigo-50/30 border-indigo-100'
+                                : 'bg-gray-50 border-gray-100'} transition-all"
+                        >
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="space-y-1">
+                                    <h3 class="font-black text-gray-900">
+                                        Rendre le choix de la salle obligatoire
+                                    </h3>
+                                    <p
+                                        class="text-xs text-gray-500 leading-relaxed"
+                                    >
+                                        Si activé, les médecins doivent
+                                        sélectionner leur salle avant d'accéder
+                                        à leur tableau de bord.
+                                    </p>
+                                </div>
+                                <label
+                                    class="relative inline-flex items-center cursor-pointer"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        bind:checked={
+                                            settings.require_room_selection
+                                        }
+                                        class="sr-only peer"
+                                    />
+                                    <div
+                                        class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
+                                    ></div>
+                                </label>
+                            </div>
+                        </div>
+
                         <!-- Cash Tracking -->
                         <div
                             class="p-6 rounded-2xl border {settings.shift_cash_tracking
@@ -767,6 +888,108 @@
                             Save Inventory Permissions
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Rooms Management -->
+            <div
+                class="bg-white shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden border border-gray-100"
+            >
+                <div
+                    class="px-8 py-6 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center"
+                >
+                    <h2
+                        class="text-xl font-bold text-gray-900 flex items-center gap-2"
+                    >
+                        <span>📍</span> Salles / Rooms
+                    </h2>
+                    <button
+                        onclick={() => {
+                            editingRoom = null;
+                            roomForm = {
+                                name: "",
+                                type: "consultation",
+                                color: "#3B82F6",
+                                is_active: 1,
+                            };
+                            isRoomModalOpen = true;
+                        }}
+                        class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all uppercase tracking-widest shadow-lg shadow-indigo-100"
+                    >
+                        + Ajouter une salle
+                    </button>
+                </div>
+                <div class="p-8">
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    >
+                        {#each rooms as room}
+                            <div
+                                class="p-6 bg-gray-50 rounded-3xl border border-gray-100 flex flex-col justify-between"
+                            >
+                                <div>
+                                    <div
+                                        class="flex justify-between items-start mb-4"
+                                    >
+                                        <div
+                                            class="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-sm"
+                                            style="background-color: {room.color}20; color: {room.color}"
+                                        >
+                                            {#if room.type === "consultation"}🛋️{:else if room.type === "surgery"}💉{:else}☢️{/if}
+                                        </div>
+                                        <span
+                                            class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest {room.is_active
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-gray-200 text-gray-500'}"
+                                        >
+                                            {room.is_active
+                                                ? "Actif"
+                                                : "Inactif"}
+                                        </span>
+                                    </div>
+                                    <h3
+                                        class="font-black text-gray-900 text-lg"
+                                    >
+                                        {room.name}
+                                    </h3>
+                                    <p
+                                        class="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1"
+                                    >
+                                        {room.type}
+                                    </p>
+                                </div>
+                                <div
+                                    class="flex gap-2 mt-6 pt-6 border-t border-gray-100"
+                                >
+                                    <button
+                                        onclick={() => openEditRoom(room)}
+                                        class="flex-1 px-4 py-2 bg-white text-indigo-600 text-[10px] font-bold rounded-xl border border-indigo-50 hover:bg-indigo-50 transition-all uppercase tracking-widest"
+                                    >
+                                        Modifier
+                                    </button>
+                                    <button
+                                        onclick={() =>
+                                            handleDeleteRoom(room.id)}
+                                        class="px-4 py-2 bg-white text-red-600 text-[10px] font-bold rounded-xl border border-red-50 hover:bg-red-50 transition-all uppercase tracking-widest"
+                                    >
+                                        Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                    {#if rooms.length === 0}
+                        <div class="text-center py-12">
+                            <div class="text-4xl mb-4">🏢</div>
+                            <h3 class="font-bold text-gray-900">
+                                Aucune salle configurée
+                            </h3>
+                            <p class="text-sm text-gray-500 mt-1">
+                                Commencez par ajouter votre première salle de
+                                consultation ou de chirurgie.
+                            </p>
+                        </div>
+                    {/if}
                 </div>
             </div>
 
@@ -1445,3 +1668,120 @@
 {/if}
 
 <!-- Deprecated Treatment Type Modals removed -->
+
+<!-- Room Modal -->
+{#if isRoomModalOpen}
+    <div
+        class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+    >
+        <div
+            class="bg-white rounded-[2rem] shadow-2xl p-8 w-full max-w-md border border-gray-100 animate-in fade-in zoom-in duration-200"
+        >
+            <h3
+                class="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3"
+            >
+                <span class="p-3 bg-indigo-50 rounded-2xl text-xl"
+                    >{#if roomForm.type === "consultation"}🛋️{:else if roomForm.type === "surgery"}💉{:else}☢️{/if}</span
+                >
+                {editingRoom ? "Modifier la salle" : "Ajouter une salle"}
+            </h3>
+
+            <div class="space-y-6">
+                <div>
+                    <label
+                        class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
+                        for="room_name">Nom de la salle</label
+                    >
+                    <input
+                        id="room_name"
+                        type="text"
+                        bind:value={roomForm.name}
+                        placeholder="ex: Box 1, Salle Chirurgie..."
+                        class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
+                    />
+                </div>
+
+                <div>
+                    <label
+                        class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
+                        for="room_type">Type de salle</label
+                    >
+                    <select
+                        id="room_type"
+                        bind:value={roomForm.type}
+                        class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
+                    >
+                        <option value="consultation">Consultation</option>
+                        <option value="surgery">Chirurgie</option>
+                        <option value="xray">Radiologie</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label
+                            class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
+                            for="room_color">Couleur UI</label
+                        >
+                        <div class="flex gap-3 items-center">
+                            <input
+                                id="room_color"
+                                type="color"
+                                bind:value={roomForm.color}
+                                class="w-12 h-12 rounded-xl border-0 p-0 overflow-hidden cursor-pointer"
+                            />
+                            <span class="text-xs font-mono text-gray-400"
+                                >{roomForm.color.toUpperCase()}</span
+                            >
+                        </div>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
+                            for="room_active">Statut</label
+                        >
+                        <div class="flex items-center mt-3">
+                            <label
+                                class="relative inline-flex items-center cursor-pointer"
+                            >
+                                <input
+                                    type="checkbox"
+                                    bind:checked={
+                                        () => roomForm.is_active === 1,
+                                        (v) => (roomForm.is_active = v ? 1 : 0)
+                                    }
+                                    class="sr-only peer"
+                                />
+                                <div
+                                    class="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"
+                                ></div>
+                                <span
+                                    class="ml-3 text-xs font-bold text-gray-500"
+                                    >{roomForm.is_active
+                                        ? "Actif"
+                                        : "Inactif"}</span
+                                >
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4 mt-10">
+                <button
+                    onclick={() => (isRoomModalOpen = false)}
+                    class="flex-1 py-4 bg-gray-50 hover:bg-gray-100 text-gray-500 font-bold rounded-2xl transition-all active:scale-95"
+                >
+                    Annuler
+                </button>
+                <button
+                    onclick={saveRoom}
+                    disabled={!roomForm.name}
+                    class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
+                >
+                    {editingRoom ? "Enregistrer" : "Créer la salle"}
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
