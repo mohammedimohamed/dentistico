@@ -699,7 +699,7 @@
 <div class="journey-workspace overflow-hidden bg-slate-50 flex flex-col">
     <!-- 1. Header Identity Bar -->
     <header
-        class="identity-bar sticky top-0 bg-white border-b border-slate-200 flex items-center px-4 h-14 justify-between z-50 shadow-sm shrink-0"
+        class="identity-bar sticky top-0 bg-white border-b border-slate-200 flex items-center px-4 h-14 justify-between z-10 shadow-sm shrink-0"
     >
         <div class="flex items-center gap-4">
             <a href="/doctor/journey" class="btn-back scale-90"> ← </a>
@@ -920,11 +920,11 @@
         <!-- Left Section: Action Grid & Clinical Intelligence (Retractable) -->
         <section
             class="relative bg-slate-50 border-r border-slate-200"
-            style="z-index: {isLeftSidebarOpen ? 100 : 30};"
+            style="z-index: {isLeftSidebarOpen ? 45 : 30};"
         >
             <div
                 class="h-full transition-all duration-300 ease-out flex flex-col bg-slate-50 {isLeftSidebarOpen
-                    ? 'absolute top-0 left-0 w-[280px] shadow-2xl border-r border-slate-200 z-[100]'
+                    ? 'absolute top-0 left-0 w-[280px] shadow-2xl border-r border-slate-200 z-[45]'
                     : 'w-full'}"
                 onclick={(e) => e.stopPropagation()}
                 role="presentation"
@@ -1156,7 +1156,7 @@
                                     class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"
                                 ></span>
                                 <div
-                                    class="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
+                                    class="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-40"
                                 >
                                     {$t("journey.planned_today")} ({plannedActs.length})
                                 </div>
@@ -1569,11 +1569,11 @@
         <!-- Right Section: Collapsible Clinical Sidebar -->
         <section
             class="relative bg-slate-50 border-l border-slate-100"
-            style="z-index: {isNotesSidebarOpen ? 100 : 30};"
+            style="z-index: {isNotesSidebarOpen ? 45 : 30};"
         >
             <div
                 class="h-full transition-all duration-300 ease-out flex flex-col bg-slate-50 {isNotesSidebarOpen
-                    ? 'absolute top-0 right-0 h-full w-[50vw] max-w-2xl shadow-2xl border-l border-slate-200 z-[100]'
+                    ? 'absolute top-0 right-0 h-full w-[50vw] max-w-2xl shadow-2xl border-l border-slate-200 z-[45]'
                     : 'w-full'}"
                 onclick={(e) => e.stopPropagation()}
                 role="presentation"
@@ -1896,7 +1896,7 @@
 
     {#if showNotesModal}
         <div
-            class="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
+            class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
             transition:fade
         >
             <div
@@ -1998,7 +1998,7 @@
 
     {#if showRescheduleModal}
         <div
-            class="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
+            class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
             transition:fade
         >
             <div
@@ -2166,7 +2166,7 @@
     <!-- Record Payment Modal -->
     {#if isPaymentModalOpen}
         <div
-            class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
             transition:fade={{ duration: 200 }}
         >
             <div
@@ -2434,7 +2434,7 @@
     <!-- Prescription Modal -->
     {#if showPrescriptionModal}
         <div
-            class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
             transition:fade={{ duration: 200 }}
         >
             <div
@@ -2855,7 +2855,7 @@
     <!-- Save Template Modal -->
     {#if showSaveTemplateModal}
         <div
-            class="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
             transition:fade={{ duration: 200 }}
         >
             <div
@@ -2936,7 +2936,7 @@
     <!-- Record Invoice Modal -->
     {#if isInvoiceModalOpen}
         <div
-            class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
             transition:fade={{ duration: 200 }}
         >
             <div
@@ -3337,7 +3337,7 @@
 
     {#if isLeftSidebarOpen || isNotesSidebarOpen}
         <button
-            class="fixed inset-0 z-[90] bg-slate-900/10 backdrop-blur-[2px] cursor-default w-full h-full border-none p-0 m-0"
+            class="fixed inset-0 z-[40] bg-slate-900/10 backdrop-blur-[2px] cursor-default w-full h-full border-none p-0 m-0"
             onclick={() => {
                 isLeftSidebarOpen = false;
                 isNotesSidebarOpen = false;
@@ -3348,7 +3348,7 @@
     {/if}
     {#if showConfirmModal}
         <div
-            class="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4"
             transition:fade={{ duration: 200 }}
         >
             <button
@@ -3422,7 +3422,7 @@
     <!-- Image Preview Modal -->
     {#if previewFile}
         <div
-            class="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
             onclick={() => (previewFile = null)}
             transition:fade={{ duration: 200 }}
         >
@@ -3453,9 +3453,9 @@
 
     <!-- DICOM Viewer Overlay -->
     {#if previewDicom && DicomViewer}
-        <div class="fixed inset-0 z-[250] bg-black">
+        <div class="fixed inset-0 z-50 bg-black">
             <button
-                class="absolute top-4 right-4 z-[260] text-white/70 hover:text-white bg-black/50 p-2 rounded-full"
+                class="absolute top-4 right-4 z-[51] text-white/70 hover:text-white bg-black/50 p-2 rounded-full"
                 onclick={() => (previewDicom = null)}
             >
                 <span class="text-2xl">✕</span>

@@ -30,7 +30,7 @@
 <div
     in:fly={{ y: -20, duration: 300 }}
     out:fly={{ y: -20, duration: 300 }}
-    class="fixed top-24 right-8 z-[100] px-6 py-4 rounded-xl shadow-2xl text-white font-bold flex items-center gap-3 {getBgColor()}"
+    class="fixed top-24 right-8 z-[60] px-6 py-4 rounded-xl shadow-2xl text-white font-bold flex items-center gap-3 {getBgColor()}"
 >
     {#if type === "success"}
         <span>✅</span>
