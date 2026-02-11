@@ -47,123 +47,183 @@
                 </p>
             </div>
 
-            <!-- Quick Selection Dropdown (with optgroup) -->
-            <form
-                method="POST"
-                action="/doctor/dashboard?/startShift"
-                use:enhance
-                class="mb-8"
-            >
-                <label
-                    for="room-quick-select"
-                    class="block text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-2 px-1"
-                    >Sélection rapide</label
-                >
-                <div class="flex gap-2">
-                    <select
-                        id="room-quick-select"
-                        name="room_id"
-                        class="flex-1 px-5 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-gray-700 transition-all cursor-pointer"
-                        required
-                    >
-                        <option value="">-- Choisir une salle --</option>
-                        {#each Object.entries(data.groupedRooms || {}) as [groupName, rooms]}
-                            <optgroup label={groupName}>
-                                {#each rooms as room}
-                                    <option value={room.id}
-                                        >{room.name} ({room.type})</option
-                                    >
-                                {/each}
-                            </optgroup>
-                        {/each}
-                    </select>
-                    <button
-                        type="submit"
-                        class="px-8 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all uppercase tracking-widest text-xs"
-                    >
-                        Valider
-                    </button>
-                </div>
-            </form>
-
-            <div
-                class="space-y-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar"
-            >
-                {#each Object.entries(data.groupedRooms || {}) as [groupName, rooms]}
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-2">
-                            <div class="h-px flex-1 bg-gray-100"></div>
-                            <span
-                                class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 whitespace-nowrap bg-white px-3"
-                            >
-                                {groupName}
-                            </span>
-                            <div class="h-px flex-1 bg-gray-100"></div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {#each rooms as room}
-                                <form
-                                    method="POST"
-                                    action="/doctor/dashboard?/startShift"
-                                    use:enhance
-                                >
-                                    <input
-                                        type="hidden"
-                                        name="room_id"
-                                        value={room.id}
-                                    />
-                                    <button
-                                        type="submit"
-                                        class="w-full text-left p-6 rounded-3xl border-2 border-gray-100 hover:border-indigo-500 hover:bg-indigo-50/50 transition-all group relative overflow-hidden active:scale-[0.98]"
-                                    >
-                                        <div
-                                            class="flex items-center gap-4 relative z-10"
-                                        >
-                                            <div
-                                                class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm"
-                                                style="background-color: {room.color}20; color: {room.color}"
-                                            >
-                                                {#if room.type === "consultation"}🛋️{:else if room.type === "surgery"}💉{:else if room.type === "xray"}☢️{:else}🚪{/if}
-                                            </div>
-                                            <div>
-                                                <h4
-                                                    class="font-bold text-gray-900 group-hover:text-indigo-700 transition-colors"
-                                                >
-                                                    {room.name}
-                                                </h4>
-                                                <p
-                                                    class="text-[10px] text-gray-400 font-black uppercase tracking-widest"
-                                                >
-                                                    {room.type}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div
-                                            class="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0 text-indigo-500 font-bold text-xl"
-                                        >
-                                            →
-                                        </div>
-                                    </button>
-                                </form>
-                            {/each}
-                        </div>
-                    </div>
-                {/each}
-            </div>
-
+            <!-- Quick Selection and Room List -->
             {#if !data.activeRooms || data.activeRooms.length === 0}
                 <div
-                    class="text-center py-8 bg-amber-50 rounded-3xl border border-amber-100"
+                    class="text-center py-10 bg-amber-50 rounded-[2.5rem] border border-amber-100 mb-8 px-6"
                 >
-                    <p class="text-amber-700 font-bold">
-                        ⚠️ Aucune salle active configurée.
-                    </p>
-                    <p class="text-amber-600 text-sm mt-1">
-                        Veuillez contacter l'administrateur.
-                    </p>
+                    <div class="text-4xl mb-4 text-amber-500">⚠️</div>
+                    <h3 class="text-xl font-black text-amber-900 mb-2">
+                        Aucune salle configurée
+                    </h3>
+                    {#if data.user?.role === "admin"}
+                        <p
+                            class="text-amber-700 font-medium text-sm mb-8 leading-relaxed"
+                        >
+                            Le système nécessite au moins une salle de
+                            consultation active pour fonctionner. En tant
+                            qu'administrateur, vous pouvez initialiser une
+                            configuration par défaut.
+                        </p>
+                        <form
+                            method="POST"
+                            action="/doctor/dashboard?/quickStart"
+                            use:enhance
+                        >
+                            <button
+                                type="submit"
+                                class="w-full py-4 bg-amber-600 text-white font-black rounded-2xl hover:bg-amber-700 shadow-lg shadow-amber-200/50 transition-all uppercase tracking-widest text-xs animate-pulse hover:animate-none"
+                            >
+                                🚀 Créer 'Cabinet 1' & Démarrer
+                            </button>
+                        </form>
+                    {:else}
+                        <p
+                            class="text-amber-700 font-medium text-sm leading-relaxed"
+                        >
+                            L'établissement n'a pas encore configuré de salles
+                            de consultation. Veuillez contacter un
+                            administrateur pour débloquer votre accès.
+                        </p>
+                    {/if}
+                </div>
+            {:else}
+                <!-- Quick Selection Dropdown (with optgroup) -->
+                <form
+                    method="POST"
+                    action="/doctor/dashboard?/startShift"
+                    use:enhance
+                    class="mb-8"
+                >
+                    <label
+                        for="room-quick-select"
+                        class="block text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-2 px-1"
+                        >Sélection rapide</label
+                    >
+                    <div class="flex gap-2">
+                        <select
+                            id="room-quick-select"
+                            name="room_id"
+                            class="flex-1 px-5 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-gray-700 transition-all cursor-pointer"
+                            required
+                        >
+                            <option value="">-- Choisir une salle --</option>
+                            {#each Object.entries(data.groupedRooms || {}) as [groupName, rooms]}
+                                <optgroup label={groupName}>
+                                    {#each rooms as room}
+                                        <option value={room.id}
+                                            >{room.name} ({room.type})</option
+                                        >
+                                    {/each}
+                                </optgroup>
+                            {/each}
+                        </select>
+                        <button
+                            type="submit"
+                            class="px-8 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all uppercase tracking-widest text-xs"
+                        >
+                            Valider
+                        </button>
+                    </div>
+                </form>
+
+                <div
+                    class="space-y-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar"
+                >
+                    {#each Object.entries(data.groupedRooms || {}) as [groupName, rooms]}
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-2">
+                                <div class="h-px flex-1 bg-gray-100"></div>
+                                <span
+                                    class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 whitespace-nowrap bg-white px-3"
+                                >
+                                    {groupName}
+                                </span>
+                                <div class="h-px flex-1 bg-gray-100"></div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {#each rooms as room}
+                                    <form
+                                        method="POST"
+                                        action="/doctor/dashboard?/startShift"
+                                        use:enhance
+                                    >
+                                        <input
+                                            type="hidden"
+                                            name="room_id"
+                                            value={room.id}
+                                        />
+                                        <button
+                                            type="submit"
+                                            class="w-full text-left p-6 rounded-3xl border-2 border-gray-100 hover:border-indigo-500 hover:bg-indigo-50/50 transition-all group relative overflow-hidden active:scale-[0.98]"
+                                        >
+                                            <div
+                                                class="flex items-center gap-4 relative z-10"
+                                            >
+                                                <div
+                                                    class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm"
+                                                    style="background-color: {room.color}20; color: {room.color}"
+                                                >
+                                                    {#if room.type === "consultation"}🛋️{:else if room.type === "surgery"}💉{:else if room.type === "xray"}☢️{:else}🚪{/if}
+                                                </div>
+                                                <div>
+                                                    <h4
+                                                        class="font-bold text-gray-900 group-hover:text-indigo-700 transition-colors"
+                                                    >
+                                                        {room.name}
+                                                    </h4>
+                                                    <p
+                                                        class="text-[10px] text-gray-400 font-black uppercase tracking-widest"
+                                                    >
+                                                        {room.type}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0 text-indigo-500 font-bold text-xl"
+                                            >
+                                                →
+                                            </div>
+                                        </button>
+                                    </form>
+                                {/each}
+                            </div>
+                        </div>
+                    {/each}
                 </div>
             {/if}
+
+            <!-- Logout Safety Hatch -->
+            <div class="mt-12 pt-8 border-t border-gray-100 text-center">
+                <form method="POST" action="/logout">
+                    <button
+                        type="submit"
+                        class="text-gray-400 hover:text-red-500 font-bold text-xs transition-colors flex items-center gap-2 justify-center mx-auto uppercase tracking-widest"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="3"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            ><path
+                                d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+                            /><polyline points="16 17 21 12 16 7" /><line
+                                x1="21"
+                                y1="12"
+                                x2="9"
+                                y2="12"
+                            /></svg
+                        >
+                        Se déconnecter
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 {/if}

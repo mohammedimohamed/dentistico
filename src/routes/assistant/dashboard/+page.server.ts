@@ -49,6 +49,14 @@ export const load: PageServerLoad = async ({ locals, url, depends }) => {
     const currentShift = getCurrentShift(locals.user.id);
     const clinicSettings = getClinicSettings();
 
+    const doctorLocations = db.prepare(`
+        SELECT u.id, u.full_name, u.color_code, r.name as room_name, r.color as room_color
+        FROM users u
+        JOIN work_shifts ws ON u.id = ws.user_id
+        JOIN rooms r ON ws.room_id = r.id
+        WHERE ws.end_time IS NULL
+    `).all();
+
     let shiftPaymentsTotal = 0;
     if (currentShift && currentShift.status === 'open') {
         shiftPaymentsTotal = getShiftPaymentsTotal(locals.user.id, currentShift.start_time, 'cash');
@@ -65,6 +73,7 @@ export const load: PageServerLoad = async ({ locals, url, depends }) => {
         currentShift,
         clinicSettings,
         shiftPaymentsTotal,
+        doctorLocations,
         config: {
             paymentMethods: getServerConfig().paymentMethods || []
         }

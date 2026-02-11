@@ -35,6 +35,25 @@
         const ageDate = new Date(ageDifMs);
         return Math.abs(ageDate.getUTCFullYear() - 1970);
     }
+
+    function calculateDetailedAge(dob: string | null) {
+        if (!dob) return null;
+        const birth = new Date(dob);
+        const refDate = new Date();
+        const diffMonths =
+            (refDate.getFullYear() - birth.getFullYear()) * 12 +
+            refDate.getMonth() -
+            birth.getMonth() -
+            (refDate.getDate() < birth.getDate() ? 1 : 0);
+        const years = Math.floor(diffMonths / 12);
+        const months = diffMonths % 12;
+
+        let res = "";
+        if (years > 0) res += `${years} ${years === 1 ? "an" : "ans"}`;
+        if (years > 0 && months > 0) res += " ";
+        if (months > 0) res += `${months} ${months === 1 ? "mois" : "mois"}`;
+        return res || "N/A";
+    }
     const patients = $derived(data.patients as any[]);
     const patientSearch = $derived((data.patientSearch as string) || "");
     const patientFilter = $derived((data.patientFilter as string) || "");
@@ -87,6 +106,67 @@
     let viewMode = $state($page.url.searchParams.get("view") || "list");
 
     let isBookingModalOpen = $state(false);
+
+    // Smart Appointment Countdown State
+    let now = $state(new Date());
+
+    function getAppointmentTiming(appt: any) {
+        if (
+            !appt ||
+            appt.waiting_room_status === "waiting" ||
+            appt.status === "completed"
+        )
+            return null;
+
+        const apptDate = new Date(
+            appt.start_time.includes("T")
+                ? appt.start_time
+                : appt.start_time.replace(" ", "T"),
+        );
+        const diffMinutes = Math.floor(
+            (apptDate.getTime() - now.getTime()) / 60000,
+        );
+
+        if (diffMinutes < 0) {
+            return {
+                label: "Retard " + Math.abs(diffMinutes) + " min",
+                class: "bg-red-100 text-red-700",
+            };
+        } else if (diffMinutes < 30) {
+            return {
+                label: "Dans " + diffMinutes + " min",
+                class: "bg-amber-100 text-amber-800 animate-pulse",
+            };
+        } else if (diffMinutes < 60) {
+            return {
+                label: "Dans " + diffMinutes + " min",
+                class: "bg-blue-50 text-blue-700",
+            };
+        } else {
+            return {
+                label: Math.floor(diffMinutes / 60) + "h",
+                class: "bg-gray-100 text-gray-500",
+            };
+        }
+    }
+
+    const doctorRoomMap = $derived(
+        new Map<number, any>(
+            (data.doctorLocations || []).map((loc: any) => [loc.id, loc]),
+        ),
+    );
+
+    const liveStaff = $derived(
+        (data.doctors || []).map((dr: any) => {
+            const loc = doctorRoomMap.get(dr.id) as any;
+            return {
+                ...dr,
+                status: loc ? "online" : "offline",
+                room: loc ? loc.room_name : "Absent",
+                roomColor: loc ? loc.room_color : "#94a3b8",
+            };
+        }),
+    );
 
     // UI state
     let isPatientModalOpen = $state(false);
@@ -220,7 +300,14 @@
     });
 
     onMount(() => {
-        return () => clearInterval(shiftTimerInterval);
+        const countdownInterval = setInterval(() => {
+            now = new Date();
+        }, 60000);
+
+        return () => {
+            clearInterval(shiftTimerInterval);
+            clearInterval(countdownInterval);
+        };
     });
 
     // Left panel list filtering (Existing patients + Did you mean?)
@@ -395,6 +482,11 @@
     onMount(() => {
         loadUnavailableDates();
 
+        // Fresh timestamps for countdown badges
+        const nowInterval = setInterval(() => {
+            now = new Date();
+        }, 60000);
+
         // Background polling for real-time updates - tuned for performance
         const interval = setInterval(async () => {
             if (!document.hidden) {
@@ -420,7 +512,10 @@
             }
         }, 30000); // 30s check (lightweight)
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+            clearInterval(nowInterval);
+        };
     });
 
     function openCheckInModal(appt: any) {
@@ -1034,16 +1129,16 @@
 
     function closeModal() {
         isBookingModalOpen = false;
-        selectedAppointment = null;
-        modalDoctorId = "";
-        slotPickerDate = "";
-        slotPickerTime = "";
+        resetAppointmentForm();
     }
 
     function openBookingModal(
         appt: any = null,
         startTime: string | null = null,
+        patient: any = null,
     ) {
+        resetAppointmentForm();
+
         if (appt) {
             selectedAppointment = appt;
             modalDoctorId = appt.doctor_id ? appt.doctor_id.toString() : "";
@@ -1065,7 +1160,7 @@
             }
         } else if (startTime) {
             selectedAppointment = { start_time: startTime };
-            selectedPatient = null;
+            selectedPatient = patient;
             modalDoctorId = "";
             if (startTime) {
                 slotPickerDate = startTime.split("T")[0].split(" ")[0];
@@ -1075,11 +1170,16 @@
             }
         } else {
             selectedAppointment = null;
-            selectedPatient = null;
+            selectedPatient = patient;
             modalDoctorId = "";
             slotPickerDate = "";
             slotPickerTime = "";
         }
+
+        if (patient) {
+            patientSearchQuery = patient.full_name;
+        }
+
         isBookingModalOpen = true;
     }
 
@@ -1273,6 +1373,50 @@
         </nav>
     </div>
 
+    <!-- LIVE STAFF WIDGET -->
+    <div class="mb-8 flex flex-wrap items-center gap-3">
+        <span
+            class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mr-2"
+            >Personnel en Direct :</span
+        >
+        {#each liveStaff as staff}
+            <div
+                class="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md"
+            >
+                <div class="relative">
+                    <span
+                        class="w-2.5 h-2.5 rounded-full block {staff.status ===
+                        'online'
+                            ? 'animate-pulse'
+                            : ''}"
+                        style="background-color: {staff.status === 'online'
+                            ? staff.color_code || '#10b981'
+                            : '#cbd5e1'}"
+                    ></span>
+                    {#if staff.status === "online"}
+                        <span
+                            class="absolute inset-0 w-2.5 h-2.5 rounded-full animate-ping"
+                            style="background-color: {staff.color_code ||
+                                '#10b981'}40"
+                        ></span>
+                    {/if}
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-xs font-black text-gray-900"
+                        >{staff.full_name}</span
+                    >
+                    <span
+                        class="text-[9px] font-bold uppercase tracking-wider"
+                        style="color: {staff.roomColor}"
+                    >
+                        {staff.status === "online" ? "📍 " : ""}
+                        {staff.room}
+                    </span>
+                </div>
+            </div>
+        {/each}
+    </div>
+
     <!-- SCHEDULE TAB -->
     {#if activeTab === "schedule"}
         <div class="bg-white shadow rounded-xl overflow-hidden">
@@ -1397,6 +1541,10 @@
                 {#if viewMode === "list"}
                     <ul role="list" class="divide-y divide-gray-100">
                         {#each filteredAppointments as appt}
+                            {@const timing = getAppointmentTiming(appt)}
+                            {@const detailedAge = calculateDetailedAge(
+                                appt.date_of_birth,
+                            )}
                             <li class="group">
                                 <div
                                     class="px-4 py-5 transition-colors rounded-xl flex items-center justify-between border-l-4"
@@ -1417,6 +1565,14 @@
                                                     minute: "2-digit",
                                                 })}
                                             </span>
+
+                                            {#if timing}
+                                                <span
+                                                    class="text-xs font-bold px-2 py-0.5 rounded-full {timing.class}"
+                                                >
+                                                    {timing.label}
+                                                </span>
+                                            {/if}
                                             <span
                                                 class="text-xs font-medium text-gray-400"
                                             >
@@ -1463,40 +1619,10 @@
                                             class="flex flex-wrap items-center gap-2 mb-1"
                                         >
                                             {#if appt.date_of_birth}
-                                                {@const birth = new Date(
-                                                    appt.date_of_birth,
-                                                )}
-                                                {@const now = new Date()}
-                                                {@const diffMonths =
-                                                    (now.getFullYear() -
-                                                        birth.getFullYear()) *
-                                                        12 +
-                                                    now.getMonth() -
-                                                    birth.getMonth() -
-                                                    (now.getDate() <
-                                                    birth.getDate()
-                                                        ? 1
-                                                        : 0)}
-                                                {@const years = Math.floor(
-                                                    diffMonths / 12,
-                                                )}
-                                                {@const months =
-                                                    diffMonths % 12}
                                                 <span
                                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
                                                 >
-                                                    {years > 0
-                                                        ? `${years} ${years === 1 ? "year" : "years"}`
-                                                        : ""}
-                                                    {years > 0 && months > 0
-                                                        ? " "
-                                                        : ""}
-                                                    {months > 0
-                                                        ? `${months} ${months === 1 ? "month" : "months"}`
-                                                        : ""}
-                                                    {years === 0 && months === 0
-                                                        ? "Newborn"
-                                                        : ""}
+                                                    {detailedAge}
                                                 </span>
                                             {/if}
                                             {#if appt.gender}
@@ -1530,6 +1656,15 @@
                                                     "assistant.dashboard.time.dr",
                                                 )}
                                                 {appt.doctor_name}
+
+                                                {#if appt.room_name}
+                                                    <span
+                                                        class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-black border uppercase tracking-tighter"
+                                                        style="background-color: {appt.room_color}15; color: {appt.room_color}; border-color: {appt.room_color}30"
+                                                    >
+                                                        📍 {appt.room_name}
+                                                    </span>
+                                                {/if}
                                             {:else}
                                                 <span
                                                     class="text-orange-600 font-bold"
@@ -2054,6 +2189,8 @@
                                     class="bg-white divide-y divide-gray-200"
                                 >
                                     {#each tableAppointments as appt}
+                                        {@const timing =
+                                            getAppointmentTiming(appt)}
                                         <tr
                                             class="group hover:bg-slate-50 {selectedRows.has(
                                                 appt.id,
@@ -2093,12 +2230,28 @@
                                             <td
                                                 class="px-3 py-2 whitespace-nowrap text-xs text-gray-900 font-medium"
                                             >
-                                                {new Date(
-                                                    appt.start_time,
-                                                ).toLocaleTimeString([], {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                })}
+                                                <div
+                                                    class="flex flex-col gap-0.5"
+                                                >
+                                                    <span>
+                                                        {new Date(
+                                                            appt.start_time,
+                                                        ).toLocaleTimeString(
+                                                            [],
+                                                            {
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                            },
+                                                        )}
+                                                    </span>
+                                                    {#if timing}
+                                                        <span
+                                                            class="text-[10px] font-black px-1.5 py-0.5 rounded-full w-fit {timing.class}"
+                                                        >
+                                                            {timing.label}
+                                                        </span>
+                                                    {/if}
+                                                </div>
                                             </td>
                                             <td
                                                 class="px-3 py-2 whitespace-nowrap"
@@ -2629,6 +2782,7 @@
                                         null,
                                         new Date().toISOString().split("T")[0] +
                                             "T09:00",
+                                        patient,
                                     )}
                                 class="mt-4 w-full py-2 bg-gray-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition-colors"
                             >
@@ -3344,7 +3498,12 @@
                                                         >{$t(
                                                             "assistant.dashboard.time.dr",
                                                         )}
-                                                        {doctor.full_name}</option
+                                                        {doctor.full_name}
+                                                        {#if doctorRoomMap.get(doctor.id)}
+                                                            ({doctorRoomMap.get(
+                                                                doctor.id,
+                                                            ).room_name})
+                                                        {/if}</option
                                                     >
                                                 {/each}
                                             </select>

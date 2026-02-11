@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { getDoctorAppointmentsToday, getDoctorUpcomingAppointments, updateAppointment, getAppointmentById, db, startDoctorShift, endShift, updateShiftRoom } from '$lib/server/db';
+import { getDoctorAppointmentsToday, getDoctorUpcomingAppointments, updateAppointment, getAppointmentById, db, startDoctorShift, endShift, updateShiftRoom, createBuilding, createFloor, createRoom } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals, depends }) => {
     depends('appointments:today');
@@ -31,6 +31,40 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
 };
 
 export const actions = {
+    quickStart: async ({ request, locals }) => {
+        if (!locals.user || locals.user.role !== 'admin') {
+            return fail(403, { message: 'Unauthorized. Admin role required.' });
+        }
+
+        // 1. Double check rooms are empty
+        const roomCountResult = db.prepare('SELECT COUNT(*) as count FROM rooms').get() as { count: number };
+        if (roomCountResult.count > 0) {
+            return fail(400, { message: 'Rooms already exist.' });
+        }
+
+        // 2. Create Building
+        const buildingResult = createBuilding("Clinique Principale", "Adresse de la clinique");
+        const buildingId = Number(buildingResult.lastInsertRowid);
+
+        // 3. Create Floor
+        const floorResult = createFloor(buildingId, "Rez-de-chaussée", 0);
+        const floorId = Number(floorResult.lastInsertRowid);
+
+        // 4. Create Room
+        const roomResult = createRoom({
+            floor_id: floorId,
+            name: "Cabinet 1",
+            type: "consultation",
+            color: "#6366f1", // Indigo
+            is_active: 1
+        });
+        const roomId = Number(roomResult.lastInsertRowid);
+
+        // 5. Start Shift for this user
+        startDoctorShift(locals.user.id, roomId);
+
+        return { success: true };
+    },
     updateAppointment: async ({ request, locals }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { message: 'Unauthorized' });
