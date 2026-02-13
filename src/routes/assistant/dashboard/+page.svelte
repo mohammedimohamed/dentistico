@@ -2896,7 +2896,7 @@
                     >
                         {data.appointments.filter(
                             (a: any) =>
-                                a.waiting_room_status === "waiting" &&
+                                (a.status === "waiting_room" || a.waiting_room_status === "waiting") &&
                                 new Date(a.start_time).toDateString() ===
                                     new Date().toDateString(),
                         ).length} Patients
@@ -2904,7 +2904,7 @@
                 </div>
             </div>
             <div class="p-6">
-                {#if data.appointments.filter((a: any) => a.waiting_room_status === "waiting" && new Date(a.start_time).toDateString() === new Date().toDateString()).length === 0}
+                {#if data.appointments.filter((a: any) => (a.status === "waiting_room" || a.waiting_room_status === "waiting") && new Date(a.start_time).toDateString() === new Date().toDateString()).length === 0}
                     <div class="py-12 text-center">
                         <div class="text-6xl mb-4">🏥</div>
                         <h3 class="text-gray-500 italic">
@@ -2915,7 +2915,7 @@
                     <div
                         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
                     >
-                        {#each data.appointments.filter((a: any) => a.waiting_room_status === "waiting" && new Date(a.start_time).toDateString() === new Date().toDateString()) as appt}
+                        {#each data.appointments.filter((a: any) => (a.status === "waiting_room" || a.waiting_room_status === "waiting") && new Date(a.start_time).toDateString() === new Date().toDateString()) as appt}
                             <div
                                 class="p-4 border border-gray-100 rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all bg-white relative overflow-hidden"
                             >

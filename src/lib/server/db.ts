@@ -2189,9 +2189,13 @@ export function getDoctorAppointmentsToday(doctorId: number) {
         SELECT
             a.id, a.start_time, a.end_time, a.duration_minutes,
             a.status, a.appointment_type, a.notes, a.created_at,
-            p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone, p.date_of_birth as patient_dob, p.gender as patient_gender
+            p.id as patient_id, p.full_name as patient_name, p.phone as patient_phone, p.date_of_birth as patient_dob, p.gender as patient_gender,
+            COALESCE(r.name, '') as room_name,
+            r.color as room_color
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
+        LEFT JOIN work_shifts ws ON a.doctor_id = ws.user_id AND ws.status = 'open' AND ws.end_time IS NULL
+        LEFT JOIN rooms r ON ws.room_id = r.id
         WHERE a.doctor_id = ?
         AND date(a.start_time) = date(?)
         ORDER BY a.start_time ASC
@@ -2245,7 +2249,7 @@ export function getAllUpcomingAppointments() {
         p.relationship_to_primary,
         creator.full_name as created_by_name,
         confirmer.full_name as confirmed_by_name,
-        r.name as room_name,
+        COALESCE(r.name, '') as room_name,
         r.color as room_color
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
@@ -3219,9 +3223,13 @@ export function getDoctorAppointmentsByDate(doctorId: number, dateStr: string) {
       p.phone as patient_phone,
       p.email as patient_email,
       p.date_of_birth as patient_dob,
-      p.gender as patient_gender
+      p.gender as patient_gender,
+      COALESCE(r.name, '') as room_name,
+      r.color as room_color
     FROM appointments a
     JOIN patients p ON a.patient_id = p.id
+    LEFT JOIN work_shifts ws ON a.doctor_id = ws.user_id AND ws.status = 'open' AND ws.end_time IS NULL
+    LEFT JOIN rooms r ON ws.room_id = r.id
     WHERE a.doctor_id = ? 
       AND DATE(a.start_time) = ?
     ORDER BY a.start_time ASC
@@ -3308,22 +3316,20 @@ export function getDoctorJourneyStats(doctorId: number, date: string) {
 }
 
 export function getJourneyDashboardStats(doctorId: number) {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-    const dayAfter = new Date(Date.now() + 172800000).toISOString().split('T')[0];
+    const now = new Date();
+    const localToday = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const localTomorrow = new Date(now.getTime() + 86400000).toLocaleDateString('en-CA');
+    const localDayAfter = new Date(now.getTime() + 172800000).toLocaleDateString('en-CA');
 
     // Get end of current week (Sunday)
-    const now = new Date();
     const dayOfWeek = now.getDay();
-    const daysUntilSunday = 7 - dayOfWeek;
-    const endOfWeek = new Date(now.getTime() + daysUntilSunday * 86400000)
-        .toISOString().split('T')[0];
+    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    const localEndOfWeek = new Date(now.getTime() + daysUntilSunday * 86400000).toLocaleDateString('en-CA');
 
-    // Use range queries for index performance (avoid DATE() function in WHERE)
-    const todayStart = today + ' 00:00:00';
-    const tomorrowStart = tomorrow + ' 00:00:00';
-    const dayAfterStart = dayAfter + ' 00:00:00';
-    const weekEndNext = endOfWeek + ' 23:59:59';
+    const todayStart = localToday + ' 00:00:00';
+    const tomorrowStart = localTomorrow + ' 00:00:00';
+    const dayAfterStart = localDayAfter + ' 00:00:00';
+    const weekEndNext = localEndOfWeek + ' 23:59:59';
 
     // ==========================================
     // TODAY'S FUNNEL
@@ -3334,11 +3340,11 @@ export function getJourneyDashboardStats(doctorId: number) {
             SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as treated,
             SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as canceled,
             SUM(CASE WHEN status NOT IN ('completed', 'cancelled') THEN 1 ELSE 0 END) as remaining,
-            SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as waiting_room
+            SUM(CASE WHEN (status = 'waiting_room' OR waiting_room_status = 'waiting') THEN 1 ELSE 0 END) as waiting_room
         FROM appointments
         WHERE doctor_id = ? 
-          AND start_time >= ? AND start_time < ?
-    `).get(doctorId, todayStart, tomorrowStart) as any;
+          AND date(start_time, 'localtime') = date('now', 'localtime')
+    `).get(doctorId) as any;
 
     // ==========================================
     // PLANNED vs WALK-INS
@@ -3392,6 +3398,30 @@ export function getJourneyDashboardStats(doctorId: number) {
             total: pipelineStats.total_until_weekend || 0
         }
     };
+}
+
+// Aliases for compatibility
+export const getDashboardStats = getJourneyDashboardStats;
+
+export function getWaitingRoomPatients(doctorId: number) {
+    const sql = `
+        SELECT 
+            a.id, 
+            a.start_time, 
+            p.full_name as patient_name, 
+            p.id as patient_id,
+            COALESCE(r.name, '') as room_name,
+            r.color as room_color
+        FROM appointments a
+        JOIN patients p ON a.patient_id = p.id
+        LEFT JOIN work_shifts ws ON a.doctor_id = ws.user_id AND ws.end_time IS NULL
+        LEFT JOIN rooms r ON ws.room_id = r.id
+        WHERE a.doctor_id = ?
+        AND (a.status = 'waiting_room' OR a.waiting_room_status = 'waiting')
+        AND date(a.start_time, 'localtime') = date('now', 'localtime')
+        ORDER BY a.start_time ASC
+    `;
+    return db.prepare(sql).all(doctorId);
 }
 
 export function getPatientJourneySummary(patientId: number) {

@@ -17,8 +17,8 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
         SELECT COUNT(*) as count 
         FROM appointments 
         WHERE doctor_id = ? 
-        AND waiting_room_status = 'waiting' 
-        AND start_time >= date('now') AND start_time < date('now', '+1 day')
+        AND (status = 'waiting_room' OR waiting_room_status = 'waiting')
+        AND date(start_time, 'localtime') = date('now', 'localtime')
     `).get(locals.user.id) as { count: number };
 
     return {

@@ -278,7 +278,7 @@
             const waitMins =
                 isToday &&
                 appt.checked_in &&
-                appt.waiting_room_status === "waiting"
+                (appt.status === "waiting_room" || appt.waiting_room_status === "waiting")
                     ? Math.floor(
                           (now.getTime() -
                               new Date(appt.check_in_time).getTime()) /
@@ -590,7 +590,7 @@
                                     <h4 class="patient-name">
                                         {appt.patient_name}
                                     </h4>
-                                    {#if isToday && appt.checked_in && appt.waiting_room_status === "waiting"}
+                                    {#if isToday && (appt.status === "waiting_room" || appt.waiting_room_status === "waiting")}
                                         <div
                                             class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-black uppercase tracking-widest"
                                         >

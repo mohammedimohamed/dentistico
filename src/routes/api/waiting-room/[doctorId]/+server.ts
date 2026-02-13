@@ -19,12 +19,16 @@ export async function GET({ params, locals }: { params: { doctorId: string }, lo
                 a.*,
                 p.full_name as patient_name,
                 p.date_of_birth,
+                COALESCE(r.name, '') as room_name,
+                r.color as room_color,
                 (strftime('%s', 'now') - strftime('%s', a.check_in_time)) / 60 as wait_minutes
             FROM appointments a
             JOIN patients p ON a.patient_id = p.id
+            LEFT JOIN work_shifts ws ON a.doctor_id = ws.user_id AND ws.end_time IS NULL
+            LEFT JOIN rooms r ON ws.room_id = r.id
             WHERE a.doctor_id = ?
-                AND a.waiting_room_status = 'waiting'
-                AND a.start_time >= date('now') AND a.start_time < date('now', '+1 day')
+                AND (a.status = 'waiting_room' OR a.waiting_room_status = 'waiting')
+                AND date(a.start_time) = date('now', 'localtime')
             ORDER BY a.start_time ASC
         `).all(doctorId);
 

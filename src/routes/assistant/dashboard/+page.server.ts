@@ -50,11 +50,11 @@ export const load: PageServerLoad = async ({ locals, url, depends }) => {
     const clinicSettings = getClinicSettings();
 
     const doctorLocations = db.prepare(`
-        SELECT u.id, u.full_name, u.color_code, r.name as room_name, r.color as room_color
+        SELECT u.id, u.full_name, u.color_code, COALESCE(r.name, '') as room_name, r.color as room_color
         FROM users u
-        JOIN work_shifts ws ON u.id = ws.user_id
-        JOIN rooms r ON ws.room_id = r.id
-        WHERE ws.end_time IS NULL
+        LEFT JOIN work_shifts ws ON u.id = ws.user_id AND ws.end_time IS NULL
+        LEFT JOIN rooms r ON ws.room_id = r.id
+        WHERE u.role = 'doctor'
     `).all();
 
     let shiftPaymentsTotal = 0;
