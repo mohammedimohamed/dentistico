@@ -206,11 +206,11 @@
     });
 
     function printInvoice(id: number) {
-        window.open(`/api/print?template=Invoice&id=${id}`, "_blank");
+        window.open(`/print/invoice/${id}`, "_blank");
     }
 
     function printPrescription(id: number) {
-        window.open(`/api/print?template=Prescription&id=${id}`, "_blank");
+        window.open(`/print/prescription/${id}`, "_blank");
     }
 
     function loadPrescription(id: number) {

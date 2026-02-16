@@ -1,234 +1,315 @@
 <script lang="ts">
-    import { APP_CONFIG } from "$lib/config/app.config";
+    import { onMount } from "svelte";
+
     let { data } = $props();
+
+    onMount(() => {
+        setTimeout(() => {
+            window.print();
+        }, 500);
+    });
+
+    const clinic = $derived(data.config || {});
+    const invoice = $derived(data.invoice);
+    const items = $derived(invoice.items || []);
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat("fr-DZ", {
+            style: "currency",
+            currency: "DZD",
+        }).format(amount);
+    };
+
+    const subtotal = $derived(
+        items.reduce(
+            (acc: number, item: any) => acc + item.unit_price * item.quantity,
+            0,
+        ),
+    );
+    const totalAmount = $derived(invoice.total_amount || subtotal);
+    const amountPaid = $derived(invoice.amount_paid || 0);
+    const balanceDue = $derived(totalAmount - amountPaid);
 </script>
 
 <svelte:head>
-    <title>Facture - {data.invoice.invoice_number}</title>
+    <title>Facture - {invoice.patient_name}</title>
 </svelte:head>
 
-<div
-    class="print-container bg-white min-h-screen p-12 max-w-4xl mx-auto text-gray-900 font-sans"
->
+<div class="a4-page p-[20mm] flex flex-col min-h-[297mm] text-gray-900">
     <!-- Header -->
-    <div class="flex justify-between items-start mb-12">
-        <div>
-            <h1 class="text-3xl font-extrabold text-indigo-900 mb-2">
-                FACTURE
-            </h1>
-            <p class="text-xl font-bold text-gray-700">
-                {data.invoice.invoice_number}
+    <header class="flex justify-between items-start mb-16">
+        <div class="clinic-info">
+            <div class="flex items-center gap-4 mb-4">
+                {#if clinic.logo_data}
+                    <img
+                        src={clinic.logo_data}
+                        alt="Logo"
+                        class="h-16 w-auto object-contain"
+                    />
+                {:else if clinic.logo_url}
+                    <img
+                        src={clinic.logo_url}
+                        alt="Logo"
+                        class="h-16 w-auto object-contain"
+                    />
+                {/if}
+                <h1
+                    class="text-3xl font-black text-indigo-700 uppercase tracking-widest leading-none"
+                >
+                    {clinic.clinicName || "DENTISTICO"}
+                </h1>
+            </div>
+            <p class="text-sm text-gray-400 font-bold mb-6">
+                EXCELLENCE EN ETABLISSEMENT DENTAIRE
             </p>
-            <p class="text-sm text-gray-500 mt-1">
-                Date : {new Date(
-                    data.invoice.invoice_date,
-                ).toLocaleDateString()}
-            </p>
+            <div class="text-xs text-gray-600 space-y-1 font-semibold">
+                <p>{clinic.address || "Adresse de la clinique"}</p>
+                <p>Tél: {clinic.phone || "N° de téléphone"}</p>
+                <p>Email: {clinic.email || "contact@clinic.com"}</p>
+            </div>
         </div>
-        <div class="text-right">
-            <h2 class="text-xl font-bold uppercase tracking-wider">
-                DENTISTICO
-            </h2>
-            <p class="text-sm text-gray-600">Cabinet Dentaire</p>
-            <p class="text-xs text-gray-500">123 Rue de la Santé, Paris</p>
-            <p class="text-xs text-gray-500">SIRET: 123 456 789 00012</p>
-        </div>
-    </div>
 
-    <!-- Patient / Client Info -->
-    <div class="grid grid-cols-2 gap-8 mb-12">
-        <div class="bg-gray-50 p-6 rounded-lg border border-gray-100">
-            <h3
-                class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3"
-            >
-                Facturé à :
-            </h3>
-            <p class="text-lg font-bold">{data.invoice.patient_name}</p>
-            <p class="text-sm text-gray-600 mt-1">
-                {data.invoice.patient_address || ""}<br />
-                {data.invoice.patient_city || ""}
-            </p>
-        </div>
-        <div class="flex flex-col justify-center text-right">
+        <div class="doc-type-box text-right flex flex-col items-end">
             <div
-                class={`inline-block ml-auto px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${data.invoice.status === "paid" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
+                class="bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-lg mb-6"
             >
-                Statut : {data.invoice.status === "paid"
-                    ? "Payée"
-                    : "En attente"}
+                <h2 class="text-3xl font-black uppercase tracking-widest">
+                    FACTURE
+                </h2>
+                <p class="text-[10px] font-black opacity-60 tracking-widest">
+                    OFFICIAL INVOICE / REÇU
+                </p>
+            </div>
+            <div class="text-right space-y-1">
+                <p
+                    class="text-xs font-black text-gray-400 uppercase tracking-widest"
+                >
+                    Numéro de Facture
+                </p>
+                <p class="text-xl font-black text-gray-900">
+                    #{invoice.invoice_number || invoice.id}
+                </p>
+                <div class="h-px bg-indigo-100 w-24 ml-auto my-2"></div>
+                <p
+                    class="text-xs font-black text-gray-400 uppercase tracking-widest"
+                >
+                    Date d'émission
+                </p>
+                <p class="text-sm font-bold text-gray-800">
+                    {new Date(
+                        invoice.created_at || Date.now(),
+                    ).toLocaleDateString("fr-FR", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                    })}
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Info Grid -->
+    <div class="grid grid-cols-2 gap-12 mb-16">
+        <div>
+            <h3
+                class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4"
+            >
+                FACTURE À (CLIENT)
+            </h3>
+            <div class="border-l-4 border-indigo-600 pl-6">
+                <p class="text-xl font-black text-gray-900 mb-1">
+                    {invoice.patient_name}
+                </p>
+                <p class="text-sm text-gray-600 font-medium">
+                    {invoice.patient_address || "Adresse non renseignée"}
+                </p>
+                {#if invoice.patient_city}
+                    <p class="text-sm text-gray-600 font-medium">
+                        {invoice.patient_city}
+                    </p>
+                {/if}
+            </div>
+        </div>
+
+        <div class="flex flex-col justify-end">
+            <div
+                class="bg-slate-50 border border-slate-100 p-6 rounded-2xl flex justify-between items-center"
+            >
+                <div>
+                    <p
+                        class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none"
+                    >
+                        Statut du Paiement
+                    </p>
+                    <p
+                        class="text-lg font-black mt-2 {balanceDue <= 0
+                            ? 'text-emerald-600'
+                            : 'text-amber-600'}"
+                    >
+                        {balanceDue <= 0 ? "✓ RÉGLÉE" : "⚠ EN ATTENTE"}
+                    </p>
+                </div>
+                <div class="text-right">
+                    <p
+                        class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none"
+                    >
+                        Reste à Payer
+                    </p>
+                    <p class="text-xl font-black mt-1 text-gray-900">
+                        {formatCurrency(balanceDue)}
+                    </p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Items Table -->
-    <table class="min-w-full mb-12">
-        <thead class="bg-gray-900 text-white">
-            <tr>
-                <th
-                    class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider"
-                    >Désignation</th
-                >
-                <th
-                    class="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider"
-                    >Dent</th
-                >
-                <th
-                    class="px-6 py-4 text-right text-sm font-semibold uppercase tracking-wider"
-                    >Montant</th
-                >
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200 border-b border-gray-200">
-            {#if data.invoice.invoice_type === "global"}
-                <tr>
-                    <td class="px-6 py-4 text-sm text-gray-900 font-medium"
-                        >{data.invoice.global_description ||
-                            "Soins et Traitements Dentaires"}</td
+    <!-- Data Table -->
+    <main class="flex-grow">
+        <table class="w-full">
+            <thead>
+                <tr class="bg-gray-900 text-white">
+                    <th
+                        class="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest rounded-l-xl"
+                        >DÉSIGNATION / ACTE DENTAIRE</th
                     >
-                    <td class="px-6 py-4 text-center text-sm text-gray-500"
-                        >-</td
+                    <th
+                        class="px-6 py-4 text-center text-[10px] font-black uppercase tracking-widest"
+                        >QTÉ</th
                     >
-                    <td class="px-6 py-4 text-right text-sm font-bold"
-                        >{APP_CONFIG.currencySymbol}{data.invoice.total_amount.toFixed(
-                            2,
-                        )}</td
+                    <th
+                        class="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest"
+                        >PRIX UNITAIRE</th
+                    >
+                    <th
+                        class="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest rounded-r-xl"
+                        >TOTAL</th
                     >
                 </tr>
-            {:else}
-                {#each data.invoice.items as item}
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {#each items as item}
+                    <tr class="group">
+                        <td class="px-6 py-5">
+                            <p
+                                class="font-black text-gray-900 uppercase tracking-tight"
+                            >
+                                {item.description}
+                            </p>
+                            {#if item.notes}
+                                <p
+                                    class="text-[10px] text-gray-400 font-bold mt-1 italic"
+                                >
+                                    {item.notes}
+                                </p>
+                            {/if}
+                        </td>
+                        <td
+                            class="px-6 py-5 text-center font-bold text-gray-600"
+                        >
+                            {item.quantity}
+                        </td>
+                        <td
+                            class="px-6 py-5 text-right font-black text-gray-900"
+                        >
+                            {formatCurrency(item.unit_price)}
+                        </td>
+                        <td
+                            class="px-6 py-5 text-right font-black text-indigo-600"
+                        >
+                            {formatCurrency(item.unit_price * item.quantity)}
+                        </td>
+                    </tr>
+                {:else}
                     <tr>
-                        <td class="px-6 py-4 text-sm text-gray-900 font-medium"
-                            >{item.description}</td
-                        >
-                        <td class="px-6 py-4 text-center text-sm text-gray-500"
-                            >{item.tooth_number || "-"}</td
-                        >
-                        <td class="px-6 py-4 text-right text-sm font-bold"
-                            >{APP_CONFIG.currencySymbol}{item.amount.toFixed(
-                                2,
-                            )}</td
+                        <td
+                            colspan="4"
+                            class="px-6 py-12 text-center text-gray-400 italic"
+                            >Aucun article enregistré.</td
                         >
                     </tr>
                 {/each}
-            {/if}
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </main>
 
-    <!-- Totals -->
-    <div class="flex justify-end">
-        <div class="w-64 space-y-3">
-            <div class="flex justify-between text-sm text-gray-600">
-                <span>Total HT</span>
-                <span
-                    >{APP_CONFIG.currencySymbol}{data.invoice.total_amount.toFixed(
-                        2,
-                    )}</span
-                >
-            </div>
-            <div class="flex justify-between text-sm text-gray-600">
-                <span>TVA (0%)</span>
-                <span>{APP_CONFIG.currencySymbol}0.00</span>
-            </div>
+    <!-- Totals Section -->
+    <div class="mt-12 flex justify-end">
+        <div class="w-80 space-y-3">
             <div
-                class="flex justify-between text-xl font-bold text-gray-900 pt-3 border-t"
+                class="flex justify-between items-center text-sm font-bold text-gray-500 px-2 uppercase tracking-widest"
             >
-                <span>TOTAL TTC</span>
-                <span
-                    >{APP_CONFIG.currencySymbol}{data.invoice.total_amount.toFixed(
-                        2,
-                    )}</span
-                >
+                <span>Sous-total</span>
+                <span>{formatCurrency(subtotal)}</span>
             </div>
 
-            {#if data.invoice.status === "paid"}
-                <div
-                    class="flex justify-between text-sm font-bold text-green-600 italic"
+            <div
+                class="flex justify-between items-center text-sm font-bold text-emerald-600 px-2 uppercase tracking-widest"
+            >
+                <span>Total Payé</span>
+                <span>{formatCurrency(amountPaid)}</span>
+            </div>
+
+            <div class="h-px bg-gray-200 my-2"></div>
+
+            <div
+                class="flex justify-between items-center px-6 py-4 bg-indigo-50 border-2 border-indigo-100 rounded-2xl"
+            >
+                <span
+                    class="text-sm font-black text-indigo-900 uppercase tracking-widest"
+                    >TOTAL DZD</span
                 >
-                    <span>Montant Payé</span>
-                    <span
-                        >{APP_CONFIG.currencySymbol}{data.invoice.total_amount.toFixed(
-                            2,
-                        )}</span
-                    >
-                </div>
-                <div
-                    class="flex justify-between text-sm font-bold text-gray-900 border-t-2 border-double border-gray-900 pt-2"
+                <span class="text-2xl font-black text-indigo-700"
+                    >{formatCurrency(totalAmount)}</span
                 >
-                    <span>Reste à Charge</span>
-                    <span>{APP_CONFIG.currencySymbol}0.00</span>
-                </div>
-            {:else}
-                <div
-                    class="flex justify-between text-sm font-bold text-red-600"
-                >
-                    <span>Reste à Charge</span>
-                    <span
-                        >{APP_CONFIG.currencySymbol}{data.invoice.total_amount.toFixed(
-                            2,
-                        )}</span
-                    >
-                </div>
-            {/if}
+            </div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <div class="mt-24 pt-8 border-t border-gray-100 text-center">
-        <p class="text-xs text-gray-400 mb-2">
-            Exonération de TVA, article 261-4-1° du CGI.
-        </p>
-        <p class="text-sm font-semibold text-gray-700">
-            Merci de votre confiance.
-        </p>
-    </div>
-
-    <!-- Print Button (Visible only on screen) -->
-    <div class="fixed bottom-8 right-8 no-print">
-        <button
-            onclick={() => window.print()}
-            class="bg-indigo-600 text-white px-6 py-3 rounded-full shadow-lg hover:bg-indigo-700 transition-transform active:scale-95 flex items-center gap-2"
+    <!-- Legal Footer -->
+    <footer class="mt-24 border-t border-gray-100 pt-8">
+        <div
+            class="grid grid-cols-2 gap-8 text-[9px] font-bold text-gray-400 uppercase tracking-widest"
         >
-            <svg
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            <div>
+                <p class="mb-2 text-gray-900">Notes & Conditions:</p>
+                <p class="italic">
+                    Cette facture est établie pour servir et valoir ce que de
+                    droit. Les actes médicaux sont exonérés de TVA selon la
+                    législation en vigueur.
+                </p>
+            </div>
+            <div class="text-right">
+                <p class="mb-2 text-gray-900">Signature Authorisée:</p>
+                <p class="italic underline underline-offset-4">
+                    Clinique {clinic.clinicName || "Dentistico"}
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-12 pt-8 border-t border-gray-50 text-center">
+            <p
+                class="text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]"
             >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 012-2H5a2 2 0 012 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                />
-            </svg>
-            Imprimer la facture
-        </button>
-    </div>
+                {clinic.clinicName || "Dentistico"} • Document Fiscal • Support:
+                {clinic.phone}
+            </p>
+        </div>
+    </footer>
 </div>
 
 <style>
-    @media print {
-        .no-print {
-            display: none !important;
-        }
-        body {
-            background: white !important;
-            margin: 0;
-            padding: 0;
-        }
-        .print-container {
-            width: 100%;
-            max-width: none;
-            margin: 0;
-            padding: 0;
-            box-shadow: none;
-            border: none;
-        }
+    .a4-page {
+        width: 210mm;
+        margin: 0 auto;
+        box-sizing: border-box;
     }
 
-    @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap");
-
-    :global(body) {
-        font-family: "Outfit", sans-serif;
+    @media print {
+        .a4-page {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 20mm;
+        }
     }
 </style>

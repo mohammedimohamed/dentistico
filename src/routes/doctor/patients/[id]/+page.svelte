@@ -1470,26 +1470,30 @@
                                     <td
                                         class="px-6 py-4 whitespace-nowrap text-inline-end"
                                     >
-                                        <a
-                                            href="/api/print?template=Prescription&id={prescription.id}"
-                                            target="_blank"
-                                            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-bold hover:bg-indigo-100 transition-colors"
+                                        <div
+                                            class="flex items-center justify-end"
                                         >
-                                            <svg
-                                                class="h-4 w-4"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
+                                            <a
+                                                href="/print/prescription/{prescription.id}"
+                                                target="_blank"
+                                                class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all text-sm"
                                             >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 012-2H5a2 2 0 012 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                                                />
-                                            </svg>
-                                            {$t("patient_details.print")}
-                                        </a>
+                                                <svg
+                                                    class="h-4 w-4"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 012-2H5a2 2 0 012 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                                                    />
+                                                </svg>
+                                                {$t("patient_details.print")}
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             {:else}
@@ -1923,26 +1927,46 @@
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-inline-end text-sm font-bold"
                                         >
-                                            <a
-                                                href="/api/print?template=Invoice&id={invoice.id}"
-                                                target="_blank"
-                                                class="text-indigo-600 hover:underline margin-inline-end-4"
-                                                >{$t(
-                                                    "patient_details.print",
-                                                )}</a
+                                            <div
+                                                class="flex items-center justify-end gap-3"
                                             >
-                                            {#if invoice.status !== "paid"}
-                                                <button
-                                                    onclick={() => {
-                                                        selectedInvoice =
-                                                            invoice;
-                                                        isPaymentModalOpen = true;
-                                                    }}
-                                                    class="text-green-600 hover:underline"
+                                                <a
+                                                    href="/print/invoice/{invoice.id}"
+                                                    target="_blank"
+                                                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-bold hover:bg-indigo-100 transition-colors"
                                                 >
-                                                    {$t("patient_details.pay")}
-                                                </button>
-                                            {/if}
+                                                    <svg
+                                                        class="h-4 w-4"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 012-2H5a2 2 0 012 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                                                        />
+                                                    </svg>
+                                                    {$t(
+                                                        "patient_details.print",
+                                                    )}
+                                                </a>
+                                                {#if invoice.status !== "paid"}
+                                                    <button
+                                                        onclick={() => {
+                                                            selectedInvoice =
+                                                                invoice;
+                                                            isPaymentModalOpen = true;
+                                                        }}
+                                                        class="text-green-600 hover:underline"
+                                                    >
+                                                        {$t(
+                                                            "patient_details.pay",
+                                                        )}
+                                                    </button>
+                                                {/if}
+                                            </div>
                                         </td>
                                     </tr>
                                 {:else}

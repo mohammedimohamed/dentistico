@@ -1,4 +1,4 @@
-import { getInvoiceById } from '$lib/server/db';
+import { getInvoiceById, getServerConfig } from '$lib/server/db';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
@@ -14,8 +14,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         throw error(404, 'Invoice not found');
     }
 
+    const config = getServerConfig();
+
     return {
         invoice,
+        config,
         user: locals.user
     };
 };
