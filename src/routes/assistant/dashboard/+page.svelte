@@ -1547,9 +1547,15 @@
                             )}
                             <li class="group">
                                 <div
-                                    class="px-4 py-5 transition-colors rounded-xl flex items-center justify-between border-l-4"
+                                    role="button"
+                                    tabindex="0"
+                                    class="px-4 py-5 transition-colors rounded-xl flex items-center justify-between border-l-4 cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     style="border-left-color: {appt.doctor_color ||
                                         '#6366f1'}; background-color: {appt.doctor_color}10"
+                                    onclick={() => openBookingModal(appt)}
+                                    onkeydown={(e) =>
+                                        (e.key === "Enter" || e.key === " ") &&
+                                        openBookingModal(appt)}
                                 >
                                     <div class="flex flex-col">
                                         <div
@@ -2896,7 +2902,8 @@
                     >
                         {data.appointments.filter(
                             (a: any) =>
-                                (a.status === "waiting_room" || a.waiting_room_status === "waiting") &&
+                                (a.status === "waiting_room" ||
+                                    a.waiting_room_status === "waiting") &&
                                 new Date(a.start_time).toDateString() ===
                                     new Date().toDateString(),
                         ).length} Patients

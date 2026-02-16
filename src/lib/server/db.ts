@@ -3710,7 +3710,31 @@ th, td { border-bottom: 1px solid #eee; }
 
 // --- Work Shifts ---
 export function getCurrentShift(userId: number) {
-    return db.prepare("SELECT * FROM work_shifts WHERE user_id = ? AND status = 'open' ORDER BY start_time DESC LIMIT 1").get(userId) as any;
+    const shift = db.prepare("SELECT * FROM work_shifts WHERE user_id = ? AND status = 'open' ORDER BY start_time DESC LIMIT 1").get(userId) as any;
+
+    if (shift) {
+        // Check if the shift is from a previous day (Stale Shift)
+        const shiftDate = shift.start_time.split(' ')[0]; // YYYY-MM-DD
+        const todayDate = new Date().toISOString().split('T')[0];
+
+        if (shiftDate !== todayDate) {
+            console.log(`[AUTO-CLOSE] Closing stale shift #${shift.id} for user ${userId} started on ${shiftDate}`);
+
+            // Close it cleanly at the end of its start day
+            const autoEndTime = `${shiftDate} 23:59:59`;
+            db.prepare(`
+                UPDATE work_shifts 
+                SET end_time = ?, 
+                    status = 'closed', 
+                    end_cash_amount = start_cash_amount 
+                WHERE id = ?
+            `).run(autoEndTime, shift.id);
+
+            return null; // No active shift for today
+        }
+    }
+
+    return shift;
 }
 
 export function startShift(userId: number, startCashAmount: number = 0) {
@@ -3869,3 +3893,19 @@ export function getPatientTimeline(patientId: number) {
 
     return timeline;
 }
+
+// Initialize database schema on module load
+// Initialize database schema on module load
+init_db();
+
+function addColumnIfNotExists(table: string, column: string, definition: string) {
+    const info = db.pragma(`table_info(${table})`) as any[];
+    if (!info.some(col => col.name === column)) {
+        console.log(`Migrating: Adding ${column} to ${table}`);
+        db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`).run();
+    }
+}
+
+// Auto-Healing Migrations
+addColumnIfNotExists('work_shifts', 'room_id', 'INTEGER REFERENCES rooms(id)');
+addColumnIfNotExists('rooms', 'floor_id', 'INTEGER REFERENCES floors(id)');
