@@ -278,7 +278,8 @@
             const waitMins =
                 isToday &&
                 appt.checked_in &&
-                (appt.status === "waiting_room" || appt.waiting_room_status === "waiting")
+                (appt.status === "waiting_room" ||
+                    appt.waiting_room_status === "waiting")
                     ? Math.floor(
                           (now.getTime() -
                               new Date(appt.check_in_time).getTime()) /
@@ -322,7 +323,7 @@
         e.preventDefault();
         e.stopPropagation();
 
-        if (!confirm("Terminer cette visite ?")) return;
+        if (!confirm($t("doctor_journey.confirm_finish"))) return;
 
         try {
             const response = await fetch("/api/appointments/complete", {
@@ -352,7 +353,7 @@
                 class="fixed top-20 right-8 z-[100] bg-indigo-600 text-white px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-2 text-xs font-black uppercase tracking-tighter"
             >
                 <span class="w-2 h-2 bg-white rounded-full animate-ping"></span>
-                Synchro Terminée
+                {$t("doctor_journey.sync_completed")}
             </div>
         {/if}
 
@@ -398,12 +399,14 @@
                         >{$t("journey.active_session")}</span
                     >
                     <span class="time-label"
-                        >Depuis {new Date(
-                            data.session.start_time,
-                        ).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                        })}</span
+                        >{$t("doctor_journey.since")}
+                        {new Date(data.session.start_time).toLocaleTimeString(
+                            [],
+                            {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            },
+                        )}</span
                     >
                 </div>
                 {#if !data.session.end_time}
@@ -439,10 +442,11 @@
             <button
                 class="nav-button nav-prev"
                 onclick={goToPreviousDay}
-                aria-label="Jour précédent"
+                aria-label={$t("doctor_journey.previous_day")}
             >
                 <ChevronLeft size={20} />
-                <span class="button-label">Précédent</span>
+                <span class="button-label">{$t("doctor_journey.previous")}</span
+                >
             </button>
 
             <!-- Current Date Display -->
@@ -454,7 +458,7 @@
                             document
                                 .getElementById("date-picker")
                                 ?.showPicker()}
-                        title="Choisir une date"
+                        title={$t("doctor_journey.choose_date")}
                     >
                         <div class="date-display">
                             {formatDateDisplay(selectedDate)}
@@ -471,7 +475,7 @@
                 </div>
 
                 {#if isToday}
-                    <div class="today-badge">Aujourd'hui</div>
+                    <div class="today-badge">{$t("doctor_journey.today")}</div>
                 {/if}
             </div>
 
@@ -479,9 +483,9 @@
             <button
                 class="nav-button nav-next"
                 onclick={goToNextDay}
-                aria-label="Jour suivant"
+                aria-label={$t("doctor_journey.next_day")}
             >
-                <span class="button-label">Suivant</span>
+                <span class="button-label">{$t("doctor_journey.next")}</span>
                 <ChevronRight size={20} />
             </button>
 
@@ -493,7 +497,7 @@
                     transition:scale
                 >
                     <CalendarCheck size={18} />
-                    Aujourd'hui
+                    {$t("doctor_journey.today")}
                 </button>
             {/if}
         </div>
@@ -503,7 +507,7 @@
                 <div class="loading-overlay" transition:fade>
                     <div class="loading-spinner"></div>
                     <span class="ml-3 font-bold text-indigo-600"
-                        >Chargement...</span
+                        >{$t("doctor_journey.loading")}</span
                     >
                 </div>
             {/if}
@@ -514,14 +518,18 @@
                         <div class="empty-icon">
                             <CalendarX size={64} />
                         </div>
-                        <h3 class="empty-title">Aucun rendez-vous</h3>
+                        <h3 class="empty-title">
+                            {$t("doctor_journey.no_appointments")}
+                        </h3>
                         <p class="empty-description">
                             {#if isToday}
-                                Vous n'avez aucun rendez-vous prévu aujourd'hui.
+                                {$t("doctor_journey.no_appt_today")}
                             {:else}
-                                Aucun rendez-vous prévu pour le {formatDateDisplay(
-                                    selectedDate,
-                                )}.
+                                {$t("doctor_journey.no_appt_on_date", {
+                                    values: {
+                                        date: formatDateDisplay(selectedDate),
+                                    },
+                                })}
                             {/if}
                         </p>
                     </div>
@@ -579,7 +587,7 @@
                                         </span>
                                     {:else}
                                         <span class="status-badge scheduled">
-                                            📅 Planifié
+                                            📅 {$t("doctor_journey.scheduled")}
                                         </span>
                                     {/if}
                                 </div>
@@ -597,15 +605,16 @@
                                             <span
                                                 class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"
                                             ></span>
-                                            🏥 Salle d'attente
+                                            🏥 {$t(
+                                                "doctor_journey.waiting_room",
+                                            )}
                                         </div>
                                     {/if}
                                 </div>
                                 <div class="appointment-meta">
                                     <span class="appointment-type"
-                                        >{appt.appointment_type.replace(
-                                            "_",
-                                            " ",
+                                        >{$t(
+                                            `assistant.dashboard.appointment.type.${appt.appointment_type}`,
                                         )}</span
                                     >
                                     <span class="separator">•</span>
@@ -628,8 +637,10 @@
                                             ? 'text-red-500'
                                             : 'text-green-600'}"
                                     >
-                                        ↳ En attente depuis {appt.waitMins} min (arrivée
-                                        à
+                                        ↳ {$t("doctor_journey.waiting_since")}
+                                        {appt.waitMins} min ({$t(
+                                            "doctor_journey.arrival_at",
+                                        )}
                                         {new Date(
                                             appt.check_in_time,
                                         ).toLocaleTimeString([], {
@@ -681,9 +692,9 @@
                                         class="finish-visit-hint"
                                         onclick={(e) =>
                                             completeVisit(e, appt.id)}
-                                        title="Terminer la visite"
+                                        title={$t("doctor_journey.finish")}
                                     >
-                                        Terminer ✓
+                                        {$t("doctor_journey.finish")}
                                     </button>
                                 {/if}
                             </div>

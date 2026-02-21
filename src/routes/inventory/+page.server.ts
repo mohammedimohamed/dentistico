@@ -20,6 +20,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         throw redirect(302, '/login');
     }
 
+    const clinicSettings = getClinicSettings() as any;
+    if (clinicSettings.module_inventory === 0) {
+        throw redirect(302, '/');
+    }
+
     const search = url.searchParams.get('search') || '';
     const status = url.searchParams.get('status') || '';
     const supplier_id = url.searchParams.get('supplier_id') ? parseInt(url.searchParams.get('supplier_id')!) : null;
@@ -35,7 +40,6 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     const inventory = getAllInventoryItems(filters);
     const suppliers = getAllSuppliers();
     const kpis = getInventoryKPIs();
-    const clinicSettings = getClinicSettings() as any;
 
     return {
         inventory,

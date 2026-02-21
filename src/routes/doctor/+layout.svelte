@@ -6,7 +6,32 @@
     import { enhance } from "$app/forms";
     let { children, data }: { children: Snippet; data: any } = $props();
 
-    const navItems = $derived(NAVIGATION.doctor);
+    const navItems = $derived(
+        NAVIGATION.doctor.filter((item) => {
+            if (
+                item.href === "/inventory" &&
+                data.config?.module_inventory === 0
+            )
+                return false;
+            if (
+                (item.href?.includes("/spending") ||
+                    item.href?.includes("/invoices")) &&
+                data.config?.module_billing === 0
+            )
+                return false;
+            if (
+                item.href === "/doctor/journey" &&
+                data.config?.module_dental_chart === 0
+            )
+                return false;
+            if (
+                item.href === "/doctor/settings/medications" &&
+                data.config?.module_prescriptions === 0
+            )
+                return false;
+            return true;
+        }),
+    );
     const currentTitle = $derived(
         navItems.find((i) => page.url.pathname.startsWith(i.href))?.label ||
             "common.portal",
@@ -24,6 +49,18 @@
     );
 
     let isChangingRoom = $state(false);
+    let autoSubmitForm: HTMLFormElement | null = $state(null);
+
+    // Auto-select for single room
+    $effect(() => {
+        if (
+            showRoomSelection &&
+            data.activeRooms?.length === 1 &&
+            autoSubmitForm
+        ) {
+            autoSubmitForm.requestSubmit();
+        }
+    });
 </script>
 
 {#if showRoomSelection}
@@ -92,7 +129,22 @@
                 <form
                     method="POST"
                     action="/doctor/dashboard?/startShift"
-                    use:enhance
+                    bind:this={autoSubmitForm}
+                    use:enhance={({ formData, cancel }) => {
+                        const roomId = formData.get("room_id");
+                        const room = data.activeRooms?.find(
+                            (r: any) => r.id == roomId,
+                        );
+                        if (room?.occupied_by && data.activeRooms.length > 1) {
+                            if (
+                                !confirm(
+                                    `Cette salle est actuellement occupée par ${room.occupied_by}. Êtes-vous sûr de vouloir prendre cette salle ? (Cela peut arriver s'il a oublié de fermer sa session).`,
+                                )
+                            ) {
+                                cancel();
+                            }
+                        }
+                    }}
                     class="mb-8"
                 >
                     <label
@@ -112,7 +164,9 @@
                                 <optgroup label={groupName}>
                                     {#each rooms as room}
                                         <option value={room.id}
-                                            >{room.name} ({room.type})</option
+                                            >{room.name} ({room.type}){room.occupied_by
+                                                ? ` - 🔴 Occupé par ${room.occupied_by}`
+                                                : ""}</option
                                         >
                                     {/each}
                                 </optgroup>
@@ -147,7 +201,16 @@
                                     <form
                                         method="POST"
                                         action="/doctor/dashboard?/startShift"
-                                        use:enhance
+                                        use:enhance={({ cancel }) => {
+                                            if (
+                                                room.occupied_by &&
+                                                !confirm(
+                                                    `Cette salle est actuellement occupée par ${room.occupied_by}. Êtes-vous sûr de vouloir prendre cette salle ? (Cela peut arriver s'il a oublié de fermer sa session).`,
+                                                )
+                                            ) {
+                                                cancel();
+                                            }
+                                        }}
                                     >
                                         <input
                                             type="hidden"
@@ -169,14 +232,26 @@
                                                 </div>
                                                 <div>
                                                     <h4
-                                                        class="font-bold text-gray-900 group-hover:text-indigo-700 transition-colors"
+                                                        class="font-bold text-gray-900 group-hover:text-indigo-700 transition-colors flex items-center gap-2"
                                                     >
                                                         {room.name}
+                                                        {#if room.occupied_by}
+                                                            <span
+                                                                class="px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 text-[8px] font-black uppercase tracking-tighter"
+                                                                >Occupée</span
+                                                            >
+                                                        {/if}
                                                     </h4>
                                                     <p
                                                         class="text-[10px] text-gray-400 font-black uppercase tracking-widest"
                                                     >
                                                         {room.type}
+                                                        {#if room.occupied_by}
+                                                            <span
+                                                                class="block text-red-400 normal-case font-bold tracking-normal"
+                                                                >Par {room.occupied_by}</span
+                                                            >
+                                                        {/if}
                                                     </p>
                                                 </div>
                                             </div>
@@ -324,7 +399,18 @@
                                 <form
                                     method="POST"
                                     action="/doctor/dashboard?/changeRoom"
-                                    use:enhance={() => {
+                                    use:enhance={({ cancel }) => {
+                                        if (
+                                            room.occupied_by &&
+                                            room.occupied_by !==
+                                                data.user.full_name &&
+                                            !confirm(
+                                                `⚠️ Cette salle est actuellement occupée par ${room.occupied_by}. Voulez-vous vraiment rejoindre et partager cette salle ?`,
+                                            )
+                                        ) {
+                                            cancel();
+                                            return;
+                                        }
                                         return async ({ result, update }) => {
                                             isChangingRoom = false;
                                             await update();
@@ -357,14 +443,26 @@
                                             </div>
                                             <div class="text-start">
                                                 <h5
-                                                    class="font-bold text-gray-900"
+                                                    class="font-bold text-gray-900 flex items-center gap-2"
                                                 >
                                                     {room.name}
+                                                    {#if room.occupied_by && room.occupied_by !== data.user.full_name}
+                                                        <span
+                                                            class="px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 text-[8px] font-black uppercase tracking-tighter"
+                                                            >Occupée</span
+                                                        >
+                                                    {/if}
                                                 </h5>
                                                 <p
                                                     class="text-[9px] text-gray-400 font-black uppercase tracking-widest"
                                                 >
                                                     {room.type}
+                                                    {#if room.occupied_by && room.occupied_by !== data.user.full_name}
+                                                        <span
+                                                            class="block text-red-400 normal-case font-bold tracking-normal"
+                                                            >Par {room.occupied_by}</span
+                                                        >
+                                                    {/if}
                                                 </p>
                                             </div>
                                         </div>

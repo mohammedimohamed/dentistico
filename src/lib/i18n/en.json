@@ -39,7 +39,18 @@
         "profile": "Profile",
         "export": "Export",
         "enabled": "Enabled",
-        "disabled": "Disabled"
+        "disabled": "Disabled",
+        "all": "All",
+        "unassigned": "Unassigned",
+        "practitioner": "Practitioner",
+        "room": "Room",
+        "date": "Date",
+        "time": "Time",
+        "type": "Type",
+        "details": "Details",
+        "appointment": "Appointment",
+        "clear": "Clear",
+        "locale_code": "en-US"
     },
     "journey": {
         "title": "The Clinical Day",
@@ -121,7 +132,10 @@
         "status_scheduled": "Scheduled",
         "status_confirmed": "Confirmed",
         "status_completed": "Completed",
-        "status_cancelled": "Cancelled"
+        "status_cancelled": "Cancelled",
+        "waiting_room": "Waiting Room ({count})",
+        "deferred_entry_title": "Deferred Entry: Created on {date} (After the fact)",
+        "repro": "REPRO"
     },
     "patients": {
         "directory": "Patient Directory",
@@ -344,8 +358,30 @@
                     "label": "Waiting Room",
                     "icon": "🏥",
                     "header": "Patients waiting",
+                    "description": "Patients physically present and waiting for their appointment.",
                     "empty": "The waiting room is empty."
                 }
+            },
+            "filters": {
+                "all": "All",
+                "children": "Children",
+                "adults": "Adults",
+                "in_debt": "In Debt",
+                "creditor": "Creditor",
+                "upcoming": "Upcoming Appts",
+                "men": "Men",
+                "women": "Women",
+                "placeholder_patient": "Filter Patient...",
+                "placeholder_doctor": "Filter Doctor...",
+                "column_filters": "Column Filters",
+                "all_statuses": "All Statuses",
+                "all_types": "All Types"
+            },
+            "bulk": {
+                "selected": "{count} appointment{count, plural, one {} other {s}} selected",
+                "confirm": "Confirm Selected",
+                "cancel": "Cancel Selected",
+                "clear": "Clear Selection"
             },
             "buttons": {
                 "bookNew": "New Appointment",
@@ -405,6 +441,65 @@
                     "dob": "Date of Birth",
                     "email": "Email",
                     "generateCard": "Generate Patient Card"
+                },
+                "history": {
+                    "title": "Appointment History",
+                    "created_by": "Created by: {name}",
+                    "booked_by": "Booked by: {name} ({relationship})",
+                    "confirmed_by": "Confirmed by: {name}",
+                    "portal": "Portal Booking",
+                    "retroactive": "Retroactive Entry",
+                    "recorded_on_desc": "* Recorded on {date} - Which is after the scheduled start."
+                },
+                "check_in": {
+                    "button": "Check-In",
+                    "arrived": "Arrived",
+                    "title": "Arrived",
+                    "short": "ARR"
+                },
+                "tooltips": {
+                    "confirm": "Confirm appointment",
+                    "edit": "Edit appointment",
+                    "double_click": "Double-click to edit appointment",
+                    "generateCard": "Generate Patient Card"
+                }
+            },
+            "manager": {
+                "title": "Patient Manager",
+                "new_file": "New File",
+                "onboarding": "Patient Onboarding & File Creation",
+                "next_step": "Next Step?",
+                "identity_birth": "Identity & Birth",
+                "placeholder_name": "ex: John Doe",
+                "placeholder_dob": "DD/MM/YYYY",
+                "dependent_client": "Dependent Client (Child/Senior)",
+                "guardian_info": "Guardian / Responsible Information",
+                "search_parent": "Search for an existing parent file",
+                "search_parent_placeholder": "Type name or phone...",
+                "search_results": "Search Results",
+                "select": "Select",
+                "role": "Role",
+                "father": "Father",
+                "mother": "Mother",
+                "other_guardian": "Guardian / Other",
+                "guardian_name": "Guardian Full Name",
+                "guardian_phone": "Guardian Phone",
+                "guardian_email": "Guardian Email",
+                "contact_details": "Patient Contact Details",
+                "phone_optional": "Phone (Optional for kids)",
+                "phone_required": "Phone *",
+                "personal_email": "Personal Email",
+                "cancel_close": "Cancel & Close",
+                "submitting": "Processing...",
+                "register_patient": "Register Patient",
+                "search_placeholder": "Search records...",
+                "results_duplicates": "Results / Potential Duplicates",
+                "recent_patients": "Recent Patients",
+                "no_matching": "No matching patient",
+                "duplicate_badge": "Duplicate?",
+                "success": {
+                    "title": "Done!",
+                    "message": "The file for {name} has been created."
                 }
             },
             "patient": {
@@ -431,7 +526,8 @@
                 },
                 "fields": {
                     "amount": "Amount to Pay",
-                    "paymentMethod": "Payment Method"
+                    "paymentMethod": "Payment Method",
+                    "doctor_concerned": "Concerned Professional"
                 },
                 "methods": {
                     "cash": "Cash 💵",
@@ -455,6 +551,22 @@
             "errors": {
                 "general": "Error occurred",
                 "registration": "Registration failed"
+            },
+            "placeholders": {
+                "no_phone": "No phone",
+                "no_date": "No date",
+                "no_number": "No number",
+                "parent": "Parent:",
+                "select_doctor": "-- Select a doctor --",
+                "no_arrival_notes": "No arrival notes",
+                "select_doctor_first": "👆 Please select a doctor first.",
+                "all_unspecified": "All / Unspecified",
+                "years": "{count} {count, plural, one {year} other {years}}",
+                "months": "{count} {count, plural, one {month} other {months}}",
+                "newborn": "Newborn"
+            },
+            "misc": {
+                "the_patient": "the patient"
             }
         },
         "invoices": {
@@ -488,7 +600,14 @@
                 "actions": {
                     "print": "Print"
                 },
-                "empty": "No invoices found matching your selection."
+                "empty": "No invoices matching your criteria.",
+                "export_headers": {
+                    "number": "Invoice Number",
+                    "patient": "Patient Name",
+                    "date": "Date",
+                    "amount": "Total Amount",
+                    "status": "Status"
+                }
             }
         }
     },
@@ -709,7 +828,16 @@
                 "edit": "Edit",
                 "delete": "Delete"
             },
-            "modal": {
+            "timing": {
+                "today": "Today",
+                "tomorrow": "Tomorrow",
+                "in_days": "In {count}d",
+                "delay": "Delay {count} min",
+                "in_minutes": "In {count} min",
+                "absent": "Absent",
+                "na": "N/A"
+            },
+            "placeholders": {
                 "add_title": "Add New CDT Code",
                 "edit_title": "Edit CDT Code",
                 "code_label": "Code *",
@@ -884,5 +1012,124 @@
             "buccal": "Buccal",
             "lingual": "Lingual"
         }
+    },
+    "doctor_journey": {
+        "daily_hub": "Daily Hub",
+        "sync_completed": "Sync Completed",
+        "previous": "Previous",
+        "next": "Next",
+        "today": "Today",
+        "loading": "Loading...",
+        "no_appointments": "No Appointments",
+        "scheduled": "Scheduled",
+        "waiting_room": "Waiting Room",
+        "finish": "Finish",
+        "completed": "Completed",
+        "overtime": "Overtime",
+        "blocked": "Blocked",
+        "prosthesis_not_received": "Prosthesis not received",
+        "p_not_received_confirm": "The prosthesis has not been received. Continue anyway?",
+        "workspace": "Workspace",
+        "odontogram": "Odontogram",
+        "documents": "Documents",
+        "general_consultation": "General Consultation",
+        "no_documents": "No documents found",
+        "latest_imaging": "Latest Imaging",
+        "no_imaging": "No imaging data available",
+        "medical_imaging": "Medical Imaging",
+        "open_viewer": "Open Viewer",
+        "dicom_file": "DICOM File",
+        "no_notes": "No notes",
+        "clinical_notes": "Clinical Notes",
+        "finance_details": "Financial Details",
+        "add_note": "Add Note",
+        "note_clinique": "Clinical Note",
+        "evolved_notes": "Evolved Notes",
+        "importance_level": "Importance Level",
+        "note_content": "Note Content",
+        "complexity": "Complexity",
+        "importance": {
+            "low": "Low",
+            "high": "High",
+            "critical": "Critical"
+        },
+        "reschedule": "Reschedule",
+        "clinical_standard": "Clinical Standard",
+        "medical_delay_recommended": "Recommended medical delay:",
+        "days": "days",
+        "date_of_appointment": "Date of appointment",
+        "start_time": "Start Time",
+        "optional": "Optional",
+        "payment_notes_placeholder": "Ex: Advance payment, check n°...",
+        "amount": "Amount",
+        "payment_method": "Payment Method",
+        "cash": "Cash",
+        "card": "Card",
+        "total_paid": "Total Paid",
+        "invoice_history": "Invoice History",
+        "no_previous_invoices": "No previous invoices",
+        "invoice_type": "Invoice Type",
+        "detailed": "Detailed",
+        "global": "Global",
+        "global_label": "Global service label",
+        "uninvoiced_acts": "Uninvoiced Acts",
+        "select_all": "Select All",
+        "tooth": "Tooth",
+        "total_to_invoice": "Total to Invoice",
+        "generate_invoice": "Generate Invoice",
+        "template_name": "Template Name",
+        "save_as_template": "Save as Template",
+        "years_old_short": "Yrs",
+        "female": "Female",
+        "male": "Male",
+        "planned_today": "Planned today",
+        "clinical_actions": "Clinical Actions",
+        "acte_general": "General Act",
+        "paiement": "Payment",
+        "ordonnance": "Prescription",
+        "facture": "Invoice",
+        "appointment_management": "Appointment Management",
+        "postpone": "Postpone",
+        "cancel": "Cancel",
+        "lab_tracking": "Lab Tracking",
+        "no_prosthesis": "No prosthesis found",
+        "status": "Status",
+        "waiting": "Waiting",
+        "allergies": "Allergies",
+        "medical_conditions": "Medical Conditions",
+        "solde": "Balance",
+        "start_visit": "Start Visit",
+        "end_visit": "End Visit",
+        "confirm_cancel_title": "Cancel Appointment",
+        "confirm_cancel_message": "Are you sure you want to cancel this appointment?",
+        "confirm_postpone_title": "Postpone Appointment",
+        "confirm_postpone_message": "Are you sure you want to postpone this appointment?",
+        "confirm_finish": "Finish this visit?",
+        "since": "Since",
+        "waiting_since": "Waiting since",
+        "arrival_at": "arrival at",
+        "previous_day": "Previous day",
+        "next_day": "Next day",
+        "choose_date": "Choose a date",
+        "no_appt_today": "You have no appointments scheduled today.",
+        "no_appt_on_date": "No appointments scheduled for {date}.",
+        "default_invoice_label": "Dental Care and Treatments",
+        "delete_note": "Delete this note",
+        "notes_placeholder": "Enter your clinical notes here...",
+        "meds_short": "meds",
+        "reopen": "Reopen",
+        "dosage_placeholder": "ex: 1g",
+        "duration_placeholder": "ex: 7 days",
+        "instructions_placeholder": "ex: 1 tab x 2/day",
+        "prescription_notes_placeholder": "ex: Full rest, Avoid hot foods...",
+        "template_name_placeholder": "ex: Post-Extraction, Abscess Treatment...",
+        "print": "Print",
+        "everything_up_to_date": "Everything is up to date",
+        "no_acts_to_invoice": "No acts to invoice at the moment",
+        "total_selected": "Total Selected",
+        "select_at_least_one": "Please select at least one act from the list to generate your invoice.",
+        "generate_print": "Generate & Print",
+        "close_sidebars": "Close sidebars",
+        "close_modal": "Close modal"
     }
 }

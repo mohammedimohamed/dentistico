@@ -15,11 +15,22 @@
         { id: "timeline", label: "Activité" },
         { id: "notes", label: "Notes" },
         { id: "medical", label: $t("patient_details.medical_history") },
-        { id: "dental", label: $t("patient_details.dental_records") },
+        ...(data.appConfig?.module_dental_chart !== 0
+            ? [{ id: "dental", label: $t("patient_details.dental_records") }]
+            : []),
         { id: "appointments", label: $t("patient_details.appointments") },
-        { id: "prescriptions", label: $t("patient_details.prescriptions") },
+        ...(data.appConfig?.module_prescriptions !== 0
+            ? [
+                  {
+                      id: "prescriptions",
+                      label: $t("patient_details.prescriptions"),
+                  },
+              ]
+            : []),
         { id: "documents", label: "Documents & Imagerie" },
-        { id: "financial", label: $t("patient_details.financial") },
+        ...(data.appConfig?.module_billing !== 0
+            ? [{ id: "financial", label: $t("patient_details.financial") }]
+            : []),
     ]);
 
     import PrescriptionBuilder from "$lib/components/PrescriptionBuilder.svelte";
@@ -260,17 +271,19 @@
                 </div>
             </div>
             <div class="flex flex-wrap gap-3">
-                <button
-                    onclick={() => {
-                        activeTab = "dental";
-                        setTimeout(() => {
-                            chart?.openGeneralTreatment();
-                        }, 50);
-                    }}
-                    class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-100 transition-all text-sm"
-                >
-                    + Acte (CDT)
-                </button>
+                {#if data.appConfig?.module_dental_chart !== 0}
+                    <button
+                        onclick={() => {
+                            activeTab = "dental";
+                            setTimeout(() => {
+                                chart?.openGeneralTreatment();
+                            }, 50);
+                        }}
+                        class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-100 transition-all text-sm"
+                    >
+                        + Acte (CDT)
+                    </button>
+                {/if}
                 <button
                     onclick={() => (isEditModalOpen = true)}
                     class="bg-white text-gray-700 border border-gray-200 px-6 py-2.5 rounded-xl hover:bg-gray-50 font-bold shadow-sm transition-all text-sm"

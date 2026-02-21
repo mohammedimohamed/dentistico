@@ -18,7 +18,7 @@
     let { data }: { data: any } = $props();
 
     function calculateAge(dob: string) {
-        if (!dob) return "N/A";
+        if (!dob) return $t("assistant.dashboard.timing.na");
         let birthDate: Date;
         if (dob.includes("/")) {
             const parts = dob.split("/");
@@ -30,7 +30,8 @@
         } else {
             birthDate = new Date(dob);
         }
-        if (isNaN(birthDate.getTime())) return "N/A";
+        if (isNaN(birthDate.getTime()))
+            return $t("assistant.dashboard.timing.na");
         const ageDifMs = Date.now() - birthDate.getTime();
         const ageDate = new Date(ageDifMs);
         return Math.abs(ageDate.getUTCFullYear() - 1970);
@@ -48,11 +49,20 @@
         const years = Math.floor(diffMonths / 12);
         const months = diffMonths % 12;
 
+        if (years === 0 && months === 0)
+            return $t("assistant.dashboard.placeholders.newborn");
+
         let res = "";
-        if (years > 0) res += `${years} ${years === 1 ? "an" : "ans"}`;
+        if (years > 0)
+            res += $t("assistant.dashboard.placeholders.years", {
+                values: { count: years },
+            });
         if (years > 0 && months > 0) res += " ";
-        if (months > 0) res += `${months} ${months === 1 ? "mois" : "mois"}`;
-        return res || "N/A";
+        if (months > 0)
+            res += $t("assistant.dashboard.placeholders.months", {
+                values: { count: months },
+            });
+        return res || $t("assistant.dashboard.timing.na");
     }
     const patients = $derived(data.patients as any[]);
     const patientSearch = $derived((data.patientSearch as string) || "");
@@ -91,10 +101,15 @@
             (date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
         );
 
-        if (date.toDateString() === today.toDateString()) return "Aujourd'hui";
-        if (date.toDateString() === tomorrow.toDateString()) return "Demain";
-        if (diffDays > 0 && diffDays <= 7) return `Dans ${diffDays}j`;
-        return date.toLocaleDateString("fr-FR");
+        if (date.toDateString() === today.toDateString())
+            return $t("assistant.dashboard.timing.today");
+        if (date.toDateString() === tomorrow.toDateString())
+            return $t("assistant.dashboard.timing.tomorrow");
+        if (diffDays > 0 && diffDays <= 7)
+            return $t("assistant.dashboard.timing.in_days", {
+                values: { count: diffDays },
+            });
+        return date.toLocaleDateString($t("common.locale_code") || "fr-FR");
     }
 
     let activeTab = $state("schedule");
@@ -129,17 +144,23 @@
 
         if (diffMinutes < 0) {
             return {
-                label: "Retard " + Math.abs(diffMinutes) + " min",
+                label: $t("assistant.dashboard.timing.delay", {
+                    values: { count: Math.abs(diffMinutes) },
+                }),
                 class: "bg-red-100 text-red-700",
             };
         } else if (diffMinutes < 30) {
             return {
-                label: "Dans " + diffMinutes + " min",
+                label: $t("assistant.dashboard.timing.in_minutes", {
+                    values: { count: diffMinutes },
+                }),
                 class: "bg-amber-100 text-amber-800 animate-pulse",
             };
         } else if (diffMinutes < 60) {
             return {
-                label: "Dans " + diffMinutes + " min",
+                label: $t("assistant.dashboard.timing.in_minutes", {
+                    values: { count: diffMinutes },
+                }),
                 class: "bg-blue-50 text-blue-700",
             };
         } else {
@@ -162,7 +183,9 @@
             return {
                 ...dr,
                 status: loc ? "online" : "offline",
-                room: loc ? loc.room_name : "Absent",
+                room: loc
+                    ? loc.room_name
+                    : $t("assistant.dashboard.timing.absent"),
                 roomColor: loc ? loc.room_color : "#94a3b8",
             };
         }),
@@ -1047,7 +1070,7 @@
         }
     });
 
-    const tabs = [
+    const tabs = $derived([
         {
             id: "schedule",
             label: $t("assistant.dashboard.tabs.schedule.label"),
@@ -1058,17 +1081,21 @@
             label: $t("assistant.dashboard.tabs.patients.label"),
             icon: $t("assistant.dashboard.tabs.patients.icon"),
         },
-        {
-            id: "payments",
-            label: $t("assistant.dashboard.tabs.payments.label"),
-            icon: $t("assistant.dashboard.tabs.payments.icon"),
-        },
+        ...(data.clinicSettings?.module_billing !== 0
+            ? [
+                  {
+                      id: "payments",
+                      label: $t("assistant.dashboard.tabs.payments.label"),
+                      icon: $t("assistant.dashboard.tabs.payments.icon"),
+                  },
+              ]
+            : []),
         {
             id: "waiting_room",
             label: $t("assistant.dashboard.tabs.waiting_room.label"),
             icon: $t("assistant.dashboard.tabs.waiting_room.icon"),
         },
-    ];
+    ]);
 
     function openPaymentModal(patient: any) {
         selectedPaymentPatient = patient;
@@ -1593,14 +1620,18 @@
                                             {#if appt.relationship_to_primary}
                                                 <span
                                                     class="text-lg"
-                                                    title="Child/Dependent"
+                                                    title={$t(
+                                                        "patient_details.child",
+                                                    )}
                                                 >
                                                     👶
                                                 </span>
                                             {:else}
                                                 <span
                                                     class="text-lg"
-                                                    title="Adult"
+                                                    title={$t(
+                                                        "patient_details.adult",
+                                                    )}
                                                 >
                                                     👤
                                                 </span>
@@ -1612,11 +1643,20 @@
                                                 {#if isRetroactive(appt)}
                                                     <span
                                                         class="px-1.5 py-0.5 text-[8px] font-black rounded bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-0.5 cursor-help"
-                                                        title="Saisie Différée: Créé le {new Date(
-                                                            appt.created_at,
-                                                        ).toLocaleString()} (Après coup)"
+                                                        title={$t(
+                                                            "dashboard.deferred_entry_title",
+                                                            {
+                                                                values: {
+                                                                    date: new Date(
+                                                                        appt.created_at,
+                                                                    ).toLocaleString(),
+                                                                },
+                                                            },
+                                                        )}
                                                     >
-                                                        ⏳ REPRO
+                                                        ⏳ {$t(
+                                                            "dashboard.repro",
+                                                        )}
                                                     </span>
                                                 {/if}
                                             </p>
@@ -1636,10 +1676,10 @@
                                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
                                                 >
                                                     {appt.gender === "male"
-                                                        ? "♂️ Male"
+                                                        ? `♂️ ${$t("patients.male")}`
                                                         : appt.gender ===
                                                             "female"
-                                                          ? "♀️ Female"
+                                                          ? `♀️ ${$t("patients.female")}`
                                                           : appt.gender}
                                                 </span>
                                             {/if}
@@ -1647,7 +1687,9 @@
                                                 <span
                                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800"
                                                 >
-                                                    🌐 Source: Web
+                                                    🌐 {$t(
+                                                        "assistant.dashboard.appointment.history.portal",
+                                                    )}
                                                 </span>
                                             {/if}
                                         </div>
@@ -1674,7 +1716,9 @@
                                             {:else}
                                                 <span
                                                     class="text-orange-600 font-bold"
-                                                    >⚠️ Unassigned</span
+                                                    >⚠️ {$t(
+                                                        "common.unassigned",
+                                                    )}</span
                                                 >
                                             {/if}
                                         </p>
@@ -1682,8 +1726,16 @@
                                             <p
                                                 class="text-xs text-gray-500 italic mt-1"
                                             >
-                                                Booked by: {appt.booked_by_name}
-                                                ({appt.relationship_to_primary})
+                                                {$t(
+                                                    "assistant.dashboard.appointment.history.booked_by",
+                                                    {
+                                                        values: {
+                                                            name: appt.booked_by_name,
+                                                            relationship:
+                                                                appt.relationship_to_primary,
+                                                        },
+                                                    },
+                                                )}
                                             </p>
                                         {/if}
                                         <div
@@ -1693,20 +1745,36 @@
                                                 <span
                                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800"
                                                 >
-                                                    ✏️ Created by: {appt.created_by_name}
+                                                    ✏️ {$t(
+                                                        "assistant.dashboard.appointment.history.created_by",
+                                                        {
+                                                            values: {
+                                                                name: appt.created_by_name,
+                                                            },
+                                                        },
+                                                    )}
                                                 </span>
                                             {:else if appt.notes && appt.notes.includes("Source: Web")}
                                                 <span
                                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800"
                                                 >
-                                                    🌐 Portal Booking
+                                                    🌐 {$t(
+                                                        "assistant.dashboard.appointment.history.portal",
+                                                    )}
                                                 </span>
                                             {/if}
                                             {#if appt.confirmed_by_name}
                                                 <span
                                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800"
                                                 >
-                                                    ✓ Confirmed by: {appt.confirmed_by_name}
+                                                    ✓ {$t(
+                                                        "assistant.dashboard.appointment.history.confirmed_by",
+                                                        {
+                                                            values: {
+                                                                name: appt.confirmed_by_name,
+                                                            },
+                                                        },
+                                                    )}
                                                 </span>
                                             {/if}
                                         </div>
@@ -1742,7 +1810,9 @@
                                                             )}
                                                         class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-xs transition-all flex items-center gap-1"
                                                     >
-                                                        ✓ Check-In
+                                                        ✓ {$t(
+                                                            "assistant.dashboard.appointment.check_in.button",
+                                                        )}
                                                     </button>
                                                 {:else}
                                                     <span
@@ -1751,7 +1821,9 @@
                                                         <span
                                                             class="w-2 h-2 bg-green-500 rounded-full animate-pulse"
                                                         ></span>
-                                                        Arrived
+                                                        {$t(
+                                                            "assistant.dashboard.appointment.check_in.arrived",
+                                                        )}
                                                     </span>
                                                 {/if}
                                             {/if}
@@ -1772,10 +1844,18 @@
                                                         value="confirmed"
                                                     />
                                                     <button
-                                                        type="submit"
+                                                        type="button"
+                                                        onclick={(e) =>
+                                                            showConfirmation(
+                                                                e,
+                                                                "single",
+                                                                "confirmed",
+                                                                appt.id,
+                                                            )}
                                                         class="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
-                                                        title="Confirm"
-                                                        >✓</button
+                                                        title={$t(
+                                                            "assistant.dashboard.appointment.tooltips.confirm",
+                                                        )}>✓</button
                                                     >
                                                 </form>
                                             {/if}
@@ -1783,7 +1863,9 @@
                                                 onclick={() =>
                                                     openBookingModal(appt)}
                                                 class="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"
-                                                title="Edit">✎</button
+                                                title={$t(
+                                                    "assistant.dashboard.appointment.tooltips.edit",
+                                                )}>✎</button
                                             >
                                         </div>
                                     </div>
@@ -1830,10 +1912,14 @@
                                     <span
                                         class="text-sm font-bold text-indigo-900"
                                     >
-                                        {selectedRows.size} appointment{selectedRows.size ===
-                                        1
-                                            ? ""
-                                            : "s"} selected
+                                        {$t(
+                                            "assistant.dashboard.bulk.selected",
+                                            {
+                                                values: {
+                                                    count: selectedRows.size,
+                                                },
+                                            },
+                                        )}
                                     </span>
                                     <div class="flex gap-2">
                                         <form
@@ -1869,7 +1955,9 @@
                                                     )}
                                                 class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm transition-colors"
                                             >
-                                                Confirm Selected
+                                                {$t(
+                                                    "assistant.dashboard.bulk.confirm",
+                                                )}
                                             </button>
                                         </form>
                                         <form
@@ -1905,7 +1993,9 @@
                                                     )}
                                                 class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-sm transition-colors"
                                             >
-                                                Cancel Selected
+                                                {$t(
+                                                    "assistant.dashboard.bulk.cancel",
+                                                )}
                                             </button>
                                         </form>
                                         <button
@@ -1913,7 +2003,9 @@
                                                 (selectedRows = new Set())}
                                             class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-bold text-sm transition-colors"
                                         >
-                                            Clear Selection
+                                            {$t(
+                                                "assistant.dashboard.bulk.clear",
+                                            )}
                                         </button>
                                     </div>
                                 </div>
@@ -1927,13 +2019,17 @@
                                     class="flex items-center justify-between mb-2"
                                 >
                                     <h4 class="text-sm font-bold text-gray-700">
-                                        Column Filters
+                                        {$t(
+                                            "assistant.dashboard.filters.column_filters",
+                                        )}
                                     </h4>
                                     <button
                                         onclick={clearFilters}
                                         class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
                                     >
-                                        Clear All
+                                        {$t(
+                                            "assistant.dashboard.actions.reset",
+                                        )}
                                     </button>
                                 </div>
                                 <div
@@ -1941,13 +2037,17 @@
                                 >
                                     <input
                                         type="text"
-                                        placeholder="Filter Patient..."
+                                        placeholder={$t(
+                                            "assistant.dashboard.filters.placeholder_patient",
+                                        )}
                                         bind:value={columnFilters.patient}
                                         class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     />
                                     <input
                                         type="text"
-                                        placeholder="Filter Doctor..."
+                                        placeholder={$t(
+                                            "assistant.dashboard.filters.placeholder_doctor",
+                                        )}
                                         bind:value={columnFilters.doctor}
                                         class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     />
@@ -1956,7 +2056,9 @@
                                         class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     >
                                         <option value=""
-                                            >Tous les Statuts</option
+                                            >{$t(
+                                                "assistant.dashboard.filters.all_statuses",
+                                            )}</option
                                         >
                                         <option value="scheduled"
                                             >{$t(
@@ -1998,7 +2100,11 @@
                                         bind:value={columnFilters.type}
                                         class="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     >
-                                        <option value="">Tous les Types</option>
+                                        <option value=""
+                                            >{$t(
+                                                "assistant.dashboard.filters.all_types",
+                                            )}</option
+                                        >
                                         <option value="consultation"
                                             >{$t(
                                                 "assistant.dashboard.appointment.type.consultation",
@@ -2070,7 +2176,7 @@
                                             <div
                                                 class="flex items-center gap-2"
                                             >
-                                                Date
+                                                {$t("common.date")}
                                                 {#if tableSortColumn === "date"}
                                                     {tableSortDirection ===
                                                     "asc"
@@ -2087,7 +2193,7 @@
                                             <div
                                                 class="flex items-center gap-2"
                                             >
-                                                Time
+                                                {$t("common.time")}
                                                 {#if tableSortColumn === "time"}
                                                     {tableSortDirection ===
                                                     "asc"
@@ -2100,7 +2206,7 @@
                                             scope="col"
                                             class="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                                         >
-                                            Praticien
+                                            {$t("common.practitioner")}
                                         </th>
                                         <th
                                             scope="col"
@@ -2111,7 +2217,7 @@
                                             <div
                                                 class="flex items-center gap-2"
                                             >
-                                                Patient
+                                                {$t("common.patient")}
                                                 {#if tableSortColumn === "patient"}
                                                     {tableSortDirection ===
                                                     "asc"
@@ -2128,7 +2234,7 @@
                                             <div
                                                 class="flex items-center gap-2"
                                             >
-                                                Doctor
+                                                {$t("common.doctor")}
                                                 {#if tableSortColumn === "doctor"}
                                                     {tableSortDirection ===
                                                     "asc"
@@ -2141,7 +2247,7 @@
                                             scope="col"
                                             class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"
                                         >
-                                            Salle
+                                            {$t("common.room")}
                                         </th>
                                         <th
                                             scope="col"
@@ -2151,7 +2257,7 @@
                                             <div
                                                 class="flex items-center gap-2"
                                             >
-                                                Type
+                                                {$t("common.type")}
                                                 {#if tableSortColumn === "type"}
                                                     {tableSortDirection ===
                                                     "asc"
@@ -2168,7 +2274,7 @@
                                             <div
                                                 class="flex items-center gap-2"
                                             >
-                                                Status
+                                                {$t("common.status")}
                                                 {#if tableSortColumn === "status"}
                                                     {tableSortDirection ===
                                                     "asc"
@@ -2181,13 +2287,13 @@
                                             scope="col"
                                             class="px-3 py-2 text-left text-[10px] font-bold text-gray-700 uppercase tracking-wider"
                                         >
-                                            Notes
+                                            {$t("common.notes")}
                                         </th>
                                         <th
                                             scope="col"
                                             class="px-3 py-2 text-left text-[10px] font-bold text-gray-700 uppercase tracking-wider sticky right-0 bg-gray-50 z-30 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.1)]"
                                         >
-                                            Actions
+                                            {$t("common.actions")}
                                         </th>
                                     </tr>
                                 </thead>
@@ -2205,7 +2311,9 @@
                                                 : 'bg-white'} cursor-pointer transition-colors"
                                             ondblclick={() =>
                                                 openBookingModal(appt)}
-                                            title="Double-click to edit appointment"
+                                            title={$t(
+                                                "assistant.dashboard.appointment.tooltips.double_click",
+                                            )}
                                         >
                                             <td
                                                 class="px-3 py-2 whitespace-nowrap"
@@ -2285,12 +2393,15 @@
                                                 >
                                                     {#if appt.relationship_to_primary}
                                                         <span
-                                                            title="Child/Dependent"
-                                                            >👶</span
+                                                            title={$t(
+                                                                "patient_details.child",
+                                                            )}>👶</span
                                                         >
                                                     {:else}
-                                                        <span title="Adult"
-                                                            >👤</span
+                                                        <span
+                                                            title={$t(
+                                                                "patient_details.adult",
+                                                            )}>👤</span
                                                         >
                                                     {/if}
                                                     <span
@@ -2344,15 +2455,31 @@
                                                     <span
                                                         class="text-xs text-gray-500"
                                                         >({years > 0
-                                                            ? `${years} ${years === 1 ? "year" : "years"}`
+                                                            ? $t(
+                                                                  "assistant.dashboard.placeholders.years",
+                                                                  {
+                                                                      values: {
+                                                                          count: years,
+                                                                      },
+                                                                  },
+                                                              )
                                                             : ""}{years > 0 &&
                                                         months > 0
                                                             ? " "
                                                             : ""}{months > 0
-                                                            ? `${months} ${months === 1 ? "month" : "months"}`
+                                                            ? $t(
+                                                                  "assistant.dashboard.placeholders.months",
+                                                                  {
+                                                                      values: {
+                                                                          count: months,
+                                                                      },
+                                                                  },
+                                                              )
                                                             : ""}{years === 0 &&
                                                         months === 0
-                                                            ? "Newborn"
+                                                            ? $t(
+                                                                  "assistant.dashboard.placeholders.newborn",
+                                                              )
                                                             : ""})</span
                                                     >
                                                 {/if}
@@ -2384,7 +2511,9 @@
                                                 {:else}
                                                     <span
                                                         class="text-gray-300 text-[10px] italic"
-                                                        >Non affecté</span
+                                                        >{$t(
+                                                            "common.unassigned",
+                                                        )}</span
                                                     >
                                                 {/if}
                                             </td>
@@ -2422,12 +2551,21 @@
                                                 </span>
                                                 {#if isRetroactive(appt)}
                                                     <span
-                                                        class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-100 text-amber-800 border border-amber-200 cursor-help"
-                                                        title="Saisie Différée: Créé le {new Date(
-                                                            appt.created_at,
-                                                        ).toLocaleString()} (Après coup)"
+                                                        class="px-1.5 py-0.5 text-[8px] font-black rounded bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-0.5 cursor-help"
+                                                        title={$t(
+                                                            "dashboard.deferred_entry_title",
+                                                            {
+                                                                values: {
+                                                                    date: new Date(
+                                                                        appt.created_at,
+                                                                    ).toLocaleString(),
+                                                                },
+                                                            },
+                                                        )}
                                                     >
-                                                        ⏳ REPRO
+                                                        ⏳ {$t(
+                                                            "dashboard.repro",
+                                                        )}
                                                     </span>
                                                 {/if}
                                             </td>
@@ -2457,19 +2595,25 @@
                                                                         appt,
                                                                     )}
                                                                 class="p-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors text-lg border border-blue-100 flex items-center justify-center min-w-[32px]"
-                                                                title="Enregistrer l'arrivée (Check-in)"
+                                                                title={$t(
+                                                                    "assistant.dashboard.appointment.check_in.button",
+                                                                )}
                                                             >
                                                                 📥
                                                             </button>
                                                         {:else}
                                                             <span
                                                                 class="px-2 py-1 bg-green-100 text-green-700 rounded-lg font-bold text-[10px] flex items-center gap-1"
-                                                                title="Arrived"
+                                                                title={$t(
+                                                                    "assistant.dashboard.appointment.check_in.title",
+                                                                )}
                                                             >
                                                                 <span
                                                                     class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"
                                                                 ></span>
-                                                                ARR
+                                                                {$t(
+                                                                    "assistant.dashboard.appointment.check_in.short",
+                                                                )}
                                                             </span>
                                                         {/if}
                                                     {/if}
@@ -2500,7 +2644,9 @@
                                                                         appt.id,
                                                                     )}
                                                                 class="p-1.5 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-md transition-colors text-lg border border-green-100 flex items-center justify-center min-w-[32px]"
-                                                                title="Confirmer le rendez-vous"
+                                                                title={$t(
+                                                                    "assistant.dashboard.appointment.tooltips.confirm",
+                                                                )}
                                                                 ondblclick={(
                                                                     e,
                                                                 ) =>
@@ -2516,7 +2662,9 @@
                                                                 appt,
                                                             )}
                                                         class="p-1.5 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md transition-colors text-lg border border-indigo-100 flex items-center justify-center min-w-[32px]"
-                                                        title="Modifier le rendez-vous"
+                                                        title={$t(
+                                                            "assistant.dashboard.appointment.tooltips.edit",
+                                                        )}
                                                         ondblclick={(e) =>
                                                             e.stopPropagation()}
                                                     >
@@ -2607,7 +2755,7 @@
                             ? 'bg-indigo-600 text-white shadow-md'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
                     >
-                        Tous
+                        {$t("assistant.dashboard.filters.all")}
                     </button>
                     <button
                         onclick={() => applyPatientFilter("child")}
@@ -2616,7 +2764,7 @@
                             ? 'bg-amber-500 text-white shadow-md'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
                     >
-                        Enfants
+                        {$t("assistant.dashboard.filters.children")}
                     </button>
                     <button
                         onclick={() => applyPatientFilter("adult")}
@@ -2625,26 +2773,28 @@
                             ? 'bg-emerald-500 text-white shadow-md'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
                     >
-                        Adultes
+                        {$t("assistant.dashboard.filters.adults")}
                     </button>
-                    <button
-                        onclick={() => applyPatientFilter("debt")}
-                        class="px-3 py-1.5 rounded-full text-[10px] font-bold transition-all {patientFilter ===
-                        'debt'
-                            ? 'bg-red-500 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
-                    >
-                        En Dette
-                    </button>
-                    <button
-                        onclick={() => applyPatientFilter("credit")}
-                        class="px-3 py-1.5 rounded-full text-[10px] font-bold transition-all {patientFilter ===
-                        'credit'
-                            ? 'bg-green-500 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
-                    >
-                        Créditeur
-                    </button>
+                    {#if data.clinicSettings?.module_billing !== 0}
+                        <button
+                            onclick={() => applyPatientFilter("debt")}
+                            class="px-3 py-1.5 rounded-full text-[10px] font-bold transition-all {patientFilter ===
+                            'debt'
+                                ? 'bg-red-500 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+                        >
+                            {$t("assistant.dashboard.filters.in_debt")}
+                        </button>
+                        <button
+                            onclick={() => applyPatientFilter("credit")}
+                            class="px-3 py-1.5 rounded-full text-[10px] font-bold transition-all {patientFilter ===
+                            'credit'
+                                ? 'bg-green-500 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+                        >
+                            {$t("assistant.dashboard.filters.creditor")}
+                        </button>
+                    {/if}
                     <button
                         onclick={() => applyPatientFilter("upcoming")}
                         class="px-3 py-1.5 rounded-full text-[10px] font-bold transition-all {patientFilter ===
@@ -2652,7 +2802,7 @@
                             ? 'bg-indigo-500 text-white shadow-md'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
                     >
-                        Futurs RDV
+                        {$t("assistant.dashboard.filters.upcoming")}
                     </button>
                     <button
                         onclick={() => applyPatientFilter("male")}
@@ -2661,7 +2811,7 @@
                             ? 'bg-blue-500 text-white shadow-md'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
                     >
-                        Hommes
+                        {$t("assistant.dashboard.filters.men")}
                     </button>
                     <button
                         onclick={() => applyPatientFilter("female")}
@@ -2670,7 +2820,7 @@
                             ? 'bg-pink-500 text-white shadow-md'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
                     >
-                        Femmes
+                        {$t("assistant.dashboard.filters.women")}
                     </button>
                 </div>
                 <div
@@ -2751,7 +2901,7 @@
                                 <div
                                     class="flex flex-wrap items-center gap-2 pt-1 pb-1"
                                 >
-                                    {#if patient.net_balance !== undefined && patient.net_balance !== 0}
+                                    {#if data.clinicSettings?.module_billing !== 0 && patient.net_balance !== undefined && patient.net_balance !== 0}
                                         <span
                                             class="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold {patient.net_balance <
                                             0
@@ -2892,8 +3042,9 @@
                         {$t("assistant.dashboard.tabs.waiting_room.header")}
                     </h3>
                     <p class="text-xs text-gray-500 font-medium">
-                        Patients physically present and waiting for their
-                        appointment.
+                        {$t(
+                            "assistant.dashboard.tabs.waiting_room.description",
+                        )}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -2942,9 +3093,9 @@
                                             {appt.patient_name}
                                         </h4>
                                         <p class="text-xs text-gray-500">
-                                            {appt.appointment_type.replace(
-                                                "_",
-                                                " ",
+                                            {$t(
+                                                "assistant.dashboard.appointment.type." +
+                                                    appt.appointment_type,
                                             )}
                                         </p>
                                     </div>
@@ -3008,7 +3159,9 @@
                                     class="p-2 bg-gray-50 rounded-lg text-[10px] text-gray-600 italic mb-4"
                                 >
                                     {appt.notes?.split("[Check-in]")[1] ||
-                                        "No arrival notes"}
+                                        $t(
+                                            "assistant.dashboard.placeholders.no_arrival_notes",
+                                        )}
                                 </div>
 
                                 <div class="flex gap-2">
@@ -3120,7 +3273,12 @@
                                     } else if (result.type === "failure") {
                                         errorMessage =
                                             (result.data as any)?.error ||
-                                            "Error occurred";
+                                            showAlert(
+                                                $t(
+                                                    "assistant.dashboard.errors.general",
+                                                ),
+                                                "error",
+                                            );
                                     }
                                     await update();
                                 };
@@ -3425,7 +3583,9 @@
                                                         name="new_patient_name"
                                                         required
                                                         class="w-full rounded-lg border-gray-200 bg-white py-2 px-3 text-sm font-medium focus:ring-green-500 focus:border-green-500"
-                                                        placeholder="ex: Dupont Jean"
+                                                        placeholder={$t(
+                                                            "assistant.dashboard.patient.fields.namePlaceholder",
+                                                        )}
                                                     />
                                                 </div>
                                                 <div>
@@ -3440,7 +3600,9 @@
                                                         name="new_patient_phone"
                                                         required
                                                         class="w-full rounded-lg border-gray-200 bg-white py-2 px-3 text-sm font-medium focus:ring-green-500 focus:border-green-500"
-                                                        placeholder="06XXXXXXXX"
+                                                        placeholder={$t(
+                                                            "assistant.dashboard.patient.fields.phonePlaceholder",
+                                                        )}
                                                     />
                                                 </div>
                                             </div>
@@ -3474,7 +3636,9 @@
                                                         type="email"
                                                         name="new_patient_email"
                                                         class="w-full rounded-lg border-gray-200 bg-white py-2 px-3 text-sm font-medium focus:ring-green-500 focus:border-green-500"
-                                                        placeholder="email@exemple.com"
+                                                        placeholder={$t(
+                                                            "assistant.dashboard.patient.fields.emailPlaceholder",
+                                                        )}
                                                     />
                                                 </div>
                                             </div>
@@ -3585,8 +3749,9 @@
                                                 <p
                                                     class="text-amber-700 text-sm font-bold"
                                                 >
-                                                    👆 Veuillez d'abord
-                                                    sélectionner un médecin.
+                                                    {$t(
+                                                        "assistant.dashboard.placeholders.select_doctor_first",
+                                                    )}
                                                 </p>
                                             </div>
                                         {/if}
@@ -3677,64 +3842,87 @@
                                             <div
                                                 class="bg-gray-50 rounded-xl p-4 border border-gray-200"
                                             >
-                                                <p
-                                                    class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"
+                                                <h4
+                                                    class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
                                                 >
-                                                    Appointment History
-                                                </p>
-                                                <div class="space-y-1">
+                                                    {$t(
+                                                        "assistant.dashboard.appointment.history.title",
+                                                    )}
+                                                </h4>
+                                                <div class="space-y-1.5">
                                                     {#if selectedAppointment.created_by_name}
-                                                        <p
-                                                            class="text-sm text-gray-700"
+                                                        <div
+                                                            class="flex items-center gap-2 text-xs text-gray-500"
                                                         >
-                                                            <span
-                                                                class="font-semibold"
-                                                                >✏️ Created by:</span
+                                                            <span class="w-4"
+                                                                >✏️</span
                                                             >
-                                                            {selectedAppointment.created_by_name}
-                                                        </p>
-                                                    {:else if selectedAppointment.notes && selectedAppointment.notes.includes("Source: Web")}
-                                                        <p
-                                                            class="text-sm text-gray-700"
-                                                        >
-                                                            <span
-                                                                class="font-semibold"
-                                                                >🌐 Source:</span
-                                                            > Portal Booking
-                                                        </p>
+                                                            {$t(
+                                                                "assistant.dashboard.appointment.history.created_by",
+                                                                {
+                                                                    values: {
+                                                                        name: selectedAppointment.created_by_name,
+                                                                    },
+                                                                },
+                                                            )}
+                                                        </div>
                                                     {/if}
-                                                    {#if selectedAppointment.confirmed_by_name}
-                                                        <p
-                                                            class="text-sm text-gray-700"
+                                                    <div
+                                                        class="flex items-center gap-2 text-xs text-gray-500"
+                                                    >
+                                                        <span class="w-4"
+                                                            >🌐</span
                                                         >
-                                                            <span
-                                                                class="font-semibold"
-                                                                >✓ Confirmed by:</span
+                                                        {$t(
+                                                            "assistant.dashboard.appointment.history.portal",
+                                                        )}: {selectedAppointment.notes?.includes(
+                                                            "Source: Web",
+                                                        )
+                                                            ? "Web Portal"
+                                                            : "Clinic"}
+                                                    </div>
+                                                    {#if selectedAppointment.confirmed_by_name}
+                                                        <div
+                                                            class="flex items-center gap-2 text-xs text-gray-500"
+                                                        >
+                                                            <span class="w-4"
+                                                                >✓</span
                                                             >
-                                                            {selectedAppointment.confirmed_by_name}
-                                                        </p>
+                                                            {$t(
+                                                                "assistant.dashboard.appointment.history.confirmed_by",
+                                                                {
+                                                                    values: {
+                                                                        name: selectedAppointment.confirmed_by_name,
+                                                                    },
+                                                                },
+                                                            )}
+                                                        </div>
                                                     {/if}
                                                     {#if isRetroactive(selectedAppointment)}
                                                         <div
-                                                            class="mt-2 pt-2 border-t border-amber-100"
+                                                            class="mt-2 p-2 bg-amber-50 rounded border border-amber-100"
                                                         >
-                                                            <p
-                                                                class="text-xs text-amber-700 bg-amber-50/50 p-2 rounded-lg border border-amber-100 flex items-center gap-2 font-bold"
+                                                            <div
+                                                                class="flex items-center gap-2 text-[10px] font-black text-amber-800"
                                                             >
-                                                                <span
-                                                                    >⌛ Saisie
-                                                                    Différée
-                                                                    (Retroactive)</span
-                                                                >
-                                                            </p>
+                                                                <span>⌛</span>
+                                                                {$t(
+                                                                    "assistant.dashboard.appointment.history.retroactive",
+                                                                )}
+                                                            </div>
                                                             <p
-                                                                class="text-[10px] text-amber-600 italic mt-1 px-1"
+                                                                class="text-[9px] text-amber-700 mt-0.5 mt-1"
                                                             >
-                                                                * Enregistré le {new Date(
-                                                                    selectedAppointment.created_at,
-                                                                ).toLocaleString()}
-                                                                - Soit après le début
-                                                                prévu.
+                                                                {$t(
+                                                                    "assistant.dashboard.appointment.history.recorded_on_desc",
+                                                                    {
+                                                                        values: {
+                                                                            date: new Date(
+                                                                                selectedAppointment.created_at,
+                                                                            ).toLocaleString(),
+                                                                        },
+                                                                    },
+                                                                )}
                                                             </p>
                                                         </div>
                                                     {/if}
@@ -3829,7 +4017,7 @@
                                 <h4
                                     class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4"
                                 >
-                                    Patient Manager
+                                    {$t("assistant.dashboard.manager.title")}
                                 </h4>
                                 <div class="relative group">
                                     <span
@@ -3839,7 +4027,9 @@
                                     <input
                                         bind:value={manageSearchQuery}
                                         class="w-full bg-white border-0 ring-1 ring-gray-200 rounded-2xl py-3 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
-                                        placeholder="Rechercher dossiers..."
+                                        placeholder={$t(
+                                            "assistant.dashboard.manager.search_placeholder",
+                                        )}
                                     />
                                 </div>
                             </div>
@@ -3847,13 +4037,23 @@
                             <div
                                 class="flex-1 overflow-y-auto px-6 pb-6 space-y-3 custom-scrollbar"
                             >
-                                <p
-                                    class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-4 mb-2"
-                                >
-                                    {manageSearchQuery || patientFullName
-                                        ? "Résultats / Doublons potentiels"
-                                        : "Patients récents"}
-                                </p>
+                                {#if manageSearchQuery || patientFullName}
+                                    <h4
+                                        class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2"
+                                    >
+                                        {$t(
+                                            "assistant.dashboard.manager.results_duplicates",
+                                        )}
+                                    </h4>
+                                {:else}
+                                    <h4
+                                        class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2"
+                                    >
+                                        {$t(
+                                            "assistant.dashboard.manager.recent_patients",
+                                        )}
+                                    </h4>
+                                {/if}
 
                                 {#each filteredGlobalPatients as p}
                                     <div
@@ -3881,11 +4081,13 @@
                                             {#if patientFullName && p.full_name
                                                     .toLowerCase()
                                                     .includes(patientFullName.toLowerCase()) && patientFullName.length > 3}
-                                                <div
-                                                    class="absolute top-2 right-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-[8px] font-black rounded-full uppercase tracking-tighter animate-pulse"
+                                                <span
+                                                    class="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded text-[8px] font-bold border border-orange-200"
                                                 >
-                                                    Doublon ?
-                                                </div>
+                                                    {$t(
+                                                        "assistant.dashboard.manager.duplicate_badge",
+                                                    )}
+                                                </span>
                                             {/if}
                                         </div>
                                         <div
@@ -3923,7 +4125,9 @@
                                         <p
                                             class="text-xs font-bold text-gray-400 italic"
                                         >
-                                            Aucun patient correspondant
+                                            {$t(
+                                                "assistant.dashboard.manager.no_matching",
+                                            )}
                                         </p>
                                     </div>
                                 {/each}
@@ -3951,9 +4155,9 @@
                                             };
                                             showSuccessView = true;
                                         } else {
-                                            errorMessage =
-                                                (result.data as any)?.error ||
-                                                "Registration failed";
+                                            errorMessage = $t(
+                                                "assistant.dashboard.errors.registration",
+                                            );
                                         }
                                         await update();
                                     };
@@ -3982,15 +4186,21 @@
                                             <h4
                                                 class="text-2xl font-black text-gray-900 mb-4 tracking-tight"
                                             >
-                                                C'est fait !
+                                                {$t(
+                                                    "assistant.dashboard.manager.success.title",
+                                                )}
                                             </h4>
                                             <p
                                                 class="text-xl text-gray-500 mb-12"
                                             >
-                                                Le dossier de <span
-                                                    class="text-gray-900 font-black decoration-green-500 decoration-4 underline underline-offset-4"
-                                                    >{createdPatientData?.name}</span
-                                                > a été créé.
+                                                {$t(
+                                                    "assistant.dashboard.manager.success.message",
+                                                    {
+                                                        values: {
+                                                            name: createdPatientData?.name,
+                                                        },
+                                                    },
+                                                )}
                                             </p>
 
                                             <div
@@ -3999,7 +4209,9 @@
                                                 <p
                                                     class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6"
                                                 >
-                                                    Prochaine étape ?
+                                                    {$t(
+                                                        "assistant.dashboard.manager.next_step",
+                                                    )}
                                                 </p>
                                                 <div
                                                     class="grid grid-cols-3 gap-4"
@@ -4019,7 +4231,9 @@
                                                         </div>
                                                         <span
                                                             class="text-[10px] font-black uppercase tracking-widest text-indigo-600"
-                                                            >Consultation</span
+                                                            >{$t(
+                                                                "assistant.dashboard.appointment.type.consultation",
+                                                            )}</span
                                                         >
                                                     </button>
                                                     <button
@@ -4037,7 +4251,9 @@
                                                         </div>
                                                         <span
                                                             class="text-[10px] font-black uppercase tracking-widest text-red-600"
-                                                            >Urgence</span
+                                                            >{$t(
+                                                                "assistant.dashboard.appointment.type.emergency",
+                                                            )}</span
                                                         >
                                                     </button>
                                                     <button
@@ -4055,7 +4271,9 @@
                                                         </div>
                                                         <span
                                                             class="text-[10px] font-black uppercase tracking-widest text-green-600"
-                                                            >Contrôle</span
+                                                            >{$t(
+                                                                "assistant.dashboard.appointment.type.checkup",
+                                                            )}</span
                                                         >
                                                     </button>
                                                 </div>
@@ -4070,13 +4288,16 @@
                                                     <h3
                                                         class="text-2xl font-black text-gray-900 tracking-tight mb-2"
                                                     >
-                                                        Nouveau Dossier
+                                                        {$t(
+                                                            "assistant.dashboard.manager.new_file",
+                                                        )}
                                                     </h3>
                                                     <p
                                                         class="text-gray-400 font-bold uppercase text-[10px] tracking-[0.2em]"
                                                     >
-                                                        Patient Onboarding &
-                                                        File Creation
+                                                        {$t(
+                                                            "assistant.dashboard.manager.onboarding",
+                                                        )}
                                                     </p>
                                                 </div>
                                                 <button
@@ -4112,7 +4333,10 @@
                                                     >
                                                         <span
                                                             class="w-8 h-[1px] bg-indigo-100"
-                                                        ></span> Identité & Naissance
+                                                        ></span>
+                                                        {$t(
+                                                            "assistant.dashboard.manager.identity_birth",
+                                                        )}
                                                     </p>
                                                     <div
                                                         class="grid grid-cols-2 gap-8"
@@ -4120,8 +4344,9 @@
                                                         <div class="col-span-2">
                                                             <label
                                                                 class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2"
-                                                                >Nom & Prénom du
-                                                                Patient</label
+                                                                >{$t(
+                                                                    "patients.full_name",
+                                                                )}</label
                                                             >
                                                             <input
                                                                 name="full_name"
@@ -4130,14 +4355,17 @@
                                                                     patientFullName
                                                                 }
                                                                 class="w-full bg-gray-50 border-0 ring-1 ring-gray-100 rounded-2xl py-4 px-6 text-xl font-black placeholder:text-gray-200 focus:ring-2 focus:ring-indigo-600 transition-all"
-                                                                placeholder="ex: Amine Benali"
+                                                                placeholder={$t(
+                                                                    "assistant.dashboard.manager.placeholder_name",
+                                                                )}
                                                             />
                                                         </div>
                                                         <div>
                                                             <label
                                                                 class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2"
-                                                                >Date de
-                                                                Naissance</label
+                                                                >{$t(
+                                                                    "assistant.dashboard.filters.dob",
+                                                                )}</label
                                                             >
                                                             <input
                                                                 type="text"
@@ -4145,7 +4373,9 @@
                                                                 required
                                                                 value={patientDob}
                                                                 oninput={handleDobInput}
-                                                                placeholder="JJ/MM/AAAA"
+                                                                placeholder={$t(
+                                                                    "assistant.dashboard.manager.placeholder_dob",
+                                                                )}
                                                                 class="w-full bg-gray-50 border-0 ring-1 ring-gray-100 rounded-2xl py-4 px-6 text-sm font-bold focus:ring-2 focus:ring-indigo-600 transition-all"
                                                             />
                                                         </div>
@@ -4179,9 +4409,9 @@
                                                                 </div>
                                                                 <span
                                                                     class="text-xs font-black text-gray-500 uppercase tracking-widest"
-                                                                    >Client
-                                                                    Dépendant
-                                                                    (Enfant/Senior)</span
+                                                                    >{$t(
+                                                                        "assistant.dashboard.manager.dependent_client",
+                                                                    )}</span
                                                                 >
                                                             </label>
                                                         </div>
@@ -4197,17 +4427,19 @@
                                                         <p
                                                             class="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-3"
                                                         >
-                                                            <span>👪</span> Informations
-                                                            du Tuteur / Responsable
+                                                            <span>👪</span>
+                                                            {$t(
+                                                                "assistant.dashboard.manager.guardian_info",
+                                                            )}
                                                         </p>
 
                                                         <!-- Guardian Search Interface -->
                                                         <div class="relative">
                                                             <label
                                                                 class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2"
-                                                                >Rechercher un
-                                                                dossier parent
-                                                                existant</label
+                                                                >{$t(
+                                                                    "assistant.dashboard.manager.search_parent",
+                                                                )}</label
                                                             >
                                                             <div
                                                                 class="relative"
@@ -4217,7 +4449,9 @@
                                                                         guardianSearchQuery
                                                                     }
                                                                     class="w-full bg-white border border-indigo-100 rounded-2xl py-4 px-6 text-sm font-bold shadow-sm focus:ring-2 focus:ring-indigo-600 pr-12"
-                                                                    placeholder="Taper un nom ou téléphone..."
+                                                                    placeholder={$t(
+                                                                        "assistant.dashboard.manager.search_parent_placeholder",
+                                                                    )}
                                                                 />
                                                                 {#if isGuardianSearching}
                                                                     <div
@@ -4236,9 +4470,9 @@
                                                                     <p
                                                                         class="text-[8px] font-black text-gray-400 uppercase tracking-widest p-2"
                                                                     >
-                                                                        Résultats
-                                                                        de
-                                                                        recherche
+                                                                        {$t(
+                                                                            "assistant.dashboard.manager.search_results",
+                                                                        )}
                                                                     </p>
                                                                     {#each guardianResults as p}
                                                                         <button
@@ -4264,7 +4498,9 @@
                                                                             </div>
                                                                             <span
                                                                                 class="text-[10px] font-black text-indigo-400 bg-indigo-50 px-2 py-1 rounded-lg"
-                                                                                >Sélectionner</span
+                                                                                >{$t(
+                                                                                    "assistant.dashboard.manager.select",
+                                                                                )}</span
                                                                             >
                                                                         </button>
                                                                     {/each}
@@ -4278,7 +4514,9 @@
                                                             <div>
                                                                 <label
                                                                     class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2"
-                                                                    >Rôle</label
+                                                                    >{$t(
+                                                                        "assistant.dashboard.manager.role",
+                                                                    )}</label
                                                                 >
                                                                 <select
                                                                     name="guardian_role"
@@ -4289,24 +4527,30 @@
                                                                 >
                                                                     <option
                                                                         value="Father"
-                                                                        >Père</option
+                                                                        >{$t(
+                                                                            "assistant.dashboard.manager.father",
+                                                                        )}</option
                                                                     >
                                                                     <option
                                                                         value="Mother"
-                                                                        >Mère</option
+                                                                        >{$t(
+                                                                            "assistant.dashboard.manager.mother",
+                                                                        )}</option
                                                                     >
                                                                     <option
                                                                         value="Other"
-                                                                        >Tuteur
-                                                                        / Autre</option
+                                                                        >{$t(
+                                                                            "assistant.dashboard.manager.other_guardian",
+                                                                        )}</option
                                                                     >
                                                                 </select>
                                                             </div>
                                                             <div>
                                                                 <label
                                                                     class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2"
-                                                                    >Nom Complet
-                                                                    Tuteur</label
+                                                                    >{$t(
+                                                                        "assistant.dashboard.manager.guardian_name",
+                                                                    )}</label
                                                                 >
                                                                 <input
                                                                     name="guardian_name"
@@ -4320,8 +4564,9 @@
                                                             <div>
                                                                 <label
                                                                     class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2"
-                                                                    >Téléphone
-                                                                    Tuteur</label
+                                                                    >{$t(
+                                                                        "assistant.dashboard.manager.guardian_phone",
+                                                                    )}</label
                                                                 >
                                                                 <input
                                                                     name="guardian_phone"
@@ -4336,8 +4581,9 @@
                                                             <div>
                                                                 <label
                                                                     class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2"
-                                                                    >Email
-                                                                    Tuteur</label
+                                                                    >{$t(
+                                                                        "assistant.dashboard.manager.guardian_email",
+                                                                    )}</label
                                                                 >
                                                                 <input
                                                                     type="email"
@@ -4361,7 +4607,10 @@
                                                     >
                                                         <span
                                                             class="w-8 h-[1px] bg-gray-100"
-                                                        ></span> Coordonnées Patient
+                                                        ></span>
+                                                        {$t(
+                                                            "assistant.dashboard.manager.contact_details",
+                                                        )}
                                                     </p>
                                                     <div
                                                         class="grid grid-cols-2 gap-8"
@@ -4369,9 +4618,13 @@
                                                         <div>
                                                             <label
                                                                 class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2"
-                                                                >Téléphone {isDependent
-                                                                    ? "(Facultatif si enfant)"
-                                                                    : "*"}</label
+                                                                >{isDependent
+                                                                    ? $t(
+                                                                          "assistant.dashboard.manager.phone_optional",
+                                                                      )
+                                                                    : $t(
+                                                                          "assistant.dashboard.manager.phone_required",
+                                                                      )}</label
                                                             >
                                                             <input
                                                                 name="phone"
@@ -4380,13 +4633,17 @@
                                                                     patientPhone
                                                                 }
                                                                 class="w-full bg-gray-50 border-0 ring-1 ring-gray-100 rounded-2xl py-4 px-6 text-sm font-bold focus:ring-2 focus:ring-indigo-600 transition-all"
-                                                                placeholder="0XXXXXXXXX"
+                                                                placeholder={$t(
+                                                                    "assistant.dashboard.patient.fields.phonePlaceholder",
+                                                                )}
                                                             />
                                                         </div>
                                                         <div>
                                                             <label
                                                                 class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2"
-                                                                >Email Personnel</label
+                                                                >{$t(
+                                                                    "assistant.dashboard.manager.personal_email",
+                                                                )}</label
                                                             >
                                                             <input
                                                                 name="email"
@@ -4395,7 +4652,9 @@
                                                                     patientEmail
                                                                 }
                                                                 class="w-full bg-gray-50 border-0 ring-1 ring-gray-100 rounded-2xl py-4 px-6 text-sm font-bold focus:ring-2 focus:ring-indigo-600 transition-all"
-                                                                placeholder="email@example.com"
+                                                                placeholder={$t(
+                                                                    "assistant.dashboard.patient.fields.emailPlaceholder",
+                                                                )}
                                                             />
                                                         </div>
                                                     </div>
@@ -4414,7 +4673,9 @@
                                         onclick={() =>
                                             (isPatientModalOpen = false)}
                                     >
-                                        Annuler & Fermer
+                                        {$t(
+                                            "assistant.dashboard.manager.cancel_close",
+                                        )}
                                     </button>
 
                                     {#if !showSuccessView}
@@ -4427,9 +4688,13 @@
                                                 <div
                                                     class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
                                                 ></div>
-                                                Traitement...
+                                                {$t(
+                                                    "assistant.dashboard.manager.submitting",
+                                                )}
                                             {:else}
-                                                Enregistrer le Patient
+                                                {$t(
+                                                    "assistant.dashboard.manager.register_patient",
+                                                )}
                                             {/if}
                                         </button>
                                     {/if}
@@ -4544,14 +4809,18 @@
                                     <div>
                                         <label
                                             class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
-                                            >Docteur concerné</label
+                                            >{$t(
+                                                "assistant.dashboard.payment.fields.doctor_concerned",
+                                            )}</label
                                         >
                                         <select
                                             name="doctor_id"
                                             class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-bold"
                                         >
                                             <option value=""
-                                                >Tous / Non spécifié</option
+                                                >{$t(
+                                                    "assistant.dashboard.placeholders.select_doctor",
+                                                )}</option
                                             >
                                             {#each data.doctors as dr}
                                                 <option value={dr.id}

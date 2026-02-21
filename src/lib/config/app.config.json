@@ -4,7 +4,6 @@
     "bookingMode": "availability",
     "paymentMethods": [
         "Espèces",
-        "Carte Bancaire",
         "Chèque",
         "Virement"
     ]

@@ -9,6 +9,10 @@ export interface ClinicSettings {
     shift_start_mandatory: number;
     shift_cash_tracking: number;
     require_room_selection: number;
+    module_billing: number;
+    module_prescriptions: number;
+    module_dental_chart: number;
+    module_inventory: number;
 }
 
 export function getClinicSettings(): ClinicSettings {

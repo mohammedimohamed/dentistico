@@ -88,7 +88,7 @@ export const actions = {
         }
     },
 
-    updateReasonRequirements: async ({ request }) => {
+    updateReasonRequirements: async ({ request }: { request: Request }) => {
         const formData = await request.formData();
         const postponeRequired = formData.get('postponeRequired') === 'true';
         const cancelRequired = formData.get('cancelRequired') === 'true';
@@ -102,7 +102,7 @@ export const actions = {
         }
     },
 
-    addCancellationReason: async ({ request }) => {
+    addCancellationReason: async ({ request }: { request: Request }) => {
         const formData = await request.formData();
         const reasonText = formData.get('reasonText') as string;
         const reasonType = formData.get('reasonType') as string; // 'cancel', 'postpone', 'both'
@@ -118,7 +118,7 @@ export const actions = {
         }
     },
 
-    deleteCancellationReason: async ({ request }) => {
+    deleteCancellationReason: async ({ request }: { request: Request }) => {
         const formData = await request.formData();
         const id = Number(formData.get('id'));
 
@@ -128,6 +128,29 @@ export const actions = {
         } catch (e) {
             console.error(e);
             return fail(500, { message: 'Failed to delete reason' });
+        }
+    },
+
+    updateModules: async ({ request }: { request: Request }) => {
+        const formData = await request.formData();
+
+        const module_billing = formData.get('module_billing') === 'on' ? 1 : 0;
+        const module_prescriptions = formData.get('module_prescriptions') === 'on' ? 1 : 0;
+        const module_dental_chart = formData.get('module_dental_chart') === 'on' ? 1 : 0;
+        const module_inventory = formData.get('module_inventory') === 'on' ? 1 : 0;
+
+        try {
+            const { updateClinicSettings } = await import('$lib/server/db');
+            updateClinicSettings({
+                module_billing,
+                module_prescriptions,
+                module_dental_chart,
+                module_inventory
+            });
+            return { success: true };
+        } catch (e: any) {
+            console.error('Failed to update modules:', e);
+            return fail(500, { message: e.message || 'Failed to update modules' });
         }
     }
 };

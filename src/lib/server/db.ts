@@ -106,6 +106,10 @@ export function init_db() {
           timezone TEXT DEFAULT 'UTC',
           allow_assistant_payments INTEGER DEFAULT 0,
           require_room_selection INTEGER DEFAULT 1,
+          module_billing INTEGER DEFAULT 1,
+          module_prescriptions INTEGER DEFAULT 1,
+          module_dental_chart INTEGER DEFAULT 1,
+          module_inventory INTEGER DEFAULT 1,
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -1626,11 +1630,18 @@ export function getAllRooms() {
 
 export function getActiveRooms() {
     return db.prepare(`
-        SELECT r.*, f.name as floor_name, b.name as building_name, f.level_number
+        SELECT r.*, f.name as floor_name, b.name as building_name, f.level_number,
+               GROUP_CONCAT(u.full_name, ', ') as occupied_by
         FROM rooms r
         LEFT JOIN floors f ON r.floor_id = f.id
         LEFT JOIN buildings b ON f.building_id = b.id
+        LEFT JOIN work_shifts ws ON r.id = ws.room_id 
+             AND ws.status = 'open' 
+             AND ws.end_time IS NULL 
+             AND date(ws.start_time, 'localtime') = date('now', 'localtime')
+        LEFT JOIN users u ON ws.user_id = u.id
         WHERE r.is_active = 1
+        GROUP BY r.id
         ORDER BY b.name, f.level_number, r.name
     `).all();
 }
@@ -3138,7 +3149,11 @@ export function getServerConfig() {
         // Map db keys to frontend keys if they differ (Backwards compatibility)
         clinicName: clinicSettings.clinic_name || dbSettings.clinic_name || 'Dentistico Clinic',
         bookingInterval: clinicSettings.booking_interval_minutes || parseInt(dbSettings.booking_interval || '30'),
-        workHours: clinicSettings.work_start_time ? `${clinicSettings.work_start_time} - ${clinicSettings.work_end_time} ` : (dbSettings.work_hours || '9h00 - 18h00')
+        workHours: clinicSettings.work_start_time ? `${clinicSettings.work_start_time} - ${clinicSettings.work_end_time} ` : (dbSettings.work_hours || '9h00 - 18h00'),
+        module_billing: clinicSettings.module_billing !== undefined ? clinicSettings.module_billing : 1,
+        module_prescriptions: clinicSettings.module_prescriptions !== undefined ? clinicSettings.module_prescriptions : 1,
+        module_dental_chart: clinicSettings.module_dental_chart !== undefined ? clinicSettings.module_dental_chart : 1,
+        module_inventory: clinicSettings.module_inventory !== undefined ? clinicSettings.module_inventory : 1
     };
 }
 
@@ -3909,3 +3924,7 @@ function addColumnIfNotExists(table: string, column: string, definition: string)
 // Auto-Healing Migrations
 addColumnIfNotExists('work_shifts', 'room_id', 'INTEGER REFERENCES rooms(id)');
 addColumnIfNotExists('rooms', 'floor_id', 'INTEGER REFERENCES floors(id)');
+addColumnIfNotExists('clinic_settings', 'module_billing', 'INTEGER DEFAULT 1');
+addColumnIfNotExists('clinic_settings', 'module_prescriptions', 'INTEGER DEFAULT 1');
+addColumnIfNotExists('clinic_settings', 'module_dental_chart', 'INTEGER DEFAULT 1');
+addColumnIfNotExists('clinic_settings', 'module_inventory', 'INTEGER DEFAULT 1');

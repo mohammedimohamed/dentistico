@@ -23,6 +23,10 @@
         timer_alert_2_minutes: 30,
         timer_alert_2_beeps: 2,
         require_room_selection: 1,
+        module_billing: 1,
+        module_prescriptions: 1,
+        module_dental_chart: 1,
+        module_inventory: 1,
     });
 
     let workingDays = $state<any[]>([]);
@@ -66,6 +70,22 @@
                     resData.settings.allow_assistant_create_supplier === 1,
                 require_room_selection:
                     resData.settings.require_room_selection === 1,
+                module_billing:
+                    resData.settings.module_billing !== undefined
+                        ? resData.settings.module_billing
+                        : 1,
+                module_prescriptions:
+                    resData.settings.module_prescriptions !== undefined
+                        ? resData.settings.module_prescriptions
+                        : 1,
+                module_dental_chart:
+                    resData.settings.module_dental_chart !== undefined
+                        ? resData.settings.module_dental_chart
+                        : 1,
+                module_inventory:
+                    resData.settings.module_inventory !== undefined
+                        ? resData.settings.module_inventory
+                        : 1,
             };
             workingDays = resData.workingDays;
             closures = resData.closures;
@@ -537,6 +557,191 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Active Modules Settings -->
+            <div
+                class="bg-white shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden border border-gray-100"
+            >
+                <div class="px-8 py-6 bg-gray-50/50 border-b border-gray-100">
+                    <h2
+                        class="text-xl font-bold text-gray-900 flex items-center gap-2"
+                    >
+                        <span>🧩</span> Modules Actifs
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <form
+                        method="POST"
+                        action="?/updateModules"
+                        use:enhance={() => {
+                            return async ({ result }) => {
+                                if (result.type === "success") {
+                                    alert("Modules mis à jour avec succès !");
+                                }
+                            };
+                        }}
+                    >
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div
+                                class="p-6 rounded-2xl border {settings.module_dental_chart
+                                    ? 'bg-indigo-50/30 border-indigo-100'
+                                    : 'bg-gray-50 border-gray-100'} transition-all"
+                            >
+                                <div
+                                    class="flex items-start justify-between gap-4"
+                                >
+                                    <div class="space-y-1">
+                                        <h3 class="font-black text-gray-900">
+                                            Module Dental Chart (Odontogram)
+                                        </h3>
+                                        <p
+                                            class="text-xs text-gray-500 leading-relaxed"
+                                        >
+                                            Activer ou désactiver
+                                            l'odontogramme.
+                                        </p>
+                                    </div>
+                                    <label
+                                        class="relative inline-flex items-center cursor-pointer"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            name="module_dental_chart"
+                                            bind:checked={
+                                                settings.module_dental_chart
+                                            }
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
+                                        ></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div
+                                class="p-6 rounded-2xl border {settings.module_prescriptions
+                                    ? 'bg-indigo-50/30 border-indigo-100'
+                                    : 'bg-gray-50 border-gray-100'} transition-all"
+                            >
+                                <div
+                                    class="flex items-start justify-between gap-4"
+                                >
+                                    <div class="space-y-1">
+                                        <h3 class="font-black text-gray-900">
+                                            Module Ordonnances
+                                        </h3>
+                                        <p
+                                            class="text-xs text-gray-500 leading-relaxed"
+                                        >
+                                            Activer ou désactiver les
+                                            prescriptions.
+                                        </p>
+                                    </div>
+                                    <label
+                                        class="relative inline-flex items-center cursor-pointer"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            name="module_prescriptions"
+                                            bind:checked={
+                                                settings.module_prescriptions
+                                            }
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
+                                        ></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div
+                                class="p-6 rounded-2xl border {settings.module_billing
+                                    ? 'bg-indigo-50/30 border-indigo-100'
+                                    : 'bg-gray-50 border-gray-100'} transition-all"
+                            >
+                                <div
+                                    class="flex items-start justify-between gap-4"
+                                >
+                                    <div class="space-y-1">
+                                        <h3 class="font-black text-gray-900">
+                                            Module Billing (Facturation)
+                                        </h3>
+                                        <p
+                                            class="text-xs text-gray-500 leading-relaxed"
+                                        >
+                                            Activer ou désactiver paiements,
+                                            factures, dépenses.
+                                        </p>
+                                    </div>
+                                    <label
+                                        class="relative inline-flex items-center cursor-pointer"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            name="module_billing"
+                                            bind:checked={
+                                                settings.module_billing
+                                            }
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
+                                        ></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div
+                                class="p-6 rounded-2xl border {settings.module_inventory
+                                    ? 'bg-indigo-50/30 border-indigo-100'
+                                    : 'bg-gray-50 border-gray-100'} transition-all"
+                            >
+                                <div
+                                    class="flex items-start justify-between gap-4"
+                                >
+                                    <div class="space-y-1">
+                                        <h3 class="font-black text-gray-900">
+                                            Module Inventaire
+                                        </h3>
+                                        <p
+                                            class="text-xs text-gray-500 leading-relaxed"
+                                        >
+                                            Activer ou désactiver la gestion de
+                                            stock.
+                                        </p>
+                                    </div>
+                                    <label
+                                        class="relative inline-flex items-center cursor-pointer"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            name="module_inventory"
+                                            bind:checked={
+                                                settings.module_inventory
+                                            }
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
+                                        ></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex justify-end">
+                            <button
+                                type="submit"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all"
+                            >
+                                💾 Enregistrer les modules
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 

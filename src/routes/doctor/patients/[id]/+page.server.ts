@@ -24,28 +24,13 @@ import {
     getPatientTimeline,
     getClinicalNotes,
     getFamilyMembers,
-    deleteClinicalNote
+    deleteClinicalNote,
+    getServerConfig
 } from '$lib/server/db';
 import fs from 'fs';
 import type { PageServerLoad, Actions } from './$types';
 
-function getAppConfig() {
-    const configPath = path.resolve('src/lib/config/app.config.json');
-    try {
-        const configData = fs.readFileSync(configPath, 'utf8');
-        return JSON.parse(configData);
-    } catch (e) {
-        console.error('Failed to read config:', e);
-        // Fallback or handle error
-        return {
-            currency: 'DZD',
-            currencySymbol: 'دج',
-            bookingMode: 'availability'
-        };
-    }
-}
-
-export const load: PageServerLoad = async ({ locals, params }) => {
+export const load: PageServerLoad = async ({ locals, params }: { locals: any, params: any }) => {
     if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
         throw redirect(302, '/login');
     }
@@ -69,7 +54,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     const invoices = (await import('$lib/server/db')).getInvoicesByPatient(patientId);
     const attachments = getAttachmentsByPatient(patientId);
 
-    const appConfig = getAppConfig();
+    const appConfig = getServerConfig();
 
     return {
         patient,
@@ -91,7 +76,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 };
 
 export const actions: Actions = {
-    updatePatient: async ({ request, params, locals }) => {
+    updatePatient: async ({ request, params, locals }: { request: any, params: any, locals: any }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
@@ -155,7 +140,7 @@ export const actions: Actions = {
     },
 
 
-    createPrescription: async ({ request, params, locals }) => {
+    createPrescription: async ({ request, params, locals }: { request: any, params: any, locals: any }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
@@ -184,7 +169,7 @@ export const actions: Actions = {
         }
     },
 
-    createInvoice: async ({ request, params, locals }) => {
+    createInvoice: async ({ request, params, locals }: { request: any, params: any, locals: any }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
@@ -209,7 +194,7 @@ export const actions: Actions = {
         }
     },
 
-    recordPayment: async ({ request, locals }) => {
+    recordPayment: async ({ request, locals }: { request: any, locals: any }) => {
         if (!locals.user) {
             return fail(401, { error: 'Unauthorized' });
         }
@@ -235,7 +220,7 @@ export const actions: Actions = {
         }
     },
 
-    archivePatient: async ({ params, locals }) => {
+    archivePatient: async ({ params, locals }: { params: any, locals: any }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
@@ -260,7 +245,7 @@ export const actions: Actions = {
         }
     },
 
-    unarchivePatient: async ({ params, locals }) => {
+    unarchivePatient: async ({ params, locals }: { params: any, locals: any }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
@@ -273,7 +258,7 @@ export const actions: Actions = {
         }
     },
 
-    updateDentalChart: async ({ request, params, locals }) => {
+    updateDentalChart: async ({ request, params, locals }: { request: any, params: any, locals: any }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
@@ -305,7 +290,7 @@ export const actions: Actions = {
         }
     },
 
-    uploadAttachment: async ({ request, params, locals }) => {
+    uploadAttachment: async ({ request, params, locals }: { request: any, params: any, locals: any }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
@@ -355,7 +340,7 @@ export const actions: Actions = {
         }
     },
 
-    deleteAttachment: async ({ request, locals }) => {
+    deleteAttachment: async ({ request, locals }: { request: any, locals: any }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
@@ -386,7 +371,7 @@ export const actions: Actions = {
         }
     },
 
-    deleteNote: async ({ request, locals }) => {
+    deleteNote: async ({ request, locals }: { request: any, locals: any }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }
@@ -403,7 +388,7 @@ export const actions: Actions = {
         }
     },
 
-    createNote: async ({ request, params, locals }) => {
+    createNote: async ({ request, params, locals }: { request: any, params: any, locals: any }) => {
         if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
             return fail(403, { error: 'Unauthorized' });
         }

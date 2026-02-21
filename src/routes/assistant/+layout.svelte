@@ -5,7 +5,22 @@
     import { NAVIGATION } from "$lib/config/navigation";
     let { children, data }: { children: Snippet; data: any } = $props();
 
-    const navItems = NAVIGATION.assistant;
+    const navItems = $derived(
+        NAVIGATION.assistant.filter((item) => {
+            if (
+                item.href === "/inventory" &&
+                data.config?.module_inventory === 0
+            )
+                return false;
+            if (
+                (item.href?.includes("/spending") ||
+                    item.href?.includes("/invoices")) &&
+                data.config?.module_billing === 0
+            )
+                return false;
+            return true;
+        }),
+    );
     const currentTitle = $derived(
         navItems.find((i) => page.url.pathname.startsWith(i.href))?.label ||
             "common.portal",

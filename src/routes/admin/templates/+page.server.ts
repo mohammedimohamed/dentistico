@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { getAllTemplates, upsertTemplate } from '$lib/server/db';
+import { getAllTemplates, upsertTemplate, getClinicSettings } from '$lib/server/db';
 import { redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -9,11 +9,18 @@ export const load: PageServerLoad = async ({ locals }) => {
         throw redirect(303, '/');
     }
 
-    // 2. Fetch all templates
-    const templates = getAllTemplates();
+    const clinicSettings = getClinicSettings() as any;
+
+    // 2. Fetch all templates and filter
+    const templates = getAllTemplates().filter((t: any) => {
+        if (t.name === 'Invoice' && clinicSettings.module_billing === 0) return false;
+        if (t.name === 'Prescription' && clinicSettings.module_prescriptions === 0) return false;
+        return true;
+    });
 
     return {
-        templates
+        templates,
+        clinicSettings
     };
 };
 

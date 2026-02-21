@@ -50,6 +50,10 @@ export async function PUT({ request, locals }) {
       allow_assistant_create_product = ?,
       allow_doctor_create_supplier = ?,
       allow_assistant_create_supplier = ?,
+      module_billing = ?,
+      module_prescriptions = ?,
+      module_dental_chart = ?,
+      module_inventory = ?,
       updated_at = datetime('now')
     WHERE id = 1
   `).run(
@@ -71,7 +75,11 @@ export async function PUT({ request, locals }) {
         data.allow_doctor_create_product ? 1 : 0,
         data.allow_assistant_create_product ? 1 : 0,
         data.allow_doctor_create_supplier ? 1 : 0,
-        data.allow_assistant_create_supplier ? 1 : 0
+        data.allow_assistant_create_supplier ? 1 : 0,
+        data.module_billing !== undefined ? (data.module_billing ? 1 : 0) : 1,
+        data.module_prescriptions !== undefined ? (data.module_prescriptions ? 1 : 0) : 1,
+        data.module_dental_chart !== undefined ? (data.module_dental_chart ? 1 : 0) : 1,
+        data.module_inventory !== undefined ? (data.module_inventory ? 1 : 0) : 1
     );
 
     return json({ success: true });

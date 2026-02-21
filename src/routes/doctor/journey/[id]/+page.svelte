@@ -44,7 +44,9 @@
     let previewFile = $state<any>(null);
     let previewDicom = $state<any>(null);
     let DicomViewer = $state<any>(null);
-    let activeWorkspace = $state<"chart" | "documents" | "split">("chart");
+    let activeWorkspace = $state<"chart" | "documents" | "split">(
+        data.config?.module_dental_chart === 0 ? "documents" : "chart",
+    );
 
     // Role-based UI control
     const isAssistant = $derived(data.user?.role === "assistant");
@@ -170,7 +172,9 @@
     let isInvoiceModalOpen = $state(false);
     let invoiceSelection = $state<string[]>([]);
     let invoiceType = $state<"detailed" | "global">("detailed");
-    let invoiceGlobalDescription = $state("Soins et Traitements Dentaires");
+    let invoiceGlobalDescription = $state(
+        get(t)("doctor_journey.default_invoice_label"),
+    );
     let invoiceShake = $state(false);
 
     function handleGenerateInvoice(e: Event) {
@@ -248,20 +252,29 @@
                 break;
             case "a":
                 e.preventDefault();
-                chart?.openGeneralTreatment();
+                if (data.config?.module_dental_chart !== 0)
+                    chart?.openGeneralTreatment();
                 break;
             case "p":
                 e.preventDefault();
-                isPaymentModalOpen = true;
+                if (
+                    !isAssistant ||
+                    (isAssistant &&
+                        data.config?.allow_assistant_payments &&
+                        data.config?.module_billing !== 0)
+                )
+                    isPaymentModalOpen = true;
                 break;
             case "r":
                 e.preventDefault();
-                showPrescriptionModal = true;
+                if (!isAssistant && data.config?.module_prescriptions !== 0)
+                    showPrescriptionModal = true;
                 break;
             case "i":
             case "f":
                 e.preventDefault();
-                isInvoiceModalOpen = true;
+                if (data.config?.module_billing !== 0)
+                    isInvoiceModalOpen = true;
                 break;
             case "escape":
                 showNotesModal = false;
@@ -369,12 +382,21 @@
 
     const notesSummary = $derived.by(() => {
         const notes = (data.clinicalNotes || []) as any[];
-        if (notes.length === 0) return "Aucune note";
+        if (notes.length === 0) return get(t)("doctor_journey.no_notes");
         const critical = notes.filter(
             (n: any) => n.importance === "critical",
         ).length;
         const urgent = notes.filter((n: any) => n.importance === "high").length;
-        return `${notes.length} Notes: ${critical > 0 ? critical + " Crities, " : ""}${urgent > 0 ? urgent + " Urgentes" : ""}`;
+        const summary = `${notes.length} ${get(t)("doctor_journey.clinical_notes")}: `;
+        const criticalPart =
+            critical > 0
+                ? `${critical} ${get(t)("doctor_journey.importance.critical")}, `
+                : "";
+        const urgentPart =
+            urgent > 0
+                ? `${urgent} ${get(t)("doctor_journey.importance.high")}`
+                : "";
+        return (summary + criticalPart + urgentPart).trim().replace(/,$/, "");
     });
 
     let localSessionStarted = $state(false);
@@ -635,11 +657,11 @@
         customReasonText = "";
 
         if (normStatus === "cancel") {
-            title = get(t)("journey.confirm_cancel_title");
-            message = get(t)("journey.confirm_cancel_message");
+            title = get(t)("doctor_journey.confirm_cancel_title");
+            message = get(t)("doctor_journey.confirm_cancel_message");
         } else {
-            title = get(t)("journey.confirm_postpone_title");
-            message = get(t)("journey.confirm_postpone_message");
+            title = get(t)("doctor_journey.confirm_postpone_title");
+            message = get(t)("doctor_journey.confirm_postpone_message");
         }
 
         const onConfirm = async () => {
@@ -713,7 +735,9 @@
                     {#if targetStandard?.complexity}
                         <div
                             class="flex gap-0.5 scale-75 origin-left"
-                            title="Complexité: {targetStandard.complexity}/5"
+                            title="{$t(
+                                'doctor_journey.complexity',
+                            )}: {targetStandard.complexity}/5"
                         >
                             {#each Array(targetStandard.complexity) as _}
                                 <span class="text-yellow-400 text-sm">★</span>
@@ -724,10 +748,15 @@
                 <div
                     class="flex gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider"
                 >
-                    <span>{patientAge} ANS</span>
+                    <span
+                        >{patientAge}
+                        {$t("doctor_journey.years_old_short")}</span
+                    >
                     <span class="text-slate-200">|</span>
                     <span
-                        >{data.patient.gender === "F" ? "Femme" : "Homme"}</span
+                        >{data.patient.gender === "F"
+                            ? $t("doctor_journey.female")
+                            : $t("doctor_journey.male")}</span
                     >
                     {#if targetStandard && targetStandard.typical_sessions > 1}
                         <span
@@ -751,7 +780,7 @@
                     {#if timerStatus !== "green"}
                         <span
                             class="absolute -bottom-4 text-[9px] font-bold uppercase tracking-widest text-red-500 animate-pulse"
-                            >Dépassement</span
+                            >{$t("doctor_journey.overtime")}</span
                         >
                     {/if}
                 </div>
@@ -767,7 +796,7 @@
                     <div class="flex flex-col -space-y-1">
                         <span
                             class="text-[9px] font-black text-emerald-400 uppercase tracking-widest"
-                            >{$t("journey.completed")}</span
+                            >{$t("doctor_journey.completed")}</span
                         >
                         <span
                             class="text-sm font-black text-emerald-700 font-mono"
@@ -788,10 +817,12 @@
                         <div class="flex flex-col -space-y-1">
                             <span
                                 class="text-[9px] font-black text-rose-400 uppercase tracking-widest"
-                                >Bloqué</span
+                                >{$t("doctor_journey.blocked")}</span
                             >
                             <span class="text-xs font-black text-rose-700"
-                                >Prothèse non reçue</span
+                                >{$t(
+                                    "doctor_journey.prosthesis_not_received",
+                                )}</span
                             >
                         </div>
                     </div>
@@ -808,10 +839,10 @@
                     <div class="flex flex-col -space-y-1">
                         <span
                             class="text-[9px] font-black text-indigo-400 uppercase tracking-widest"
-                            >{$t("journey.status") || "Statut"}</span
+                            >{$t("doctor_journey.status")}</span
                         >
                         <span class="text-sm font-black text-indigo-700"
-                            >{$t("journey.waiting")}</span
+                            >{$t("doctor_journey.waiting")}</span
                         >
                     </div>
                 </div>
@@ -827,7 +858,7 @@
                             <span class="icon text-sm">⚠️</span>
                             <div class="flex flex-col">
                                 <span class="label text-[8px]"
-                                    >{$t("journey.allergies")}</span
+                                    >{$t("doctor_journey.allergies")}</span
                                 >
                                 <span class="value text-xs"
                                     >{data.patient.allergies}</span
@@ -840,7 +871,9 @@
                             <span class="icon text-sm">🩺</span>
                             <div class="flex flex-col">
                                 <span class="label text-[8px]"
-                                    >{$t("journey.medical_conditions")}</span
+                                    >{$t(
+                                        "doctor_journey.medical_conditions",
+                                    )}</span
                                 >
                                 <span class="value text-xs"
                                     >{data.patient.medical_conditions}</span
@@ -860,7 +893,7 @@
                     <span class="icon text-sm">💰</span>
                     <div class="flex flex-col">
                         <span class="label text-[8px]"
-                            >{$t("journey.solde")}</span
+                            >{$t("doctor_journey.solde")}</span
                         >
                         <span class="value text-xs"
                             >{data.patient.balance_due.toLocaleString()}
@@ -881,7 +914,7 @@
                             if (
                                 hasPendingProsthesis &&
                                 !confirm(
-                                    "La prothèse n'est pas reçue. Continuer quand même ?",
+                                    $t("doctor_journey.p_not_received_confirm"),
                                 )
                             )
                                 e.preventDefault();
@@ -895,7 +928,7 @@
                                 >{hasPendingProsthesis ? "⚠️" : "▶"}</span
                             >
                             <span class="text-xs"
-                                >{$t("journey.start_visit")}</span
+                                >{$t("doctor_journey.start_visit")}</span
                             >
                         </button>
                     </form>
@@ -904,7 +937,7 @@
                         <button class="btn-terminer scale-90">
                             <span class="control-icon">■</span>
                             <span class="text-xs"
-                                >{$t("journey.end_visit")}</span
+                                >{$t("doctor_journey.end_visit")}</span
                             >
                         </button>
                     </form>
@@ -937,7 +970,7 @@
                         <div class="flex justify-between items-center">
                             <span
                                 class="text-[9px] font-black text-slate-400 uppercase tracking-widest"
-                                >Espace Travail</span
+                                >{$t("doctor_journey.workspace")}</span
                             >
                             <button
                                 class="w-6 h-6 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm text-xs"
@@ -958,7 +991,7 @@
                                     <h4
                                         class="font-black text-indigo-900 leading-none text-xs"
                                     >
-                                        {$t("journey.planned_today")}
+                                        {$t("doctor_journey.planned_today")}
                                     </h4>
                                 </div>
                                 <ul class="space-y-0.5">
@@ -979,28 +1012,33 @@
                         <!-- 2. Main Actions -->
                         <div class="action-group">
                             <h3 class="group-title mb-2">
-                                {$t("journey.clinical_actions")}
+                                {$t("doctor_journey.clinical_actions")}
                             </h3>
                             <div class="action-grid dense">
-                                <button
-                                    class="pos-btn-compact"
-                                    style="--color: #6366f1"
-                                    onclick={() =>
-                                        chart?.openGeneralTreatment({
-                                            cdt_code: "CONS",
-                                            procedure_description:
-                                                "Consultation générale",
-                                            fee: 1500,
-                                            status: "completed",
-                                            color: "#6B7280",
-                                        })}
-                                >
-                                    <span class="icon">🦷</span>
-                                    <span class="label"
-                                        >{$t("journey.acte_general")}</span
+                                {#if data.config.module_dental_chart !== 0}
+                                    <button
+                                        class="pos-btn-compact"
+                                        style="--color: #6366f1"
+                                        onclick={() =>
+                                            chart?.openGeneralTreatment({
+                                                cdt_code: "CONS",
+                                                procedure_description: $t(
+                                                    "doctor_journey.general_consultation",
+                                                ),
+                                                fee: 1500,
+                                                status: "completed",
+                                                color: "#6B7280",
+                                            })}
                                     >
-                                </button>
-                                {#if !isAssistant || (isAssistant && data.config.allow_assistant_payments)}
+                                        <span class="icon">🦷</span>
+                                        <span class="label"
+                                            >{$t(
+                                                "doctor_journey.acte_general",
+                                            )}</span
+                                        >
+                                    </button>
+                                {/if}
+                                {#if (!isAssistant || (isAssistant && data.config.allow_assistant_payments)) && data.config.module_billing !== 0}
                                     <button
                                         class="pos-btn-compact"
                                         style="--color: #10b981"
@@ -1011,11 +1049,13 @@
                                     >
                                         <span class="icon">💳</span>
                                         <span class="label"
-                                            >{$t("journey.paiement")}</span
+                                            >{$t(
+                                                "doctor_journey.paiement",
+                                            )}</span
                                         >
                                     </button>
                                 {/if}
-                                {#if !isAssistant}
+                                {#if !isAssistant && data.config.module_prescriptions !== 0}
                                     <button
                                         class="pos-btn-compact"
                                         style="--color: #8b5cf6"
@@ -1026,30 +1066,36 @@
                                     >
                                         <span class="icon">📜</span>
                                         <span class="label"
-                                            >{$t("journey.ordonnance")}</span
+                                            >{$t(
+                                                "doctor_journey.ordonnance",
+                                            )}</span
                                         >
                                     </button>
                                 {/if}
-                                <button
-                                    class="pos-btn-compact"
-                                    style="--color: #3b82f6"
-                                    onclick={async () => {
-                                        await autoStartVisit();
-                                        isInvoiceModalOpen = true;
-                                    }}
-                                >
-                                    <span class="icon">📑</span>
-                                    <span class="label"
-                                        >{$t("journey.facture")}</span
+                                {#if data.config.module_billing !== 0}
+                                    <button
+                                        class="pos-btn-compact"
+                                        style="--color: #3b82f6"
+                                        onclick={async () => {
+                                            await autoStartVisit();
+                                            isInvoiceModalOpen = true;
+                                        }}
                                     >
-                                </button>
+                                        <span class="icon">📑</span>
+                                        <span class="label"
+                                            >{$t(
+                                                "doctor_journey.facture",
+                                            )}</span
+                                        >
+                                    </button>
+                                {/if}
                             </div>
                         </div>
 
                         <!-- 3. Exception Handling (Quick Status) -->
                         <div class="action-group">
                             <h3 class="group-title mb-2">
-                                {$t("journey.appointment_management")}
+                                {$t("doctor_journey.appointment_management")}
                             </h3>
                             <div class="grid grid-cols-2 gap-2">
                                 <button
@@ -1061,7 +1107,7 @@
                                 >
                                     <span class="text-sm">🕒</span>
                                     <span class="text-[9px]"
-                                        >{$t("journey.postpone")}</span
+                                        >{$t("doctor_journey.postpone")}</span
                                     >
                                 </button>
                                 <button
@@ -1073,7 +1119,7 @@
                                 >
                                     <span class="text-sm">❌</span>
                                     <span class="text-[9px]"
-                                        >{$t("journey.cancel")}</span
+                                        >{$t("doctor_journey.cancel")}</span
                                     >
                                 </button>
                                 <button
@@ -1083,7 +1129,7 @@
                                 >
                                     <span class="text-sm">📅</span>
                                     <span class="text-[9px]"
-                                        >{$t("journey.reschedule")}</span
+                                        >{$t("doctor_journey.reschedule")}</span
                                     >
                                 </button>
                             </div>
@@ -1092,7 +1138,7 @@
                         <!-- 4. Lab Tracking -->
                         <div class="action-group">
                             <h3 class="group-title mb-2">
-                                {$t("journey.lab_tracking")}
+                                {$t("doctor_journey.lab_tracking")}
                             </h3>
                             <div class="lab-tracking-container gap-2">
                                 {#if labTrackingItems.length > 0}
@@ -1124,7 +1170,9 @@
                                     <div class="empty-lab-state py-4">
                                         <span
                                             class="text-xs font-medium text-slate-400"
-                                            >{$t("journey.no_prosthesis")}</span
+                                            >{$t(
+                                                "doctor_journey.no_prosthesis",
+                                            )}</span
                                         >
                                     </div>
                                 {/if}
@@ -1158,48 +1206,58 @@
                                 <div
                                     class="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-40"
                                 >
-                                    {$t("journey.planned_today")} ({plannedActs.length})
+                                    {$t("doctor_journey.planned_today")} ({plannedActs.length})
                                 </div>
                             </div>
                         {/if}
 
                         <!-- Clinical Actions Icons -->
                         <div class="flex flex-col items-center gap-3">
-                            <button
-                                class="action-icon"
-                                style="--color: #6366f1"
-                                title={$t("journey.acte_general")}
-                                onclick={() =>
-                                    chart?.openGeneralTreatment({
-                                        cdt_code: "CONS",
-                                        procedure_description:
-                                            "Consultation générale",
-                                        fee: 1500,
-                                        status: "completed",
-                                        color: "#6B7280",
-                                    })}>🦷</button
-                            >
-                            <button
-                                class="action-icon"
-                                style="--color: #10b981"
-                                title={$t("journey.paiement")}
-                                onclick={() => (isPaymentModalOpen = true)}
-                                >💳</button
-                            >
-                            <button
-                                class="action-icon"
-                                style="--color: #8b5cf6"
-                                title={$t("journey.ordonnance")}
-                                onclick={() => (showPrescriptionModal = true)}
-                                >📜</button
-                            >
-                            <button
-                                class="action-icon"
-                                style="--color: #3b82f6"
-                                title={$t("journey.facture")}
-                                onclick={() => (isInvoiceModalOpen = true)}
-                                >📑</button
-                            >
+                            {#if data.config.module_dental_chart !== 0}
+                                <button
+                                    class="action-icon"
+                                    style="--color: #6366f1"
+                                    title={$t("doctor_journey.acte_general")}
+                                    onclick={() =>
+                                        chart?.openGeneralTreatment({
+                                            cdt_code: "CONS",
+                                            procedure_description: $t(
+                                                "doctor_journey.general_consultation",
+                                            ),
+                                            fee: 1500,
+                                            status: "completed",
+                                            color: "#6B7280",
+                                        })}>🦷</button
+                                >
+                            {/if}
+                            {#if data.config.module_billing !== 0}
+                                <button
+                                    class="action-icon"
+                                    style="--color: #10b981"
+                                    title={$t("doctor_journey.paiement")}
+                                    onclick={() => (isPaymentModalOpen = true)}
+                                    >💳</button
+                                >
+                            {/if}
+                            {#if data.config.module_prescriptions !== 0}
+                                <button
+                                    class="action-icon"
+                                    style="--color: #8b5cf6"
+                                    title={$t("doctor_journey.ordonnance")}
+                                    onclick={() =>
+                                        (showPrescriptionModal = true)}
+                                    >📜</button
+                                >
+                            {/if}
+                            {#if data.config.module_billing !== 0}
+                                <button
+                                    class="action-icon"
+                                    style="--color: #3b82f6"
+                                    title={$t("doctor_journey.facture")}
+                                    onclick={() => (isInvoiceModalOpen = true)}
+                                    >📑</button
+                                >
+                            {/if}
                         </div>
 
                         <!-- Appointment Management Icons -->
@@ -1208,7 +1266,7 @@
                                 type="button"
                                 class="action-icon status-scheduled"
                                 disabled={isSessionActive}
-                                title={$t("journey.postpone")}
+                                title={$t("doctor_journey.postpone")}
                                 onclick={() => handleUpdateStatus("scheduled")}
                             >
                                 🕒
@@ -1217,7 +1275,7 @@
                                 type="button"
                                 class="action-icon status-cancelled"
                                 disabled={isSessionActive}
-                                title={$t("journey.cancel")}
+                                title={$t("doctor_journey.cancel")}
                                 onclick={() => handleUpdateStatus("cancelled")}
                             >
                                 ❌
@@ -1225,7 +1283,7 @@
                             <button
                                 class="action-icon status-reschedule"
                                 disabled={isSessionActive}
-                                title={$t("journey.reschedule")}
+                                title={$t("doctor_journey.reschedule")}
                                 onclick={openReschedule}>📅</button
                             >
                         </div>
@@ -1235,7 +1293,8 @@
                             <button
                                 class="action-icon"
                                 style="--color: #6366f1"
-                                title={$t("journey.lab_tracking")}>🧪</button
+                                title={$t("doctor_journey.lab_tracking")}
+                                >🧪</button
                             >
                         </div>
                     </div>
@@ -1252,15 +1311,17 @@
                 class="px-6 py-3 border-b border-slate-100 flex justify-between items-center bg-white z-10"
             >
                 <div class="flex bg-slate-100/80 p-1 rounded-xl">
-                    <button
-                        class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all {activeWorkspace ===
-                        'chart'
-                            ? 'bg-white shadow-sm text-indigo-600'
-                            : 'text-slate-500 hover:text-slate-700'}"
-                        onclick={() => (activeWorkspace = "chart")}
-                    >
-                        🦷 Odontogramme
-                    </button>
+                    {#if data.config.module_dental_chart !== 0}
+                        <button
+                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all {activeWorkspace ===
+                            'chart'
+                                ? 'bg-white shadow-sm text-indigo-600'
+                                : 'text-slate-500 hover:text-slate-700'}"
+                            onclick={() => (activeWorkspace = "chart")}
+                        >
+                            🦷 {$t("doctor_journey.odontogram")}
+                        </button>
+                    {/if}
                     <button
                         class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all {activeWorkspace ===
                         'documents'
@@ -1268,7 +1329,7 @@
                             : 'text-slate-500 hover:text-slate-700'}"
                         onclick={() => (activeWorkspace = "documents")}
                     >
-                        📁 Documents
+                        📁 {$t("doctor_journey.documents")}
                     </button>
                 </div>
             </div>
@@ -1367,7 +1428,9 @@
                                                     >
                                                     <span
                                                         class="text-[10px] text-slate-400 uppercase tracking-widest"
-                                                        >Medical Imaging</span
+                                                        >{$t(
+                                                            "doctor_journey.medical_imaging",
+                                                        )}</span
                                                     >
                                                 </div>
                                             {:else}
@@ -1429,7 +1492,9 @@
                                                     />
                                                     <button
                                                         class="w-10 h-10 rounded-full bg-white text-slate-700 hover:text-red-500 flex items-center justify-center shadow-lg transform hover:scale-110 transition-all font-bold"
-                                                        title="Delete"
+                                                        title={$t(
+                                                            "common.delete",
+                                                        )}
                                                     >
                                                         🗑️
                                                     </button>
@@ -1465,7 +1530,7 @@
                                 <span class="text-5xl mb-4">📂</span>
                                 <span
                                     class="font-bold text-sm uppercase tracking-wider"
-                                    >No documents found</span
+                                    >{$t("doctor_journey.no_documents")}</span
                                 >
                             </div>
                         {/if}
@@ -1501,7 +1566,9 @@
                                     >
                                         <span
                                             class="text-xs font-bold text-slate-700 uppercase tracking-widest"
-                                            >Latest Imaging</span
+                                            >{$t(
+                                                "doctor_journey.latest_imaging",
+                                            )}</span
                                         >
                                         <span
                                             class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md font-bold"
@@ -1521,13 +1588,17 @@
                                             <!-- Simple placeholder for DICOM in split view if viewer not loaded, or direct viewer -->
                                             <div class="text-white text-center">
                                                 <p class="font-bold mb-2">
-                                                    DICOM File
+                                                    {$t(
+                                                        "doctor_journey.dicom_file",
+                                                    )}
                                                 </p>
                                                 <button
                                                     class="px-4 py-2 bg-indigo-600 rounded-lg text-xs font-bold"
                                                     onclick={() =>
                                                         openDicom(lastMedia)}
-                                                    >Open Viewer</button
+                                                    >{$t(
+                                                        "doctor_journey.open_viewer",
+                                                    )}</button
                                                 >
                                             </div>
                                         {/if}
@@ -1556,7 +1627,7 @@
                                 <div class="text-center text-slate-400">
                                     <span class="text-4xl block mb-2">📷</span>
                                     <span class="text-xs font-bold uppercase"
-                                        >No imaging data available</span
+                                        >{$t("doctor_journey.no_imaging")}</span
                                     >
                                 </div>
                             {/if}
@@ -1621,8 +1692,8 @@
                                 class="font-black text-slate-400 text-[10px] tracking-[0.3em] uppercase whitespace-nowrap group-hover:text-indigo-500 transition-colors"
                             >
                                 {sidebarTab === "notes"
-                                    ? $t("journey.clinical_notes")
-                                    : $t("journey.paiement")}
+                                    ? $t("doctor_journey.clinical_notes")
+                                    : $t("doctor_journey.paiement")}
                             </span>
                         </div>
                     </button>
@@ -1648,8 +1719,12 @@
                                         class="font-black text-slate-800 uppercase tracking-wider text-[10px]"
                                     >
                                         {sidebarTab === "notes"
-                                            ? $t("journey.clinical_notes")
-                                            : $t("journey.finance_details")}
+                                            ? $t(
+                                                  "doctor_journey.clinical_notes",
+                                              )
+                                            : $t(
+                                                  "doctor_journey.finance_details",
+                                              )}
                                     </h3>
                                 </div>
                                 {#if sidebarTab === "notes"}
@@ -1663,7 +1738,9 @@
                                         >
                                         <span
                                             class="text-xs font-bold uppercase tracking-wider"
-                                            >{$t("journey.add_note")}</span
+                                            >{$t(
+                                                "doctor_journey.add_note",
+                                            )}</span
                                         >
                                     </button>
                                 {:else}
@@ -1671,7 +1748,7 @@
                                         class="w-7 h-7 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm text-xs"
                                         onclick={() =>
                                             (isPaymentModalOpen = true)}
-                                        title={$t("journey.paiement")}
+                                        title={$t("doctor_journey.paiement")}
                                     >
                                         <span>💳</span>
                                     </button>
@@ -1690,7 +1767,7 @@
                                             : 'text-slate-400 hover:text-slate-600'}"
                                         onclick={() => (sidebarTab = "notes")}
                                     >
-                                        📝 Notes
+                                        📝 {$t("doctor_journey.clinical_notes")}
                                     </button>
                                 {/if}
                                 <button
@@ -1700,7 +1777,7 @@
                                         : 'text-slate-400 hover:text-slate-600'}"
                                     onclick={() => (sidebarTab = "finance")}
                                 >
-                                    💰 Finance
+                                    💰 {$t("doctor_journey.finance_details")}
                                 </button>
                             </div>
                         </div>
@@ -1716,7 +1793,9 @@
                                         >
                                         <span
                                             class="text-xs font-bold text-slate-400 uppercase"
-                                            >{$t("journey.no_notes")}</span
+                                            >{$t(
+                                                "doctor_journey.no_notes",
+                                            )}</span
                                         >
                                     </div>
                                 {/if}
@@ -1739,7 +1818,9 @@
                                             />
                                             <button
                                                 class="w-6 h-6 flex items-center justify-center rounded-full bg-white/50 hover:bg-red-500 hover:text-white text-slate-500 transition-all shadow-sm"
-                                                title="Supprimer cette note"
+                                                title={$t(
+                                                    "doctor_journey.delete_note",
+                                                )}
                                             >
                                                 ✕
                                             </button>
@@ -1921,12 +2002,12 @@
                             <h3
                                 class="text-3xl font-black text-slate-800 tracking-tighter"
                             >
-                                {$t("journey.note_clinique")}
+                                {$t("doctor_journey.note_clinique")}
                             </h3>
                             <p
                                 class="text-slate-400 font-bold text-sm uppercase tracking-wider"
                             >
-                                {$t("journey.evolved_notes")}
+                                {$t("doctor_journey.evolved_notes")}
                             </p>
                         </div>
                         <button
@@ -1943,7 +2024,7 @@
                                 class="text-xs font-black text-slate-400 uppercase tracking-widest"
                                 for="importance"
                             >
-                                {$t("journey.importance_level")}
+                                {$t("doctor_journey.importance_level")}
                             </label>
                             <div class="grid grid-cols-3 gap-4">
                                 {#each ["low", "high", "critical"] as level}
@@ -1960,7 +2041,10 @@
                                         />
                                         <span
                                             class="capitalize font-black text-sm"
-                                            >{level}</span
+                                            >{$t(
+                                                "doctor_journey.importance." +
+                                                    level,
+                                            )}</span
                                         >
                                     </label>
                                 {/each}
@@ -1972,12 +2056,14 @@
                                 class="text-xs font-black text-slate-400 uppercase tracking-widest"
                                 for="content"
                             >
-                                {$t("journey.note_content")}
+                                {$t("doctor_journey.note_content")}
                             </label>
                             <textarea
                                 name="content"
                                 bind:value={clinicalNote}
-                                placeholder="Saisissez vos notes cliniques ici..."
+                                placeholder={$t(
+                                    "doctor_journey.notes_placeholder",
+                                )}
                                 class="w-full h-48 p-8 bg-slate-50 border-2 border-slate-100 rounded-[2rem] focus:border-indigo-500 focus:bg-white transition-all text-xl font-medium outline-none resize-none shadow-inner"
                             ></textarea>
                         </div>
@@ -2021,7 +2107,7 @@
                         <h3
                             class="text-2xl font-black text-slate-800 tracking-tight"
                         >
-                            {$t("journey.reschedule")}
+                            {$t("doctor_journey.reschedule")}
                         </h3>
                         <button
                             type="button"
@@ -2067,16 +2153,20 @@
                                             <p
                                                 class="font-black text-indigo-900 text-[10px] uppercase tracking-widest mb-1"
                                             >
-                                                Standard Clinique
+                                                {$t(
+                                                    "doctor_journey.clinical_standard",
+                                                )}
                                             </p>
                                             <p
                                                 class="font-bold text-indigo-600 text-sm leading-snug"
                                             >
-                                                Délai médical conseillé : <span
-                                                    class="text-indigo-900"
+                                                {$t(
+                                                    "doctor_journey.medical_delay_recommended",
+                                                )}
+                                                <span class="text-indigo-900"
                                                     >{targetStandard.gap_days_min}</span
                                                 >
-                                                jours.
+                                                {$t("doctor_journey.days")}
                                             </p>
                                         </div>
                                     </div>
@@ -2088,7 +2178,9 @@
                                             class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
                                             for="reschedule_date"
                                         >
-                                            Date du rendez-vous
+                                            {$t(
+                                                "doctor_journey.date_of_appointment",
+                                            )}
                                         </label>
                                         <input
                                             id="reschedule_date"
@@ -2105,7 +2197,7 @@
                                             class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
                                             for="reschedule_time"
                                         >
-                                            Heure de début
+                                            {$t("doctor_journey.start_time")}
                                         </label>
                                         <input
                                             id="reschedule_time"
@@ -2198,7 +2290,7 @@
                         >
                             <span class="w-1.5 h-8 bg-emerald-500 rounded-full"
                             ></span>
-                            {$t("assistant.dashboard.payment.modal.title")}
+                            {$t("doctor_journey.paiement")}
                         </h3>
                         <button
                             type="button"
@@ -2215,7 +2307,7 @@
                                 <span
                                     class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
                                 >
-                                    {$t("patient_details.record_payment")}
+                                    {$t("doctor_journey.paiement")}
                                 </span>
 
                                 <div class="space-y-4">
@@ -2224,9 +2316,7 @@
                                             class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
                                             for="payment_amount"
                                         >
-                                            {$t(
-                                                "assistant.dashboard.payment.fields.amount",
-                                            )}
+                                            {$t("doctor_journey.amount")}
                                         </label>
                                         <div class="relative">
                                             <input
@@ -2252,7 +2342,7 @@
                                             for="payment_method"
                                         >
                                             {$t(
-                                                "assistant.dashboard.payment.fields.paymentMethod",
+                                                "doctor_journey.payment_method",
                                             )}
                                         </label>
                                         <select
@@ -2269,12 +2359,12 @@
                                             {:else}
                                                 <option value="cash"
                                                     >{$t(
-                                                        "assistant.dashboard.payment.methods.cash",
+                                                        "doctor_journey.cash",
                                                     )}</option
                                                 >
                                                 <option value="card"
                                                     >{$t(
-                                                        "assistant.dashboard.payment.methods.card",
+                                                        "doctor_journey.card",
                                                     )}</option
                                                 >
                                             {/if}
@@ -2286,14 +2376,17 @@
                                             class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
                                             for="payment_notes"
                                         >
-                                            {$t("journey.note_clinique")} (Optionnel)
+                                            {$t("doctor_journey.note_clinique")}
+                                            {$t("doctor_journey.optional")}
                                         </label>
                                         <textarea
                                             id="payment_notes"
                                             name="notes"
                                             rows="2"
                                             class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 font-medium text-slate-600 focus:border-indigo-500 focus:bg-white outline-none transition-all resize-none"
-                                            placeholder="Ex: Paiement d'avance, chèque n°..."
+                                            placeholder={$t(
+                                                "doctor_journey.payment_notes_placeholder",
+                                            )}
                                         ></textarea>
                                     </div>
                                 </div>
@@ -2307,9 +2400,7 @@
                                     >
                                         <span
                                             class="text-[10px] font-black text-rose-400 uppercase tracking-widest"
-                                            >{$t(
-                                                "assistant.dashboard.payment.modal.totalDue",
-                                            )}</span
+                                            >{$t("doctor_journey.solde")}</span
                                         >
                                         <span
                                             class="text-2xl font-black text-rose-600"
@@ -2324,7 +2415,9 @@
                                     >
                                         <span
                                             class="text-[10px] font-black text-emerald-400 uppercase tracking-widest"
-                                            >Total Payé</span
+                                            >{$t(
+                                                "doctor_journey.total_paid",
+                                            )}</span
                                         >
                                         <span
                                             class="text-2xl font-black text-emerald-600"
@@ -2342,9 +2435,7 @@
                                         <span
                                             class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
                                         >
-                                            {$t(
-                                                "patient_details.encaissements",
-                                            )}
+                                            {$t("doctor_journey.paiement")}
                                         </span>
                                         <div
                                             class="max-h-[220px] overflow-y-auto pr-2 space-y-2"
@@ -2375,7 +2466,7 @@
                                                             class="text-[9px] font-bold text-slate-400 uppercase"
                                                         >
                                                             {$t(
-                                                                `assistant.dashboard.payment.methods.${payment.payment_method}`,
+                                                                `doctor_journey.${payment.payment_method}`,
                                                             )}
                                                         </span>
                                                     </div>
@@ -2423,7 +2514,7 @@
                             class="w-full py-5 bg-emerald-600 text-white rounded-[1.5rem] font-black text-lg hover:bg-emerald-700 hover:scale-[1.02] transition-all shadow-xl shadow-emerald-100 flex items-center justify-center gap-3"
                         >
                             <span class="text-xl">💰</span>
-                            {$t("assistant.dashboard.payment.modal.confirm")}
+                            {$t("doctor_journey.paiement")}
                         </button>
                     </div>
                 </form>
@@ -2460,7 +2551,7 @@
                             <p
                                 class="text-xs font-bold text-slate-400 uppercase tracking-widest"
                             >
-                                Patient: {data.patient.full_name}
+                                {$t("common.patient")}: {data.patient.full_name}
                             </p>
                         </div>
                     </div>
@@ -2522,7 +2613,10 @@
                                             >
                                             <span
                                                 class="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full font-bold uppercase"
-                                                >{template.items.length} meds</span
+                                                >{template.items.length}
+                                                {$t(
+                                                    "doctor_journey.meds_short",
+                                                )}</span
                                             >
                                         </div>
                                         <p
@@ -2570,7 +2664,7 @@
                                                 onclick={() =>
                                                     loadPrescription(p.id)}
                                             >
-                                                Réouvrir
+                                                {$t("doctor_journey.reopen")}
                                             </button>
                                             <button
                                                 class="w-10 h-8 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center hover:bg-slate-200"
@@ -2629,7 +2723,9 @@
                                         id="med_dosage"
                                         type="text"
                                         bind:value={medDosage}
-                                        placeholder="ex: 1g"
+                                        placeholder={$t(
+                                            "doctor_journey.dosage_placeholder",
+                                        )}
                                         class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500 focus:bg-white transition-all"
                                     />
                                 </div>
@@ -2643,7 +2739,9 @@
                                         id="med_duration"
                                         type="text"
                                         bind:value={medDuration}
-                                        placeholder="ex: 7 days"
+                                        placeholder={$t(
+                                            "doctor_journey.duration_placeholder",
+                                        )}
                                         class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500 focus:bg-white transition-all"
                                     />
                                 </div>
@@ -2659,7 +2757,9 @@
                                         id="med_instr"
                                         type="text"
                                         bind:value={medInstructions}
-                                        placeholder="ex: 1 tab x 2/day"
+                                        placeholder={$t(
+                                            "doctor_journey.instructions_placeholder",
+                                        )}
                                         class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-indigo-500 focus:bg-white transition-all"
                                     />
                                 </div>
@@ -2770,7 +2870,9 @@
                                 <textarea
                                     id="presc_notes"
                                     bind:value={prescriptionNotes}
-                                    placeholder="ex: Repos complet, Éviter les aliments chauds..."
+                                    placeholder={$t(
+                                        "doctor_journey.prescription_notes_placeholder",
+                                    )}
                                     class="w-full h-24 p-4 bg-white border-2 border-slate-100 rounded-3xl outline-none focus:border-indigo-500 transition-all font-medium resize-none shadow-inner"
                                 ></textarea>
                             </div>
@@ -2825,7 +2927,7 @@
                                             0}
                                     >
                                         <span class="text-lg">💾</span>
-                                        Sauvegarder comme Modèle
+                                        {$t("doctor_journey.save_as_template")}
                                     </button>
 
                                     <button
@@ -2867,7 +2969,7 @@
                 }}
             >
                 <h3 class="text-2xl font-black text-slate-800 mb-6">
-                    Enregistrer comme Modèle
+                    {$t("doctor_journey.save_as_template_title")}
                 </h3>
 
                 <form
@@ -2900,14 +3002,17 @@
                     <div class="space-y-2">
                         <label
                             class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2"
-                            for="template_name">Nom du Modèle</label
+                            for="template_name"
+                            >{$t("doctor_journey.template_name")}</label
                         >
                         <input
                             type="text"
                             id="template_name"
                             name="name"
                             bind:value={templateName}
-                            placeholder="ex: Post-Extraction, Traitement Abcès..."
+                            placeholder={$t(
+                                "doctor_journey.template_name_placeholder",
+                            )}
                             class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold focus:border-indigo-500 focus:bg-white transition-all outline-none"
                             required
                         />
@@ -2919,13 +3024,13 @@
                             onclick={() => (showSaveTemplateModal = false)}
                             class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-[1.25rem] font-bold hover:bg-slate-200 transition-all"
                         >
-                            Annuler
+                            {$t("common.cancel")}
                         </button>
                         <button
                             type="submit"
                             class="flex-1 py-4 bg-indigo-600 text-white rounded-[1.25rem] font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
                         >
-                            Enregistrer
+                            {$t("common.save")}
                         </button>
                     </div>
                 </form>
@@ -2961,7 +3066,7 @@
                             <p
                                 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none"
                             >
-                                Patient: {data.patient.full_name}
+                                {$t("common.patient")}: {data.patient.full_name}
                             </p>
                         </div>
                     </div>
@@ -3034,7 +3139,7 @@
                             <h4
                                 class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
                             >
-                                Historique des Factures
+                                {$t("doctor_journey.invoice_history")}
                             </h4>
                             <div class="space-y-3">
                                 {#each (data.invoices as any[]) || [] as inv}
@@ -3076,7 +3181,7 @@
                                                 onclick={() =>
                                                     printInvoice(inv.id)}
                                             >
-                                                Imprimer
+                                                {$t("doctor_journey.print")}
                                             </button>
                                         </div>
                                     </div>
@@ -3084,7 +3189,9 @@
                                     <p
                                         class="text-xs text-slate-400 italic pl-2"
                                     >
-                                        Aucune facture précédente
+                                        {$t(
+                                            "doctor_journey.no_previous_invoices",
+                                        )}
                                     </p>
                                 {/each}
                             </div>
@@ -3100,7 +3207,7 @@
                                 <h4
                                     class="text-xs font-black text-slate-400 uppercase tracking-widest"
                                 >
-                                    Type de Facture
+                                    {$t("doctor_journey.invoice_type")}
                                 </h4>
                                 <div
                                     class="flex bg-slate-100 p-0.5 rounded-lg gap-0.5"
@@ -3114,7 +3221,7 @@
                                         onclick={() =>
                                             (invoiceType = "detailed")}
                                     >
-                                        Détaillée
+                                        {$t("doctor_journey.detailed")}
                                     </button>
                                     <button
                                         type="button"
@@ -3124,7 +3231,7 @@
                                             : 'text-slate-400 hover:text-slate-600'}"
                                         onclick={() => (invoiceType = "global")}
                                     >
-                                        Globale
+                                        {$t("doctor_journey.global")}
                                     </button>
                                 </div>
                             </div>
@@ -3135,7 +3242,7 @@
                                         for="global_desc"
                                         class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block"
                                     >
-                                        Libellé de la prestation globale
+                                        {$t("doctor_journey.global_label")}
                                     </label>
                                     <input
                                         id="global_desc"
@@ -3150,13 +3257,13 @@
                                 <h4
                                     class="text-xs font-black text-slate-400 uppercase tracking-widest"
                                 >
-                                    Actes non facturés
+                                    {$t("doctor_journey.uninvoiced_acts")}
                                 </h4>
                                 <button
                                     class="text-xs font-bold text-indigo-600 hover:underline"
                                     onclick={selectAllTreatments}
                                 >
-                                    Tout sélectionner
+                                    {$t("doctor_journey.select_all")}
                                 </button>
                             </div>
                         </div>
@@ -3195,7 +3302,10 @@
                                                         treatment.treatment_date,
                                                     ).toLocaleDateString()}
                                                     {#if treatment.tooth_number}•
-                                                        Dent {treatment.tooth_number}{/if}
+                                                        {$t(
+                                                            "doctor_journey.tooth",
+                                                        )}
+                                                        {treatment.tooth_number}{/if}
                                                 </span>
                                                 <span
                                                     class="text-sm font-black text-slate-800"
@@ -3218,10 +3328,14 @@
                                         <p
                                             class="text-2xl font-black uppercase text-slate-600"
                                         >
-                                            Tout est à jour
+                                            {$t(
+                                                "doctor_journey.everything_up_to_date",
+                                            )}
                                         </p>
                                         <p class="font-bold text-slate-400">
-                                            Aucun acte à facturer pour le moment
+                                            {$t(
+                                                "doctor_journey.no_acts_to_invoice",
+                                            )}
                                         </p>
                                     </div>
                                 {/each}
@@ -3236,7 +3350,9 @@
                                 <div class="flex flex-col">
                                     <span
                                         class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2"
-                                        >Total Sélectionné</span
+                                        >{$t(
+                                            "doctor_journey.total_selected",
+                                        )}</span
                                     >
                                     <span
                                         class="text-2xl font-black text-slate-800"
@@ -3309,8 +3425,9 @@
                                             class="flex items-center gap-2 mb-4 p-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-700 text-xs font-bold animate-fade-in"
                                         >
                                             <span>⚠️</span>
-                                            Veuillez sélectionner au moins un acte
-                                            dans la liste pour générer votre facture.
+                                            {$t(
+                                                "doctor_journey.select_at_least_one",
+                                            )}
                                         </div>
                                     {/if}
 
@@ -3324,7 +3441,7 @@
                                         onclick={handleGenerateInvoice}
                                     >
                                         <span class="text-xl">📝</span>
-                                        Générer & Imprimer
+                                        {$t("doctor_journey.generate_print")}
                                     </button>
                                 </form>
                             </div>
@@ -3342,7 +3459,7 @@
                 isLeftSidebarOpen = false;
                 isNotesSidebarOpen = false;
             }}
-            aria-label="Close sidebars"
+            aria-label={$t("doctor_journey.close_sidebars")}
             transition:fade={{ duration: 200 }}
         ></button>
     {/if}
@@ -3354,7 +3471,7 @@
             <button
                 class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-default w-full h-full border-none"
                 onclick={() => (showConfirmModal = false)}
-                aria-label="Close modal"
+                aria-label={$t("doctor_journey.close_modal")}
             ></button>
 
             <div

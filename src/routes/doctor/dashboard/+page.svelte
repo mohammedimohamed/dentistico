@@ -189,7 +189,7 @@
                     <span
                         class="w-1.5 h-1.5 bg-green-500 rounded-full margin-inline-end-2"
                     ></span>
-                    🏥 Salle d'Attente ({data.waitingRoomCount})
+                    {$t("dashboard.waiting_room", { values: { count: data.waitingRoomCount } })}
                 </a>
             {/if}
         </div>
@@ -332,11 +332,13 @@
                                                     {#if isRetroactive(appt)}
                                                         <span
                                                             class="px-1.5 py-0.5 text-[8px] font-black rounded bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-0.5 cursor-help"
-                                                            title="Saisie Différée: Créé le {new Date(
-                                                                appt.created_at,
-                                                            ).toLocaleString()} (Après coup)"
+                                                            title={$t("dashboard.deferred_entry_title", { 
+                                                                values: { 
+                                                                    date: new Date(appt.created_at).toLocaleString() 
+                                                                } 
+                                                            })}
                                                         >
-                                                            ⏳ REPRO
+                                                            ⏳ {$t("dashboard.repro")}
                                                         </span>
                                                     {/if}
                                                 </p>
@@ -543,11 +545,13 @@
                                                 {#if isRetroactive(selectedAppointment)}
                                                     <span
                                                         class="px-1.5 py-0.5 text-[10px] font-black rounded bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-0.5 cursor-help"
-                                                        title="Saisie Différée: Créé le {new Date(
-                                                            selectedAppointment.created_at,
-                                                        ).toLocaleString()} (Après coup)"
+                                                        title={$t("dashboard.deferred_entry_title", { 
+                                                            values: { 
+                                                                date: new Date(selectedAppointment.created_at).toLocaleString() 
+                                                            } 
+                                                        })}
                                                     >
-                                                        ⌛ SAISIE DIFFÉRÉE
+                                                        ⌛ {$t("dashboard.repro")}
                                                     </span>
                                                 {/if}
                                             </p>
