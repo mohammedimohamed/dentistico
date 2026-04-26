@@ -119,6 +119,7 @@
     let medInstructions = $state("");
     let showSaveTemplateModal = $state(false);
     let templateName = $state("");
+    let showPrescriptionSidebar = $state(true);
 
     $effect(() => {
         if (selectedMedicationId) {
@@ -2529,7 +2530,7 @@
             transition:fade={{ duration: 200 }}
         >
             <div
-                class="bg-white rounded-[2.5rem] shadow-2xl w-[90%] h-[90vh] max-w-7xl overflow-hidden border-4 border-white flex flex-col"
+                class="bg-white rounded-[2.5rem] shadow-2xl w-[95%] h-[95vh] max-w-[1600px] overflow-hidden border-4 border-white flex flex-col"
                 in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
             >
                 <!-- Modal Header -->
@@ -2579,6 +2580,22 @@
                         </select>
                         <button
                             type="button"
+                            class="p-3 bg-slate-100 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-200 transition-all flex items-center gap-2"
+                            onclick={() =>
+                                (showPrescriptionSidebar =
+                                    !showPrescriptionSidebar)}
+                        >
+                            <span>{showPrescriptionSidebar ? "⬅️" : "➡️"}</span>
+                            <span
+                                >{showPrescriptionSidebar
+                                    ? $t("doctor_journey.hide_sidebar") ||
+                                      "Masquer"
+                                    : $t("doctor_journey.show_sidebar") ||
+                                      "Modèles & Historique"}</span
+                            >
+                        </button>
+                        <button
+                            type="button"
                             class="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm text-slate-400 hover:text-rose-500 transition-all border border-slate-100"
                             onclick={() => (showPrescriptionModal = false)}
                             >✕</button
@@ -2589,102 +2606,105 @@
                 <!-- Modal Body -->
                 <div class="flex-1 flex overflow-hidden">
                     <!-- Left Sidebar -->
-                    <aside
-                        class="w-1/3 border-r-2 border-slate-100 bg-slate-50/30 overflow-y-auto p-8 space-y-8"
-                    >
-                        <div class="space-y-4">
-                            <h4
-                                class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
-                            >
-                                {$t("patient_details.templates")}
-                            </h4>
-                            <div class="grid grid-cols-1 gap-3">
-                                {#each (data.prescriptionTemplates as any[]) || [] as template}
-                                    <button
-                                        class="template-card hover:bg-white group"
-                                        onclick={() => useTemplate(template)}
-                                    >
-                                        <div
-                                            class="flex justify-between items-start mb-1"
+                    {#if showPrescriptionSidebar}
+                        <aside
+                            class="w-1/3 border-r-2 border-slate-100 bg-slate-50/30 overflow-y-auto p-8 space-y-8"
+                            transition:slide={{ axis: "x" }}
+                        >
+                            <div class="space-y-4">
+                                <h4
+                                    class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                >
+                                    {$t("patient_details.templates")}
+                                </h4>
+                                <div class="grid grid-cols-1 gap-3">
+                                    {#each (data.prescriptionTemplates as any[]) || [] as template}
+                                        <button
+                                            class="template-card hover:bg-white group"
+                                            onclick={() => useTemplate(template)}
                                         >
-                                            <span
-                                                class="font-black text-slate-800 group-hover:text-indigo-600 transition-colors"
-                                                >{template.name}</span
+                                            <div
+                                                class="flex justify-between items-start mb-1"
                                             >
-                                            <span
-                                                class="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full font-bold uppercase"
-                                                >{template.items.length}
-                                                {$t(
-                                                    "doctor_journey.meds_short",
-                                                )}</span
+                                                <span
+                                                    class="font-black text-slate-800 group-hover:text-indigo-600 transition-colors"
+                                                    >{template.name}</span
+                                                >
+                                                <span
+                                                    class="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full font-bold uppercase"
+                                                    >{template.items.length}
+                                                    {$t(
+                                                        "doctor_journey.meds_short",
+                                                    )}</span
+                                                >
+                                            </div>
+                                            <p
+                                                class="text-xs text-slate-500 line-clamp-1"
                                             >
-                                        </div>
-                                        <p
-                                            class="text-xs text-slate-500 line-clamp-1"
-                                        >
-                                            {template.description || ""}
-                                        </p>
-                                    </button>
-                                {/each}
+                                                {template.description || ""}
+                                            </p>
+                                        </button>
+                                    {/each}
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="space-y-4 pt-4">
-                            <h4
-                                class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
-                            >
-                                {$t("patient_details.patient_history")}
-                            </h4>
-                            <div class="space-y-3">
-                                {#each (data.prescriptions as any[]) || [] as p}
-                                    <div class="past-prescription-card group">
-                                        <div
-                                            class="flex justify-between font-bold text-slate-700 mb-1"
-                                        >
-                                            <span
-                                                >#{p.prescription_number ||
-                                                    p.id}</span
+                            <div class="space-y-4 pt-4">
+                                <h4
+                                    class="text-xs font-black text-slate-400 uppercase tracking-widest pl-2"
+                                >
+                                    {$t("patient_details.patient_history")}
+                                </h4>
+                                <div class="space-y-3">
+                                    {#each (data.prescriptions as any[]) || [] as p}
+                                        <div class="past-prescription-card group">
+                                            <div
+                                                class="flex justify-between font-bold text-slate-700 mb-1"
                                             >
-                                            <span
-                                                >{new Date(
-                                                    p.prescription_date,
-                                                ).toLocaleDateString()}</span
+                                                <span
+                                                    >#{p.prescription_number ||
+                                                        p.id}</span
+                                                >
+                                                <span
+                                                    >{new Date(
+                                                        p.prescription_date,
+                                                    ).toLocaleDateString()}</span
+                                                >
+                                            </div>
+                                            <p
+                                                class="text-[10px] text-slate-400 line-clamp-1 italic mb-3"
                                             >
+                                                {p.meds_summary || ""}
+                                            </p>
+                                            <div
+                                                class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <button
+                                                    class="flex-1 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all"
+                                                    onclick={() =>
+                                                        loadPrescription(p.id)}
+                                                >
+                                                    {$t("doctor_journey.reopen")}
+                                                </button>
+                                                <button
+                                                    class="w-10 h-8 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center hover:bg-slate-200"
+                                                    onclick={() =>
+                                                        printPrescription(p.id)}
+                                                >
+                                                    🖨️
+                                                </button>
+                                            </div>
                                         </div>
+                                    {:else}
                                         <p
-                                            class="text-[10px] text-slate-400 line-clamp-1 italic mb-3"
+                                            class="text-xs text-slate-400 italic pl-2"
                                         >
-                                            {p.meds_summary || ""}
+                                            {$t("patient_details.no_prescriptions")}
                                         </p>
-                                        <div
-                                            class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <button
-                                                class="flex-1 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all"
-                                                onclick={() =>
-                                                    loadPrescription(p.id)}
-                                            >
-                                                {$t("doctor_journey.reopen")}
-                                            </button>
-                                            <button
-                                                class="w-10 h-8 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center hover:bg-slate-200"
-                                                onclick={() =>
-                                                    printPrescription(p.id)}
-                                            >
-                                                🖨️
-                                            </button>
-                                        </div>
-                                    </div>
-                                {:else}
-                                    <p
-                                        class="text-xs text-slate-400 italic pl-2"
-                                    >
-                                        {$t("patient_details.no_prescriptions")}
-                                    </p>
-                                {/each}
+                                    {/each}
+                                </div>
                             </div>
-                        </div>
-                    </aside>
+                        </aside>
+                    {/if}
 
                     <!-- Main Builder -->
                     <main class="flex-1 flex flex-col bg-white overflow-hidden">

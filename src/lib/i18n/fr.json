@@ -1166,6 +1166,8 @@
         "generate_print": "Générer & Imprimer",
         "close_sidebars": "Fermer les barres latérales",
         "close_modal": "Fermer la fenêtre",
-        "save_as_template_title": "Enregistrer comme Modèle"
+        "save_as_template_title": "Enregistrer comme Modèle",
+        "hide_sidebar": "Masquer",
+        "show_sidebar": "Modèles & Historique"
     }
 }

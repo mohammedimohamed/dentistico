@@ -2618,7 +2618,7 @@ export function createPrescription(patientId: number, doctorId: number, items: a
 }
 
 export function getPrescriptionsByPatient(patientId: number) {
-    return db.prepare(`
+    const prescriptions = db.prepare(`
     SELECT
     p.*,
         u.full_name as doctor_name,
@@ -2627,7 +2627,12 @@ export function getPrescriptionsByPatient(patientId: number) {
         JOIN users u ON p.doctor_id = u.id
         WHERE p.patient_id = ?
         ORDER BY p.prescription_date DESC
-            `).all(patientId);
+            `).all(patientId) as any[];
+
+    for (const p of prescriptions) {
+        p.items = db.prepare('SELECT * FROM prescription_items WHERE prescription_id = ?').all(p.id);
+    }
+    return prescriptions;
 }
 
 export function getPrescriptionById(id: number) {

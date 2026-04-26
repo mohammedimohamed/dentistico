@@ -1170,6 +1170,8 @@
         "generate_print": "إصدار وطباعة",
         "close_sidebars": "إغلاق الأشرطة الجانبية",
         "close_modal": "إغلاق النافذة",
+        "hide_sidebar": "إخفاء",
+        "show_sidebar": "النماذج والسجل",
         "save_as_template_title": "حفظ كنموذج"
     }
 }

@@ -175,6 +175,7 @@
         if (pollInterval) clearInterval(pollInterval);
 
         pollInterval = setInterval(() => {
+            const date = new Date();
             if (date.getMinutes() !== lastMinute) {
                 now = date;
                 lastMinute = date.getMinutes();

@@ -1130,6 +1130,9 @@
         "select_at_least_one": "Please select at least one act from the list to generate your invoice.",
         "generate_print": "Generate & Print",
         "close_sidebars": "Close sidebars",
-        "close_modal": "Close modal"
+        "close_modal": "Close modal",
+        "hide_sidebar": "Hide Sidebar",
+        "show_sidebar": "Templates & History",
+        "save_as_template_title": "Save as Template"
     }
 }
