@@ -21,7 +21,17 @@
                 return false;
             if (
                 item.href === "/doctor/journey" &&
-                data.config?.module_dental_chart === 0
+                data.config?.module_journey === 0
+            )
+                return false;
+            if (
+                item.href === "/doctor/dashboard" &&
+                data.config?.module_dashboard === 0
+            )
+                return false;
+            if (
+                item.href === "/doctor/patients" &&
+                data.config?.module_patients === 0
             )
                 return false;
             if (
@@ -29,6 +39,11 @@
                 data.config?.module_prescriptions === 0
             )
                 return false;
+            if (item.href === "/lab-tracking") {
+                if (data.config?.module_custom === 0) return false;
+                const allowedRoles = (data.config?.module_custom_roles || 'doctor').split(',');
+                if (!allowedRoles.includes(data.user?.role)) return false;
+            }
             return true;
         }),
     );

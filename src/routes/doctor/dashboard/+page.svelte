@@ -258,6 +258,28 @@
         </nav>
     </div>
 
+    <!-- Recently Annotated (V2 Widget) -->
+    {#if data.recentAnnotations && data.recentAnnotations.length > 0}
+        <div class="mt-8">
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-1">Dernières Annotations (V2)</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {#each data.recentAnnotations as patient}
+                    <a href="/doctor/patients/{patient.id}/v2" class="group bg-white p-4 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-50 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                {patient.full_name.charAt(0)}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-slate-900 truncate">{patient.full_name}</p>
+                                <p class="text-[10px] text-slate-400 font-medium">Modifié à {new Date(patient.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                            </div>
+                        </div>
+                    </a>
+                {/each}
+            </div>
+        </div>
+    {/if}
+
     <div class="mt-6">
         {#if viewMode === "list"}
             {#if activeList.length === 0}

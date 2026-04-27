@@ -110,7 +110,23 @@ export function init_db() {
           module_prescriptions INTEGER DEFAULT 1,
           module_dental_chart INTEGER DEFAULT 1,
           module_inventory INTEGER DEFAULT 1,
+          module_dashboard INTEGER DEFAULT 1,
+          module_patients INTEGER DEFAULT 1,
+          module_journey INTEGER DEFAULT 1,
+          module_custom INTEGER DEFAULT 0,
+          module_custom_roles TEXT DEFAULT 'doctor',
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS tooth_annotations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          patient_id INTEGER NOT NULL,
+          fdi INTEGER NOT NULL,
+          zones TEXT, -- JSON object
+          notes TEXT,
+          global_status TEXT,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(patient_id, fdi)
         );
 
         -- Working days configuration
@@ -208,6 +224,15 @@ export function init_db() {
         ('Patient forgot/No show', 'cancel', 6),
         ('Transportation issues', 'postpone', 7),
         ('Custom/Other', 'both', 99);
+    `);
+
+    db.exec(`
+        INSERT OR IGNORE INTO settings (key, value) VALUES 
+        ('dental_color_sain', '#f1f5f9'),
+        ('dental_color_carie', '#f87171'),
+        ('dental_color_obturation', '#60a5fa'),
+        ('dental_color_abces', '#fbbf24'),
+        ('dental_color_canal', '#a78bfa');
     `);
 
     db.exec(`
@@ -334,6 +359,11 @@ export function init_db() {
     addColumnIfNotExists('clinic_settings', 'shift_start_mandatory', 'INTEGER DEFAULT 0');
     addColumnIfNotExists('clinic_settings', 'shift_cash_tracking', 'INTEGER DEFAULT 0');
     addColumnIfNotExists('clinic_settings', 'require_room_selection', 'INTEGER DEFAULT 1');
+    addColumnIfNotExists('clinic_settings', 'module_dashboard', 'INTEGER DEFAULT 1');
+    addColumnIfNotExists('clinic_settings', 'module_patients', 'INTEGER DEFAULT 1');
+    addColumnIfNotExists('clinic_settings', 'module_journey', 'INTEGER DEFAULT 1');
+    addColumnIfNotExists('clinic_settings', 'module_custom', 'INTEGER DEFAULT 0');
+    addColumnIfNotExists('clinic_settings', 'module_custom_roles', "TEXT DEFAULT 'doctor'");
 
     db.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_checkin ON appointments(checked_in, waiting_room_status, check_in_time);`);
 
@@ -3126,20 +3156,28 @@ export function getAllSettings() {
 
 export function getServerConfig() {
     const configPath = path.resolve('src/lib/config/app.config.json');
-    let fileConfig: any = {};
+    let config: any = {};
     try {
         const configData = fs.readFileSync(configPath, 'utf8');
-        fileConfig = JSON.parse(configData);
+        config = JSON.parse(configData);
     } catch (e) {
-        // Fallback
-        fileConfig = {
+        config = {
             currency: 'DZD',
             currencySymbol: 'دج',
             bookingMode: 'availability'
         };
     }
 
+    // Merge DB settings
     const dbSettings = getAllSettings();
+    for (const [key, value] of Object.entries(dbSettings)) {
+        if (!isNaN(value as any) && value !== '') {
+            config[key] = Number(value);
+        } else {
+            config[key] = value;
+        }
+    }
+
     let clinicSettings: any = {};
     try {
         clinicSettings = db.prepare('SELECT * FROM clinic_settings WHERE id = 1').get() || {};
@@ -3148,7 +3186,7 @@ export function getServerConfig() {
     }
 
     return {
-        ...fileConfig,
+        ...config,
         ...dbSettings,
         ...clinicSettings,
         // Map db keys to frontend keys if they differ (Backwards compatibility)
@@ -3158,7 +3196,8 @@ export function getServerConfig() {
         module_billing: clinicSettings.module_billing !== undefined ? clinicSettings.module_billing : 1,
         module_prescriptions: clinicSettings.module_prescriptions !== undefined ? clinicSettings.module_prescriptions : 1,
         module_dental_chart: clinicSettings.module_dental_chart !== undefined ? clinicSettings.module_dental_chart : 1,
-        module_inventory: clinicSettings.module_inventory !== undefined ? clinicSettings.module_inventory : 1
+        module_inventory: clinicSettings.module_inventory !== undefined ? clinicSettings.module_inventory : 1,
+        module_journey: clinicSettings.module_journey !== undefined ? clinicSettings.module_journey : 1
     };
 }
 
@@ -3541,6 +3580,34 @@ export function getClinicalStandardByName(name: string) {
 
 // Export db instance
 export default db;
+
+// --- Tooth Annotations (V2) ---
+export function getToothAnnotations(patientId: number) {
+    try {
+        const rows = db.prepare('SELECT * FROM tooth_annotations WHERE patient_id = ?').all(patientId) as any[];
+        return rows.map(row => ({
+            ...row,
+            zones: row.zones ? JSON.parse(row.zones) : {}
+        }));
+    } catch (e) {
+        console.error('Failed to get tooth annotations:', e);
+        return [];
+    }
+}
+
+export function updateToothAnnotation(patientId: number, fdi: number, data: any) {
+    const { zones, notes, globalStatus, bridgeId } = data;
+    return db.prepare(`
+        INSERT INTO tooth_annotations (patient_id, fdi, zones, notes, global_status, bridge_id, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(patient_id, fdi) DO UPDATE SET
+            zones = excluded.zones,
+            notes = excluded.notes,
+            global_status = excluded.global_status,
+            bridge_id = excluded.bridge_id,
+            updated_at = datetime('now')
+    `).run(patientId, fdi, JSON.stringify(zones), notes, globalStatus, bridgeId);
+}
 
 // Run init
 init_db();
@@ -3933,3 +4000,41 @@ addColumnIfNotExists('clinic_settings', 'module_billing', 'INTEGER DEFAULT 1');
 addColumnIfNotExists('clinic_settings', 'module_prescriptions', 'INTEGER DEFAULT 1');
 addColumnIfNotExists('clinic_settings', 'module_dental_chart', 'INTEGER DEFAULT 1');
 addColumnIfNotExists('clinic_settings', 'module_inventory', 'INTEGER DEFAULT 1');
+addColumnIfNotExists('clinic_settings', 'module_custom', 'INTEGER DEFAULT 0');
+addColumnIfNotExists('clinic_settings', 'module_custom_roles', "TEXT DEFAULT 'doctor'");
+addColumnIfNotExists('tooth_annotations', 'bridge_id', 'TEXT');
+
+
+// Migrate lab_tracking to support extended statuses
+try {
+    const labCols = db.pragma('table_info(lab_tracking)') as any[];
+    if (labCols.length > 0) {
+        // Check if status column has the old restrictive constraint by trying to insert a test value
+        // We recreate the table with a broader constraint if needed
+        const tableSQL = (db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='lab_tracking'").get() as any)?.sql || '';
+        if (tableSQL.includes("'pending', 'ordered', 'received'")) {
+            console.log('Migrating lab_tracking table to support extended statuses...');
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS lab_tracking_new(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    patient_id INTEGER NOT NULL,
+                    doctor_id INTEGER NOT NULL,
+                    treatment_id INTEGER,
+                    description TEXT NOT NULL,
+                    status TEXT DEFAULT 'pending',
+                    notes TEXT,
+                    created_at TEXT DEFAULT(datetime('now')),
+                    updated_at TEXT DEFAULT(datetime('now')),
+                    FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+                    FOREIGN KEY(doctor_id) REFERENCES users(id)
+                );
+                INSERT INTO lab_tracking_new SELECT id, patient_id, doctor_id, treatment_id, description, status, notes, created_at, updated_at FROM lab_tracking;
+                DROP TABLE lab_tracking;
+                ALTER TABLE lab_tracking_new RENAME TO lab_tracking;
+            `);
+            console.log('lab_tracking migrated successfully');
+        }
+    }
+} catch (e) {
+    console.error('Migration for lab_tracking statuses failed:', e);
+}

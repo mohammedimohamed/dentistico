@@ -54,6 +54,11 @@ export async function PUT({ request, locals }) {
       module_prescriptions = ?,
       module_dental_chart = ?,
       module_inventory = ?,
+      module_dashboard = ?,
+      module_patients = ?,
+      module_journey = ?,
+      module_custom = ?,
+      module_custom_roles = ?,
       updated_at = datetime('now')
     WHERE id = 1
   `).run(
@@ -79,7 +84,12 @@ export async function PUT({ request, locals }) {
         data.module_billing !== undefined ? (data.module_billing ? 1 : 0) : 1,
         data.module_prescriptions !== undefined ? (data.module_prescriptions ? 1 : 0) : 1,
         data.module_dental_chart !== undefined ? (data.module_dental_chart ? 1 : 0) : 1,
-        data.module_inventory !== undefined ? (data.module_inventory ? 1 : 0) : 1
+        data.module_inventory !== undefined ? (data.module_inventory ? 1 : 0) : 1,
+        data.module_dashboard !== undefined ? (data.module_dashboard ? 1 : 0) : 1,
+        data.module_patients !== undefined ? (data.module_patients ? 1 : 0) : 1,
+        data.module_journey !== undefined ? (data.module_journey ? 1 : 0) : 1,
+        data.module_custom !== undefined ? (data.module_custom ? 1 : 0) : 0,
+        data.module_custom_roles || 'doctor'
     );
 
     return json({ success: true });

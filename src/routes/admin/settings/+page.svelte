@@ -27,6 +27,11 @@
         module_prescriptions: 1,
         module_dental_chart: 1,
         module_inventory: 1,
+        module_dashboard: 1,
+        module_patients: 1,
+        module_journey: 1,
+        module_custom: 0,
+        module_custom_roles: "doctor",
     });
 
     let workingDays = $state<any[]>([]);
@@ -86,6 +91,24 @@
                     resData.settings.module_inventory !== undefined
                         ? resData.settings.module_inventory
                         : 1,
+                module_dashboard:
+                    resData.settings.module_dashboard !== undefined
+                        ? resData.settings.module_dashboard
+                        : 1,
+                module_patients:
+                    resData.settings.module_patients !== undefined
+                        ? resData.settings.module_patients
+                        : 1,
+                module_journey:
+                    resData.settings.module_journey !== undefined
+                        ? resData.settings.module_journey
+                        : 1,
+                module_custom:
+                    resData.settings.module_custom !== undefined
+                        ? resData.settings.module_custom
+                        : 0,
+                module_custom_roles:
+                    resData.settings.module_custom_roles || "doctor",
             };
             workingDays = resData.workingDays;
             closures = resData.closures;
@@ -594,29 +617,58 @@
                                 >
                                     <div class="space-y-1">
                                         <h3 class="font-black text-gray-900">
-                                            Module Dental Chart (Odontogram)
+                                            Module Odontogramme (Dental Chart)
                                         </h3>
-                                        <p
-                                            class="text-xs text-gray-500 leading-relaxed"
-                                        >
-                                            Activer ou désactiver
-                                            l'odontogramme.
+                                        <p class="text-xs text-gray-500 leading-relaxed">
+                                            Activer ou désactiver l'outil de schéma dentaire. Requis pour le module Journey.
                                         </p>
                                     </div>
-                                    <label
-                                        class="relative inline-flex items-center cursor-pointer"
-                                    >
+                                    <label class="relative inline-flex items-center cursor-pointer">
                                         <input
                                             type="checkbox"
                                             name="module_dental_chart"
-                                            bind:checked={
-                                                settings.module_dental_chart
-                                            }
+                                            checked={settings.module_dental_chart}
+                                            onchange={(e) => {
+                                                settings.module_dental_chart = e.currentTarget.checked;
+                                                if (!e.currentTarget.checked) {
+                                                    settings.module_journey = false;
+                                                }
+                                            }}
                                             class="sr-only peer"
                                         />
-                                        <div
-                                            class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
-                                        ></div>
+                                        <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div
+                                class="p-6 rounded-2xl border {settings.module_journey
+                                    ? 'bg-indigo-50/30 border-indigo-100'
+                                    : 'bg-gray-50 border-gray-100'} transition-all"
+                            >
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <h3 class="font-black text-gray-900">
+                                            Module Journey (/doctor/journey)
+                                        </h3>
+                                        <p class="text-xs text-gray-500 leading-relaxed">
+                                            Activer ou désactiver le Hub Clinique quotidien du docteur.
+                                        </p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="module_journey"
+                                            checked={settings.module_journey}
+                                            onchange={(e) => {
+                                                settings.module_journey = e.currentTarget.checked;
+                                                if (e.currentTarget.checked) {
+                                                    settings.module_dental_chart = true;
+                                                }
+                                            }}
+                                            class="sr-only peer"
+                                        />
+                                        <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
                                     </label>
                                 </div>
                             </div>
@@ -722,6 +774,142 @@
                                             name="module_inventory"
                                             bind:checked={
                                                 settings.module_inventory
+                                            }
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
+                                        ></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div
+                                class="p-6 rounded-2xl border {settings.module_dashboard
+                                    ? 'bg-indigo-50/30 border-indigo-100'
+                                    : 'bg-gray-50 border-gray-100'} transition-all"
+                            >
+                                <div
+                                    class="flex items-start justify-between gap-4"
+                                >
+                                    <div class="space-y-1">
+                                        <h3 class="font-black text-gray-900">
+                                            Module Dashboard (Tableau de Bord)
+                                        </h3>
+                                        <p
+                                            class="text-xs text-gray-500 leading-relaxed"
+                                        >
+                                            Activer ou désactiver l'accès au tableau de bord.
+                                        </p>
+                                    </div>
+                                    <label
+                                        class="relative inline-flex items-center cursor-pointer"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            name="module_dashboard"
+                                            bind:checked={
+                                                settings.module_dashboard
+                                            }
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
+                                        ></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div
+                                class="p-6 rounded-2xl border {settings.module_patients
+                                    ? 'bg-indigo-50/30 border-indigo-100'
+                                    : 'bg-gray-50 border-gray-100'} transition-all"
+                            >
+                                <div
+                                    class="flex items-start justify-between gap-4"
+                                >
+                                    <div class="space-y-1">
+                                        <h3 class="font-black text-gray-900">
+                                            Module Patients (Dossiers)
+                                        </h3>
+                                        <p
+                                            class="text-xs text-gray-500 leading-relaxed"
+                                        >
+                                            Activer ou désactiver l'accès à la liste des patients.
+                                        </p>
+                                    </div>
+                                    <label
+                                        class="relative inline-flex items-center cursor-pointer"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            name="module_patients"
+                                            bind:checked={
+                                                settings.module_patients
+                                            }
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
+                                        ></div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div
+                                class="col-span-1 md:col-span-2 p-6 rounded-2xl border {settings.module_custom
+                                    ? 'bg-indigo-50/30 border-indigo-100'
+                                    : 'bg-gray-50 border-gray-100'} transition-all"
+                            >
+                                <div
+                                    class="flex items-start justify-between gap-4"
+                                >
+                                    <div class="space-y-3 flex-grow">
+                                        <div class="space-y-1">
+                                            <h3 class="font-black text-gray-900">
+                                                Module Custom (Lab Tracking)
+                                            </h3>
+                                            <p
+                                                class="text-xs text-gray-500 leading-relaxed"
+                                            >
+                                                Activer ou désactiver le module
+                                                personnalisé.
+                                            </p>
+                                        </div>
+                                        {#if settings.module_custom}
+                                            <div class="pt-2">
+                                                <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Rôles Autorisés</label>
+                                                <div class="flex gap-4">
+                                                    <label class="flex items-center gap-2">
+                                                        <input type="checkbox" name="module_custom_roles[]" value="doctor" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" checked={settings.module_custom_roles?.includes('doctor')} onchange={(e) => {
+                                                            let roles = settings.module_custom_roles ? settings.module_custom_roles.split(',') : [];
+                                                            if (e.currentTarget.checked) { if (!roles.includes('doctor')) roles.push('doctor'); }
+                                                            else { roles = roles.filter(r => r !== 'doctor'); }
+                                                            settings.module_custom_roles = roles.join(',');
+                                                        }} />
+                                                        <span class="text-sm font-medium">Doctor</span>
+                                                    </label>
+                                                    <label class="flex items-center gap-2">
+                                                        <input type="checkbox" name="module_custom_roles[]" value="assistant" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" checked={settings.module_custom_roles?.includes('assistant')} onchange={(e) => {
+                                                            let roles = settings.module_custom_roles ? settings.module_custom_roles.split(',') : [];
+                                                            if (e.currentTarget.checked) { if (!roles.includes('assistant')) roles.push('assistant'); }
+                                                            else { roles = roles.filter(r => r !== 'assistant'); }
+                                                            settings.module_custom_roles = roles.join(',');
+                                                        }} />
+                                                        <span class="text-sm font-medium">Assistant</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        {/if}
+                                    </div>
+                                    <label
+                                        class="relative inline-flex items-center cursor-pointer mt-1"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            name="module_custom"
+                                            bind:checked={
+                                                settings.module_custom
                                             }
                                             class="sr-only peer"
                                         />

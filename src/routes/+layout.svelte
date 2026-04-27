@@ -7,8 +7,24 @@
 
 	let { data, children } = $props();
 
+    import { updateDentalColors } from '$lib/stores/dentalSettings.svelte';
+
     // Initialize i18n on the client
     setupI18n(data.locale);
+
+    // Initialize dental colors from DB config
+    if (data.config) {
+        const dentalColorsFromConfig: Record<string, string> = {};
+        Object.entries(data.config).forEach(([key, value]) => {
+            if (key.startsWith('dental_color_')) {
+                const colorKey = key.replace('dental_color_', '').toUpperCase();
+                dentalColorsFromConfig[colorKey] = value as string;
+            }
+        });
+        if (Object.keys(dentalColorsFromConfig).length > 0) {
+            updateDentalColors(dentalColorsFromConfig);
+        }
+    }
 
     let isRTL = $derived(data.locale === 'ar');
 

@@ -136,8 +136,20 @@ export const actions = {
 
         const module_billing = formData.get('module_billing') === 'on' ? 1 : 0;
         const module_prescriptions = formData.get('module_prescriptions') === 'on' ? 1 : 0;
-        const module_dental_chart = formData.get('module_dental_chart') === 'on' ? 1 : 0;
+        let module_dental_chart = formData.get('module_dental_chart') === 'on' ? 1 : 0;
         const module_inventory = formData.get('module_inventory') === 'on' ? 1 : 0;
+        const module_dashboard = formData.get('module_dashboard') === 'on' ? 1 : 0;
+        const module_patients = formData.get('module_patients') === 'on' ? 1 : 0;
+        let module_journey = formData.get('module_journey') === 'on' ? 1 : 0;
+        const module_custom = formData.get('module_custom') === 'on' ? 1 : 0;
+        
+        // Enforce dependency: Journey requires Odontogramme
+        if (module_journey === 1) {
+            module_dental_chart = 1;
+        }        
+        // Handle array of roles for module_custom_roles
+        const roles = formData.getAll('module_custom_roles[]');
+        const module_custom_roles = roles.length > 0 ? roles.join(',') : 'doctor';
 
         try {
             const { updateClinicSettings } = await import('$lib/server/db');
@@ -145,7 +157,12 @@ export const actions = {
                 module_billing,
                 module_prescriptions,
                 module_dental_chart,
-                module_inventory
+                module_inventory,
+                module_dashboard,
+                module_patients,
+                module_journey,
+                module_custom,
+                module_custom_roles
             });
             return { success: true };
         } catch (e: any) {

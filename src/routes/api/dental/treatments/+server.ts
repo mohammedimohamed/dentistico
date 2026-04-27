@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { db, getTreatmentsByPatient, checkDoctorConflict } from '$lib/server/db';
+import { dentalSync } from '$lib/server/dentalSync';
 import { randomUUID } from 'crypto';
 
 export async function GET({ url, locals }: { url: URL, locals: any }) {
@@ -143,6 +144,15 @@ export async function POST({ request, locals }: { request: Request, locals: any 
                 UPDATE dental_treatments SET appointment_id = ? WHERE id = ?
             `).run(appointmentId, treatmentId);
       }
+
+      // Sync back to V2 Anatomical Chart
+      dentalSync.syncV1ToV2(
+        data.patient_id, 
+        data.tooth_number, 
+        data.treatment_type, 
+        data.status, 
+        data.cdt_code
+      );
 
       return info;
     });

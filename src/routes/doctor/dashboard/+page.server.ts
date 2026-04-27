@@ -21,10 +21,21 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
         AND date(start_time, 'localtime') = date('now', 'localtime')
     `).get(locals.user.id) as { count: number };
 
+    // Recently Annotated Patients (V2)
+    const recentAnnotations = db.prepare(`
+        SELECT DISTINCT p.id, p.full_name, ta.updated_at
+        FROM tooth_annotations ta
+        JOIN patients p ON ta.patient_id = p.id
+        WHERE date(ta.updated_at, 'localtime') = date('now', 'localtime')
+        ORDER BY ta.updated_at DESC
+        LIMIT 5
+    `).all() as any[];
+
     return {
         user: locals.user,
         appointments,
         upcomingAppointments,
+        recentAnnotations,
         today: new Date().toLocaleDateString(),
         waitingRoomCount: waitingRoomCount.count
     };

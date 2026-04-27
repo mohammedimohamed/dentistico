@@ -25,7 +25,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
     // Protected routes
     // Protected routes
-    if (path.startsWith('/doctor') || path.startsWith('/assistant') || path.startsWith('/print') || path.startsWith('/inventory') || path.startsWith('/admin') || path.startsWith('/profile')) {
+    if (path.startsWith('/doctor') || path.startsWith('/assistant') || path.startsWith('/print') || path.startsWith('/inventory') || path.startsWith('/admin') || path.startsWith('/profile') || path.startsWith('/lab-tracking')) {
         if (!event.locals.user) {
             throw redirect(303, '/login');
         }

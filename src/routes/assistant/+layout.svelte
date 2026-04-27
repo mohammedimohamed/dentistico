@@ -18,6 +18,11 @@
                 data.config?.module_billing === 0
             )
                 return false;
+            if (item.href === "/lab-tracking") {
+                if (data.config?.module_custom === 0) return false;
+                const allowedRoles = (data.config?.module_custom_roles || 'doctor').split(',');
+                if (!allowedRoles.includes(data.user?.role)) return false;
+            }
             return true;
         }),
     );

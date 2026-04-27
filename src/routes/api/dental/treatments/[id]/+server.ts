@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
+import { dentalSync } from '$lib/server/dentalSync';
 
 export const DELETE = async ({ params, locals }: { params: any, locals: any }) => {
     if (!locals.user || locals.user.role !== 'doctor') {
@@ -17,6 +18,9 @@ export const PUT = async ({ params, request, locals }: { params: any, request: R
     }
 
     const data = await request.json();
+    
+    // Fetch existing to get patient_id for sync
+    const existing = db.prepare('SELECT patient_id FROM dental_treatments WHERE id = ?').get(params.id) as any;
 
     db.prepare(`
         UPDATE dental_treatments 
@@ -46,6 +50,16 @@ export const PUT = async ({ params, request, locals }: { params: any, request: R
         data.is_custom ? 1 : 0,
         params.id
     );
+
+    if (existing) {
+        dentalSync.syncV1ToV2(
+            existing.patient_id, 
+            data.tooth_number, 
+            data.treatment_type, 
+            data.status, 
+            data.cdt_code
+        );
+    }
 
     return json({ success: true });
 };
