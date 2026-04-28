@@ -3,10 +3,12 @@
     import { onMount } from "svelte";
     import type { ActionData, PageData } from "./$types";
     import { t } from "svelte-i18n";
+    import DentalColorModal from "$lib/components/admin/DentalColorModal.svelte";
 
     let { data, form }: { data: any; form: any } = $props();
 
     let isSaving = $state(false);
+    let showDentalColorModal = $state(false);
     let isCreatingTreatmentType = $state(false);
     let isEditingTreatmentType = $state(false);
     let editingTreatmentType = $state<any>(null);
@@ -269,6 +271,34 @@
                     >
                         Ouvrir le Manager
                     </a>
+                </div>
+                <!-- Dental Colors Banner -->
+                <div
+                    class="px-8 py-4 bg-slate-50 border-b border-gray-100 flex justify-between items-center group"
+                >
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 bg-slate-800 text-white rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-slate-200 group-hover:scale-110 transition-transform"
+                        >
+                            🎨
+                        </div>
+                        <div>
+                            <h3 class="font-black text-slate-900 leading-none">
+                                Couleurs de l'Odontogramme
+                            </h3>
+                            <p
+                                class="text-xs text-slate-500 mt-1 font-bold"
+                            >
+                                Personnalisation visuelle du schéma dentaire
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onclick={() => (showDentalColorModal = true)}
+                        class="px-6 py-3 bg-white text-slate-700 font-black rounded-xl border border-slate-200 shadow-sm hover:bg-slate-800 hover:text-white transition-all uppercase tracking-widest text-[10px]"
+                    >
+                        Personnaliser les couleurs
+                    </button>
                 </div>
                 <div class="p-8">
                     <div class="space-y-6">
@@ -622,6 +652,24 @@
                                         <p class="text-xs text-gray-500 leading-relaxed">
                                             Activer ou désactiver l'outil de schéma dentaire. Requis pour le module Journey.
                                         </p>
+                                        
+                                        {#if settings.module_dental_chart}
+                                            <div class="mt-4 p-4 bg-white rounded-xl border border-indigo-100 space-y-3">
+                                                <label class="block text-[10px] font-black text-indigo-400 uppercase tracking-widest">Version de l'Odontogramme</label>
+                                                <select 
+                                                    name="dental_chart_mode"
+                                                    bind:value={settings.dental_chart_mode}
+                                                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                                >
+                                                    <option value="v1">Classique (V1 uniquement)</option>
+                                                    <option value="v2">Anatomique (V2 uniquement)</option>
+                                                    <option value="both">Mixte (Proposer les deux)</option>
+                                                </select>
+                                                <p class="text-[10px] text-slate-400 leading-tight">
+                                                    V1 est basé sur une grille schématique. V2 propose un rendu SVG anatomique avec racines et implants.
+                                                </p>
+                                            </div>
+                                        {/if}
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input
@@ -1905,3 +1953,5 @@
 {/if}
 
 <!-- Deprecated Treatment Type Modals removed -->
+
+<DentalColorModal bind:show={showDentalColorModal} colors={data.dentalColors} />

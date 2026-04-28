@@ -3,27 +3,8 @@ import { getToothAnnotations, updateToothAnnotation, getPatientByIdFull, db } fr
 import { dentalSync } from '$lib/server/dentalSync';
 import type { PageServerLoad, Actions } from './$types';
 
-export const load: PageServerLoad = async ({ locals, params }) => {
-    if (!locals.user) throw redirect(302, '/login');
-    
-    const patientId = parseInt(params.id);
-    if (isNaN(patientId)) throw error(404, 'Patient not found');
-
-    const patient = getPatientByIdFull(patientId);
-    if (!patient) throw error(404, 'Patient not found');
-
-    const annotations = getToothAnnotations(patientId);
-    
-    // Map array to object { [fdi]: data } for easier lookup
-    const annotationMap: Record<number, any> = {};
-    annotations.forEach(a => {
-        annotationMap[a.fdi] = a;
-    });
-
-    return {
-        patient,
-        annotations: annotationMap
-    };
+export const load: PageServerLoad = async ({ params }) => {
+    throw redirect(301, `/doctor/patients/${params.id}`);
 };
 
 export const actions: Actions = {

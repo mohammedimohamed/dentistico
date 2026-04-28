@@ -3,6 +3,8 @@
     import { enhance } from "$app/forms";
     import { t } from "svelte-i18n";
 
+    import { sidebarState } from "$lib/stores/ui.svelte";
+
     interface NavItem {
         id?: string;
         label: string;
@@ -19,16 +21,6 @@
     }
 
     let { items, activeId, title, userName }: Props = $props();
-    let isCollapsed = $state(
-        page.url.pathname.includes("/journey/") &&
-            !page.url.pathname.endsWith("/journey"),
-    );
-
-    $effect(() => {
-        isCollapsed =
-            page.url.pathname.includes("/journey/") &&
-            !page.url.pathname.endsWith("/journey");
-    });
 
     const icons = {
         activity:
@@ -57,26 +49,26 @@
 </script>
 
 <aside
-    class="bg-gray-900 text-white h-screen sticky top-0 transition-all duration-300 flex flex-col {isCollapsed
+    class="bg-gray-900 text-white h-screen sticky top-0 transition-all duration-300 flex flex-col {sidebarState.isCollapsed
         ? 'w-16'
         : 'w-56'} border-inline-end border-gray-800 flex-shrink-0"
 >
     <div class="p-6 flex items-center justify-between border-b border-gray-800">
-        {#if !isCollapsed}
+        {#if !sidebarState.isCollapsed}
             <span class="text-base font-bold tracking-tight text-indigo-400"
                 >{title}</span
             >
         {/if}
         <button
-            onclick={() => (isCollapsed = !isCollapsed)}
+            onclick={() => (sidebarState.isCollapsed = !sidebarState.isCollapsed)}
             class="p-2 rounded-lg hover:bg-gray-800 text-gray-400 mirrored-rtl"
         >
-            {isCollapsed ? "→" : "←"}
+            {sidebarState.isCollapsed ? "→" : "←"}
         </button>
     </div>
 
     <nav
-        class="flex-1 {isCollapsed
+        class="flex-1 {sidebarState.isCollapsed
             ? 'px-2'
             : 'px-4'} py-8 space-y-2 overflow-y-auto"
     >
@@ -84,136 +76,136 @@
             {#if item.href}
                 <a
                     href={item.href}
-                    class="flex items-center {isCollapsed
+                    class="flex items-center {sidebarState.isCollapsed
                         ? 'justify-center'
                         : 'gap-4 px-4'} py-3 rounded-xl transition-all {(
                         item.href === '/admin' ||
                         item.href === '/doctor/dashboard' ||
                         item.href === '/assistant/dashboard'
-                            ? page.url.pathname === item.href
-                            : page.url.pathname.startsWith(item.href) &&
-                              !items.some(
-                                  (i) =>
-                                      i.href &&
-                                      i.href !== item.href &&
-                                      i.href.length > item.href.length &&
-                                      page.url.pathname.startsWith(i.href),
-                              )
-                    )
-                        ? 'bg-indigo-600 text-white shadow-lg'
-                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
+                    ? page.url.pathname === item.href
+                    : page.url.pathname.startsWith(item.href) &&
+                      !items.some(
+                          (i) =>
+                              i.href &&
+                              i.href !== item.href &&
+                              i.href.length > item.href.length &&
+                              page.url.pathname.startsWith(i.href),
+                      )
+            )
+                ? 'bg-indigo-600 text-white shadow-lg'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
+        >
+            <span class="w-6 h-6">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="size-5"
                 >
-                    <span class="w-6 h-6">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="size-5"
-                        >
-                            {@html (icons as any)[item.icon] || ""}
-                        </svg>
-                    </span>
-                    {#if !isCollapsed}
-                        <span class="text-xs font-medium whitespace-nowrap"
-                            >{$t(item.label)}</span
-                        >
-                    {/if}
-                </a>
-            {:else}
-                <button
-                    onclick={item.onClick}
-                    class="w-full flex items-center {isCollapsed
-                        ? 'justify-center'
-                        : 'gap-4 px-4'} py-3 rounded-xl transition-all {activeId ===
-                    item.id
-                        ? 'bg-indigo-600 text-white shadow-lg'
-                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
+                    {@html (icons as any)[item.icon] || ""}
+                </svg>
+            </span>
+            {#if !sidebarState.isCollapsed}
+                <span class="text-xs font-medium whitespace-nowrap"
+                    >{$t(item.label)}</span
                 >
-                    <span class="w-6 h-6">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="size-5"
-                        >
-                            {@html (icons as any)[item.icon] || ""}
-                        </svg>
-                    </span>
-                    {#if !isCollapsed}
-                        <span class="text-xs font-medium whitespace-nowrap"
-                            >{$t(item.label)}</span
-                        >
-                    {/if}
-                </button>
             {/if}
-        {/each}
-    </nav>
-
-    <div
-        class="{isCollapsed
-            ? 'p-2'
-            : 'p-4'} border-t border-gray-800 text-start"
-    >
-        <div
-            class="flex items-center {isCollapsed
+        </a>
+    {:else}
+        <button
+            onclick={item.onClick}
+            class="w-full flex items-center {sidebarState.isCollapsed
                 ? 'justify-center'
-                : 'gap-3'} mb-4"
+                : 'gap-4 px-4'} py-3 rounded-xl transition-all {activeId ===
+            item.id
+                ? 'bg-indigo-600 text-white shadow-lg'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
         >
-            <div
-                class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white shadow-inner"
-            >
-                {userName.charAt(0)}
-            </div>
-            {#if !isCollapsed}
-                <div class="flex flex-col overflow-hidden">
-                    <span
-                        class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest leading-none mb-1"
-                        >{$t("common.user")}</span
-                    >
-                    <span class="text-sm font-medium truncate">{userName}</span>
-                </div>
+            <span class="w-6 h-6">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="size-5"
+                >
+                    {@html (icons as any)[item.icon] || ""}
+                </svg>
+            </span>
+            {#if !sidebarState.isCollapsed}
+                <span class="text-xs font-medium whitespace-nowrap"
+                    >{$t(item.label)}</span
+                >
             {/if}
-        </div>
+        </button>
+    {/if}
+{/each}
+</nav>
 
-        <form
-            action="/logout"
-            method="POST"
-            use:enhance={() => {
-                return async () => {
-                    window.location.href = "/login";
-                };
-            }}
-        >
-            <button
-                type="submit"
-                class="w-full flex items-center {isCollapsed
-                    ? 'justify-center'
-                    : 'gap-4 px-4'} py-3 rounded-xl text-red-100 bg-red-500/10 hover:bg-red-500/20 transition-all border border-red-500/20"
-            >
-                <span class="w-6 h-6">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke-width="1.5"
-                        stroke="currentColor"
-                        class="size-5"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
-                        />
-                    </svg>
-                </span>
-                {#if !isCollapsed}
-                    <span class="text-sm font-bold">{$t("common.logout")}</span>
-                {/if}
-            </button>
-        </form>
+<div
+class="{sidebarState.isCollapsed
+    ? 'p-2'
+    : 'p-4'} border-t border-gray-800 text-start"
+>
+<div
+    class="flex items-center {sidebarState.isCollapsed
+        ? 'justify-center'
+        : 'gap-3'} mb-4"
+>
+    <div
+        class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white shadow-inner"
+    >
+        {userName.charAt(0)}
     </div>
+    {#if !sidebarState.isCollapsed}
+        <div class="flex flex-col overflow-hidden">
+            <span
+                class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest leading-none mb-1"
+                >{$t("common.user")}</span
+            >
+            <span class="text-sm font-medium truncate">{userName}</span>
+        </div>
+    {/if}
+</div>
+
+<form
+    action="/logout"
+    method="POST"
+    use:enhance={() => {
+        return async () => {
+            window.location.href = "/login";
+        };
+    }}
+>
+    <button
+        type="submit"
+        class="w-full flex items-center {sidebarState.isCollapsed
+            ? 'justify-center'
+            : 'gap-4 px-4'} py-3 rounded-xl text-red-100 bg-red-500/10 hover:bg-red-500/20 transition-all border border-red-500/20"
+    >
+        <span class="w-6 h-6">
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-5"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
+                />
+            </svg>
+        </span>
+        {#if !sidebarState.isCollapsed}
+            <span class="text-sm font-bold">{$t("common.logout")}</span>
+        {/if}
+    </button>
+</form>
+</div>
 </aside>

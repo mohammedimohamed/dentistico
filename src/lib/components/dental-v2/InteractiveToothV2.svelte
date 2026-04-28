@@ -15,13 +15,14 @@
 
     const dispatch = createEventDispatcher();
     const anatomy = $derived(getAnatomy(fdi));
+    const isUpper = $derived((fdi >= 11 && fdi <= 28) || (fdi >= 51 && fdi <= 65));
 
     function handleZoneClick(zoneName: string, event: MouseEvent) {
         dispatch("zoneClick", { fdi, zoneName, originalEvent: event });
     }
 
     function getFill(zoneName: string) {
-        if (status === 'Absent' || status === 'Absente') return '#f1f5f9';
+        if (status === 'Absent' || status === 'Absente') return dentalColors.ABSENT;
         const statusVal = zones[zoneName];
         if (!statusVal) return dentalColors.SAIN;
         return (dentalColors as any)[statusVal] || statusVal;
@@ -42,7 +43,7 @@
 </script>
 
 <div class="tooth-wrapper" class:selected>
-    <svg viewBox="0 0 50 100" class="tooth-svg">
+    <svg viewBox="0 -15 50 130" class="tooth-svg">
         <defs>
             <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
                 <feGaussianBlur stdDeviation="2" result="blur" />
@@ -50,12 +51,24 @@
             </filter>
         </defs>
 
-        <g class="tooth-group" filter={selected ? "url(#glow)" : ""}>
+        <g class="tooth-group" filter={selected ? "url(#glow)" : ""} transform={isUpper ? "rotate(180, 25, 50)" : ""}>
+            <!-- FDI Number Label (Counter-rotated for upper teeth) -->
+            <text 
+                x="25" 
+                y="105" 
+                text-anchor="middle" 
+                class="fdi-text"
+                transform={isUpper ? "rotate(180, 25, 105)" : ""}
+                dy="10"
+            >
+                {fdi}
+            </text>
+
             <!-- Bridge Connectors (drawn behind tooth content) -->
-            {#if bridgeConnections.left}
+            {#if (isUpper ? bridgeConnections.right : bridgeConnections.left)}
                 <rect x="-8" y="20" width="10" height="12" rx="2" fill="#94a3b8" opacity="0.8" pointer-events="none" />
             {/if}
-            {#if bridgeConnections.right}
+            {#if (isUpper ? bridgeConnections.left : bridgeConnections.right)}
                 <rect x="48" y="20" width="10" height="12" rx="2" fill="#94a3b8" opacity="0.8" pointer-events="none" />
             {/if}
 
@@ -205,4 +218,16 @@
     }
 
     /* Anatomical labels or tooltips can be added here */
+    .fdi-text {
+        font-size: 10px;
+        font-weight: 900;
+        fill: #cbd5e1; /* slate-300 */
+        pointer-events: none;
+        user-select: none;
+        transition: fill 0.2s ease;
+    }
+
+    .selected .fdi-text {
+        fill: #3b82f6;
+    }
 </style>

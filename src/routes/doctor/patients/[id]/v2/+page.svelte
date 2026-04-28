@@ -22,7 +22,7 @@
             return handleSave({
                 fdi,
                 zones: annotation.zones || {},
-                notes: annotation.notes || 'Bridge element',
+                notes: annotation.notes || '',
                 globalStatus: newStatus,
                 bridgeId: bridgeId
             });
@@ -30,6 +30,30 @@
 
         await Promise.all(promises);
         selectedTeethFdis = []; // Reset selection
+    }
+
+    async function handleDeleteBridge(bridgeId: string) {
+        if (!confirm("Voulez-vous vraiment supprimer ce bridge ? Les dents redeviendront individuelles.")) return;
+        
+        const teethToUpdate = Object.entries(allAnnotations)
+            .filter(([_, data]: [any, any]) => data.bridge_id === bridgeId)
+            .map(([fdiStr, _]) => parseInt(fdiStr));
+
+        const promises = teethToUpdate.map(fdiToUpdate => {
+            const data = allAnnotations[fdiToUpdate];
+            const status = data.global_status || data.globalStatus || '';
+            const newStatus = (status === 'Pontique' || status === 'Pontic') ? 'Absent' : 'Sain';
+            
+            return handleSave({
+                fdi: fdiToUpdate,
+                zones: data.zones || {},
+                notes: data.notes || '',
+                globalStatus: newStatus,
+                bridgeId: null
+            });
+        });
+
+        await Promise.all(promises);
     }
 
     async function handleSave(payload: any) {
@@ -150,6 +174,7 @@
             fdi={selectedToothFdi}
             annotations={allAnnotations[selectedToothFdi] || {}}
             onSave={handleSave}
+            onDeleteBridge={handleDeleteBridge}
             onClose={() => selectedToothFdi = null}
         />
     {/if}

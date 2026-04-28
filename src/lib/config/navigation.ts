@@ -6,7 +6,6 @@ export const NAVIGATION = {
         { label: "common.inventory", href: "/inventory", icon: "inventory" },
         { label: "medications.title", href: "/doctor/settings/medications", icon: "medications" },
         { label: "Lab Tracking", href: "/lab-tracking", icon: "lab" },
-        { label: "Couleurs Dentaires", href: "/settings/dental-colors", icon: "settings" },
     ],
     assistant: [
         { label: "assistant.nav.items.schedule", href: "/assistant/dashboard", icon: "schedule" },
@@ -24,6 +23,5 @@ export const NAVIGATION = {
         { label: "spending.menu", href: "/admin/spending", icon: "spending" },
         { label: "spending.categories_menu", href: "/admin/spending/categories", icon: "categories" },
         { label: "Print Templates", href: "/admin/templates", icon: "settings" },
-        { label: "Couleurs Dentaires", href: "/settings/dental-colors", icon: "settings" },
     ]
 };

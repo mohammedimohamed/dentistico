@@ -25,7 +25,8 @@ import {
     getClinicalNotes,
     getFamilyMembers,
     deleteClinicalNote,
-    getServerConfig
+    getServerConfig,
+    getToothAnnotations
 } from '$lib/server/db';
 import fs from 'fs';
 import type { PageServerLoad, Actions } from './$types';
@@ -56,6 +57,12 @@ export const load: PageServerLoad = async ({ locals, params }: { locals: any, pa
 
     const appConfig = getServerConfig();
 
+    const annotationsRaw = getToothAnnotations(patientId);
+    const annotations: Record<number, any> = {};
+    annotationsRaw.forEach((a: any) => {
+        annotations[a.fdi] = a;
+    });
+
     return {
         patient,
         treatments,
@@ -67,6 +74,7 @@ export const load: PageServerLoad = async ({ locals, params }: { locals: any, pa
         invoices,
         attachments,
         appConfig,
+        annotations,
         billingSummary: getBillingSummary(patientId),
         timeline: getPatientTimeline(patientId),
         notes: getClinicalNotes(patientId),

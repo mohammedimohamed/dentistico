@@ -9,7 +9,7 @@ export const dentalSync = {
      * Syncs anatomical annotations (V2) to the treatment plan (V1)
      */
     syncV2ToV1(patientId: number, fdi: number, annotation: any) {
-        const { global_status, zones } = annotation;
+        const { global_status, zones, syncStatus } = annotation;
         const fdiStr = fdi.toString();
 
         // Helper to safely get cdt code
@@ -20,7 +20,6 @@ export const dentalSync = {
 
         // 1. Logic for Extractions
         if (global_status === 'Absent' || global_status === 'A extraire' || global_status === 'À extraire') {
-            // Check if an extraction treatment already exists for this tooth
             const existing = db.prepare(`
                 SELECT id FROM dental_treatments 
                 WHERE patient_id = ? AND tooth_number = ? 
@@ -28,6 +27,9 @@ export const dentalSync = {
             `).get(patientId, fdiStr);
 
             if (!existing) {
+                const status = syncStatus || (global_status === 'Absent' ? 'existing' : 'planned');
+                const fee = status === 'existing' ? 0 : 150;
+                
                 db.prepare(`
                     INSERT INTO dental_treatments (
                         patient_id, tooth_number, cdt_code, treatment_type, 
@@ -38,11 +40,11 @@ export const dentalSync = {
                     fdiStr, 
                     safeCdtCode('D7140'), 
                     'Extraction', 
-                    'planned', 
-                    150, 
+                    status, 
+                    fee, 
                     '#DC2626'
                 );
-                console.log(`[Sync V2->V1] Added planned extraction for tooth ${fdiStr}`);
+                console.log(`[Sync V2->V1] Added ${status} extraction for tooth ${fdiStr}`);
             }
         }
 
@@ -56,6 +58,9 @@ export const dentalSync = {
             `).get(patientId, fdiStr);
 
             if (!existing) {
+                const status = syncStatus || 'planned';
+                const fee = status === 'existing' ? 0 : 140;
+
                 db.prepare(`
                     INSERT INTO dental_treatments (
                         patient_id, tooth_number, cdt_code, treatment_type, 
@@ -66,11 +71,11 @@ export const dentalSync = {
                     fdiStr, 
                     safeCdtCode('D2391'), 
                     'Obturation / Composite', 
-                    'planned', 
-                    140, 
+                    status, 
+                    fee, 
                     '#2563EB'
                 );
-                console.log(`[Sync V2->V1] Added planned obturation for tooth ${fdiStr}`);
+                console.log(`[Sync V2->V1] Added ${status} obturation for tooth ${fdiStr}`);
             }
         }
     },

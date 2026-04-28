@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { fail, error } from '@sveltejs/kit';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -32,6 +32,16 @@ export const load = async () => {
     const dbSettings = getAllSettings();
     const clinicSettings = getClinicSettings() as any;
 
+    // Load dental colors
+    const { db } = await import('$lib/server/db');
+    const dentalSettings = db.prepare("SELECT key, value FROM settings WHERE key LIKE 'dental_color_%'").all() as { key: string, value: string }[];
+    
+    const dentalColors: Record<string, string> = {};
+    dentalSettings.forEach(s => {
+        const name = s.key.replace('dental_color_', '').toUpperCase();
+        dentalColors[name] = s.value;
+    });
+
     return {
         config: {
             ...config,
@@ -42,11 +52,36 @@ export const load = async () => {
             postponeRequired: clinicSettings?.require_postpone_reason === 1,
             cancelRequired: clinicSettings?.require_cancel_reason === 1
         },
-        rooms: getAllRooms()
+        rooms: getAllRooms(),
+        dentalColors
     };
 };
 
 export const actions = {
+    saveDentalColors: async ({ request, locals }) => {
+        // Security check
+        if (!locals.user || locals.user.role !== 'admin') {
+            throw error(403, 'Accès réservé à l\'administrateur');
+        }
+
+        const data = await request.formData();
+        
+        try {
+            const { db } = await import('$lib/server/db');
+            const updateStmt = db.prepare("UPDATE settings SET value = ? WHERE key = ?");
+            
+            for (const [key, value] of data.entries()) {
+                if (key.startsWith('dental_color_')) {
+                    updateStmt.run(value, key);
+                }
+            }
+            
+            return { success: true };
+        } catch (e) {
+            console.error('Failed to save dental colors:', e);
+            return fail(500, { message: 'Database error' });
+        }
+    },
     updateConfig: async ({ request }: { request: Request }) => {
         const formData = await request.formData();
         const currency = formData.get('currency') as string;
@@ -142,6 +177,7 @@ export const actions = {
         const module_patients = formData.get('module_patients') === 'on' ? 1 : 0;
         let module_journey = formData.get('module_journey') === 'on' ? 1 : 0;
         const module_custom = formData.get('module_custom') === 'on' ? 1 : 0;
+        const dental_chart_mode = formData.get('dental_chart_mode') as string || 'v1';
         
         // Enforce dependency: Journey requires Odontogramme
         if (module_journey === 1) {
@@ -162,7 +198,8 @@ export const actions = {
                 module_patients,
                 module_journey,
                 module_custom,
-                module_custom_roles
+                module_custom_roles,
+                dental_chart_mode
             });
             return { success: true };
         } catch (e: any) {

@@ -115,6 +115,7 @@ export function init_db() {
           module_journey INTEGER DEFAULT 1,
           module_custom INTEGER DEFAULT 0,
           module_custom_roles TEXT DEFAULT 'doctor',
+          dental_chart_mode TEXT DEFAULT 'v2',
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -125,6 +126,7 @@ export function init_db() {
           zones TEXT, -- JSON object
           notes TEXT,
           global_status TEXT,
+          bridge_id TEXT,
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
           UNIQUE(patient_id, fdi)
         );
@@ -364,6 +366,7 @@ export function init_db() {
     addColumnIfNotExists('clinic_settings', 'module_journey', 'INTEGER DEFAULT 1');
     addColumnIfNotExists('clinic_settings', 'module_custom', 'INTEGER DEFAULT 0');
     addColumnIfNotExists('clinic_settings', 'module_custom_roles', "TEXT DEFAULT 'doctor'");
+    addColumnIfNotExists('clinic_settings', 'dental_chart_mode', "TEXT DEFAULT 'v1'");
 
     db.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_checkin ON appointments(checked_in, waiting_room_status, check_in_time);`);
 

@@ -3,12 +3,19 @@
     import { enhance } from "$app/forms";
     import { t } from "svelte-i18n";
     import { calculateAge } from "$lib/dental/tooth-data";
-    import DentalChart from "$lib/components/dental/DentalChart.svelte";
+    import OdontogrammePro from "$lib/components/dental-v2/OdontogrammePro.svelte";
     import PrescriptionBuilder from "$lib/components/PrescriptionBuilder.svelte";
     import { page } from "$app/state";
 
     let { data }: { data: PageData } = $props();
-    let activeTab = $state(data.config?.module_dental_chart !== 0 ? "odontogramme" : "historique");
+    let activeTab = $state();
+    
+    // Set initial tab or update if config changes
+    $effect(() => {
+        if (!activeTab) {
+            activeTab = data.config?.module_dental_chart !== 0 ? "odontogramme" : "historique";
+        }
+    });
 
     const age = $derived(data.patient.date_of_birth ? calculateAge(data.patient.date_of_birth) : 0);
     const balance = $derived(data.balance);
@@ -24,7 +31,6 @@
 
     let isPaymentModalOpen = $state(false);
     let isPrescriptionModalOpen = $state(false);
-
 
 </script>
 
@@ -121,23 +127,12 @@
             <!-- Tab Content -->
             <div class="bg-white rounded-[40px] border border-slate-200 shadow-sm min-h-[600px] overflow-hidden">
                 {#if activeTab === "odontogramme" && data.config?.module_dental_chart !== 0}
-                    <div class="p-8">
-                        <div class="flex justify-between items-center mb-8">
-                            <div>
-                                <h2 class="text-xl font-black text-slate-900">Carte Dentaire Interactive</h2>
-                                <p class="text-slate-500 text-sm font-medium">Sélectionnez une dent pour ajouter un soin ou visualiser l'historique.</p>
-                            </div>
-                            <a 
-                                href="/doctor/patients/{data.patient.id}/v2"
-                                class="px-6 py-3 bg-indigo-50 text-indigo-600 rounded-2xl text-sm font-black flex items-center gap-3 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-                            >
-                                <span class="flex h-2 w-2 rounded-full bg-indigo-600 group-hover:bg-white animate-pulse"></span>
-                                Essayer l'Odontogramme V2
-                            </a>
-                        </div>
-                        <div class="bg-slate-50/50 rounded-3xl p-8 border border-slate-100">
-                             <DentalChart patientId={data.patient.id} patientAge={age} />
-                        </div>
+                    <div class="p-10">
+                        <OdontogrammePro 
+                            patientId={data.patient.id} 
+                            annotations={data.annotations} 
+                            treatments={data.treatments} 
+                        />
                     </div>
                 {:else if activeTab === "historique"}
                     <div class="p-8">
@@ -306,8 +301,8 @@
                  <!-- Looking at server actions, it needs invoice_id. Let's provide a selection if possible or just use the first unpaid invoice. -->
                  
                 <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Facture Associée</label>
-                    <select name="invoice_id" required class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
+                    <label for="invoice_id" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Facture Associée</label>
+                    <select id="invoice_id" name="invoice_id" required class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
                         {#each data.invoices.filter((inv: any) => inv.status !== 'paid') as inv}
                             <option value={inv.id}>#{inv.invoice_number} - {formatCurrency(inv.total_amount)}</option>
                         {/each}
@@ -319,12 +314,12 @@
 
                 <div class="grid grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Montant</label>
-                        <input type="number" name="amount" step="0.01" required class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none" />
+                        <label for="amount" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Montant</label>
+                        <input id="amount" type="number" name="amount" step="0.01" required class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none" />
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Méthode</label>
-                        <select name="payment_method" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
+                        <label for="payment_method" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Méthode</label>
+                        <select id="payment_method" name="payment_method" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
                             <option value="cash">Espèces</option>
                             <option value="card">Carte</option>
                             <option value="check">Chèque</option>
