@@ -20,6 +20,18 @@
     // Initialize store with raw data from server
     $effect(() => {
         patientStore.rawPatients = data.patients;
+        
+        // Sync filters from URL
+        untrack(() => {
+            if (data.filter === 'has_rdv') patientStore.filters.rdvStatus = 'has_rdv';
+            else if (data.filter === 'no_rdv') patientStore.filters.rdvStatus = 'no_rdv';
+            else if (data.filter === 'debt') patientStore.filters.balanceStatus = 'debtor';
+            else if (data.filter === 'credit') patientStore.filters.balanceStatus = 'creditor';
+            else if (data.filter === 'male') patientStore.filters.gender = 'Male';
+            else if (data.filter === 'female') patientStore.filters.gender = 'Female';
+            
+            if (data.searchQuery) patientStore.filters.search = data.searchQuery;
+        });
     });
 
     // Reactive filtering: when store filters change, update URL
@@ -30,6 +42,7 @@
         const ageMin = patientStore.filters.ageRange[0];
         const ageMax = patientStore.filters.ageRange[1];
         const pageSize = patientStore.pageSize;
+        const rdvStatus = patientStore.filters.rdvStatus;
 
         untrack(() => {
             if (!browser) return;
@@ -46,6 +59,8 @@
             else if (balance === "creditor") filterVal = "credit";
             else if (gender === "Male") filterVal = "male";
             else if (gender === "Female") filterVal = "female";
+            else if (rdvStatus === "has_rdv") filterVal = "has_rdv";
+            else if (rdvStatus === "no_rdv") filterVal = "no_rdv";
             
             if (url.searchParams.get("filter") !== filterVal) {
                 if (filterVal) url.searchParams.set("filter", filterVal);
@@ -231,7 +246,7 @@
 
         <!-- Advanced Filter Panel (Collapsible) -->
         {#if patientStore.isFilterPanelOpen}
-            <div class="bg-white border-2 border-indigo-100 rounded-[2.5rem] p-8 shadow-xl shadow-indigo-100/20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div class="bg-white border-2 border-indigo-100 rounded-[2.5rem] p-8 shadow-xl shadow-indigo-100/20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8 animate-in fade-in slide-in-from-top-4 duration-300">
                 <!-- Age Range -->
                 <div class="space-y-5">
                     <label class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Tranche d'Âge</label>
@@ -282,6 +297,22 @@
                             <option value="all">Tous les soldes</option>
                             <option value="debtor">Débiteurs (Dettes)</option>
                             <option value="creditor">Créditeurs (Avance)</option>
+                        </select>
+                        <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
+                    </div>
+                </div>
+
+                <!-- RDV Status -->
+                <div class="space-y-5">
+                    <label class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Rendez-vous</label>
+                    <div class="relative">
+                        <select
+                            bind:value={patientStore.filters.rdvStatus}
+                            class="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-lg appearance-none cursor-pointer"
+                        >
+                            <option value="all">Tous les statuts</option>
+                            <option value="has_rdv">Avec RDV</option>
+                            <option value="no_rdv">Sans RDV</option>
                         </select>
                         <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
                     </div>

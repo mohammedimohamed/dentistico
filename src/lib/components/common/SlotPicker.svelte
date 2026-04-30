@@ -258,6 +258,20 @@
         gap: 1.5rem;
     }
 
+    @media (min-width: 1024px) {
+        .slot-picker-wrapper:not(.compact) {
+            flex-direction: row;
+            align-items: flex-start;
+        }
+        .slot-picker-wrapper:not(.compact) .calendar-section {
+            width: 320px;
+            flex-shrink: 0;
+        }
+        .slot-picker-wrapper:not(.compact) .slots-section {
+            flex-grow: 1;
+        }
+    }
+
     .slot-picker-wrapper.compact {
         gap: 1rem;
     }

@@ -3,13 +3,16 @@
     import { enhance } from "$app/forms";
     import { t } from "svelte-i18n";
 
+    import { configStore } from "$lib/stores/config.svelte";
     import { sidebarState } from "$lib/stores/ui.svelte";
+    import type { ConfigStore } from "$lib/stores/config.svelte";
 
     interface NavItem {
         id?: string;
         label: string;
         href?: string;
         icon: string;
+        module?: keyof ReturnType<ConfigStore['modules']>;
         onClick?: () => void;
     }
 
@@ -73,74 +76,76 @@
             : 'px-4'} py-8 space-y-2 overflow-y-auto"
     >
         {#each items as item}
-            {#if item.href}
-                <a
-                    href={item.href}
-                    class="flex items-center {sidebarState.isCollapsed
-                        ? 'justify-center'
-                        : 'gap-4 px-4'} py-3 rounded-xl transition-all {(
-                        item.href === '/admin' ||
-                        item.href === '/doctor/dashboard' ||
-                        item.href === '/assistant/dashboard'
-                    ? page.url.pathname === item.href
-                    : page.url.pathname.startsWith(item.href) &&
-                      !items.some(
-                          (i) =>
-                              i.href &&
-                              i.href !== item.href &&
-                              i.href.length > item.href.length &&
-                              page.url.pathname.startsWith(i.href),
-                      )
-            )
-                ? 'bg-indigo-600 text-white shadow-lg'
-                : 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
-        >
-            <span class="w-6 h-6">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    class="size-5"
-                >
-                    {@html (icons as any)[item.icon] || ""}
-                </svg>
-            </span>
-            {#if !sidebarState.isCollapsed}
-                <span class="text-xs font-medium whitespace-nowrap"
-                    >{$t(item.label)}</span
-                >
-            {/if}
-        </a>
-    {:else}
-        <button
-            onclick={item.onClick}
-            class="w-full flex items-center {sidebarState.isCollapsed
-                ? 'justify-center'
-                : 'gap-4 px-4'} py-3 rounded-xl transition-all {activeId ===
-            item.id
-                ? 'bg-indigo-600 text-white shadow-lg'
-                : 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
-        >
-            <span class="w-6 h-6">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    class="size-5"
-                >
-                    {@html (icons as any)[item.icon] || ""}
-                </svg>
-            </span>
-            {#if !sidebarState.isCollapsed}
-                <span class="text-xs font-medium whitespace-nowrap"
-                    >{$t(item.label)}</span
-                >
-            {/if}
-        </button>
+            {#if !item.module || configStore.modules[item.module]}
+                {#if item.href}
+                    <a
+                        href={item.href}
+                        class="flex items-center {sidebarState.isCollapsed
+                            ? 'justify-center'
+                            : 'gap-4 px-4'} py-3 rounded-xl transition-all {(
+                            item.href === '/admin' ||
+                            item.href === '/doctor/dashboard' ||
+                            item.href === '/assistant/dashboard'
+                        ? page.url.pathname === item.href
+                        : page.url.pathname.startsWith(item.href) &&
+                          !items.some(
+                              (i) =>
+                                  i.href &&
+                                  i.href !== item.href &&
+                                  i.href.length > item.href.length &&
+                                  page.url.pathname.startsWith(i.href),
+                          )
+                )
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
+            >
+                <span class="w-6 h-6">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        class="size-5"
+                    >
+                        {@html (icons as any)[item.icon] || ""}
+                    </svg>
+                </span>
+                {#if !sidebarState.isCollapsed}
+                    <span class="text-xs font-medium whitespace-nowrap"
+                        >{$t(item.label)}</span
+                    >
+                {/if}
+            </a>
+        {:else}
+            <button
+                onclick={item.onClick}
+                class="w-full flex items-center {sidebarState.isCollapsed
+                    ? 'justify-center'
+                    : 'gap-4 px-4'} py-3 rounded-xl transition-all {activeId ===
+                item.id
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
+            >
+                <span class="w-6 h-6">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        class="size-5"
+                    >
+                        {@html (icons as any)[item.icon] || ""}
+                    </svg>
+                </span>
+                {#if !sidebarState.isCollapsed}
+                    <span class="text-xs font-medium whitespace-nowrap"
+                        >{$t(item.label)}</span
+                    >
+                {/if}
+            </button>
+        {/if}
     {/if}
 {/each}
 </nav>

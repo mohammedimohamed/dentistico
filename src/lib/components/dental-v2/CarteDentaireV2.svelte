@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import InteractiveToothV2 from "./InteractiveToothV2.svelte";
     import TreatmentHistoryTable from "./TreatmentHistoryTable.svelte";
     import { ADULT_TEETH_FDI, PEDIATRIC_TEETH_FDI } from "$lib/dental/tooth-data";
@@ -9,6 +10,7 @@
         selectedTeethFdis?: number[];
         onToothSelect: (fdi: number, event?: MouseEvent) => void;
         onEditTreatment?: (treatment: any) => void;
+        patientAge?: number;
     }
 
     let { 
@@ -16,10 +18,19 @@
         treatments = [], 
         selectedTeethFdis = [], 
         onToothSelect,
-        onEditTreatment
+        onEditTreatment,
+        patientAge = 0
     }: Props = $props();
 
     let dentitionMode = $state<"adult" | "pediatric" | "mixed">("adult");
+
+    onMount(() => {
+        if (patientAge > 0) {
+            if (patientAge < 6) dentitionMode = "pediatric";
+            else if (patientAge <= 12) dentitionMode = "mixed";
+            else dentitionMode = "adult";
+        }
+    });
 
     // FDI Groups
     const upperRight = [18, 17, 16, 15, 14, 13, 12, 11];

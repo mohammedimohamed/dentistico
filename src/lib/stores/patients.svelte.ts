@@ -12,6 +12,7 @@ export interface PatientFilters {
     ageRange: [number, number];
     gender: string;
     balanceStatus: 'all' | 'debtor' | 'creditor';
+    rdvStatus: 'all' | 'has_rdv' | 'no_rdv';
     lastVisitRange: [string, string];
     medicalTags: string[];
 }
@@ -37,6 +38,7 @@ class PatientStore {
         ageRange: [0, 100],
         gender: '',
         balanceStatus: 'all',
+        rdvStatus: 'all',
         lastVisitRange: ['', ''],
         medicalTags: []
     });
@@ -108,6 +110,16 @@ class PatientStore {
                 const balance = p.net_balance ?? 0;
                 if (this.filters.balanceStatus === 'debtor') return balance < 0;
                 if (this.filters.balanceStatus === 'creditor') return balance > 0;
+                return true;
+            });
+        }
+
+        // RDV Filter
+        if (this.filters.rdvStatus !== 'all') {
+            result = result.filter(p => {
+                const hasRdv = !!p.next_appointment;
+                if (this.filters.rdvStatus === 'has_rdv') return hasRdv;
+                if (this.filters.rdvStatus === 'no_rdv') return !hasRdv;
                 return true;
             });
         }
@@ -193,6 +205,7 @@ class PatientStore {
             ageRange: [0, 100],
             gender: '',
             balanceStatus: 'all',
+            rdvStatus: 'all',
             lastVisitRange: ['', ''],
             medicalTags: []
         };

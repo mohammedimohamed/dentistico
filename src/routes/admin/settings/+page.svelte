@@ -4,6 +4,7 @@
     import type { ActionData, PageData } from "./$types";
     import { t } from "svelte-i18n";
     import DentalColorModal from "$lib/components/admin/DentalColorModal.svelte";
+    import { Puzzle, Building2 } from "lucide-svelte";
 
     let { data, form }: { data: any; form: any } = $props();
 
@@ -266,9 +267,9 @@
                 >
                     <div class="flex items-center gap-4">
                         <div
-                            class="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform"
+                            class="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform"
                         >
-                            🏢
+                            <Building2 size={24} />
                         </div>
                         <div>
                             <h3 class="font-black text-indigo-900 leading-none">
@@ -613,9 +614,7 @@
                                             class="w-full h-full object-contain"
                                         />
                                     {:else}
-                                        <span class="text-3xl text-gray-300"
-                                            >🏢</span
-                                        >
+                                        <Building2 size={32} class="text-gray-300" />
                                     {/if}
                                 </div>
                                 <div class="flex-grow">
@@ -711,7 +710,7 @@
                     <h2
                         class="text-xl font-bold text-gray-900 flex items-center gap-2"
                     >
-                        <span>🧩</span> Modules Actifs
+                        <Puzzle size={24} class="text-indigo-600" /> Modules Actifs
                     </h2>
                 </div>
                 <div class="p-8">
@@ -719,9 +718,10 @@
                         method="POST"
                         action="?/updateModules"
                         use:enhance={() => {
-                            return async ({ result }) => {
+                            return async ({ result, update }) => {
                                 if (result.type === "success") {
                                     alert("Modules mis à jour avec succès !");
+                                    await update();
                                 }
                             };
                         }}

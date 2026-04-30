@@ -3,24 +3,13 @@
     import type { Snippet } from "svelte";
     import PortalShell from "$lib/components/PortalShell.svelte";
     import { NAVIGATION } from "$lib/config/navigation";
+    import { configStore } from "$lib/stores/config.svelte";
     let { children, data }: { children: Snippet; data: any } = $props();
 
     const navItems = $derived(
         NAVIGATION.assistant.filter((item) => {
-            if (
-                item.href === "/inventory" &&
-                data.config?.module_inventory === 0
-            )
-                return false;
-            if (
-                (item.href?.includes("/spending") ||
-                    item.href?.includes("/invoices")) &&
-                data.config?.module_billing === 0
-            )
-                return false;
             if (item.href === "/lab-tracking") {
-                if (data.config?.module_custom === 0) return false;
-                const allowedRoles = (data.config?.module_custom_roles || 'doctor').split(',');
+                const allowedRoles = (configStore.raw?.module_custom_roles || 'doctor').split(',');
                 if (!allowedRoles.includes(data.user?.role)) return false;
             }
             return true;

@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import { fade, slide, fly } from "svelte/transition";
     import { t } from "svelte-i18n";
+    import { Building2, Layers, MapPin, ArrowLeftCircle, Sofa, Syringe, Radiation, DoorOpen, Pencil, Trash2 } from "lucide-svelte";
 
     let { data } = $props();
     let hierarchy = $derived(data.hierarchy || []);
@@ -153,7 +154,7 @@
                     <h2
                         class="text-lg font-black text-gray-900 flex items-center gap-2"
                     >
-                        <span class="text-xl">🏢</span> Bâtiments
+                        <Building2 size={20} class="text-indigo-600" /> Bâtiments
                     </h2>
                 </div>
 
@@ -192,7 +193,7 @@
                                         }}
                                         class="p-1.5 hover:bg-white/20 rounded-lg"
                                     >
-                                        ✏️
+                                        <Pencil size={14} />
                                     </button>
                                     <button
                                         onclick={(e) => {
@@ -201,7 +202,7 @@
                                         }}
                                         class="p-1.5 hover:bg-white/20 rounded-lg text-red-100"
                                     >
-                                        🗑️
+                                        <Trash2 size={14} />
                                     </button>
                                 </div>
                             </div>
@@ -248,7 +249,7 @@
                     <h2
                         class="text-lg font-black text-gray-900 flex items-center gap-2"
                     >
-                        <span class="text-xl">🪜</span> Étages
+                        <Layers size={20} class="text-indigo-600" /> Étages
                     </h2>
                 </div>
 
@@ -286,7 +287,7 @@
                                             }}
                                             class="p-1.5 hover:bg-white/20 rounded-lg"
                                         >
-                                            ✏️
+                                            <Pencil size={14} />
                                         </button>
                                         <button
                                             onclick={(e) => {
@@ -295,7 +296,7 @@
                                             }}
                                             class="p-1.5 hover:bg-white/20 rounded-lg text-red-100"
                                         >
-                                            🗑️
+                                            <Trash2 size={14} />
                                         </button>
                                     </div>
                                 </div>
@@ -322,7 +323,7 @@
                         <div
                             class="h-full flex flex-col items-center justify-center text-center p-8 opacity-40"
                         >
-                            <span class="text-4xl mb-4">👈</span>
+                            <ArrowLeftCircle size={48} class="mb-4" />
                             <p class="font-bold text-gray-500">
                                 Sélectionnez un bâtiment
                             </p>
@@ -360,7 +361,7 @@
                     <h2
                         class="text-lg font-black text-gray-900 flex items-center gap-2"
                     >
-                        <span class="text-xl">📍</span> Salles
+                        <MapPin size={20} class="text-indigo-600" /> Salles
                     </h2>
                 </div>
 
@@ -372,12 +373,20 @@
                             >
                                 <div class="flex justify-between items-center">
                                     <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm text-sm"
-                                            style="background-color: {room.color}20; color: {room.color}"
-                                        >
-                                            {#if room.type === "consultation"}🛋️{:else if room.type === "surgery"}💉{:else if room.type === "xray"}☢️{:else}🚪{/if}
-                                        </div>
+                                            <div
+                                                class="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
+                                                style="background-color: {room.color}20; color: {room.color}"
+                                            >
+                                                {#if room.type === "consultation"}
+                                                    <Sofa size={16} />
+                                                {:else if room.type === "surgery"}
+                                                    <Syringe size={16} />
+                                                {:else if room.type === "xray"}
+                                                    <Radiation size={16} />
+                                                {:else}
+                                                    <DoorOpen size={16} />
+                                                {/if}
+                                            </div>
                                         <div>
                                             <div
                                                 class="font-bold text-gray-900"
@@ -400,14 +409,14 @@
                                             }}
                                             class="p-1.5 hover:bg-white rounded-lg border border-gray-100 shadow-sm"
                                         >
-                                            ✏️
+                                            <Pencil size={14} />
                                         </button>
                                         <button
                                             onclick={() =>
                                                 deleteItem("room", room.id)}
                                             class="p-1.5 hover:bg-red-50 rounded-lg border border-red-50 text-red-500 shadow-sm"
                                         >
-                                            🗑️
+                                            <Trash2 size={14} />
                                         </button>
                                     </div>
                                 </div>
@@ -425,7 +434,7 @@
                         <div
                             class="h-full flex flex-col items-center justify-center text-center p-8 opacity-40"
                         >
-                            <span class="text-4xl mb-4">👈</span>
+                            <ArrowLeftCircle size={48} class="mb-4" />
                             <p class="font-bold text-gray-500">
                                 Sélectionnez un étage
                             </p>

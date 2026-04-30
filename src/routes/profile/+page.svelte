@@ -6,6 +6,7 @@
     import Header from "$lib/components/Header.svelte";
     import { NAVIGATION } from "$lib/config/navigation";
     import { page } from "$app/state";
+    import { configStore } from "$lib/stores/config.svelte";
 
     import type { PageData, ActionData } from "./$types";
 
@@ -14,13 +15,32 @@
         form,
     }: { data: PageData & { profile: any }; form: ActionData } = $props();
 
-    const navItems = $derived(
-        data.user?.role === "doctor"
+    const navItems = $derived.by(() => {
+        const modules = configStore.modules;
+        const baseItems = data.user?.role === "doctor"
             ? NAVIGATION.doctor
             : data.user?.role === "admin"
               ? NAVIGATION.admin
-              : NAVIGATION.assistant,
-    );
+              : NAVIGATION.assistant;
+              
+        return baseItems.filter(item => {
+            if (item.href === "/inventory" && !modules.inventory) return false;
+            if ((item.href?.includes("/spending") || item.href?.includes("/invoices")) && !modules.billing) return false;
+            if (item.href === "/doctor/journey" && !modules.journey) return false;
+            if (item.href === "/doctor/dashboard" && !modules.dashboard) return false;
+            if (item.href === "/doctor/patients" && !modules.patients) return false;
+            if (item.href === "/doctor/settings/medications" && !modules.prescriptions) return false;
+            if (item.href === "/admin/cdt-codes" && !modules.dental_chart) return false;
+            if (item.href === "/admin/templates" && !modules.billing && !modules.prescriptions) return false;
+            
+            if (item.href === "/lab-tracking") {
+                if (!modules.custom) return false;
+                const allowedRoles = (configStore.raw?.module_custom_roles || 'doctor').split(',');
+                if (!allowedRoles.includes(data.user?.role)) return false;
+            }
+            return true;
+        });
+    });
 
     let profileMessage = $state("");
     let passwordMessage = $state("");

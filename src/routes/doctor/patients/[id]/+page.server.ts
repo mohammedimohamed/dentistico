@@ -14,6 +14,7 @@ import {
     createPrescription,
     createInvoice,
     markInvoiceAsPaid,
+    createPayment,
     archivePatient,
     unarchivePatient,
     getAttachmentsByPatient,
@@ -26,7 +27,10 @@ import {
     getFamilyMembers,
     deleteClinicalNote,
     getServerConfig,
-    getToothAnnotations
+    getToothAnnotations,
+    getDoctors,
+    createAppointment,
+    updateAppointmentStatus
 } from '$lib/server/db';
 import fs from 'fs';
 import type { PageServerLoad, Actions } from './$types';
@@ -79,6 +83,7 @@ export const load: PageServerLoad = async ({ locals, params }: { locals: any, pa
         timeline: getPatientTimeline(patientId),
         notes: getClinicalNotes(patientId),
         family: getFamilyMembers(patientId),
+        doctors: getDoctors(),
         user: locals.user
     };
 };
@@ -202,26 +207,53 @@ export const actions: Actions = {
         }
     },
 
-    recordPayment: async ({ request, locals }: { request: any, locals: any }) => {
+    recordPayment: async ({ request, locals, params }: { request: any, locals: any, params: any }) => {
         if (!locals.user) {
             return fail(401, { error: 'Unauthorized' });
         }
+        const patientId = parseInt(params.id);
         const formData = await request.formData();
-        const invoiceId = parseInt(formData.get('invoice_id') as string);
+        const invoiceIdStr = formData.get('invoice_id') as string;
         const amount = parseFloat(formData.get('amount') as string);
         const paymentMethod = formData.get('payment_method') as string;
+        const notes = formData.get('notes') as string;
+        const generateInvoice = formData.get('generate_invoice') === 'true';
 
-        if (!invoiceId || isNaN(amount)) {
-            return fail(400, { error: 'Invalid payment data' });
+        if (isNaN(amount)) {
+            return fail(400, { error: 'Invalid amount' });
         }
 
         try {
-            markInvoiceAsPaid(invoiceId, {
-                amount,
-                payment_method: paymentMethod,
-                recorded_by: locals.user.id
-            });
-            return { success: true };
+            if (invoiceIdStr && invoiceIdStr !== "") {
+                const invoiceId = parseInt(invoiceIdStr);
+                markInvoiceAsPaid(invoiceId, {
+                    amount,
+                    payment_method: paymentMethod,
+                    recorded_by: locals.user.id
+                });
+                return { success: true, invoiceId };
+            } else {
+                let finalInvoiceId = null;
+                
+                // If user wants a receipt for direct payment, we create a global invoice on the fly
+                if (generateInvoice) {
+                    finalInvoiceId = createInvoice(patientId, [{ 
+                        description: notes || "Soins Dentaires", 
+                        amount: amount 
+                    }], 'global', notes || "Paiement direct");
+                }
+
+                // Direct payment
+                createPayment({
+                    patient_id: patientId,
+                    amount,
+                    payment_method: paymentMethod,
+                    notes: notes,
+                    recorded_by: locals.user.id,
+                    payment_date: new Date().toISOString()
+                });
+                return { success: true, invoiceId: finalInvoiceId };
+            }
         } catch (e) {
             console.error(e);
             return fail(500, { error: 'Failed to record payment' });
@@ -413,6 +445,73 @@ export const actions: Actions = {
         } catch (e) {
             console.error('Failed to create note:', e);
             return fail(500, { error: 'Failed to create note' });
+        }
+    },
+
+    createAppointment: async ({ request, locals }) => {
+        if (!locals.user || !['doctor', 'assistant', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const patientId = parseInt(formData.get('patient_id') as string);
+        const doctorId = parseInt(formData.get('doctor_id') as string);
+        const startTimeStr = formData.get('start_time') as string;
+        const duration = parseInt(formData.get('duration_minutes') as string);
+        const type = formData.get('appointment_type') as string;
+        const notes = formData.get('notes') as string;
+
+        if (!patientId || !doctorId || !startTimeStr || !duration) {
+            return fail(400, { error: 'Missing required fields' });
+        }
+
+        // Calculate end_time preserving local time
+        const start = new Date(startTimeStr);
+        const end = new Date(start.getTime() + duration * 60000);
+
+        // Convert to local ISO string (mocking local time by shifting UTC)
+        const tzOffset = end.getTimezoneOffset() * 60000;
+        const endTimeStr = new Date(end.getTime() - tzOffset).toISOString().slice(0, 19).replace('T', ' ');
+
+        try {
+            createAppointment({
+                patient_id: patientId,
+                doctor_id: doctorId,
+                start_time: startTimeStr,
+                end_time: endTimeStr,
+                duration_minutes: duration,
+                appointment_type: type,
+                status: 'scheduled',
+                notes,
+                created_by_user_id: locals.user.id
+            });
+
+            return { success: true };
+        } catch (e: any) {
+            console.error(e);
+            if (e.message && e.message.includes('already has an appointment')) {
+                return fail(400, { error: 'Ce créneau est déjà occupé pour ce praticien.' });
+            }
+            return fail(500, { error: 'Erreur lors de la création du rendez-vous.' });
+        }
+    },
+
+    cancelAppointment: async ({ request, locals }) => {
+        if (!locals.user || !['doctor', 'assistant', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const id = parseInt(formData.get('id') as string);
+
+        if (!id) return fail(400, { error: 'ID requis' });
+
+        try {
+            updateAppointmentStatus(id, 'cancelled');
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Erreur lors de l\'annulation' });
         }
     }
 };

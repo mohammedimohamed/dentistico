@@ -4,13 +4,21 @@
     import { locale, waitLocale } from 'svelte-i18n';
     import { setupI18n } from '$lib/i18n';
     import { onMount } from 'svelte';
+    import { Building2 } from "lucide-svelte";
+    import { updateDentalColors } from '$lib/stores/dentalSettings.svelte';
+    import { configStore } from '$lib/stores/config.svelte';
 
 	let { data, children } = $props();
 
-    import { updateDentalColors } from '$lib/stores/dentalSettings.svelte';
+    // Initialize config store
+    if (data.config) {
+        configStore.init(data.config);
+    }
 
-    // Synchronous initialization to prevent i18n race conditions
-    setupI18n(data.locale);
+    // CRITICAL: Initialize i18n synchronously before any render
+    if (data.locale) {
+        setupI18n(data.locale);
+    }
 
     // Initialize dental colors from DB config synchronously
     if (data.config) {
@@ -33,6 +41,7 @@
         }
 
         if (data.config) {
+            configStore.init(data.config);
             const dentalColorsFromConfig: Record<string, string> = {};
             Object.entries(data.config).forEach(([key, value]) => {
                 if (key.startsWith('dental_color_')) {
@@ -102,10 +111,20 @@
     {/if}
 </svelte:head>
 
-{#await waitLocale()}
+{#if $locale}
+    {#await waitLocale()}
+        <div class="min-h-screen flex items-center justify-center bg-gray-50">
+            <div class="animate-spin text-4xl group">
+                <Building2 size={48} class="text-indigo-600 animate-bounce" />
+            </div>
+        </div>
+    {:then}
+        {@render children()}
+    {/await}
+{:else}
     <div class="min-h-screen flex items-center justify-center bg-gray-50">
-        <div class="animate-spin text-4xl">⏳</div>
+        <div class="animate-spin text-4xl">
+            <Building2 size={48} class="text-indigo-600 animate-pulse" />
+        </div>
     </div>
-{:then}
-    {@render children()}
-{/await}
+{/if}

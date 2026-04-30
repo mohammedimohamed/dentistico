@@ -4,44 +4,16 @@
     import PortalShell from "$lib/components/PortalShell.svelte";
     import { NAVIGATION } from "$lib/config/navigation";
     import { enhance } from "$app/forms";
+    import { configStore } from "$lib/stores/config.svelte";
+    import { Building2, Sofa, Syringe, Radiation, DoorOpen, AlertTriangle, Rocket } from "lucide-svelte";
     let { children, data }: { children: Snippet; data: any } = $props();
 
     const navItems = $derived(
         NAVIGATION.doctor.filter((item) => {
-            if (
-                item.href === "/inventory" &&
-                data.config?.module_inventory === 0
-            )
-                return false;
-            if (
-                (item.href?.includes("/spending") ||
-                    item.href?.includes("/invoices")) &&
-                data.config?.module_billing === 0
-            )
-                return false;
-            if (
-                item.href === "/doctor/journey" &&
-                data.config?.module_journey === 0
-            )
-                return false;
-            if (
-                item.href === "/doctor/dashboard" &&
-                data.config?.module_dashboard === 0
-            )
-                return false;
-            if (
-                item.href === "/doctor/patients" &&
-                data.config?.module_patients === 0
-            )
-                return false;
-            if (
-                item.href === "/doctor/settings/medications" &&
-                data.config?.module_prescriptions === 0
-            )
-                return false;
             if (item.href === "/lab-tracking") {
-                if (data.config?.module_custom === 0) return false;
-                const allowedRoles = (data.config?.module_custom_roles || 'doctor').split(',');
+                const modules = configStore.modules;
+                if (!modules.custom) return false;
+                const allowedRoles = (configStore.raw?.module_custom_roles || 'doctor').split(',');
                 if (!allowedRoles.includes(data.user?.role)) return false;
             }
             return true;
@@ -87,9 +59,9 @@
         >
             <div class="text-center mb-10">
                 <div
-                    class="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center text-5xl mx-auto mb-6 shadow-sm"
+                    class="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm"
                 >
-                    🏢
+                    <Building2 size={48} />
                 </div>
                 <h2 class="text-3xl font-black text-gray-900 mb-2">
                     Ouverture de Cabinet
@@ -104,7 +76,9 @@
                 <div
                     class="text-center py-10 bg-amber-50 rounded-[2.5rem] border border-amber-100 mb-8 px-6"
                 >
-                    <div class="text-4xl mb-4 text-amber-500">⚠️</div>
+                    <div class="mb-4 text-amber-500 flex justify-center">
+                        <AlertTriangle size={48} />
+                    </div>
                     <h3 class="text-xl font-black text-amber-900 mb-2">
                         Aucune salle configurée
                     </h3>
@@ -124,9 +98,9 @@
                         >
                             <button
                                 type="submit"
-                                class="w-full py-4 bg-amber-600 text-white font-black rounded-2xl hover:bg-amber-700 shadow-lg shadow-amber-200/50 transition-all uppercase tracking-widest text-xs animate-pulse hover:animate-none"
+                                class="w-full py-4 bg-amber-600 text-white font-black rounded-2xl hover:bg-amber-700 shadow-lg shadow-amber-200/50 transition-all uppercase tracking-widest text-xs animate-pulse hover:animate-none flex items-center justify-center gap-2"
                             >
-                                🚀 Créer 'Cabinet 1' & Démarrer
+                                <Rocket size={16} /> Créer 'Cabinet 1' & Démarrer
                             </button>
                         </form>
                     {:else}
@@ -240,10 +214,18 @@
                                                 class="flex items-center gap-4 relative z-10"
                                             >
                                                 <div
-                                                    class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm"
+                                                    class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm"
                                                     style="background-color: {room.color}20; color: {room.color}"
                                                 >
-                                                    {#if room.type === "consultation"}🛋️{:else if room.type === "surgery"}💉{:else if room.type === "xray"}☢️{:else}🚪{/if}
+                                                    {#if room.type === "consultation"}
+                                                        <Sofa size={24} />
+                                                    {:else if room.type === "surgery"}
+                                                        <Syringe size={24} />
+                                                    {:else if room.type === "xray"}
+                                                        <Radiation size={24} />
+                                                    {:else}
+                                                        <DoorOpen size={24} />
+                                                    {/if}
                                                 </div>
                                                 <div>
                                                     <h4
@@ -332,10 +314,18 @@
                 class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 shadow-sm mr-4 group relative"
             >
                 <div
-                    class="w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-sm"
+                    class="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm"
                     style="background-color: {currentRoom.color}20; color: {currentRoom.color}"
                 >
-                    {#if currentRoom.type === "consultation"}🛋️{:else if currentRoom.type === "surgery"}💉{:else if currentRoom.type === "xray"}☢️{:else}🚪{/if}
+                    {#if currentRoom.type === "consultation"}
+                        <Sofa size={16} />
+                    {:else if currentRoom.type === "surgery"}
+                        <Syringe size={16} />
+                    {:else if currentRoom.type === "xray"}
+                        <Radiation size={16} />
+                    {:else}
+                        <DoorOpen size={16} />
+                    {/if}
                 </div>
                 <div class="flex flex-col text-start">
                     <span
@@ -451,10 +441,18 @@
                                     >
                                         <div class="flex items-center gap-4">
                                             <div
-                                                class="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                                                class="w-10 h-10 rounded-xl flex items-center justify-center"
                                                 style="background-color: {room.color}20; color: {room.color}"
                                             >
-                                                {#if room.type === "consultation"}🛋️{:else if room.type === "surgery"}💉{:else if room.type === "xray"}☢️{:else}🚪{/if}
+                                                {#if room.type === "consultation"}
+                                                    <Sofa size={20} />
+                                                {:else if room.type === "surgery"}
+                                                    <Syringe size={20} />
+                                                {:else if room.type === "xray"}
+                                                    <Radiation size={20} />
+                                                {:else}
+                                                    <DoorOpen size={20} />
+                                                {/if}
                                             </div>
                                             <div class="text-start">
                                                 <h5

@@ -30,7 +30,47 @@ export const handle: Handle = async ({ event, resolve }) => {
             throw redirect(303, '/login');
         }
 
-        // Admin can access everything
+        const { getServerConfig } = await import('$lib/server/db');
+        const config = getServerConfig();
+
+        // Module Access Control
+        const modules = {
+            inventory: config.module_inventory !== 0,
+            billing: config.module_billing !== 0,
+            journey: config.module_journey !== 0,
+            dashboard: config.module_dashboard !== 0,
+            patients: config.module_patients !== 0,
+            prescriptions: config.module_prescriptions !== 0,
+            dental_chart: config.module_dental_chart !== 0,
+            custom: config.module_custom !== 0
+        };
+
+        // Define route to module mapping
+        const moduleRoutes: Record<string, boolean> = {
+            '/inventory': modules.inventory,
+            '/doctor/journey': modules.journey,
+            '/doctor/dashboard': modules.dashboard,
+            '/doctor/patients': modules.patients,
+            '/doctor/settings/medications': modules.prescriptions,
+            '/assistant/invoices': modules.billing,
+            '/assistant/spending': modules.billing,
+            '/admin/spending': modules.billing,
+            '/admin/cdt-codes': modules.dental_chart,
+            '/lab-tracking': modules.custom
+        };
+
+        // Check if current path matches a disabled module
+        // We use a more specific check to avoid matching sub-routes incorrectly
+        const matchedRoute = Object.keys(moduleRoutes).find(r => 
+            path === r || path.startsWith(r + '/')
+        );
+        
+        if (matchedRoute && !moduleRoutes[matchedRoute]) {
+            // Redirect to profile as safe fallback
+            throw redirect(303, '/profile');
+        }
+
+        // Admin can access everything else
         if (event.locals.user.role === 'admin') {
             return resolve(event);
         }

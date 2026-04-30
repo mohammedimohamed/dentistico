@@ -12,9 +12,10 @@
         annotations: any;
         treatments: any[];
         providerId?: number;
+        patientAge?: number;
     }
 
-    let { patientId, annotations, treatments, providerId = 0 }: Props = $props();
+    let { patientId, annotations, treatments, providerId = 0, patientAge = 0 }: Props = $props();
  
     let selectedTeethFdis = $state<number[]>([]);
     let showEditPanel = $state(false);
@@ -150,6 +151,7 @@
         allAnnotations={annotations} 
         {treatments}
         {selectedTeethFdis}
+        {patientAge}
         onToothSelect={handleToothSelect}
         onEditTreatment={handleEditTreatment}
     />

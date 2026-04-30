@@ -1996,7 +1996,9 @@ export function getPatientsEnhanced({
             case 'adult': whereClause += ` AND ${ageExpr} >= 16`; break;
             case 'debt': whereClause += ` AND ${netBalanceExpr} <0`; break;
             case 'credit': whereClause += ` AND ${netBalanceExpr} > 0`; break;
-            case 'upcoming': whereClause += ` AND ${nextApptExpr} IS NOT NULL`; break;
+            case 'upcoming': 
+            case 'has_rdv': whereClause += ` AND ${nextApptExpr} IS NOT NULL`; break;
+            case 'no_rdv': whereClause += ` AND ${nextApptExpr} IS NULL`; break;
             case 'male': whereClause += ` AND p.gender = 'Male'`; break;
             case 'female': whereClause += ` AND p.gender = 'Female'`; break;
         }
@@ -2044,7 +2046,9 @@ export function getPatientsCount(searchTerm?: string, filter?: string) {
             case 'adult': whereClause += ` AND ${ageExpr} >= 16`; break;
             case 'debt': whereClause += ` AND ${netBalanceExpr} <0`; break;
             case 'credit': whereClause += ` AND ${netBalanceExpr} > 0`; break;
-            case 'upcoming': whereClause += ` AND ${nextApptExpr} IS NOT NULL`; break;
+            case 'upcoming':
+            case 'has_rdv': whereClause += ` AND ${nextApptExpr} IS NOT NULL`; break;
+            case 'no_rdv': whereClause += ` AND ${nextApptExpr} IS NULL`; break;
             case 'male': whereClause += ` AND p.gender = 'Male'`; break;
             case 'female': whereClause += ` AND p.gender = 'Female'`; break;
         }
@@ -3205,7 +3209,10 @@ export function getServerConfig() {
         module_prescriptions: clinicSettings.module_prescriptions !== undefined ? clinicSettings.module_prescriptions : 1,
         module_dental_chart: clinicSettings.module_dental_chart !== undefined ? clinicSettings.module_dental_chart : 1,
         module_inventory: clinicSettings.module_inventory !== undefined ? clinicSettings.module_inventory : 1,
-        module_journey: clinicSettings.module_journey !== undefined ? clinicSettings.module_journey : 1
+        module_journey: clinicSettings.module_journey !== undefined ? clinicSettings.module_journey : 1,
+        module_dashboard: clinicSettings.module_dashboard !== undefined ? clinicSettings.module_dashboard : 1,
+        module_patients: clinicSettings.module_patients !== undefined ? clinicSettings.module_patients : 1,
+        module_custom: clinicSettings.module_custom !== undefined ? clinicSettings.module_custom : 0,
     };
 }
 

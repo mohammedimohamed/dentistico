@@ -6,6 +6,9 @@
     import OdontogrammePro from "$lib/components/dental-v2/OdontogrammePro.svelte";
     import PrescriptionBuilder from "$lib/components/PrescriptionBuilder.svelte";
     import { page } from "$app/state";
+    import { Baby, Phone, AlertTriangle, Stethoscope, Calendar, Check, Banknote, MapPin, Mail, X, Smartphone, Clock } from "lucide-svelte";
+import AppointmentModal from "$lib/components/patients/AppointmentModal.svelte";
+import QuickPaymentModal from "$lib/components/patients/QuickPaymentModal.svelte";
 
     let { data }: { data: PageData } = $props();
     let activeTab = $state();
@@ -20,17 +23,24 @@
     const age = $derived(data.patient.date_of_birth ? calculateAge(data.patient.date_of_birth) : 0);
     const balance = $derived(data.balance);
 
+    // Appointments grouping
+    const now = new Date();
+    const futureAppointments = $derived(data.appointments.filter((a: any) => new Date(a.start_time) >= now && a.status !== 'cancelled'));
+    const pastAppointments = $derived(data.appointments.filter((a: any) => new Date(a.start_time) < now && a.status !== 'cancelled'));
+    const cancelledAppointments = $derived(data.appointments.filter((a: any) => a.status === 'cancelled'));
+
     // Filter treatments for History & Planning
     const pastTreatments = $derived(data.treatments.filter((t: any) => t.status === 'completed'));
     const plannedTreatments = $derived(data.treatments.filter((t: any) => t.status === 'planned' || t.status === 'pending'));
 
     // Formatting currency
     function formatCurrency(amount: number) {
-        return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'DZD' }).format(amount);
+        return new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(amount).replace('DZD', 'DA');
     }
 
     let isPaymentModalOpen = $state(false);
     let isPrescriptionModalOpen = $state(false);
+    let isAppointmentModalOpen = $state(false);
 
 </script>
 
@@ -46,9 +56,9 @@
                 <div>
                     <h1 class="text-2xl font-black text-slate-900 leading-tight">{data.patient.full_name}</h1>
                     <div class="flex items-center gap-3 mt-1 text-sm font-semibold text-slate-500">
-                        <span class="flex items-center gap-1">🎂 {age} ans</span>
+                        <span class="flex items-center gap-1"><Baby size={14} class="text-indigo-400" /> {age} ans</span>
                         <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-                        <span class="flex items-center gap-1">📞 {data.patient.phone || 'N/A'}</span>
+                        <span class="flex items-center gap-1"><Phone size={14} class="text-indigo-400" /> {data.patient.phone || 'N/A'}</span>
                     </div>
                 </div>
             </div>
@@ -57,7 +67,7 @@
             <div class="flex flex-1 max-w-2xl gap-3">
                 {#if data.patient.allergies && data.patient.allergies !== 'None'}
                     <div class="flex-1 bg-red-50 border-2 border-red-200 rounded-2xl p-3 flex items-center gap-3 animate-pulse shadow-sm">
-                        <span class="text-2xl">⚠️</span>
+                        <AlertTriangle size={24} class="text-red-500" />
                         <div>
                             <p class="text-[10px] font-black uppercase tracking-wider text-red-500">Allergies</p>
                             <p class="text-sm font-bold text-red-900 leading-tight">{data.patient.allergies}</p>
@@ -66,7 +76,7 @@
                 {/if}
                 {#if data.patient.medical_conditions && data.patient.medical_conditions !== 'None'}
                     <div class="flex-1 bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 flex items-center gap-3 shadow-sm">
-                        <span class="text-2xl">🩺</span>
+                        <Stethoscope size={24} class="text-amber-500" />
                         <div>
                             <p class="text-[10px] font-black uppercase tracking-wider text-amber-500">Notes Médicales</p>
                             <p class="text-sm font-bold text-amber-900 leading-tight">{data.patient.medical_conditions}</p>
@@ -132,72 +142,177 @@
                             patientId={data.patient.id} 
                             annotations={data.annotations} 
                             treatments={data.treatments} 
+                            patientAge={age}
                         />
                     </div>
                 {:else if activeTab === "historique"}
                     <div class="p-8">
-                        <div class="grid grid-cols-2 gap-12">
-                            <!-- Planned RoadMap -->
-                            <section>
-                                <div class="flex items-center justify-between mb-6">
-                                    <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
-                                        <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-sm">📅</span>
-                                        Roadmap (Soins Prévus)
-                                    </h2>
-                                    <span class="bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-xs font-black">{plannedTreatments.length}</span>
-                                </div>
-                                <div class="space-y-4">
-                                    {#each plannedTreatments as tr}
-                                        <div class="bg-white border border-slate-200 rounded-2xl p-5 hover:border-amber-200 transition-colors shadow-sm group">
-                                            <div class="flex justify-between items-start">
-                                                <div>
-                                                    <span class="text-[10px] font-black text-amber-500 uppercase">Dent {tr.tooth_number} • {tr.treatment_type}</span>
-                                                    <h4 class="font-bold text-slate-900 mt-0.5">{tr.description || 'Soin sans description'}</h4>
-                                                </div>
-                                                <div class="text-right">
-                                                    <p class="font-black text-slate-900">{formatCurrency(tr.cost)}</p>
-                                                    <span class="text-[10px] font-bold text-slate-400">{tr.treatment_date}</span>
+                        <div class="grid grid-cols-1 xl:grid-cols-12 gap-12">
+                            <!-- Left Column: Appointments Timeline -->
+                            <div class="xl:col-span-7 space-y-12">
+                                <!-- Future Appointments -->
+                                <section>
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h2 class="text-lg font-black text-slate-900 flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-sm">
+                                                <Calendar size={20} />
+                                            </div>
+                                            Rendez-vous à venir
+                                        </h2>
+                                        <span class="bg-indigo-50 text-indigo-600 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">{futureAppointments.length}</span>
+                                    </div>
+                                    <div class="space-y-4">
+                                        {#each futureAppointments as rdv}
+                                            <div class="bg-white border-2 border-slate-100 rounded-[32px] p-6 hover:border-indigo-100 transition-all shadow-sm group relative overflow-hidden">
+                                                <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
+                                                <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+                                                    <div class="flex gap-4">
+                                                        <div class="flex flex-col items-center justify-center bg-slate-50 rounded-2xl p-3 min-w-[70px] border border-slate-100">
+                                                            <span class="text-[10px] font-black text-slate-400 uppercase">{new Date(rdv.start_time).toLocaleDateString('fr-FR', { month: 'short' })}</span>
+                                                            <span class="text-2xl font-black text-slate-900">{new Date(rdv.start_time).getDate()}</span>
+                                                        </div>
+                                                        <div>
+                                                            <div class="flex items-center gap-2 mb-1">
+                                                                <span class="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase">{rdv.appointment_type}</span>
+                                                                <span class="text-xs font-bold text-slate-400 flex items-center gap-1"><Clock size={12} /> {new Date(rdv.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            </div>
+                                                            <h4 class="font-bold text-slate-900 text-lg">Dr. {rdv.doctor_name || 'Médecin'}</h4>
+                                                            <p class="text-sm text-slate-500 font-medium mt-1">{rdv.notes || 'Aucune note particulière'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex gap-2 w-full sm:w-auto">
+                                                        <form method="POST" action="?/cancelAppointment" use:enhance>
+                                                            <input type="hidden" name="id" value={rdv.id} />
+                                                            <button type="submit" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 transition-all">
+                                                                Annuler
+                                                            </button>
+                                                        </form>
+                                                        <button class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-all">
+                                                            Déplacer
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    {:else}
-                                        <div class="py-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                                            <p class="text-slate-400 font-bold">Aucun soin planifié</p>
-                                        </div>
-                                    {/each}
-                                </div>
-                            </section>
+                                        {:else}
+                                            <div class="py-16 text-center bg-slate-50/50 rounded-[40px] border-2 border-dashed border-slate-200">
+                                                <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-200 mx-auto mb-4 border border-slate-100 shadow-sm">
+                                                    <Calendar size={32} />
+                                                </div>
+                                                <p class="text-slate-400 font-bold">Aucun rendez-vous planifié</p>
+                                                <button onclick={() => isAppointmentModalOpen = true} class="mt-4 text-indigo-600 font-black text-sm hover:underline">Fixer un rendez-vous</button>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </section>
 
-                            <!-- Past History -->
-                            <section>
-                                <div class="flex items-center justify-between mb-6">
-                                    <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
-                                        <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm">✓</span>
-                                        Historique des Soins
+                                <!-- Past Appointments -->
+                                <section>
+                                    <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                        Rendez-vous Passés
+                                        <div class="h-px flex-1 bg-slate-100 ml-2"></div>
                                     </h2>
-                                    <span class="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-black">{pastTreatments.length}</span>
-                                </div>
-                                <div class="space-y-4">
-                                    {#each pastTreatments as tr}
-                                        <div class="bg-white border border-slate-200 rounded-2xl p-5 hover:border-emerald-200 transition-colors shadow-sm">
-                                            <div class="flex justify-between items-start">
-                                                <div>
-                                                    <span class="text-[10px] font-black text-emerald-500 uppercase">Dent {tr.tooth_number} • {tr.treatment_type}</span>
-                                                    <h4 class="font-bold text-slate-900 mt-0.5">{tr.description || 'Soin sans description'}</h4>
+                                    <div class="space-y-3">
+                                        {#each pastAppointments as rdv}
+                                            <div class="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
+                                                <div class="flex items-center gap-4">
+                                                    <div class="text-center min-w-[50px]">
+                                                        <p class="text-[10px] font-black text-slate-400 uppercase">{new Date(rdv.start_time).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-sm font-bold text-slate-900">Dr. {rdv.doctor_name}</p>
+                                                        <p class="text-[10px] font-bold text-slate-400 uppercase">{rdv.appointment_type}</p>
+                                                    </div>
                                                 </div>
-                                                <div class="text-right">
-                                                    <p class="font-black text-slate-900">{formatCurrency(tr.cost)}</p>
-                                                    <span class="text-[10px] font-bold text-slate-400">{tr.treatment_date}</span>
+                                                <div class="flex items-center gap-3">
+                                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-600">Honoré</span>
                                                 </div>
                                             </div>
-                                        </div>
-                                    {:else}
-                                        <div class="py-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                                            <p class="text-slate-400 font-bold">Historique vide</p>
-                                        </div>
-                                    {/each}
-                                </div>
-                            </section>
+                                        {/each}
+                                    </div>
+                                </section>
+
+                                <!-- Cancelled Appointments -->
+                                {#if cancelledAppointments.length > 0}
+                                <section>
+                                    <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                        Annulés
+                                        <div class="h-px flex-1 bg-slate-100 ml-2"></div>
+                                    </h2>
+                                    <div class="space-y-2 opacity-60">
+                                        {#each cancelledAppointments as rdv}
+                                            <div class="flex items-center justify-between p-3 bg-slate-50/30 rounded-xl border border-slate-100 grayscale">
+                                                <div class="text-xs font-bold text-slate-500">
+                                                    {new Date(rdv.start_time).toLocaleDateString('fr-FR')} — Dr. {rdv.doctor_name}
+                                                </div>
+                                                <span class="text-[10px] font-black uppercase text-rose-500">Annulé</span>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </section>
+                                {/if}
+                            </div>
+
+                            <!-- Right Column: Treatments -->
+                            <div class="xl:col-span-5 space-y-12">
+                                <!-- Planned RoadMap -->
+                                <section>
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                                            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
+                                                <Stethoscope size={20} />
+                                            </div>
+                                            Plan de Traitement
+                                        </h2>
+                                        <span class="bg-amber-50 text-amber-600 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">{plannedTreatments.length}</span>
+                                    </div>
+                                    <div class="space-y-4">
+                                        {#each plannedTreatments as tr}
+                                            <div class="bg-white border-2 border-slate-100 rounded-3xl p-6 hover:border-amber-100 transition-all shadow-sm group">
+                                                <div class="flex justify-between items-start">
+                                                    <div>
+                                                        <span class="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-600 text-[10px] font-black uppercase">Dent {tr.tooth_number} • {tr.treatment_type}</span>
+                                                        <h4 class="font-bold text-slate-900 mt-2 text-base leading-tight">{tr.description || 'Soin sans description'}</h4>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <p class="font-black text-slate-900">{formatCurrency(tr.cost)}</p>
+                                                        <span class="text-[10px] font-bold text-slate-400">{tr.treatment_date}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {:else}
+                                            <div class="py-12 text-center bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200">
+                                                <p class="text-slate-400 font-bold">Aucun soin planifié</p>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </section>
+
+                                <!-- Past Treatments -->
+                                <section>
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                                            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
+                                                <Check size={20} />
+                                            </div>
+                                            Actes Réalisés
+                                        </h2>
+                                        <span class="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">{pastTreatments.length}</span>
+                                    </div>
+                                    <div class="space-y-3">
+                                        {#each pastTreatments as tr}
+                                            <div class="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 transition-all">
+                                                <div class="flex justify-between items-center">
+                                                    <div>
+                                                        <p class="text-xs font-bold text-slate-900">{tr.description || tr.treatment_type}</p>
+                                                        <p class="text-[10px] font-bold text-slate-400">Dent {tr.tooth_number} • {tr.treatment_date}</p>
+                                                    </div>
+                                                    <p class="font-black text-slate-600 text-sm">{formatCurrency(tr.cost)}</p>
+                                                </div>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </section>
+                            </div>
                         </div>
                     </div>
                 {:else if activeTab === "finances"}
@@ -249,16 +364,19 @@
             <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
                 <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Actions Rapides</h3>
                 <div class="space-y-3">
-                    <a href="/doctor/calendar" class="flex items-center gap-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-100 group">
-                        <span class="text-xl group-hover:scale-110 transition-transform">📅</span>
+                    <button 
+                        onclick={() => isAppointmentModalOpen = true} 
+                        class="flex items-center gap-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-100 group"
+                    >
+                        <Calendar size={20} class="group-hover:scale-110 transition-transform" />
                         Fixer prochain RDV
-                    </a>
+                    </button>
                     <!-- <button onclick={() => isPrescriptionModalOpen = true} class="flex items-center gap-3 w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 p-4 rounded-2xl font-bold transition-all">
                         <span class="text-xl">📄</span>
                         Imprimer Ordonnance
                     </button> -->
                     <button onclick={() => isPaymentModalOpen = true} class="flex items-center gap-3 w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-100 p-4 rounded-2xl font-bold transition-all mt-4">
-                        <span class="text-xl">💰</span>
+                        <Banknote size={20} />
                         Encaisser Paiement
                     </button>
                 </div>
@@ -269,12 +387,26 @@
                 <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Infos Patient</h4>
                 <div class="space-y-4">
                     <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Email</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><Smartphone size={10} /> Téléphone</p>
+                        <p class="text-sm font-semibold text-slate-700">{data.patient.phone || '—'}</p>
+                    </div>
+                    {#if data.patient.secondary_phone}
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><Phone size={10} /> Fixe / Autre</p>
+                        <p class="text-sm font-semibold text-slate-700">{data.patient.secondary_phone}</p>
+                    </div>
+                    {/if}
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><Mail size={10} /> Email</p>
                         <p class="text-sm font-semibold text-slate-700 truncate">{data.patient.email || '—'}</p>
                     </div>
                     <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Adresse</p>
-                        <p class="text-sm font-semibold text-slate-700">{data.patient.address || '—'}</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><MapPin size={10} /> Adresse</p>
+                        <p class="text-sm font-semibold text-slate-700">
+                            {data.patient.address || ''}
+                            {data.patient.city ? `, ${data.patient.city}` : ''}
+                            {!data.patient.address && !data.patient.city ? '—' : ''}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -282,59 +414,7 @@
     </div>
 </div>
 
-<!-- Modal for New Payment (Simplified) -->
-{#if isPaymentModalOpen}
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-        <div class="bg-white rounded-[40px] w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200">
-            <div class="p-8 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="text-2xl font-black text-slate-900">Encaisser Paiement</h3>
-                <button onclick={() => isPaymentModalOpen = false} class="text-slate-400 hover:text-slate-900 transition-colors text-2xl font-bold">&times;</button>
-            </div>
-            <form method="POST" action="?/recordPayment" use:enhance={() => {
-                return async ({ result, update }) => {
-                    if (result.type === 'success') isPaymentModalOpen = false;
-                    await update();
-                };
-            }} class="p-8 space-y-6">
-                <!-- In a real app, we would select an invoice. Here we assume global payment if no invoice specified or we fetch invoices. -->
-                 <!-- For brevity, I'll use a hidden input for invoice_id if needed, or just let the server handle it. -->
-                 <!-- Looking at server actions, it needs invoice_id. Let's provide a selection if possible or just use the first unpaid invoice. -->
-                 
-                <div>
-                    <label for="invoice_id" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Facture Associée</label>
-                    <select id="invoice_id" name="invoice_id" required class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
-                        {#each data.invoices.filter((inv: any) => inv.status !== 'paid') as inv}
-                            <option value={inv.id}>#{inv.invoice_number} - {formatCurrency(inv.total_amount)}</option>
-                        {/each}
-                        {#if data.invoices.filter((inv: any) => inv.status !== 'paid').length === 0}
-                            <option value="" disabled>Aucune facture impayée</option>
-                        {/if}
-                    </select>
-                </div>
-
-                <div class="grid grid-cols-2 gap-6">
-                    <div>
-                        <label for="amount" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Montant</label>
-                        <input id="amount" type="number" name="amount" step="0.01" required class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none" />
-                    </div>
-                    <div>
-                        <label for="payment_method" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Méthode</label>
-                        <select id="payment_method" name="payment_method" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
-                            <option value="cash">Espèces</option>
-                            <option value="card">Carte</option>
-                            <option value="check">Chèque</option>
-                            <option value="bank_transfer">Virement</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-5 rounded-2xl font-black text-lg transition-all shadow-xl shadow-indigo-100">
-                    Confirmer le Paiement
-                </button>
-            </form>
-        </div>
-    </div>
-{/if}
+<!-- Modal for New Payment handled by QuickPaymentModal -->
 
 <!-- Modal for Prescription -->
 <!-- {#if isPrescriptionModalOpen}
@@ -355,6 +435,21 @@
         </div>
     </div>
 {/if} -->
+
+<AppointmentModal 
+    isOpen={isAppointmentModalOpen}
+    patient={data.patient}
+    doctors={data.doctors}
+    onClose={() => isAppointmentModalOpen = false}
+/>
+
+<QuickPaymentModal 
+    isOpen={isPaymentModalOpen}
+    patient={data.patient}
+    invoices={data.invoices}
+    balance={data.balance}
+    onClose={() => isPaymentModalOpen = false}
+/>
 
 <style>
     /* Custom scrollbar for a cleaner look */
