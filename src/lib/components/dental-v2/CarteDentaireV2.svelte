@@ -87,11 +87,11 @@
             </div>
         </div>
 
-        <div class="flex flex-col items-center gap-12 w-full">
+        <div class="flex flex-col items-center gap-4 w-full">
             <!-- ARCH 1: ADULT SUPERIOR (Shown in Adult & Mixed) -->
             {#if dentitionMode !== "pediatric"}
                 <div class="arch-section animate-in fade-in zoom-in duration-300">
-                    <div class="arch-header mb-8 flex justify-center">
+                    <div class="arch-header mb-2 flex justify-center">
                         <span class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">Maxillaire Adulte</span>
                     </div>
                     <div class="flex items-center gap-2">
@@ -113,7 +113,7 @@
             <!-- ARCH 2: CHILD SUPERIOR (Shown in Pediatric & Mixed) -->
             {#if dentitionMode !== "adult"}
                 <div class="arch-section animate-in fade-in zoom-in duration-300">
-                    <div class="arch-header mb-8 flex justify-center">
+                    <div class="arch-header mb-2 flex justify-center">
                         <span class="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em]">Maxillaire Temporaire</span>
                     </div>
                     <div class="flex items-center gap-2">
@@ -151,7 +151,7 @@
                             {/each}
                         </div>
                     </div>
-                    <div class="arch-header mt-8 flex justify-center">
+                    <div class="arch-header mt-2 flex justify-center">
                         <span class="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em]">Mandibule Temporaire</span>
                     </div>
                 </div>
@@ -173,7 +173,7 @@
                             {/each}
                         </div>
                     </div>
-                    <div class="arch-header mt-8 flex justify-center">
+                    <div class="arch-header mt-2 flex justify-center">
                         <span class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">Mandibule Adulte</span>
                     </div>
                 </div>

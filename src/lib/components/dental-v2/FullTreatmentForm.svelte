@@ -19,7 +19,7 @@
     let treatment = $state({
         surfaces: initialData.surfaces ? initialData.surfaces.split(",") : [] as string[],
         cdt_code: initialData.cdt_code || "",
-        procedure_description: initialData.treatment_type || "",
+        treatment_type: initialData.treatment_type || "",
         fee: initialData.fee || 0,
         status: initialData.status || "completed" as "existing" | "completed" | "planned",
         date_performed: initialData.date_performed || new Date().toISOString().split("T")[0],
@@ -34,7 +34,7 @@
 
     function handleCodeSelect(code: any) {
         treatment.cdt_code = code.code;
-        treatment.procedure_description = code.description;
+        treatment.treatment_type = code.description;
         treatment.fee = code.default_fee;
         treatment.color = code.color_code;
         requiresSurfaces = code.requires_surfaces;

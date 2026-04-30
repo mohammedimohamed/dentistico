@@ -10,8 +10,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     const searchQuery = url.searchParams.get('search') || '';
     const filter = url.searchParams.get('filter') || '';
     const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = 24;
-    const offset = (page - 1) * limit;
+    const limit = parseInt(url.searchParams.get('limit') || '10');
+    
+    let offset = 0;
+    if (limit > 0) {
+        offset = (page - 1) * limit;
+    }
 
     const patients = getPatientsEnhanced({ searchTerm: searchQuery, filter, limit, offset });
     const totalPatients = getPatientsCount(searchQuery, filter);
@@ -22,7 +26,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         filter,
         totalPatients,
         page,
-        totalPages: Math.ceil(totalPatients / limit),
+        limit,
+        totalPages: limit > 0 ? Math.ceil(totalPatients / limit) : 1,
         user: locals.user
     };
 };

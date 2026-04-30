@@ -1,316 +1,165 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import config from '$lib/config/landing-page.json';
-    import { locale } from 'svelte-i18n';
+    import { locale, t } from 'svelte-i18n';
+    import { fade, fly } from 'svelte/transition';
+
+    let { data } = $props();
 
     let scrolled = $state(false);
-    let observer: IntersectionObserver | null = null;
+
+    // Clinic Data (using config if available)
+    const clinic = $derived({
+        name: data.config?.clinic_name || "Excellence Dental Clinic",
+        phone: data.config?.phone || "+1 (555) 123-4567",
+        address: data.config?.address || "123 Elegance Blvd, Suite 400, New York, NY",
+        email: data.config?.email || "contact@excellencedental.com",
+        hours: data.config?.workHours || "Mon - Fri: 9:00 AM - 6:00 PM"
+    });
+
+    onMount(() => {
+        const handleScroll = () => {
+            scrolled = window.scrollY > 50;
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    });
 
     async function setLanguage(lang: string) {
         document.cookie = `lang=${lang}; path=/; max-age=31536000`;
         window.location.reload();
     }
-
-    // Extract config sections for easier access
-    const nav = config.navigation;
-    const hero = config.hero;
-    const services = config.services;
-    const about = config.about;
-    const footer = config.footer;
-    const scripts = config.scripts;
-
-    // Helper function to render heading with highlight
-    function renderHeading(text: string, highlight: { text: string; classes: string }) {
-        const parts = text.split(`{highlight}${highlight.text}{/highlight}`);
-        if (parts.length === 2) {
-            return [parts[0], { text: highlight.text, classes: highlight.classes }, parts[1]];
-        }
-        return [text];
-    }
-
-    // Compute heading parts reactively
-    const headingParts = $derived(renderHeading(hero.heading.text, hero.heading.highlight));
-    
-    // Compute about section items
-    const leftColumnItems = $derived(about.images.items.slice(0, 2));
-    const rightColumnItems = $derived(about.images.items.slice(2));
-
-    onMount(() => {
-        // Navigation scroll handler
-        const handleScroll = () => {
-            scrolled = window.scrollY > (scripts.navScroll.threshold || 20);
-        };
-        window.addEventListener('scroll', handleScroll);
-
-        // Intersection Observer for scroll animations
-        if (scripts.scrollAnimation.enabled) {
-            observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add(scripts.scrollAnimation.activeClass);
-                    }
-                });
-            }, { threshold: scripts.scrollAnimation.threshold });
-
-            document.querySelectorAll(`.${scripts.scrollAnimation.class}`).forEach(el => observer?.observe(el));
-        }
-
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-            if (observer) observer.disconnect();
-        };
-    });
 </script>
 
-<div class="min-h-screen">
-    <!-- Navigation -->
-    <nav class="{nav.classes.container} {scrolled ? nav.classes.scrolled : nav.classes.default}">
-        <div class="{config.theme.spacing.container.maxWidth} {config.theme.spacing.container.padding} {config.theme.spacing.container.center} flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <a href={nav.logo.href} class={nav.logo.classes}>{nav.logo.text}</a>
-            </div>
-            
-            <div class={nav.menu.classes.container}>
-                {#each nav.menu.items as item}
-                    <a href={item.href} class={item.classes}>{item.label}</a>
-                {/each}
-            </div>
+<svelte:head>
+    <title>{clinic.name} | Premium Dental Care</title>
+</svelte:head>
 
-            <div class={nav.actions.classes.container}>
-                <div class="flex gap-2 bg-gray-100 rounded-lg p-1 mr-4">
-                    <button 
-                        onclick={() => setLanguage('fr')} 
-                        class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all {$locale === 'fr' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
-                    >
-                        FR
-                    </button>
-                    <button 
-                        onclick={() => setLanguage('ar')} 
-                        class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all {$locale === 'ar' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
-                    >
-                        AR
-                    </button>
-                </div>
-                {#each nav.actions.buttons as button}
-                    <a href={button.href} class={button.classes}>{button.label}</a>
-                {/each}
+<div class="min-h-screen bg-[#FDFCFB] font-sans text-slate-900 overflow-x-hidden">
+    <!-- Top Contact Bar -->
+    <div class="bg-[var(--primary-color)] text-[var(--secondary-color)] py-2 px-6 text-xs font-medium tracking-widest uppercase hidden md:block">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex gap-6">
+                <span class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    {clinic.phone}
+                </span>
+                <span class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                    {clinic.address}
+                </span>
+            </div>
+            <div class="flex gap-4">
+                <button onclick={() => setLanguage('en')} class="transition-colors {$locale === 'en' ? 'text-white border-b border-white font-bold' : 'hover:text-white'}">EN</button>
+                <button onclick={() => setLanguage('fr')} class="transition-colors {$locale === 'fr' ? 'text-white border-b border-white font-bold' : 'hover:text-white'}">FR</button>
+                <button onclick={() => setLanguage('ar')} class="transition-colors {$locale === 'ar' ? 'text-white border-b border-white font-bold' : 'hover:text-white'}">AR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation -->
+    <nav class="sticky top-0 z-50 transition-all duration-500 {scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-4' : 'bg-transparent py-8'}">
+        <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+            <a href="/" class="group">
+                <h1 class="font-serif text-2xl md:text-3xl font-bold tracking-tight text-[var(--primary-color)]">
+                    {clinic.name.split(' ')[0]} <span class="text-[var(--secondary-color)] font-normal italic">{clinic.name.split(' ').slice(1).join(' ')}</span>
+                </h1>
+                <div class="h-0.5 bg-[var(--secondary-color)] w-0 group-hover:w-full transition-all duration-500"></div>
+            </a>
+
+            <div class="flex items-center gap-4 md:gap-8">
+                <a href="/login" class="text-sm font-semibold uppercase tracking-widest text-slate-600 hover:text-[var(--primary-color)] transition-colors hidden sm:block">
+                    {$t('landing.login')}
+                </a>
+                <a href="/book" class="bg-[var(--primary-color)] text-white px-6 md:px-8 py-3 rounded-sm text-xs font-bold uppercase tracking-[0.2em] hover:bg-[var(--secondary-color)] transition-all duration-500 shadow-lg">
+                    {$t('landing.book_appointment')}
+                </a>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section id={hero.id} class="relative {config.theme.spacing.section.heroPaddingTop.mobile} {config.theme.spacing.section.heroPaddingTop.desktop} {config.theme.spacing.section.heroPaddingBottom.mobile} {config.theme.spacing.section.heroPaddingBottom.desktop} overflow-hidden hero-gradient">
-        <div class="{config.theme.spacing.container.maxWidth} {config.theme.spacing.container.padding} {config.theme.spacing.container.center} grid lg:grid-cols-2 gap-16 items-center">
-            <div class={hero.classes.content}>
-                <span class={hero.badge.classes}>
-                    {hero.badge.text}
-                </span>
-                <h1 class={hero.heading.classes}>
-                    {#each headingParts as part}
-                        {#if typeof part === 'object'}
-                            <span class={part.classes}>{part.text}</span>
-                        {:else}
-                            {part}
-                        {/if}
-                    {/each}
-                </h1>
-                <p class={hero.description.classes}>
-                    {hero.description.text}
+    <main class="relative">
+        <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center min-h-[80vh] py-12">
+            <div in:fly={{ y: 30, duration: 1000, delay: 200 }}>
+                <span class="inline-block text-[var(--secondary-color)] text-xs font-bold uppercase tracking-[0.3em] mb-4">{$t('landing.established_excellence')}</span>
+                <h2 class="font-serif text-5xl md:text-7xl text-[var(--primary-color)] leading-[1.1] mb-8">
+                    {$t('landing.hero_title_1')} <br/> 
+                    <span class="italic font-normal">{$t('landing.hero_title_2')}</span>
+                </h2>
+                <p class="text-lg text-slate-600 leading-relaxed max-w-md mb-12 font-light">
+                    {$t('landing.hero_description')}
                 </p>
-                <div class={hero.actions.classes.container}>
-                    {#each hero.actions.buttons as button}
-                        <a href={button.href} class={button.classes}>{button.label}</a>
-                    {/each}
-                    {#if hero.actions.socialProof.enabled}
-                        <div class={hero.actions.socialProof.classes.container}>
-                            <div class={hero.actions.socialProof.classes.avatars}>
-                                {#each hero.actions.socialProof.avatars as avatar}
-                                    <div class={hero.actions.socialProof.classes.avatar}>
-                                        <img src={avatar.src} alt={avatar.alt} />
-                                    </div>
-                                {/each}
-                            </div>
-                            <span class={hero.actions.socialProof.classes.text}>{hero.actions.socialProof.text}</span>
-                        </div>
-                    {/if}
-                </div>
-            </div>
-            
-            <div class={hero.classes.image}>
-                <div class={hero.image.classes.container}>
-                    <img src={hero.image.src} alt={hero.image.alt} class={hero.image.classes.image} />
-                </div>
-                <!-- Decorative Elements -->
-                {#each hero.image.decorativeElements as element}
-                    <div class={element.classes}></div>
-                {/each}
-            </div>
-        </div>
-    </section>
-
-    <!-- Services Section -->
-    <section id={services.id} class={services.classes.section}>
-        <div class="{config.theme.spacing.container.maxWidth} {config.theme.spacing.container.padding} {config.theme.spacing.container.center}">
-            <div class={services.classes.header}>
-                <h2 class={services.header.title.classes}>{services.header.title.text}</h2>
-                {#if services.header.divider.enabled}
-                    <div class={services.header.divider.classes}></div>
-                {/if}
-                <p class={services.header.description.classes}>
-                    {services.header.description.text}
-                </p>
-            </div>
-
-            <div class={services.classes.grid}>
-                {#each services.items as service, i}
-                    <div class={service.classes.card} style="transition-delay: {service.animationDelay}ms">
-                        <div class={service.classes.imageContainer}>
-                            <img src={service.image.src} alt={service.image.alt} class={service.classes.image} />
-                        </div>
-                        <h3 class={service.classes.title}>{service.title}</h3>
-                        <p class={service.classes.description}>{service.description}</p>
-                        <a href={service.link.href} class={service.link.classes}>
-                            {service.link.text} <span>{service.link.icon}</span>
-                        </a>
+                
+                <div class="flex flex-col sm:flex-row gap-6">
+                    <a href="/book" class="inline-flex items-center justify-center bg-[var(--primary-color)] text-white px-10 py-5 text-sm font-bold uppercase tracking-widest hover:bg-[var(--secondary-color)] hover:-translate-y-1 transition-all duration-300 shadow-xl">
+                        {$t('landing.schedule_visit')}
+                    </a>
+                    <div class="flex flex-col justify-center">
+                        <span class="text-xs text-slate-400 uppercase tracking-widest mb-1">{$t('landing.direct_line')}</span>
+                        <a href="tel:{clinic.phone}" class="text-xl font-serif text-[var(--primary-color)] font-semibold hover:text-[var(--secondary-color)] transition-colors">{clinic.phone}</a>
                     </div>
-                {/each}
-            </div>
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id={about.id} class={about.classes.section}>
-        <div class="{config.theme.spacing.container.maxWidth} {config.theme.spacing.container.padding} {config.theme.spacing.container.center} {about.classes.container}">
-            <div class={about.classes.images}>
-                <!-- Left Column -->
-                <div class="space-y-4">
-                    {#each leftColumnItems as item}
-                        {#if item.type === 'image'}
-                            <div class={item.classes}>
-                                <img src={item.src} alt={item.alt} class={item.imageClasses} />
-                            </div>
-                        {:else if item.type === 'stat'}
-                            <div class={item.classes.container}>
-                                <div>
-                                    <div class={item.classes.value}>{item.value}</div>
-                                    <div class={item.classes.label}>{item.label}</div>
-                                </div>
-                            </div>
-                        {/if}
-                    {/each}
                 </div>
-                <!-- Right Column -->
-                <div class="space-y-4 pt-12">
-                    {#each rightColumnItems as item}
-                        {#if item.type === 'image'}
-                            <div class={item.classes}>
-                                <img src={item.src} alt={item.alt} class={item.imageClasses} />
-                            </div>
-                        {:else if item.type === 'stat'}
-                            <div class={item.classes.container}>
-                                <div>
-                                    <div class={item.classes.value}>{item.value}</div>
-                                    <div class={item.classes.label}>{item.label}</div>
-                                </div>
-                            </div>
-                        {/if}
-                    {/each}
-                </div>
-            </div>
 
-            <div class={about.classes.content}>
-                <h2 class={about.content.title.classes}>{about.content.title.text}</h2>
-                <p class={about.content.description.classes}>
-                    {about.content.description.text}
-                </p>
-                <div class={about.content.features.classes.container}>
-                    {#each about.content.features.items as feature}
-                        <div class={feature.classes.container}>
-                            <div class={feature.classes.icon}>
-                                <span class={feature.classes.iconText}>{feature.icon}</span>
-                            </div>
-                            <div class={feature.classes.content}>
-                                <h4 class={feature.classes.title}>{feature.title}</h4>
-                                <p class={feature.classes.description}>{feature.description}</p>
-                            </div>
-                        </div>
-                    {/each}
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer id={footer.id} class={footer.classes.section}>
-        <div class={footer.classes.container}>
-            <!-- Brand Column -->
-            <div class="col-span-1 md:col-span-1">
-                <div class={footer.brand.classes.name}>{footer.brand.name}</div>
-                <p class={footer.brand.description.classes}>
-                    {footer.brand.description.text}
-                </p>
-                {#if footer.brand.socialMedia.enabled}
-                    <div class={footer.brand.socialMedia.classes.container}>
-                        {#each footer.brand.socialMedia.items as social}
-                            <a href={social.href} class={social.classes} aria-label={social.platform}>
-                                {social.icon}
-                            </a>
-                        {/each}
+                <div class="mt-16 grid grid-cols-2 gap-8 border-t border-slate-100 pt-8">
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-[var(--secondary-color)] mb-2">{$t('landing.location')}</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed">{clinic.address}</p>
                     </div>
-                {/if}
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-[var(--secondary-color)] mb-2">{$t('landing.hours')}</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed">{clinic.hours}</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Quick Links Column -->
+            <div class="relative group" in:fade={{ duration: 1500 }}>
+                <div class="absolute -inset-4 border border-[var(--secondary-color)]/20 translate-x-4 translate-y-4 group-hover:translate-x-2 group-hover:translate-y-2 transition-transform duration-700"></div>
+                <div class="relative overflow-hidden aspect-[4/5] shadow-2xl">
+                    <img 
+                        src="/classic_dental_clinic_hero_1777531673394.png" 
+                        alt="Classic Dental Clinic" 
+                        class="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-1000"
+                    />
+                    <div class="absolute inset-0 bg-[var(--primary-color)]/10 group-hover:bg-transparent transition-colors duration-700"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subtle Background Decoration -->
+        <div class="absolute top-0 right-0 -z-10 opacity-[0.03] pointer-events-none">
+            <svg width="600" height="600" viewBox="0 0 100 100">
+                <circle cx="100" cy="0" r="100" fill="var(--primary-color)" />
+            </svg>
+        </div>
+    </main>
+
+    <!-- Simple Footer -->
+    <footer class="bg-white border-t border-slate-100 py-12 mt-24">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
             <div>
-                <h4 class={footer.quickLinks.classes.title}>{footer.quickLinks.title}</h4>
-                <ul class={footer.quickLinks.classes.list}>
-                    {#each footer.quickLinks.items as link}
-                        <li><a href={link.href} class={link.classes}>{link.label}</a></li>
-                    {/each}
-                </ul>
+                <h3 class="font-serif text-xl font-bold text-[var(--primary-color)] mb-2">{clinic.name}</h3>
+                <p class="text-sm text-slate-400">© 2026 {clinic.name}. All rights reserved.</p>
             </div>
-
-            <!-- Contact Column -->
-            <div>
-                <h4 class={footer.contact.classes.title}>{footer.contact.title}</h4>
-                <ul class={footer.contact.classes.list}>
-                    {#each footer.contact.items as contact}
-                        <li class={contact.classes}>
-                            <span>{contact.icon}</span>
-                            {#if contact.href}
-                                <a href={contact.href}>{contact.text}</a>
-                            {:else}
-                                {contact.text}
-                            {/if}
-                        </li>
-                    {/each}
-                </ul>
+            <div class="flex gap-8">
+                <a href="/privacy" class="text-xs uppercase tracking-widest text-slate-400 hover:text-[var(--primary-color)] transition-colors">{$t('landing.privacy_policy')}</a>
+                <a href="/terms" class="text-xs uppercase tracking-widest text-slate-400 hover:text-[var(--primary-color)] transition-colors">{$t('landing.terms_of_service')}</a>
             </div>
-
-            <!-- Newsletter Column -->
-            {#if footer.newsletter.enabled}
-                <div>
-                    <h4 class={footer.newsletter.classes.title}>{footer.newsletter.title}</h4>
-                    <p class={footer.newsletter.description.classes}>
-                        {footer.newsletter.description.text}
-                    </p>
-                    <div class={footer.newsletter.classes.form}>
-                        <input 
-                            type={footer.newsletter.input.type} 
-                            placeholder={footer.newsletter.input.placeholder} 
-                            name={footer.newsletter.input.name}
-                            class={footer.newsletter.classes.input} 
-                        />
-                        <button type={footer.newsletter.button.type} class={footer.newsletter.classes.button}>
-                            {footer.newsletter.button.text}
-                        </button>
-                    </div>
-                </div>
-            {/if}
-        </div>
-        <div class={footer.copyright.classes}>
-            {footer.copyright.text}
         </div>
     </footer>
 </div>
+
+<style>
+    :global(html) {
+        scroll-behavior: smooth;
+    }
+    
+    .font-serif {
+        font-family: var(--font-serif);
+    }
+    
+    .font-sans {
+        font-family: var(--font-sans);
+    }
+</style>
+
 

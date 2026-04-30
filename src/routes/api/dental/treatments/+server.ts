@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { db, getTreatmentsByPatient, checkDoctorConflict } from '$lib/server/db';
+import { db, getTreatmentsByPatient, checkDoctorConflict, createInvoice, markInvoiceAsPaid } from '$lib/server/db';
 import { dentalSync } from '$lib/server/dentalSync';
 import { randomUUID } from 'crypto';
 
@@ -153,6 +153,29 @@ export async function POST({ request, locals }: { request: Request, locals: any 
         data.status, 
         data.cdt_code
       );
+
+      // Instant Billing Logic
+      if (data.status === 'completed' && data.paidNow && data.fee > 0) {
+        try {
+          const invoiceId = createInvoice(data.patient_id, [{
+            dental_treatment_id: treatmentId,
+            description: data.treatment_type,
+            amount: data.fee
+          }], 'detailed');
+
+          markInvoiceAsPaid(invoiceId, {
+            amount: data.fee,
+            payment_method: data.paymentMethod || 'cash',
+            recorded_by: locals.user.id,
+            doctor_id: data.provider_id || locals.user.id
+          });
+        } catch (paymentError) {
+          console.error("Instant billing failed:", paymentError);
+          // We don't fail the whole treatment save, but we log it.
+          // In a real app, we might want to return this as a warning.
+          warning = (warning ? warning + " " : "") + "Paiement non enregistré.";
+        }
+      }
 
       return info;
     });

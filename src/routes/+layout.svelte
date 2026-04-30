@@ -70,13 +70,35 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-    {#if data.locale === 'ar'}
+    
+    {#if data.config}
+        {@html `
         <style>
             :root {
-                font-family: 'Cairo', sans-serif !important;
+                --primary-color: ${data.config.primary_color || '#002147'};
+                --secondary-color: ${data.config.secondary_color || '#D4AF37'};
+                --font-serif: '${data.config.font_serif || 'Lora'}', serif;
+                --font-sans: '${data.config.font_sans || 'Inter'}', sans-serif;
+            }
+        </style>
+        `}
+        
+        <!-- Preload fonts if they are Google Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family={data.config.font_serif || 'Lora'}:ital,wght@0,400..700;1,400..700&family={data.config.font_sans || 'Inter'}:wght@300;400;500;600&display=swap" rel="stylesheet">
+    {/if}
+
+    {#if data.locale === 'ar'}
+        {@html `
+        <style>
+            :root {
+                --font-sans: 'Cairo', sans-serif !important;
+                font-family: var(--font-sans) !important;
                 line-height: 1.6 !important;
             }
         </style>
+        `}
     {/if}
 </svelte:head>
 

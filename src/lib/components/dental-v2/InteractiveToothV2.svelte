@@ -43,7 +43,7 @@
 </script>
 
 <div class="tooth-wrapper" class:selected>
-    <svg viewBox="0 -15 50 130" class="tooth-svg">
+    <svg viewBox="0 0 50 100" class="tooth-svg">
         <defs>
             <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
                 <feGaussianBlur stdDeviation="2" result="blur" />
@@ -55,11 +55,10 @@
             <!-- FDI Number Label (Counter-rotated for upper teeth) -->
             <text 
                 x="25" 
-                y="105" 
+                y={isUpper ? "75" : "115"}
                 text-anchor="middle" 
                 class="fdi-text"
-                transform={isUpper ? "rotate(180, 25, 105)" : ""}
-                dy="10"
+                transform={isUpper ? "rotate(180, 25, 90)" : ""}
             >
                 {fdi}
             </text>
@@ -221,7 +220,7 @@
     .fdi-text {
         font-size: 10px;
         font-weight: 900;
-        fill: #cbd5e1; /* slate-300 */
+        fill: #64748b; /* slate-500 */
         pointer-events: none;
         user-select: none;
         transition: fill 0.2s ease;

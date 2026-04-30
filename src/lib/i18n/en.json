@@ -1134,5 +1134,19 @@
         "hide_sidebar": "Hide Sidebar",
         "show_sidebar": "Templates & History",
         "save_as_template_title": "Save as Template"
+    },
+    "landing": {
+        "login": "Login",
+        "book_appointment": "Book Appointment",
+        "established_excellence": "Established Excellence",
+        "hero_title_1": "Your Smile,",
+        "hero_title_2": "Our Masterpiece.",
+        "hero_description": "Experience world-class dental care where artistry meets advanced medical science. We are dedicated to providing a serene environment and exceptional results.",
+        "schedule_visit": "Schedule a Visit",
+        "direct_line": "Direct Line",
+        "location": "Location",
+        "hours": "Hours",
+        "privacy_policy": "Privacy Policy",
+        "terms_of_service": "Terms of Service"
     }
 }

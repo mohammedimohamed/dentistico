@@ -3,6 +3,7 @@
     import CarteDentaireV2 from "./CarteDentaireV2.svelte";
     import ToothEditPanelV2 from "./ToothEditPanelV2.svelte";
     import FullTreatmentForm from "./FullTreatmentForm.svelte";
+    import ClinicalWorkstation from "./ClinicalWorkstation.svelte";
     import { invalidateAll } from "$app/navigation";
     import { Activity } from "lucide-svelte";
 
@@ -10,9 +11,10 @@
         patientId: number;
         annotations: any;
         treatments: any[];
+        providerId?: number;
     }
 
-    let { patientId, annotations, treatments }: Props = $props();
+    let { patientId, annotations, treatments, providerId = 0 }: Props = $props();
  
     let selectedTeethFdis = $state<number[]>([]);
     let showEditPanel = $state(false);
@@ -175,4 +177,13 @@
             }}
         />
     {/if}
+
+    <!-- Clinical Workstation: Zero-friction treatment entry -->
+    <div class="mt-8">
+        <ClinicalWorkstation
+            {patientId}
+            {providerId}
+            selectedFdi={selectedFdi}
+        />
+    </div>
 </div>

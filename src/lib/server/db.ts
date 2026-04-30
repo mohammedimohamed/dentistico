@@ -115,6 +115,10 @@ export function init_db() {
           module_journey INTEGER DEFAULT 1,
           module_custom INTEGER DEFAULT 0,
           module_custom_roles TEXT DEFAULT 'doctor',
+          primary_color TEXT DEFAULT '#002147',
+          secondary_color TEXT DEFAULT '#D4AF37',
+          font_serif TEXT DEFAULT 'Lora',
+          font_sans TEXT DEFAULT 'Inter',
           dental_chart_mode TEXT DEFAULT 'v2',
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -641,7 +645,7 @@ export function init_db() {
         CREATE TABLE IF NOT EXISTS dental_treatments(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         patient_id INTEGER NOT NULL,
-        tooth_number TEXT NOT NULL,
+        tooth_number TEXT,
         surfaces TEXT,
         cdt_code TEXT,
         treatment_type TEXT NOT NULL,
@@ -664,7 +668,7 @@ export function init_db() {
         CREATE TABLE IF NOT EXISTS tooth_status(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         patient_id INTEGER NOT NULL,
-        tooth_number TEXT NOT NULL,
+        tooth_number TEXT,
         is_primary INTEGER DEFAULT 1,
         status TEXT DEFAULT 'present' CHECK(status IN('present', 'missing', 'erupting', 'impacted')),
         notes TEXT,
@@ -1349,7 +1353,7 @@ export function init_db() {
                 CREATE TABLE dental_treatments(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         patient_id INTEGER NOT NULL,
-        tooth_number TEXT NOT NULL,
+        tooth_number TEXT,
         surfaces TEXT,
         cdt_code TEXT,
         treatment_type TEXT NOT NULL,
@@ -1396,7 +1400,7 @@ export function init_db() {
                 CREATE TABLE IF NOT EXISTS dental_treatments(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         patient_id INTEGER NOT NULL,
-        tooth_number TEXT NOT NULL,
+        tooth_number TEXT,
         surfaces TEXT,
         cdt_code TEXT,
         treatment_type TEXT NOT NULL,
@@ -1421,7 +1425,7 @@ export function init_db() {
             CREATE TABLE IF NOT EXISTS tooth_status(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         patient_id INTEGER NOT NULL,
-        tooth_number TEXT NOT NULL,
+        tooth_number TEXT,
         is_primary INTEGER DEFAULT 1,
         status TEXT DEFAULT 'present' CHECK(status IN('present', 'missing', 'erupting', 'impacted')),
         notes TEXT,
@@ -2873,7 +2877,7 @@ export function getInvoiceById(id: number) {
     return invoice;
 }
 
-export function markInvoiceAsPaid(invoiceId: number, paymentData: { amount: number; payment_method: string; recorded_by: number }) {
+export function markInvoiceAsPaid(invoiceId: number, paymentData: { amount: number; payment_method: string; recorded_by: number; doctor_id?: number }) {
     const txn = db.transaction(() => {
         const invoice = db.prepare('SELECT patient_id FROM invoices WHERE id = ?').get(invoiceId) as { patient_id: number };
 
@@ -2882,14 +2886,15 @@ export function markInvoiceAsPaid(invoiceId: number, paymentData: { amount: numb
 
         // Create payment
         db.prepare(`
-            INSERT INTO payments(patient_id, invoice_id, amount, payment_method, recorded_by)
-    VALUES(?, ?, ?, ?, ?)
+            INSERT INTO payments(patient_id, invoice_id, amount, payment_method, recorded_by, doctor_id)
+            VALUES(?, ?, ?, ?, ?, ?)
         `).run(
             invoice.patient_id,
             invoiceId,
             paymentData.amount,
             normalizePaymentMethod(paymentData.payment_method),
-            paymentData.recorded_by
+            paymentData.recorded_by,
+            paymentData.doctor_id || null
         );
     });
     txn();
@@ -4003,8 +4008,29 @@ addColumnIfNotExists('clinic_settings', 'module_billing', 'INTEGER DEFAULT 1');
 addColumnIfNotExists('clinic_settings', 'module_prescriptions', 'INTEGER DEFAULT 1');
 addColumnIfNotExists('clinic_settings', 'module_dental_chart', 'INTEGER DEFAULT 1');
 addColumnIfNotExists('clinic_settings', 'module_inventory', 'INTEGER DEFAULT 1');
+addColumnIfNotExists('clinic_settings', 'module_dashboard', 'INTEGER DEFAULT 1');
+addColumnIfNotExists('clinic_settings', 'module_patients', 'INTEGER DEFAULT 1');
+addColumnIfNotExists('clinic_settings', 'module_journey', 'INTEGER DEFAULT 1');
 addColumnIfNotExists('clinic_settings', 'module_custom', 'INTEGER DEFAULT 0');
 addColumnIfNotExists('clinic_settings', 'module_custom_roles', "TEXT DEFAULT 'doctor'");
+addColumnIfNotExists('clinic_settings', 'address', 'TEXT');
+addColumnIfNotExists('clinic_settings', 'phone', 'TEXT');
+addColumnIfNotExists('clinic_settings', 'email', 'TEXT');
+addColumnIfNotExists('clinic_settings', 'logo_url', 'TEXT');
+addColumnIfNotExists('clinic_settings', 'timer_alert_1_minutes', 'INTEGER DEFAULT 15');
+addColumnIfNotExists('clinic_settings', 'timer_alert_1_beeps', 'INTEGER DEFAULT 1');
+addColumnIfNotExists('clinic_settings', 'timer_alert_2_minutes', 'INTEGER DEFAULT 30');
+addColumnIfNotExists('clinic_settings', 'timer_alert_2_beeps', 'INTEGER DEFAULT 2');
+addColumnIfNotExists('clinic_settings', 'shift_start_mandatory', 'INTEGER DEFAULT 0');
+addColumnIfNotExists('clinic_settings', 'shift_cash_tracking', 'INTEGER DEFAULT 0');
+addColumnIfNotExists('clinic_settings', 'allow_doctor_create_product', 'INTEGER DEFAULT 0');
+addColumnIfNotExists('clinic_settings', 'allow_assistant_create_product', 'INTEGER DEFAULT 0');
+addColumnIfNotExists('clinic_settings', 'allow_doctor_create_supplier', 'INTEGER DEFAULT 0');
+addColumnIfNotExists('clinic_settings', 'allow_assistant_create_supplier', 'INTEGER DEFAULT 0');
+addColumnIfNotExists('clinic_settings', 'primary_color', "TEXT DEFAULT '#002147'");
+addColumnIfNotExists('clinic_settings', 'secondary_color', "TEXT DEFAULT '#D4AF37'");
+addColumnIfNotExists('clinic_settings', 'font_serif', "TEXT DEFAULT 'Lora'");
+addColumnIfNotExists('clinic_settings', 'font_sans', "TEXT DEFAULT 'Inter'");
 addColumnIfNotExists('tooth_annotations', 'bridge_id', 'TEXT');
 
 

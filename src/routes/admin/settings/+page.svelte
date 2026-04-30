@@ -111,6 +111,10 @@
                         : 0,
                 module_custom_roles:
                     resData.settings.module_custom_roles || "doctor",
+                primary_color: resData.settings.primary_color || "#002147",
+                secondary_color: resData.settings.secondary_color || "#D4AF37",
+                font_serif: resData.settings.font_serif || "Lora",
+                font_sans: resData.settings.font_sans || "Inter",
             };
             workingDays = resData.workingDays;
             closures = resData.closures;
@@ -119,12 +123,24 @@
     }
 
     async function saveClinicSettings() {
-        await fetch("/api/admin/clinic-settings", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(settings),
-        });
-        alert("Clinic settings saved successfully!");
+        try {
+            const res = await fetch("/api/admin/clinic-settings", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(settings),
+            });
+            
+            if (!res.ok) {
+                const errData = await res.json();
+                alert("Failed to save settings: " + (errData.error || "Unknown error"));
+                return;
+            }
+            
+            alert("Clinic settings saved successfully!");
+            window.location.reload();
+        } catch (e: any) {
+            alert("Network error while saving: " + e.message);
+        }
     }
 
     async function saveWorkingDays() {
@@ -299,6 +315,80 @@
                     >
                         Personnaliser les couleurs
                     </button>
+                </div>
+
+                <!-- Branding & Aesthetic (NEW) -->
+                <div class="px-8 py-6 bg-slate-50 border-b border-gray-100">
+                    <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <span>✨</span> Branding & Aesthetic
+                    </h2>
+                </div>
+                <div class="p-8 border-b border-gray-100">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Colors -->
+                        <div class="space-y-6">
+                            <h3 class="text-sm font-black uppercase tracking-widest text-gray-400">Brand Colors</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Primary Color</label>
+                                    <div class="flex gap-2">
+                                        <input type="color" bind:value={settings.primary_color} class="h-12 w-12 rounded-xl border border-gray-200 cursor-pointer p-1 bg-white" />
+                                        <input type="text" bind:value={settings.primary_color} class="flex-grow px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-mono" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Secondary Color</label>
+                                    <div class="flex gap-2">
+                                        <input type="color" bind:value={settings.secondary_color} class="h-12 w-12 rounded-xl border border-gray-200 cursor-pointer p-1 bg-white" />
+                                        <input type="text" bind:value={settings.secondary_color} class="flex-grow px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-mono" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Typography -->
+                        <div class="space-y-6">
+                            <h3 class="text-sm font-black uppercase tracking-widest text-gray-400">Typography</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Heading Font (Serif)</label>
+                                    <select bind:value={settings.font_serif} class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold">
+                                        <option value="Lora">Lora (Classic)</option>
+                                        <option value="Playfair Display">Playfair Display</option>
+                                        <option value="Merriweather">Merriweather</option>
+                                        <option value="Cormorant Garamond">Cormorant Garamond</option>
+                                        <option value="Prata">Prata</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Body Font (Sans)</label>
+                                    <select bind:value={settings.font_sans} class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold">
+                                        <option value="Inter">Inter (Modern)</option>
+                                        <option value="Montserrat">Montserrat</option>
+                                        <option value="Outfit">Outfit</option>
+                                        <option value="Poppins">Poppins</option>
+                                        <option value="Roboto">Roboto</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Box -->
+                    <div class="mt-8 p-8 rounded-2xl border border-gray-100 bg-white shadow-inner flex flex-col items-center justify-center text-center space-y-4" 
+                         style="--p-color: {settings.primary_color}; --s-color: {settings.secondary_color}; --f-serif: '{settings.font_serif}', serif; --f-sans: '{settings.font_sans}', sans-serif;">
+                        <span class="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-300 mb-2">Live Preview</span>
+                        <h4 class="text-3xl font-bold" style="color: var(--p-color); font-family: var(--f-serif);">
+                            Premium <span style="color: var(--s-color); font-style: italic; font-weight: normal;">Dental Care</span>
+                        </h4>
+                        <p class="text-sm max-w-xs text-gray-500 font-light" style="font-family: var(--f-sans);">
+                            Experience the future of dentistry with our customized branding system.
+                        </p>
+                        <button class="px-6 py-2 text-[10px] font-bold uppercase tracking-widest text-white rounded-sm transition-colors" 
+                                style="background-color: var(--p-color); font-family: var(--f-sans);">
+                            Book Appointment
+                        </button>
+                    </div>
                 </div>
                 <div class="p-8">
                     <div class="space-y-6">

@@ -1173,5 +1173,19 @@
         "hide_sidebar": "إخفاء",
         "show_sidebar": "النماذج والسجل",
         "save_as_template_title": "حفظ كنموذج"
+    },
+    "landing": {
+        "login": "تسجيل الدخول",
+        "book_appointment": "احجز موعداً",
+        "established_excellence": "تميز راسخ",
+        "hero_title_1": "ابتسامتك،",
+        "hero_title_2": "تحفتنا الفنية.",
+        "hero_description": "جرب العناية بالأسنان ذات المستوى العالمي حيث يلتقي الفن بالعلوم الطبية المتقدمة. نحن مكرسون لتوفير بيئة هادئة ونتائج استثنائية.",
+        "schedule_visit": "تحديد موعد للزيارة",
+        "direct_line": "خط مباشر",
+        "location": "الموقع",
+        "hours": "ساعات العمل",
+        "privacy_policy": "سياسة الخصوصية",
+        "terms_of_service": "شروط الخدمة"
     }
 }
