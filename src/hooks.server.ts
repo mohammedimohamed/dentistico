@@ -33,40 +33,51 @@ export const handle: Handle = async ({ event, resolve }) => {
         const { getServerConfig } = await import('$lib/server/db');
         const config = getServerConfig();
 
-        // Module Access Control
-        const modules = {
-            inventory: config.module_inventory !== 0,
-            billing: config.module_billing !== 0,
-            journey: config.module_journey !== 0,
-            dashboard: config.module_dashboard !== 0,
-            patients: config.module_patients !== 0,
-            prescriptions: config.module_prescriptions !== 0,
-            dental_chart: config.module_dental_chart !== 0,
-            custom: config.module_custom !== 0
+        const activeModules = {
+            inventory: Number(config.module_inventory ?? 1) !== 0,
+            billing: Number(config.module_billing ?? 1) !== 0,
+            journey: Number(config.module_journey ?? 1) !== 0,
+            dashboard: Number(config.module_dashboard ?? 1) !== 0,
+            patients: Number(config.module_patients ?? 1) !== 0,
+            prescriptions: Number(config.module_prescriptions ?? 1) !== 0,
+            dental_chart: Number(config.module_dental_chart ?? 1) !== 0,
+            custom: Number(config.module_custom ?? 1) !== 0
         };
+
+        // Emergency Bypass: Always allow core clinical routes to prevent doctor lockout
+        const bypassRoutes = ['/doctor/patients', '/doctor/dashboard'];
+        const isBypass = bypassRoutes.some(r => path === r || path.startsWith(r + '/'));
+
+        // Safe-list routes that should NEVER be blocked
+        const safeRoutes = ['/profile', '/login', '/logout', '/api'];
+        const isSafe = safeRoutes.some(r => path === r || path.startsWith(r + '/'));
 
         // Define route to module mapping
         const moduleRoutes: Record<string, boolean> = {
-            '/inventory': modules.inventory,
-            '/doctor/journey': modules.journey,
-            '/doctor/dashboard': modules.dashboard,
-            '/doctor/patients': modules.patients,
-            '/doctor/settings/medications': modules.prescriptions,
-            '/assistant/invoices': modules.billing,
-            '/assistant/spending': modules.billing,
-            '/admin/spending': modules.billing,
-            '/admin/cdt-codes': modules.dental_chart,
-            '/lab-tracking': modules.custom
+            '/inventory': activeModules.inventory,
+            '/doctor/journey': activeModules.journey,
+            '/doctor/dashboard': activeModules.dashboard,
+            '/doctor/patients': activeModules.patients,
+            '/doctor/settings/medications': activeModules.prescriptions,
+            '/assistant/invoices': activeModules.billing,
+            '/assistant/spending': activeModules.billing,
+            '/admin/spending': activeModules.billing,
+            '/admin/cdt-codes': activeModules.dental_chart,
+            '/lab-tracking': activeModules.custom
         };
 
         // Check if current path matches a disabled module
-        // We use a more specific check to avoid matching sub-routes incorrectly
         const matchedRoute = Object.keys(moduleRoutes).find(r => 
             path === r || path.startsWith(r + '/')
         );
         
-        if (matchedRoute && !moduleRoutes[matchedRoute]) {
-            // Redirect to profile as safe fallback
+        const isAllowed = isSafe || isBypass || (matchedRoute ? moduleRoutes[matchedRoute] : true);
+
+        // Debug logging - Matching USER request exactly
+        console.log(`[Firewall] Path: ${path} | Allowed: ${isAllowed} | Config: ${JSON.stringify(activeModules)}`);
+        
+        if (!isAllowed) {
+            console.warn(`[Firewall] Access denied to ${path} (Module disabled). Redirecting to /profile.`);
             throw redirect(303, '/profile');
         }
 

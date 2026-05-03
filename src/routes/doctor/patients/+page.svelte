@@ -10,17 +10,34 @@
     import QuickViewModal from "$lib/components/patients/QuickViewModal.svelte";
     import { LayoutGrid, List, Search, Filter, Settings, Save, RotateCcw, User, Phone, Calendar, Eye, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, Wind, Download } from 'lucide-svelte';
     import { downloadCSV } from "$lib/utils/export";
+    import DynamicFieldGenerator from "$lib/components/patients/DynamicFieldGenerator.svelte";
 
 
     let { data }: { data: PageData } = $props();
 
     let isCreateModalOpen = $state(false);
     let searchDebounceTimer: any;
+    let customFieldsValues = $state<Record<string, any>>({});
 
     // Initialize store with raw data from server
     $effect(() => {
         patientStore.rawPatients = data.patients;
         
+        // Inject custom fields as potential columns if not already present
+        if (data.customFieldDefinitions) {
+            data.customFieldDefinitions.forEach((def: any) => {
+                const colId = `custom_${def.name}`;
+                if (!patientStore.columns.find(c => c.id === colId)) {
+                    patientStore.columns.push({
+                        id: colId,
+                        label: def.name,
+                        visible: false,
+                        sortable: true
+                    });
+                }
+            });
+        }
+
         // Sync filters from URL
         untrack(() => {
             if (data.filter === 'has_rdv') patientStore.filters.rdvStatus = 'has_rdv';
@@ -476,6 +493,16 @@
                                                     {patient.last_visit ? new Date(patient.last_visit).toLocaleDateString() : '---'}
                                                 {:else if col.id === 'next_appointment'}
                                                     <span class="text-indigo-600">{patient.next_appointment ? formatRelativeDate(patient.next_appointment) : '---'}</span>
+                                                {:else if col.id.startsWith('custom_')}
+                                                    {@const fieldName = col.id.replace('custom_', '')}
+                                                    {@const customFields = patient.custom_fields ? JSON.parse(patient.custom_fields) : {}}
+                                                    <span class="text-xs text-slate-500 italic">
+                                                        {#if typeof customFields[fieldName] === 'object' && customFields[fieldName] !== null}
+                                                            📎 {customFields[fieldName].name}
+                                                        {:else}
+                                                            {customFields[fieldName] || '---'}
+                                                        {/if}
+                                                    </span>
                                                 {:else}
                                                     {patient[col.id] || '---'}
                                                 {/if}
@@ -623,6 +650,18 @@
                                     </div>
                                 </div>
                             </div>
+
+                            {#if data.customFieldDefinitions && data.customFieldDefinitions.length > 0}
+                                <div class="space-y-6">
+                                    <h4 class="text-xs font-black text-indigo-300 uppercase tracking-[0.3em]">Champs Personnalisés</h4>
+                                    <input type="hidden" name="custom_fields" value={JSON.stringify(customFieldsValues)} />
+                                    <DynamicFieldGenerator 
+                                        definitions={data.customFieldDefinitions} 
+                                        values={customFieldsValues}
+                                        onUpdate={(vals) => customFieldsValues = vals}
+                                    />
+                                </div>
+                            {/if}
                         </div>
                     </div>
                     <div class="px-10 py-8 bg-gray-50/50 flex gap-4 border-t border-gray-100">

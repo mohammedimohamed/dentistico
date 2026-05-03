@@ -30,7 +30,9 @@ import {
     getToothAnnotations,
     getDoctors,
     createAppointment,
-    updateAppointmentStatus
+    updateAppointmentStatus,
+    getCustomFieldDefinitions,
+    logCustomFieldChange
 } from '$lib/server/db';
 import fs from 'fs';
 import type { PageServerLoad, Actions } from './$types';
@@ -59,8 +61,9 @@ export const load: PageServerLoad = async ({ locals, params }: { locals: any, pa
     const invoices = (await import('$lib/server/db')).getInvoicesByPatient(patientId);
     const attachments = getAttachmentsByPatient(patientId);
 
-    const appConfig = getServerConfig();
+    const customFieldDefinitions = getCustomFieldDefinitions();
 
+    const appConfig = getServerConfig();
     const annotationsRaw = getToothAnnotations(patientId);
     const annotations: Record<number, any> = {};
     annotationsRaw.forEach((a: any) => {
@@ -84,7 +87,8 @@ export const load: PageServerLoad = async ({ locals, params }: { locals: any, pa
         notes: getClinicalNotes(patientId),
         family: getFamilyMembers(patientId),
         doctors: getDoctors(),
-        user: locals.user
+        user: locals.user,
+        customFieldDefinitions
     };
 };
 
@@ -109,6 +113,8 @@ export const actions: Actions = {
         }
 
         const pregnancyStatus = formData.get('pregnancy_status');
+        const customFieldsRaw = formData.get('custom_fields') as string;
+        
         const updatedData: any = {
             full_name: formData.get('full_name'),
             phone: formData.get('phone') || null,
@@ -136,7 +142,8 @@ export const actions: Actions = {
             substance_use: formData.get('substance_use') || null,
             previous_dentist: formData.get('previous_dentist') || null,
             last_visit_date: formData.get('last_visit_date') || null,
-            dental_notes: formData.get('dental_notes') || null
+            dental_notes: formData.get('dental_notes') || null,
+            custom_fields: customFieldsRaw || null
         };
 
         if (!updatedData.full_name) {
@@ -144,6 +151,37 @@ export const actions: Actions = {
         }
 
         try {
+            // --- AUDIT ENGINE (Phase 3) ---
+            const existingPatient = getPatientByIdFull(patientId);
+            if (existingPatient && customFieldsRaw) {
+                const oldFields = JSON.parse(existingPatient.custom_fields || '{}');
+                const newFields = JSON.parse(customFieldsRaw || '{}');
+                const definitions = getCustomFieldDefinitions();
+
+                for (const def of definitions) {
+                    if (def.is_auditable) {
+                        const oldVal = oldFields[def.name];
+                        const newVal = newFields[def.name];
+
+                        // Diffing logic
+                        const oldStr = typeof oldVal === 'object' && oldVal !== null ? JSON.stringify(oldVal) : String(oldVal || '');
+                        const newStr = typeof newVal === 'object' && newVal !== null ? JSON.stringify(newVal) : String(newVal || '');
+
+                        if (oldStr !== newStr) {
+                            console.log(`[Audit] Logging change for ${def.name} in patient ${patientId}`);
+                            logCustomFieldChange({
+                                patient_id: patientId,
+                                field_name: def.name,
+                                old_value: oldStr || null,
+                                new_value: newStr || null,
+                                changed_by: locals.user.username || String(locals.user.id)
+                            });
+                        }
+                    }
+                }
+            }
+            // -----------------------------
+
             updatePatient(patientId, updatedData, locals.user.id);
             return { success: true, message: 'Patient updated successfully' };
         } catch (e) {

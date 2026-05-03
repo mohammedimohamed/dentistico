@@ -18,6 +18,7 @@ export const NAVIGATION = {
         { label: "admin.nav.dashboard", href: "/admin", icon: "dashboard", module: "dashboard" },
         { label: "admin.nav.users", href: "/admin/users", icon: "patients", module: "patients" },
         { label: "admin.nav.settings", href: "/admin/settings", icon: "settings" },
+        { label: "Champs Patients", href: "/admin/settings/patients/custom-fields", icon: "settings" },
         { label: "admin.cdt_codes.title", href: "/admin/cdt-codes", icon: "settings", module: "dental_chart" },
         { label: "admin.nav.inventory", href: "/inventory", icon: "inventory", module: "inventory" },
         { label: "spending.menu", href: "/admin/spending", icon: "spending", module: "billing" },

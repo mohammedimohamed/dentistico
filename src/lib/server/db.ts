@@ -233,6 +233,50 @@ export function init_db() {
     `);
 
     db.exec(`
+        CREATE TABLE IF NOT EXISTS custom_field_definitions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            type TEXT CHECK(type IN ('text', 'number', 'select', 'file')) NOT NULL,
+            options TEXT, -- JSON array for select type
+            validation_regex TEXT, -- Optional regex for text fields
+            icon TEXT DEFAULT 'FileText',
+            is_auditable INTEGER DEFAULT 0,
+            is_required INTEGER DEFAULT 0,
+            display_order INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS custom_field_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            field_name TEXT NOT NULL,
+            old_value TEXT,
+            new_value TEXT,
+            changed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            changed_by TEXT,
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+        );
+    `);
+
+    // Migration for validation_regex if table existed before it was added
+    try {
+        const info = db.pragma('table_info(custom_field_definitions)') as any[];
+        if (!info.some(col => col.name === 'validation_regex')) {
+            db.exec('ALTER TABLE custom_field_definitions ADD COLUMN validation_regex TEXT');
+        }
+        if (!info.some(col => col.name === 'icon')) {
+            db.exec("ALTER TABLE custom_field_definitions ADD COLUMN icon TEXT DEFAULT 'FileText'");
+        }
+        if (!info.some(col => col.name === 'is_auditable')) {
+            db.exec("ALTER TABLE custom_field_definitions ADD COLUMN is_auditable INTEGER DEFAULT 0");
+        }
+    } catch (e) {
+        console.error('Migration for custom_field_definitions failed:', e);
+    }
+
+    db.exec(`
         INSERT OR IGNORE INTO settings (key, value) VALUES 
         ('dental_color_sain', '#f1f5f9'),
         ('dental_color_carie', '#f87171'),
@@ -293,6 +337,7 @@ export function init_db() {
                                 user_id INTEGER, --Linked authentication account
             last_updated TEXT DEFAULT(datetime('now')), --Track history updates
             teeth_treatments TEXT DEFAULT '{}', --JSON stored as string for dental chart
+            custom_fields TEXT DEFAULT '{}', -- JSON stored as string for dynamic fields
             FOREIGN KEY(created_by) REFERENCES users(id),
         FOREIGN KEY(primary_contract_id) REFERENCES patients(id),
             FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -371,6 +416,8 @@ export function init_db() {
     addColumnIfNotExists('clinic_settings', 'module_custom', 'INTEGER DEFAULT 0');
     addColumnIfNotExists('clinic_settings', 'module_custom_roles', "TEXT DEFAULT 'doctor'");
     addColumnIfNotExists('clinic_settings', 'dental_chart_mode', "TEXT DEFAULT 'v1'");
+    addColumnIfNotExists('custom_field_definitions', 'validation_regex', "TEXT");
+    addColumnIfNotExists('patients', 'custom_fields', "TEXT DEFAULT '{}'");
 
     db.exec(`CREATE INDEX IF NOT EXISTS idx_appointments_checkin ON appointments(checked_in, waiting_room_status, check_in_time);`);
 
@@ -4074,3 +4121,93 @@ try {
 } catch (e) {
     console.error('Migration for lab_tracking statuses failed:', e);
 }
+
+// --- Custom Field Definitions ---
+
+export function getCustomFieldDefinitions() {
+    return db.prepare('SELECT * FROM custom_field_definitions ORDER BY display_order ASC, name ASC').all();
+}
+
+export function createCustomFieldDefinition(data: {
+    name: string;
+    type: 'text' | 'number' | 'select' | 'file';
+    options?: string;
+    validation_regex?: string;
+    icon?: string;
+    is_auditable?: number;
+    is_required?: number;
+    is_full_width?: number;
+    display_order?: number;
+}) {
+    const stmt = db.prepare(`
+        INSERT INTO custom_field_definitions (name, type, options, validation_regex, icon, is_auditable, is_required, is_full_width, display_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(
+        data.name,
+        data.type,
+        data.options ?? '',
+        data.validation_regex ?? '',
+        data.icon ?? 'FileText',
+        data.is_auditable ?? 0,
+        data.is_required ?? 0,
+        data.is_full_width ?? 0,
+        data.display_order ?? 0
+    );
+    return result.lastInsertRowid;
+}
+
+export function updateCustomFieldDefinition(id: number, data: {
+    name?: string;
+    type?: 'text' | 'number' | 'select' | 'file';
+    options?: string;
+    validation_regex?: string;
+    icon?: string;
+    is_auditable?: number;
+    is_required?: number;
+    is_full_width?: number;
+    display_order?: number;
+}) {
+    const sets = [];
+    const params: any[] = [];
+    if (data.name) { sets.push('name = ?'); params.push(data.name); }
+    if (data.type) { sets.push('type = ?'); params.push(data.type); }
+    if (data.options !== undefined) { sets.push('options = ?'); params.push(data.options); }
+    if (data.validation_regex !== undefined) { sets.push('validation_regex = ?'); params.push(data.validation_regex); }
+    if (data.icon !== undefined) { sets.push('icon = ?'); params.push(data.icon); }
+    if (data.is_auditable !== undefined) { sets.push('is_auditable = ?'); params.push(data.is_auditable); }
+    if (data.is_required !== undefined) { sets.push('is_required = ?'); params.push(data.is_required); }
+    if (data.is_full_width !== undefined) { sets.push('is_full_width = ?'); params.push(data.is_full_width); }
+    if (data.display_order !== undefined) { sets.push('display_order = ?'); params.push(data.display_order); }
+
+    if (sets.length === 0) return;
+
+    params.push(id);
+    const stmt = db.prepare(`UPDATE custom_field_definitions SET ${sets.join(', ')} WHERE id = ?`);
+    return stmt.run(...params);
+}
+
+export function logCustomFieldChange(data: {
+    patient_id: number;
+    field_name: string;
+    old_value: string | null;
+    new_value: string | null;
+    changed_by: string;
+}) {
+    const stmt = db.prepare(`
+        INSERT INTO custom_field_history (patient_id, field_name, old_value, new_value, changed_by)
+        VALUES (?, ?, ?, ?, ?)
+    `);
+    return stmt.run(
+        data.patient_id,
+        data.field_name,
+        data.old_value,
+        data.new_value,
+        data.changed_by
+    );
+}
+
+export function deleteCustomFieldDefinition(id: number) {
+    return db.prepare('DELETE FROM custom_field_definitions WHERE id = ?').run(id);
+}
+export function getCustomFieldHistory(patientId, fieldName) { return db.prepare('SELECT * FROM custom_field_history WHERE patient_id = ? AND field_name = ? ORDER BY changed_at DESC').all(patientId, fieldName); }

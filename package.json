@@ -35,6 +35,7 @@
 		"pdfkit": "^0.17.2",
 		"puppeteer": "^24.36.0",
 		"qrcode": "^1.5.4",
+		"svelte-dnd-action": "^0.9.69",
 		"svelte-i18n": "^4.0.1"
 	},
 	"devDependencies": {

@@ -19,6 +19,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
     const patients = getPatientsEnhanced({ searchTerm: searchQuery, filter, limit, offset });
     const totalPatients = getPatientsCount(searchQuery, filter);
+    
+    // Load custom field definitions for the "New Patient" modal
+    const { getCustomFieldDefinitions } = await import('$lib/server/db');
+    const customFieldDefinitions = getCustomFieldDefinitions();
 
     return {
         patients,
@@ -28,7 +32,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         page,
         limit,
         totalPages: limit > 0 ? Math.ceil(totalPatients / limit) : 1,
-        user: locals.user
+        user: locals.user,
+        customFieldDefinitions
     };
 };
 
@@ -43,6 +48,7 @@ export const actions: Actions = {
         const phone = formData.get('phone') as string;
         const dobRaw = formData.get('date_of_birth') as string;
         const email = formData.get('email') as string;
+        const customFieldsRaw = formData.get('custom_fields') as string;
 
         if (!fullName || !dobRaw) {
             return fail(400, { error: 'Name and date of birth are required' });
@@ -75,6 +81,7 @@ export const actions: Actions = {
                 emergency_contact_relationship: formData.get('emergency_contact_relationship') as string || null,
                 insurance_provider: formData.get('insurance_provider') as string || null,
                 insurance_number: formData.get('insurance_number') as string || null,
+                custom_fields: customFieldsRaw || null,
                 created_by: locals.user.id
             };
 

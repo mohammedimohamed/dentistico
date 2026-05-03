@@ -1,0 +1,14 @@
+# .graphifyignore
+node_modules/
+dist/
+.svelte-kit/
+.git/
+*.db
+*.db-shm
+*.db-wal
+*.zip
+playwright-report/
+test-results/
+graphify-out/
+check_dashboard.txt
+check_output.txt

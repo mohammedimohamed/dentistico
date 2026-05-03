@@ -89,7 +89,19 @@ class PatientStore {
                 p.full_name?.toLowerCase().includes(s) || 
                 p.phone?.includes(s) || 
                 p.city?.toLowerCase().includes(s) ||
-                p.id?.toString().includes(s)
+                p.id?.toString().includes(s) ||
+                (() => {
+                    if (!p.custom_fields) return false;
+                    try {
+                        const cf = JSON.parse(p.custom_fields);
+                        return Object.values(cf).some(v => 
+                            String(v).toLowerCase().includes(s) ||
+                            (typeof v === 'object' && v !== null && (v as any).name && String((v as any).name).toLowerCase().includes(s))
+                        );
+                    } catch {
+                        return p.custom_fields.toLowerCase().includes(s);
+                    }
+                })()
             );
         }
 

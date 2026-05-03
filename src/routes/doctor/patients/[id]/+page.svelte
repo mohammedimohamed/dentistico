@@ -41,6 +41,39 @@ import QuickPaymentModal from "$lib/components/patients/QuickPaymentModal.svelte
     let isPaymentModalOpen = $state(false);
     let isPrescriptionModalOpen = $state(false);
     let isAppointmentModalOpen = $state(false);
+    let saveSuccess = $state(false);
+
+    import { untrack } from "svelte";
+    import DynamicFieldGenerator from "$lib/components/patients/DynamicFieldGenerator.svelte";
+    
+    // Initialize directly from data to avoid initial empty state
+    let customFieldsValues = $state<Record<string, any>>(
+        data.patient.custom_fields 
+            ? (() => { try { return JSON.parse(data.patient.custom_fields); } catch { return {}; } })()
+            : {}
+    );
+
+    // Keep effect for when data.patient changes (e.g. after a save or navigation)
+    $effect(() => {
+        // Track data.patient.custom_fields
+        const serverData = data.patient.custom_fields;
+        
+        untrack(() => {
+            if (serverData) {
+                try {
+                    const parsed = JSON.parse(serverData);
+                    const currentStr = JSON.stringify($state.snapshot(customFieldsValues));
+                    const newStr = JSON.stringify(parsed);
+                    
+                    if (newStr !== currentStr) {
+                        customFieldsValues = parsed;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse custom fields:", e);
+                }
+            }
+        });
+    });
 
 </script>
 
@@ -132,11 +165,68 @@ import QuickPaymentModal from "$lib/components/patients/QuickPaymentModal.svelte
                 >
                     Finances
                 </button>
+                <button 
+                    onclick={() => activeTab = "admin"}
+                    class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'admin' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
+                >
+                    Dossier Administratif
+                </button>
             </div>
 
             <!-- Tab Content -->
             <div class="bg-white rounded-[40px] border border-slate-200 shadow-sm min-h-[600px] overflow-hidden">
-                {#if activeTab === "odontogramme" && data.config?.module_dental_chart !== 0}
+                {#if activeTab === "admin"}
+                    <div class="p-10 w-full">
+                        <div class="flex items-center justify-between mb-10">
+                            <div>
+                                <h2 class="text-2xl font-black text-slate-900">Champs Personnalisés</h2>
+                                <p class="text-sm text-slate-500 font-medium">Informations cliniques et administratives spécifiques</p>
+                            </div>
+                        </div>
+
+                        <form 
+                            method="POST" 
+                            action="?/updatePatient" 
+                            use:enhance={() => {
+                                return async ({ result }) => {
+                                    if (result.type === 'success') {
+                                        // Patient updated successfully
+                                        // SvelteKit will invalidate data automatically
+                                        saveSuccess = true;
+                                        setTimeout(() => saveSuccess = false, 3000);
+                                    }
+                                };
+                            }}
+                        >
+                            <input type="hidden" name="full_name" value={data.patient.full_name} />
+                            <input type="hidden" name="custom_fields" value={JSON.stringify($state.snapshot(customFieldsValues))} />
+                            
+                            <div class="bg-slate-50/50 rounded-[32px] p-8 border border-slate-100">
+                                <DynamicFieldGenerator 
+                                    definitions={data.customFieldDefinitions}
+                                    values={customFieldsValues}
+                                    patientId={data.patient.id}
+                                    onUpdate={(vals) => customFieldsValues = vals}
+                                />
+                            </div>
+
+                            <div class="mt-8 flex items-center justify-between">
+                                <div class="flex-1">
+                                    {#if saveSuccess}
+                                        <div class="flex items-center gap-2 text-emerald-600 font-bold text-sm" in:fade>
+                                            <Check size={18} />
+                                            Modifications enregistrées avec succès
+                                        </div>
+                                    {/if}
+                                </div>
+                                <button type="submit" class="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2">
+                                    <Check size={18} />
+                                    ENREGISTRER LES MODIFICATIONS
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                {:else if activeTab === "odontogramme" && data.config?.module_dental_chart !== 0}
                     <div class="p-10">
                         <OdontogrammePro 
                             patientId={data.patient.id} 
