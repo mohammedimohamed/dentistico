@@ -6,9 +6,28 @@
     import OdontogrammePro from "$lib/components/dental-v2/OdontogrammePro.svelte";
     import PrescriptionBuilder from "$lib/components/PrescriptionBuilder.svelte";
     import { page } from "$app/state";
-    import { Baby, Phone, AlertTriangle, Stethoscope, Calendar, Check, Banknote, MapPin, Mail, X, Smartphone, Clock } from "lucide-svelte";
-import AppointmentModal from "$lib/components/patients/AppointmentModal.svelte";
+    import AppointmentModal from "$lib/components/patients/AppointmentModal.svelte";
 import QuickPaymentModal from "$lib/components/patients/QuickPaymentModal.svelte";
+import PatientMetadataPanel from "$lib/components/patients/PatientMetadataPanel.svelte";
+import { 
+    Baby, 
+    Phone, 
+    AlertTriangle, 
+    Stethoscope, 
+    Calendar, 
+    Check, 
+    Banknote, 
+    MapPin, 
+    Mail, 
+    X, 
+    Smartphone, 
+    Clock,
+    PanelRightClose,
+    PanelRightOpen,
+    Menu,
+    ChevronRight
+} from "lucide-svelte";
+import { fly, fade, slide } from "svelte/transition";
 
     let { data }: { data: PageData } = $props();
     let activeTab = $state();
@@ -75,6 +94,15 @@ import QuickPaymentModal from "$lib/components/patients/QuickPaymentModal.svelte
         });
     });
 
+    let isSidebarOpen = $state(true);
+    let isMobileDrawerOpen = $state(false);
+
+    // Auto-collapse sidebar on smaller screens initially
+    $effect(() => {
+        if (typeof window !== 'undefined' && window.innerWidth < 1400) {
+            isSidebarOpen = false;
+        }
+    });
 </script>
 
 <div class="min-h-screen bg-[#f8fafc] font-sans">
@@ -140,38 +168,71 @@ import QuickPaymentModal from "$lib/components/patients/QuickPaymentModal.svelte
         </div>
     </header>
 
-    <div class="max-w-[1600px] mx-auto px-6 py-8 flex flex-col lg:flex-row gap-8 items-start">
-        <!-- Main Content (Tabs) -->
-        <main class="flex-1 min-w-0 w-full order-1 lg:order-1">
-            <!-- Tab Switcher -->
-            <div class="flex bg-white p-2 rounded-3xl border border-slate-200 mb-8 w-fit shadow-sm overflow-x-auto">
-                {#if data.config?.module_dental_chart !== 0}
-                    <button 
-                        onclick={() => activeTab = "odontogramme"}
-                        class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'odontogramme' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
-                    >
-                        Odontogramme
-                    </button>
-                {/if}
+    <div class="max-w-[1800px] mx-auto px-6 py-8">
+        <div class="flex flex-col xl:flex-row gap-8 items-start relative">
+            <!-- Mobile Toggle / Sub-header -->
+            <div class="xl:hidden w-full flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold border border-indigo-100">
+                        {data.patient.full_name.charAt(0)}
+                    </div>
+                    <span class="font-bold text-slate-900">{data.patient.full_name}</span>
+                </div>
                 <button 
-                    onclick={() => activeTab = "historique"}
-                    class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'historique' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
+                    onclick={() => isMobileDrawerOpen = true}
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 shadow-lg shadow-indigo-100"
                 >
-                    Historique & Planning
-                </button>
-                <button 
-                    onclick={() => activeTab = "finances"}
-                    class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'finances' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
-                >
-                    Finances
-                </button>
-                <button 
-                    onclick={() => activeTab = "admin"}
-                    class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'admin' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
-                >
-                    Dossier Administratif
+                    <Menu size={16} />
+                    ACTIONS
                 </button>
             </div>
+            <!-- Main Content (Tabs) -->
+            <main class="flex-1 min-w-0 w-full transition-all duration-500 ease-in-out {isSidebarOpen ? 'xl:pr-0' : 'xl:pr-0'}">
+                <!-- Tab Switcher + Wide Mode Toggle -->
+                <div class="flex items-center justify-between mb-8 gap-4 flex-wrap">
+                    <div class="flex bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-x-auto no-scrollbar">
+                        {#if data.config?.module_dental_chart !== 0}
+                            <button 
+                                onclick={() => activeTab = "odontogramme"}
+                                class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'odontogramme' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
+                            >
+                                Odontogramme
+                            </button>
+                        {/if}
+                        <button 
+                            onclick={() => activeTab = "historique"}
+                            class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'historique' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
+                        >
+                            Historique & Planning
+                        </button>
+                        <button 
+                            onclick={() => activeTab = "finances"}
+                            class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'finances' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
+                        >
+                            Finances
+                        </button>
+                        <button 
+                            onclick={() => activeTab = "admin"}
+                            class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'admin' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
+                        >
+                            Dossier Administratif
+                        </button>
+                    </div>
+
+                    <button 
+                        onclick={() => isSidebarOpen = !isSidebarOpen}
+                        class="hidden xl:flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-2xl font-bold text-xs text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+                        title={isSidebarOpen ? "Fermer le panneau latéral" : "Ouvrir le panneau latéral"}
+                    >
+                        {#if isSidebarOpen}
+                            <PanelRightClose size={18} />
+                            WIDE CANVAS
+                        {:else}
+                            <PanelRightOpen size={18} />
+                            PANNEAU LATÉRAL
+                        {/if}
+                    </button>
+                </div>
 
             <!-- Tab Content -->
             <div class="bg-white rounded-[40px] border border-slate-200 shadow-sm min-h-[600px] overflow-hidden">
@@ -449,60 +510,76 @@ import QuickPaymentModal from "$lib/components/patients/QuickPaymentModal.svelte
             </div>
         </main>
 
-        <!-- Sidebar Quick Actions (Now on the Right and Sticky) -->
-        <aside class="w-full lg:w-72 shrink-0 space-y-6 lg:sticky lg:top-28 order-2 lg:order-2">
-            <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-                <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Actions Rapides</h3>
-                <div class="space-y-3">
-                    <button 
-                        onclick={() => isAppointmentModalOpen = true} 
-                        class="flex items-center gap-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-100 group"
-                    >
-                        <Calendar size={20} class="group-hover:scale-110 transition-transform" />
-                        Fixer prochain RDV
-                    </button>
-                    <!-- <button onclick={() => isPrescriptionModalOpen = true} class="flex items-center gap-3 w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 p-4 rounded-2xl font-bold transition-all">
-                        <span class="text-xl">📄</span>
-                        Imprimer Ordonnance
-                    </button> -->
-                    <button onclick={() => isPaymentModalOpen = true} class="flex items-center gap-3 w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-100 p-4 rounded-2xl font-bold transition-all mt-4">
-                        <Banknote size={20} />
-                        Encaisser Paiement
-                    </button>
-                </div>
-            </div>
-
-            <!-- Secondary Info -->
-            <div class="bg-slate-100/50 rounded-3xl p-6 border border-slate-200/50">
-                <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Infos Patient</h4>
-                <div class="space-y-4">
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><Smartphone size={10} /> Téléphone</p>
-                        <p class="text-sm font-semibold text-slate-700">{data.patient.phone || '—'}</p>
-                    </div>
-                    {#if data.patient.secondary_phone}
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><Phone size={10} /> Fixe / Autre</p>
-                        <p class="text-sm font-semibold text-slate-700">{data.patient.secondary_phone}</p>
-                    </div>
-                    {/if}
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><Mail size={10} /> Email</p>
-                        <p class="text-sm font-semibold text-slate-700 truncate">{data.patient.email || '—'}</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><MapPin size={10} /> Adresse</p>
-                        <p class="text-sm font-semibold text-slate-700">
-                            {data.patient.address || ''}
-                            {data.patient.city ? `, ${data.patient.city}` : ''}
-                            {!data.patient.address && !data.patient.city ? '—' : ''}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </aside>
+            <!-- Sidebar (Desktop Collapsible) -->
+            {#if isSidebarOpen}
+                <aside 
+                    class="hidden xl:block w-80 shrink-0 sticky top-28 transition-all duration-500"
+                    transition:fly={{ x: 50, duration: 400 }}
+                >
+                    <PatientMetadataPanel 
+                        patient={data.patient} 
+                        onAppointmentClick={() => isAppointmentModalOpen = true}
+                        onPaymentClick={() => isPaymentModalOpen = true}
+                    />
+                </aside>
+            {/if}
+        </div>
     </div>
 </div>
+
+<!-- Mobile Drawer -->
+{#if isMobileDrawerOpen}
+    <div class="fixed inset-0 z-[100] xl:hidden">
+        <!-- Backdrop -->
+        <div 
+            class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+            onclick={() => isMobileDrawerOpen = false}
+            transition:fade
+        ></div>
+        
+        <!-- Drawer -->
+        <div 
+            class="absolute right-0 top-0 bottom-0 w-80 bg-slate-50 shadow-2xl p-6 flex flex-col"
+            transition:fly={{ x: 320, duration: 300 }}
+        >
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="text-xl font-black text-slate-900">Patient & Actions</h3>
+                <button 
+                    onclick={() => isMobileDrawerOpen = false}
+                    class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-rose-500"
+                >
+                    <X size={20} />
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                <PatientMetadataPanel 
+                    patient={data.patient} 
+                    onAppointmentClick={() => { isMobileDrawerOpen = false; isAppointmentModalOpen = true; }}
+                    onPaymentClick={() => { isMobileDrawerOpen = false; isPaymentModalOpen = true; }}
+                />
+            </div>
+
+            <div class="mt-8 pt-8 border-t border-slate-200">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold border border-indigo-100">
+                        {data.patient.full_name.charAt(0)}
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-900">{data.patient.full_name}</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{age} ans</p>
+                    </div>
+                </div>
+                <button 
+                    onclick={() => isMobileDrawerOpen = false}
+                    class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                >
+                    FERMER
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
 
 <!-- Modal for New Payment handled by QuickPaymentModal -->
 
