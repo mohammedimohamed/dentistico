@@ -242,6 +242,7 @@ export function init_db() {
             icon TEXT DEFAULT 'FileText',
             is_auditable INTEGER DEFAULT 0,
             is_required INTEGER DEFAULT 0,
+            is_full_width INTEGER DEFAULT 0,
             display_order INTEGER DEFAULT 0,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -4086,6 +4087,7 @@ addColumnIfNotExists('clinic_settings', 'secondary_color', "TEXT DEFAULT '#D4AF3
 addColumnIfNotExists('clinic_settings', 'font_serif', "TEXT DEFAULT 'Lora'");
 addColumnIfNotExists('clinic_settings', 'font_sans', "TEXT DEFAULT 'Inter'");
 addColumnIfNotExists('tooth_annotations', 'bridge_id', 'TEXT');
+addColumnIfNotExists('custom_field_definitions', 'is_full_width', 'INTEGER DEFAULT 0');
 
 
 // Migrate lab_tracking to support extended statuses

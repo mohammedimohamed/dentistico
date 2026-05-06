@@ -245,18 +245,23 @@
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onclick={() => isModalOpen = false}></div>
         
         <div 
-            class="relative bg-white w-full max-w-xl rounded-[40px] shadow-2xl overflow-hidden border border-slate-100"
+            class="relative bg-white w-full max-w-xl max-h-[90vh] rounded-[40px] shadow-2xl overflow-hidden border border-slate-100 flex flex-col"
             in:scale={{ duration: 300, start: 0.95 }}
         >
-            <form method="POST" action={editingDefinition?.id ? "?/update" : "?/create"} use:enhance={() => {
-                return async ({ result, update }) => {
-                    if (result.type === 'success') {
-                        isModalOpen = false;
-                    }
-                    await update();
-                };
-            }}>
-                <div class="p-10">
+            <form 
+                method="POST" 
+                action={editingDefinition?.id ? "?/update" : "?/create"} 
+                class="flex flex-col min-h-0"
+                use:enhance={() => {
+                    return async ({ result, update }) => {
+                        if (result.type === 'success') {
+                            isModalOpen = false;
+                        }
+                        await update();
+                    };
+                }}
+            >
+                <div class="p-10 overflow-y-auto flex-1 custom-scrollbar">
                     <div class="flex justify-between items-center mb-10">
                         <h2 class="text-3xl font-black text-slate-900">
                             {editingDefinition?.id ? "Modifier le champ" : "Nouveau champ"}
@@ -456,7 +461,7 @@
                     </div>
                 </div>
 
-                <div class="p-8 bg-slate-50 flex gap-4">
+                <div class="p-8 bg-slate-50 flex gap-4 shrink-0 border-t border-slate-100">
                     <button 
                         type="submit"
                         class="flex-1 py-5 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
@@ -476,3 +481,19 @@
         </div>
     </div>
 {/if}
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #cbd5e1;
+    }
+</style>
