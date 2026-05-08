@@ -242,7 +242,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                         onclick={() => activeTab = "admin"}
                         class="px-5 py-1.5 rounded-lg font-bold text-[11px] transition-all whitespace-nowrap {activeTab === 'admin' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
                     >
-                        Dossier Administratif
+                        Fiche Personnalisée
                     </button>
                 </div>
 

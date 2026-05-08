@@ -43,6 +43,8 @@
         is_full_width: number;
         icon: string;
         validation_regex: string;
+        tab_name: string;
+        group_name: string;
     }
 
     import FieldHistoryModal from './FieldHistoryModal.svelte';
@@ -98,106 +100,161 @@
         }
     }
 
+    // Grouping Logic
+    const organizedFields = $derived.by(() => {
+        const result: Record<string, Record<string, Definition[]>> = {};
+        for (const def of definitions) {
+            const tab = def.tab_name || "Général";
+            const group = def.group_name || "Informations";
+            
+            if (!result[tab]) result[tab] = {};
+            if (!result[tab][group]) result[tab][group] = [];
+            
+            result[tab][group].push(def);
+        }
+        return result;
+    });
+
+    const tabs = $derived(Object.keys(organizedFields));
+    let activeTab = $state("");
+    
+    $effect(() => {
+        if (tabs.length > 0 && !activeTab) {
+            activeTab = tabs[0];
+        }
+    });
+
 </script>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-1">
-    {#each definitions as def (def.id)}
-        <div class="space-y-3 {def.is_full_width ? 'md:col-span-2' : ''}" in:fade>
-            <div class="flex items-center justify-between px-1">
-                <label class="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100/50">
-                        <svelte:component this={iconMap[def.icon] || FileText} size={16} />
-                    </div>
-                    {def.name}
-                    {#if def.is_required}
-                        <span class="text-rose-500 font-black text-lg">*</span>
-                    {/if}
-                    
-                    {#if def.is_auditable}
-                        <button 
-                            type="button"
-                            onclick={() => openHistory(def.name)}
-                            class="ml-auto w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-amber-100 hover:text-amber-600 border border-slate-100 hover:border-amber-200 transition-all shadow-sm group"
-                            title="Voir l'historique"
-                        >
-                            <Clock size={16} class="group-hover:rotate-12 transition-transform" />
-                        </button>
-                    {/if}
-                </label>
-                
-                {#if def.type === 'text' && def.validation_regex}
-                    {@const isValid = validateRegex(values[def.name] || '', def.validation_regex)}
-                    <div class="flex items-center gap-1">
-                        {#if values[def.name]}
-                            {#if isValid}
-                                <CheckCircle2 size={12} class="text-emerald-500" />
-                            {:else}
-                                <span class="text-[8px] font-bold text-rose-500 uppercase tracking-tighter">Format invalide</span>
-                                <AlertCircle size={12} class="text-rose-500" />
-                            {/if}
-                        {/if}
-                    </div>
-                {/if}
-            </div>
-
-            {#if def.type === 'text' || def.type === 'number'}
-                <input 
-                    type={def.type}
-                    value={values[def.name] || ''}
-                    oninput={(e) => handleChange(def.name, e.currentTarget.value)}
-                    required={def.is_required === 1}
-                    class="w-full px-6 py-4 bg-white border-2 border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 rounded-[20px] outline-none transition-all font-bold text-base text-slate-900 shadow-sm placeholder:text-slate-300"
-                    placeholder={`Saisir ${def.name.toLowerCase()}...`}
-                />
-            {:else if def.type === 'select'}
-                {@const options = JSON.parse(def.options || '[]')}
-                <select 
-                    value={values[def.name] || ''}
-                    onchange={(e) => handleChange(def.name, e.currentTarget.value)}
-                    required={def.is_required === 1}
-                    class="w-full px-6 py-4 bg-white border-2 border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 rounded-[20px] outline-none transition-all font-bold text-base text-slate-900 appearance-none cursor-pointer shadow-sm"
+<div class="space-y-10">
+    <!-- Tab Switcher (Sub-tabs) -->
+    {#if tabs.length > 1}
+        <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100 overflow-x-auto no-scrollbar w-fit">
+            {#each tabs as tab}
+                <button 
+                    onclick={() => activeTab = tab}
+                    class="px-5 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all whitespace-nowrap
+                        {activeTab === tab ? 'bg-white text-indigo-600 shadow-sm border border-slate-200' : 'text-slate-400 hover:text-slate-600'}"
                 >
-                    <option value="">-- Choisir --</option>
-                    {#each options as opt}
-                        <option value={opt}>{opt}</option>
-                    {/each}
-                </select>
-            {:else if def.type === 'file'}
-                <div class="relative group">
-                    {#if values[def.name]}
-                        <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-xl border border-indigo-100" in:slide>
-                            <div class="flex items-center gap-3 overflow-hidden">
-                                <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-indigo-600 shrink-0">
-                                    <FileText size={16} />
-                                </div>
-                                <div class="overflow-hidden">
-                                    <p class="text-xs font-black text-indigo-900 truncate leading-none">{values[def.name].name}</p>
-                                    <p class="text-[10px] text-indigo-400 font-bold mt-1 uppercase tracking-tighter">
-                                        {(values[def.name].size / 1024).toFixed(1)} KB
-                                    </p>
-                                </div>
-                            </div>
-                            <button 
-                                type="button"
-                                onclick={() => handleChange(def.name, null)}
-                                class="w-8 h-8 rounded-full hover:bg-rose-100 hover:text-rose-600 flex items-center justify-center text-indigo-400 transition-all"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-                    {:else}
-                        <label class="flex flex-col items-center justify-center w-full h-12 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all group">
-                            <div class="flex items-center gap-2">
-                                <Upload size={14} class="text-slate-400 group-hover:text-indigo-600" />
-                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-600">Télécharger</span>
-                            </div>
-                            <input type="file" class="hidden" onchange={(e) => handleFileChange(def.name, e)} />
-                        </label>
-                    {/if}
-                </div>
-            {/if}
+                    {tab}
+                </button>
+            {/each}
         </div>
-    {/each}
+    {/if}
+
+    <!-- Tab Content -->
+    {#if activeTab && organizedFields[activeTab]}
+        <div class="space-y-12" in:fade>
+            {#each Object.entries(organizedFields[activeTab]) as [groupName, fields]}
+                <div class="space-y-6">
+                    <div class="flex items-center gap-4">
+                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">{groupName}</h3>
+                        <div class="h-px bg-slate-100 w-full"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {#each fields as def (def.id)}
+                            <div class="space-y-3 {def.is_full_width ? 'md:col-span-2' : ''}" in:fade>
+                                <div class="flex items-center justify-between px-1">
+                                    <label class="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100/50">
+                                            <svelte:component this={iconMap[def.icon] || FileText} size={16} />
+                                        </div>
+                                        {def.name}
+                                        {#if def.is_required}
+                                            <span class="text-rose-500 font-black text-lg">*</span>
+                                        {/if}
+                                        
+                                        {#if def.is_auditable}
+                                            <button 
+                                                type="button"
+                                                onclick={() => openHistory(def.name)}
+                                                class="ml-auto w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-amber-100 hover:text-amber-600 border border-slate-100 hover:border-amber-200 transition-all shadow-sm group"
+                                                title="Voir l'historique"
+                                            >
+                                                <Clock size={16} class="group-hover:rotate-12 transition-transform" />
+                                            </button>
+                                        {/if}
+                                    </label>
+                                    
+                                    {#if def.type === 'text' && def.validation_regex}
+                                        {@const isValid = validateRegex(values[def.name] || '', def.validation_regex)}
+                                        <div class="flex items-center gap-1">
+                                            {#if values[def.name]}
+                                                {#if isValid}
+                                                    <CheckCircle2 size={12} class="text-emerald-500" />
+                                                {:else}
+                                                    <span class="text-[8px] font-bold text-rose-500 uppercase tracking-tighter">Format invalide</span>
+                                                    <AlertCircle size={12} class="text-rose-500" />
+                                                {/if}
+                                            {/if}
+                                        </div>
+                                    {/if}
+                                </div>
+
+                                {#if def.type === 'text' || def.type === 'number'}
+                                    <input 
+                                        type={def.type}
+                                        value={values[def.name] || ''}
+                                        oninput={(e) => handleChange(def.name, e.currentTarget.value)}
+                                        required={def.is_required === 1}
+                                        class="w-full px-6 py-4 bg-white border-2 border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 rounded-[20px] outline-none transition-all font-bold text-base text-slate-900 shadow-sm placeholder:text-slate-300"
+                                        placeholder={`Saisir ${def.name.toLowerCase()}...`}
+                                    />
+                                {:else if def.type === 'select'}
+                                    {@const options = JSON.parse(def.options || '[]')}
+                                    <select 
+                                        value={values[def.name] || ''}
+                                        onchange={(e) => handleChange(def.name, e.currentTarget.value)}
+                                        required={def.is_required === 1}
+                                        class="w-full px-6 py-4 bg-white border-2 border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 rounded-[20px] outline-none transition-all font-bold text-base text-slate-900 appearance-none cursor-pointer shadow-sm"
+                                    >
+                                        <option value="">-- Choisir --</option>
+                                        {#each options as opt}
+                                            <option value={opt}>{opt}</option>
+                                        {/each}
+                                    </select>
+                                {:else if def.type === 'file'}
+                                    <div class="relative group">
+                                        {#if values[def.name]}
+                                            <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-xl border border-indigo-100" in:slide>
+                                                <div class="flex items-center gap-3 overflow-hidden">
+                                                    <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-indigo-600 shrink-0">
+                                                        <FileText size={16} />
+                                                    </div>
+                                                    <div class="overflow-hidden">
+                                                        <p class="text-xs font-black text-indigo-900 truncate leading-none">{values[def.name].name}</p>
+                                                        <p class="text-[10px] text-indigo-400 font-bold mt-1 uppercase tracking-tighter">
+                                                            {(values[def.name].size / 1024).toFixed(1)} KB
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    type="button"
+                                                    onclick={() => handleChange(def.name, null)}
+                                                    class="w-8 h-8 rounded-full hover:bg-rose-100 hover:text-rose-600 flex items-center justify-center text-indigo-400 transition-all"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        {:else}
+                                            <label class="flex flex-col items-center justify-center w-full h-12 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all group">
+                                                <div class="flex items-center gap-2">
+                                                    <Upload size={14} class="text-slate-400 group-hover:text-indigo-600" />
+                                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-600">Télécharger</span>
+                                                </div>
+                                                <input type="file" class="hidden" onchange={(e) => handleFileChange(def.name, e)} />
+                                            </label>
+                                        {/if}
+                                    </div>
+                                {/if}
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            {/each}
+        </div>
+    {/if}
 </div>
 
 <FieldHistoryModal 

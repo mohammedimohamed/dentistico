@@ -36,6 +36,8 @@ export const actions: Actions = {
         const is_full_width = formData.get('is_full_width') === 'on' ? 1 : 0;
         const display_order_raw = formData.get('display_order');
         const final_display_order = display_order_raw ? Number(display_order_raw) : 0;
+        const tab_name = formData.get('tab_name') as string || 'Général';
+        const group_name = formData.get('group_name') as string || 'Informations';
 
         if (!name || !type) {
             return fail(400, { error: 'Name and type are required' });
@@ -52,7 +54,9 @@ export const actions: Actions = {
                 is_auditable,
                 is_required,
                 is_full_width,
-                display_order: isNaN(final_display_order) ? 0 : final_display_order
+                display_order: isNaN(final_display_order) ? 0 : final_display_order,
+                tab_name,
+                group_name
             });
             return { success: true };
         } catch (error: any) {
@@ -86,6 +90,8 @@ export const actions: Actions = {
         const is_full_width = formData.get('is_full_width') === 'on' ? 1 : 0;
         const display_order_raw = formData.get('display_order');
         const final_display_order = display_order_raw ? Number(display_order_raw) : 0;
+        const tab_name = formData.get('tab_name') as string;
+        const group_name = formData.get('group_name') as string;
 
         if (!id || !name || !type) {
             return fail(400, { error: 'Invalid data' });
@@ -101,7 +107,9 @@ export const actions: Actions = {
                 is_auditable,
                 is_required,
                 is_full_width,
-                display_order: isNaN(final_display_order) ? 0 : final_display_order
+                display_order: isNaN(final_display_order) ? 0 : final_display_order,
+                tab_name,
+                group_name
             });
             return { success: true };
         } catch (error: any) {
