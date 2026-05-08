@@ -128,6 +128,7 @@
     }
 
     function handleEditTreatment(treatment: any) {
+        if ((treatment.paid_amount || 0) > 0) return; // Protection: don't open if paid
         editingTreatment = treatment;
         const fdi = parseInt(treatment.tooth_number);
         selectedTeethFdis = [fdi];
@@ -160,6 +161,7 @@
         <ToothEditPanelV2 
             fdi={selectedFdi} 
             annotations={annotations[selectedFdi] || {}}
+            toothTreatments={treatments.filter(t => parseInt(t.tooth_number) === selectedFdi)}
             onSave={handleSaveAnnotation}
             onPlanTreatment={openPlanning}
             onDeleteBridge={handleDeleteBridge}

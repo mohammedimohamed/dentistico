@@ -3,7 +3,8 @@
     import { dentalColors } from "$lib/stores/dentalSettings.svelte";
     import InteractiveToothV2 from "./InteractiveToothV2.svelte";
     import { createEventDispatcher } from "svelte";
-    import { X, Save, CalendarPlus, Info, CheckCircle2, History } from "lucide-svelte";
+    import { enhance } from "$app/forms";
+    import { X, Save, CalendarPlus, Info, CheckCircle2, History, MoreVertical, Archive, Trash2 } from "lucide-svelte";
 
     interface Props {
         fdi: number;
@@ -12,9 +13,10 @@
         onPlanTreatment?: (fdi: number, data: any) => void;
         onDeleteBridge?: (bridgeId: string) => Promise<void>;
         onClose: () => void;
+        toothTreatments?: any[];
     }
 
-    let { fdi, annotations = {}, onSave, onPlanTreatment, onDeleteBridge, onClose }: Props = $props();
+    let { fdi, annotations = {}, onSave, onPlanTreatment, onDeleteBridge, onClose, toothTreatments = [] }: Props = $props();
 
     const dispatch = createEventDispatcher();
     const anatomy = $derived(getAnatomy(fdi));
@@ -250,6 +252,79 @@
                         class="w-full h-32 bg-slate-50 border-2 border-slate-100 rounded-[32px] p-6 text-sm font-medium focus:ring-4 focus:ring-indigo-50 transition-all outline-none"
                     ></textarea>
                 </section>
+
+                <!-- Treatments for this tooth -->
+                {#if toothTreatments.length > 0}
+                    <section>
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <History class="w-4 h-4" /> Soins liés à cette dent
+                        </h3>
+                        <div class="space-y-3">
+                            {#each toothTreatments as tr}
+                                <div class="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 transition-all">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-900">{tr.description || tr.treatment_type}</p>
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <span class="px-2 py-0.5 rounded-lg text-[8px] font-black uppercase {tr.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">
+                                                    {tr.status}
+                                                </span>
+                                                <p class="text-[10px] font-bold text-slate-400">{tr.treatment_date}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex items-center gap-4">
+                                            <p class="font-black text-slate-600 text-sm">
+                                                {new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(tr.cost).replace('DZD', 'DA')}
+                                            </p>
+                                            
+                                            <div class="flex items-center gap-2">
+                                                {#if (tr.paid_amount || 0) > 0}
+                                                    <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">PAYÉ</span>
+                                                {:else}
+                                                    <details class="relative group/menu">
+                                                        <summary class="list-none cursor-pointer p-1.5 hover:bg-white rounded-lg transition-colors text-slate-300 hover:text-slate-600">
+                                                            <MoreVertical size={14} />
+                                                        </summary>
+                                                        
+                                                        <div class="absolute right-0 top-full mt-1 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-3 z-50">
+                                                            <div class="px-4 py-2 border-b border-slate-50 mb-1">
+                                                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</p>
+                                                            </div>
+
+                                                            <form method="POST" action="?/softDeleteTreatment" use:enhance>
+                                                                <input type="hidden" name="id" value={tr.id} />
+                                                                <input type="hidden" name="source" value={tr.source} />
+                                                                <input type="hidden" name="type" value={tr.status === 'completed' ? 'deleted' : 'cancelled'} />
+                                                                <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition-colors">
+                                                                    <Archive size={14} />
+                                                                    {tr.status === 'completed' ? 'Archiver' : 'Annuler'}
+                                                                </button>
+                                                            </form>
+                                                            
+                                                            <!-- Note: hardDelete logic relies on user roles. Since we don't have user prop here easily, we'll allow the form to submit. The server enforces role security anyway. -->
+                                                            <form method="POST" action="?/hardDeleteTreatment" use:enhance={() => {
+                                                                if(!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce soin ?')) return;
+                                                                return async ({ update }) => { await update(); };
+                                                            }}>
+                                                                <input type="hidden" name="id" value={tr.id} />
+                                                                <input type="hidden" name="source" value={tr.source} />
+                                                                <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors mt-1 border-t border-slate-50 pt-3">
+                                                                    <Trash2 size={14} />
+                                                                    Supprimer
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </details>
+                                                {/if}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
+                    </section>
+                {/if}
             </div>
 
             <!-- Footer -->

@@ -43,10 +43,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-50">
                     {#each treatments as treatment}
-                        <tr 
-                            class="hover:bg-slate-50/50 transition-colors cursor-pointer group"
-                            onclick={() => onEdit?.(treatment)}
-                        >
+                        <tr class="transition-colors group border-b border-slate-50 last:border-0">
                             <!-- Date -->
                             <td class="px-6 py-5 whitespace-nowrap">
                                 <div class="flex flex-col">

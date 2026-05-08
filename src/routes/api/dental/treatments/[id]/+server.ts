@@ -1,10 +1,15 @@
 import { json } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
+import { db, getTreatmentById } from '$lib/server/db';
 import { dentalSync } from '$lib/server/dentalSync';
 
 export const DELETE = async ({ params, locals }: { params: any, locals: any }) => {
     if (!locals.user || locals.user.role !== 'doctor') {
         return json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const existing = getTreatmentById(params.id, 'dental');
+    if (existing && (existing.paid_amount || 0) > 0) {
+        return json({ error: 'Impossible de supprimer un soin déjà payé.' }, { status: 400 });
     }
 
     db.prepare('DELETE FROM dental_treatments WHERE id = ?').run(params.id);
@@ -19,8 +24,12 @@ export const PUT = async ({ params, request, locals }: { params: any, request: R
 
     const data = await request.json();
     
-    // Fetch existing to get patient_id for sync
-    const existing = db.prepare('SELECT patient_id FROM dental_treatments WHERE id = ?').get(params.id) as any;
+    // Fetch existing to check if paid and get patient_id for sync
+    const existing = getTreatmentById(params.id, 'dental');
+    
+    if (existing && (existing.paid_amount || 0) > 0) {
+        return json({ error: 'Impossible de modifier un soin déjà payé.' }, { status: 400 });
+    }
 
     db.prepare(`
         UPDATE dental_treatments 

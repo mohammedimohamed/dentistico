@@ -613,5 +613,85 @@ export const actions: Actions = {
             }
             return fail(500, { error: 'Erreur lors du déplacement du rendez-vous.' });
         }
+    },
+
+    softDeleteTreatment: async ({ request, params, locals }) => {
+        if (!locals.user || !['doctor', 'assistant', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const id = parseInt(formData.get('id') as string);
+        const source = formData.get('source') as 'general' | 'dental';
+        const type = formData.get('type') as 'cancelled' | 'deleted';
+
+        if (!id || !source) return fail(400, { error: 'ID et source requis' });
+
+        try {
+            const dbModule = await import('$lib/server/db');
+            const treatment = dbModule.getTreatmentById(id, source) as any;
+            if (!treatment) return fail(404, { error: 'Soin introuvable' });
+
+            // Prevent deletion if already paid
+            if ((treatment.paid_amount || 0) > 0) {
+                return fail(400, { error: 'Impossible de supprimer un soin déjà payé.' });
+            }
+
+            dbModule.softDeleteTreatment(source, id, type);
+
+            // Log history
+            dbModule.addHistoryLog(parseInt(params.id), locals.user.id, {
+                action: type === 'cancelled' ? 'TREATMENT_CANCELLED' : 'TREATMENT_SOFT_DELETED',
+                treatment_id: id,
+                source,
+                description: treatment.description || treatment.treatment_type,
+                timestamp: new Date().toISOString()
+            });
+
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Erreur lors de l\'archivage' });
+        }
+    },
+
+    hardDeleteTreatment: async ({ request, params, locals }) => {
+        // Hard delete restricted to admin or doctor
+        if (!locals.user || !['doctor', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Seuls les administrateurs et médecins peuvent supprimer définitivement' });
+        }
+
+        const formData = await request.formData();
+        const id = parseInt(formData.get('id') as string);
+        const source = formData.get('source') as 'general' | 'dental';
+
+        if (!id || !source) return fail(400, { error: 'ID et source requis' });
+
+        try {
+            const dbModule = await import('$lib/server/db');
+            const treatment = dbModule.getTreatmentById(id, source) as any;
+            if (!treatment) return fail(404, { error: 'Soin introuvable' });
+
+            // Prevent deletion if already paid
+            if ((treatment.paid_amount || 0) > 0) {
+                return fail(400, { error: 'Impossible de supprimer un soin déjà payé.' });
+            }
+
+            dbModule.hardDeleteTreatment(source, id);
+
+            // Log history
+            dbModule.addHistoryLog(parseInt(params.id), locals.user.id, {
+                action: 'TREATMENT_HARD_DELETED',
+                treatment_id: id,
+                source,
+                description: treatment.description || treatment.treatment_type,
+                timestamp: new Date().toISOString()
+            });
+
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Erreur lors de la suppression définitive' });
+        }
     }
 };

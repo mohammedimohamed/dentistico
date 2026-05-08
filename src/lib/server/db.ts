@@ -463,8 +463,9 @@ export function init_db() {
         treatment_notes TEXT,
         cost REAL DEFAULT 0.0,
         paid_amount REAL DEFAULT 0.0,
-        status TEXT DEFAULT 'pending' CHECK(status IN('pending', 'in_progress', 'completed')),
+        status TEXT DEFAULT 'pending' CHECK(status IN('pending', 'in_progress', 'completed', 'cancelled', 'deleted')),
         created_at TEXT DEFAULT(datetime('now')),
+        updated_at TEXT DEFAULT(datetime('now')),
         FOREIGN KEY(appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
         FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
         FOREIGN KEY(doctor_id) REFERENCES users(id) ON DELETE CASCADE
@@ -697,7 +698,7 @@ export function init_db() {
         surfaces TEXT,
         cdt_code TEXT,
         treatment_type TEXT NOT NULL,
-        status TEXT NOT NULL CHECK(status IN('existing', 'completed', 'planned')),
+        status TEXT NOT NULL CHECK(status IN('existing', 'completed', 'planned', 'cancelled', 'deleted')),
         fee REAL DEFAULT 0,
         date_performed TEXT,
         provider_id INTEGER,
@@ -706,6 +707,7 @@ export function init_db() {
         color TEXT NOT NULL,
         is_custom INTEGER DEFAULT 0,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
         FOREIGN KEY(provider_id) REFERENCES users(id),
         FOREIGN KEY(cdt_code) REFERENCES cdt_codes(code)
@@ -828,6 +830,12 @@ export function init_db() {
     addColumnIfNotExists('payments', 'doctor_id', 'INTEGER REFERENCES users(id)');
     addColumnIfNotExists('work_shifts', 'room_id', 'INTEGER REFERENCES rooms(id)');
     addColumnIfNotExists('rooms', 'floor_id', 'INTEGER REFERENCES floors(id)');
+    addColumnIfNotExists('treatments', 'updated_at', "TEXT");
+    addColumnIfNotExists('dental_treatments', 'updated_at', "TEXT");
+    
+    // Update existing rows to have a value for updated_at
+    db.prepare("UPDATE treatments SET updated_at = created_at WHERE updated_at IS NULL").run();
+    db.prepare("UPDATE dental_treatments SET updated_at = created_at WHERE updated_at IS NULL").run();
 
     // Insert default categories
     const defaultCategories = [
@@ -2534,13 +2542,14 @@ export function getTreatmentsByPatient(patientId: number) {
         0 as is_custom,
         '' as notes,
         t.cost as fee,
+        t.paid_amount,
         t.id as treatment_id,
         NULL as dental_treatment_id,
         u.full_name as doctor_name,
         u.color_code as doctor_color
         FROM treatments t
         LEFT JOIN users u ON t.doctor_id = u.id
-        WHERE t.patient_id = ?
+        WHERE t.patient_id = ? AND t.status NOT IN ('cancelled', 'deleted')
 
         UNION ALL
 
@@ -2561,20 +2570,59 @@ export function getTreatmentsByPatient(patientId: number) {
         dt.is_custom,
         dt.notes,
         dt.fee,
+        COALESCE((
+            SELECT SUM(ii.amount) 
+            FROM invoice_items ii
+            JOIN invoices i ON ii.invoice_id = i.id
+            WHERE ii.dental_treatment_id = dt.id 
+              AND i.status = 'paid'
+        ), 0) as paid_amount,
         NULL as treatment_id,
         dt.id as dental_treatment_id,
         u.full_name as doctor_name,
         u.color_code as doctor_color
         FROM dental_treatments dt
         LEFT JOIN users u ON dt.provider_id = u.id
-        WHERE dt.patient_id = ?
+        WHERE dt.patient_id = ? AND dt.status NOT IN ('cancelled', 'deleted')
 
         ORDER BY treatment_date DESC
     `).all(patientId, patientId);
 }
 
-export function getTreatmentById(id: number) {
-    return db.prepare('SELECT * FROM treatments WHERE id = ?').get(id);
+export function softDeleteTreatment(source: 'general' | 'dental', id: number, status: 'cancelled' | 'deleted') {
+    const table = source === 'general' ? 'treatments' : 'dental_treatments';
+    return db.prepare(`UPDATE ${table} SET status = ?, updated_at = datetime('now') WHERE id = ?`).run(status, id);
+}
+
+export function hardDeleteTreatment(source: 'general' | 'dental', id: number) {
+    const table = source === 'general' ? 'treatments' : 'dental_treatments';
+    return db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id);
+}
+
+export function addHistoryLog(patientId: number, userId: number, changes: any) {
+    return db.prepare(`
+        INSERT INTO patient_history_logs (patient_id, updated_by, changes)
+        VALUES (?, ?, ?)
+    `).run(patientId, userId, JSON.stringify(changes));
+}
+
+export function getTreatmentById(id: number, source: 'general' | 'dental' = 'general') {
+    if (source === 'general') {
+        return db.prepare(`SELECT * FROM treatments WHERE id = ?`).get(id);
+    } else {
+        return db.prepare(`
+            SELECT dt.*,
+            COALESCE((
+                SELECT SUM(ii.amount) 
+                FROM invoice_items ii
+                JOIN invoices i ON ii.invoice_id = i.id
+                WHERE ii.dental_treatment_id = dt.id 
+                  AND i.status = 'paid'
+            ), 0) as paid_amount
+            FROM dental_treatments dt
+            WHERE dt.id = ?
+        `).get(id);
+    }
 }
 
 // --- Payments ---

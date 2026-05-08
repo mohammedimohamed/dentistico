@@ -25,9 +25,16 @@ import {
     PanelRightClose,
     PanelRightOpen,
     Menu,
-    ChevronRight
+    ChevronRight,
+    MoreVertical,
+    Archive,
+    Trash2,
+    Edit2
 } from "lucide-svelte";
 import { fly, fade, slide } from "svelte/transition";
+import { invalidateAll } from "$app/navigation";
+import FullTreatmentForm from "$lib/components/dental-v2/FullTreatmentForm.svelte";
+
 
     let { data }: { data: PageData } = $props();
     let activeTab = $state();
@@ -60,8 +67,35 @@ import { fly, fade, slide } from "svelte/transition";
     let isPaymentModalOpen = $state(false);
     let isPrescriptionModalOpen = $state(false);
     let isAppointmentModalOpen = $state(false);
+    let isTreatmentModalOpen = $state(false);
+    let editingTreatment = $state<any>(null);
     let reschedulingAppointment = $state<any>(null);
     let saveSuccess = $state(false);
+
+    async function handleSaveTreatment(treatmentData: any) {
+        try {
+            if (editingTreatment?.id && editingTreatment.source === 'dental') {
+                const res = await fetch(`/api/dental/treatments/${editingTreatment.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(treatmentData)
+                });
+                if (!res.ok) throw new Error("Failed to update");
+            }
+            isTreatmentModalOpen = false;
+            editingTreatment = null;
+            await invalidateAll();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function openEditTreatment(tr: any) {
+        if ((tr.paid_amount || 0) > 0) return;
+        if (tr.source !== 'dental') return;
+        editingTreatment = tr;
+        isTreatmentModalOpen = true;
+    }
 
     import { untrack } from "svelte";
     import DynamicFieldGenerator from "$lib/components/patients/DynamicFieldGenerator.svelte";
@@ -425,13 +459,63 @@ import { fly, fade, slide } from "svelte/transition";
                                     </div>
                                     <div class="space-y-4">
                                         {#each plannedTreatments as tr}
-                                            <div class="bg-white border-2 border-slate-100 rounded-3xl p-6 hover:border-amber-100 transition-all shadow-sm group">
+                                            <!-- svelte-ignore a11y_click_events_have_key_events -->
+                                            <!-- svelte-ignore a11y_no_static_element_interactions -->
+                                            <div class="bg-white border-2 border-slate-100 rounded-3xl p-6 transition-all shadow-sm group {!(tr.paid_amount > 0) && tr.source === 'dental' ? 'cursor-pointer hover:border-amber-100 hover:shadow-md' : 'hover:border-slate-200'}" onclick={(e) => { if ((tr.paid_amount || 0) > 0) return; if (!e.target?.closest?.('details')) openEditTreatment(tr); }}>
                                                 <div class="flex justify-between items-start">
                                                     <div>
                                                         <span class="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-600 text-[10px] font-black uppercase">Dent {tr.tooth_number} • {tr.treatment_type}</span>
                                                         <h4 class="font-bold text-slate-900 mt-2 text-base leading-tight">{tr.description || 'Soin sans description'}</h4>
                                                     </div>
-                                                    <div class="text-right">
+                                                    <div class="text-right flex flex-col items-end gap-2">
+                                                        <div class="flex items-center gap-2">
+                                                            {#if (tr.paid_amount || 0) > 0}
+                                                                <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">PAYÉ</span>
+                                                            {:else}
+                                                                <details class="relative group/menu">
+                                                                    <summary class="list-none cursor-pointer p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600">
+                                                                        <MoreVertical size={16} />
+                                                                    </summary>
+                                                                    
+                                                                    <div class="absolute right-0 top-full mt-1 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                                        <div class="px-4 py-2 border-b border-slate-50 mb-1">
+                                                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions de soin</p>
+                                                                        </div>
+
+                                                                        {#if tr.source === 'dental'}
+                                                                        <button onclick={() => openEditTreatment(tr)} class="w-full px-4 py-2.5 text-left text-xs font-bold text-indigo-600 hover:bg-indigo-50 flex items-center gap-2 transition-colors">
+                                                                            <Edit2 size={14} />
+                                                                            Modifier ce soin
+                                                                        </button>
+                                                                        {/if}
+
+                                                                        <form method="POST" action="?/softDeleteTreatment" use:enhance>
+                                                                            <input type="hidden" name="id" value={tr.id} />
+                                                                            <input type="hidden" name="source" value={tr.source} />
+                                                                            <input type="hidden" name="type" value="cancelled" />
+                                                                            <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-600 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors">
+                                                                                <Archive size={14} />
+                                                                                Annuler ce soin
+                                                                            </button>
+                                                                        </form>
+                                                                        
+                                                                        {#if data.user.role === 'admin' || data.user.role === 'doctor'}
+                                                                            <form method="POST" action="?/hardDeleteTreatment" use:enhance={() => {
+                                                                                if(!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce soin ? Cette action est irréversible.')) return;
+                                                                                return async ({ update }) => { await update(); };
+                                                                            }}>
+                                                                                <input type="hidden" name="id" value={tr.id} />
+                                                                                <input type="hidden" name="source" value={tr.source} />
+                                                                                <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors mt-1 border-t border-slate-50 pt-3">
+                                                                                    <Trash2 size={14} />
+                                                                                    Suppression définitive
+                                                                                </button>
+                                                                            </form>
+                                                                        {/if}
+                                                                    </div>
+                                                                </details>
+                                                            {/if}
+                                                        </div>
                                                         <p class="font-black text-slate-900">{formatCurrency(tr.cost)}</p>
                                                         <span class="text-[10px] font-bold text-slate-400">{tr.treatment_date}</span>
                                                     </div>
@@ -458,13 +542,66 @@ import { fly, fade, slide } from "svelte/transition";
                                     </div>
                                     <div class="space-y-3">
                                         {#each pastTreatments as tr}
-                                            <div class="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 transition-all">
+                                            <!-- svelte-ignore a11y_click_events_have_key_events -->
+                                            <!-- svelte-ignore a11y_no_static_element_interactions -->
+                                            <div class="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 transition-all group/item relative {!(tr.paid_amount > 0) && tr.source === 'dental' ? 'cursor-pointer hover:border-emerald-200 hover:bg-white hover:shadow-sm' : ''}" onclick={(e) => { if ((tr.paid_amount || 0) > 0) return; if (!e.target?.closest?.('details')) openEditTreatment(tr); }}>
                                                 <div class="flex justify-between items-center">
                                                     <div>
                                                         <p class="text-xs font-bold text-slate-900">{tr.description || tr.treatment_type}</p>
                                                         <p class="text-[10px] font-bold text-slate-400">Dent {tr.tooth_number} • {tr.treatment_date}</p>
                                                     </div>
-                                                    <p class="font-black text-slate-600 text-sm">{formatCurrency(tr.cost)}</p>
+                                                    <div class="flex items-center gap-4">
+                                                        <p class="font-black text-slate-600 text-sm">{formatCurrency(tr.cost)}</p>
+                                                        
+                                                        <div class="flex items-center gap-2">
+                                                            {#if (tr.paid_amount || 0) > 0}
+                                                                <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">PAYÉ</span>
+                                                            {:else}
+                                                                <details class="relative group/menu">
+                                                                    <summary class="list-none cursor-pointer p-1.5 hover:bg-white rounded-lg transition-colors text-slate-300 hover:text-slate-600">
+                                                                        <MoreVertical size={14} />
+                                                                    </summary>
+                                                                    
+                                                                    <div class="absolute right-0 top-full mt-1 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-3 z-50">
+                                                                        <div class="px-4 py-2 border-b border-slate-50 mb-1">
+                                                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions de soin</p>
+                                                                        </div>
+
+                                                                        {#if tr.source === 'dental'}
+                                                                        <button onclick={() => openEditTreatment(tr)} class="w-full px-4 py-2.5 text-left text-xs font-bold text-indigo-600 hover:bg-indigo-50 flex items-center gap-2 transition-colors">
+                                                                            <Edit2 size={14} />
+                                                                            Modifier ce soin
+                                                                        </button>
+                                                                        {/if}
+
+                                                                        <form method="POST" action="?/softDeleteTreatment" use:enhance>
+                                                                            <input type="hidden" name="id" value={tr.id} />
+                                                                            <input type="hidden" name="source" value={tr.source} />
+                                                                            <input type="hidden" name="type" value="deleted" />
+                                                                            <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition-colors">
+                                                                                <Archive size={14} />
+                                                                                Archiver ce soin
+                                                                            </button>
+                                                                        </form>
+                                                                        
+                                                                        {#if data.user.role === 'admin' || data.user.role === 'doctor'}
+                                                                            <form method="POST" action="?/hardDeleteTreatment" use:enhance={() => {
+                                                                                if(!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce soin ?')) return;
+                                                                                return async ({ update }) => { await update(); };
+                                                                            }}>
+                                                                                <input type="hidden" name="id" value={tr.id} />
+                                                                                <input type="hidden" name="source" value={tr.source} />
+                                                                                <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors mt-1 border-t border-slate-50 pt-3">
+                                                                                    <Trash2 size={14} />
+                                                                                    Suppression définitive
+                                                                                </button>
+                                                                            </form>
+                                                                        {/if}
+                                                                    </div>
+                                                                </details>
+                                                            {/if}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         {/each}
@@ -632,6 +769,19 @@ import { fly, fade, slide } from "svelte/transition";
     balance={data.balance}
     onClose={() => isPaymentModalOpen = false}
 />
+
+{#if isTreatmentModalOpen && editingTreatment}
+    <FullTreatmentForm 
+        patientId={data.patient.id}
+        toothNumber={editingTreatment.tooth_number?.toString() || ""}
+        initialData={editingTreatment}
+        onSave={handleSaveTreatment}
+        onClose={() => {
+            isTreatmentModalOpen = false;
+            editingTreatment = null;
+        }}
+    />
+{/if}
 
 <style>
     /* Custom scrollbar for a cleaner look */
