@@ -260,6 +260,8 @@ export function init_db() {
             is_required INTEGER DEFAULT 0,
             is_full_width INTEGER DEFAULT 0,
             display_order INTEGER DEFAULT 0,
+            tab_name TEXT DEFAULT 'Général',
+            group_name TEXT DEFAULT 'Informations',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
     `);
@@ -288,6 +290,12 @@ export function init_db() {
         }
         if (!info.some(col => col.name === 'is_auditable')) {
             db.exec("ALTER TABLE custom_field_definitions ADD COLUMN is_auditable INTEGER DEFAULT 0");
+        }
+        if (!info.some(col => col.name === 'tab_name')) {
+            db.exec("ALTER TABLE custom_field_definitions ADD COLUMN tab_name TEXT DEFAULT 'Général'");
+        }
+        if (!info.some(col => col.name === 'group_name')) {
+            db.exec("ALTER TABLE custom_field_definitions ADD COLUMN group_name TEXT DEFAULT 'Informations'");
         }
     } catch (e) {
         console.error('Migration for custom_field_definitions failed:', e);
@@ -4484,10 +4492,12 @@ export function createCustomFieldDefinition(data: {
     is_required?: number;
     is_full_width?: number;
     display_order?: number;
+    tab_name?: string;
+    group_name?: string;
 }) {
     const stmt = db.prepare(`
-        INSERT INTO custom_field_definitions (name, type, options, validation_regex, icon, is_auditable, is_required, is_full_width, display_order)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO custom_field_definitions (name, type, options, validation_regex, icon, is_auditable, is_required, is_full_width, display_order, tab_name, group_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = stmt.run(
         data.name,
@@ -4498,7 +4508,9 @@ export function createCustomFieldDefinition(data: {
         data.is_auditable ?? 0,
         data.is_required ?? 0,
         data.is_full_width ?? 0,
-        data.display_order ?? 0
+        data.display_order ?? 0,
+        data.tab_name ?? 'Général',
+        data.group_name ?? 'Informations'
     );
     return result.lastInsertRowid;
 }
@@ -4525,6 +4537,8 @@ export function updateCustomFieldDefinition(id: number, data: {
     if (data.is_required !== undefined) { sets.push('is_required = ?'); params.push(data.is_required); }
     if (data.is_full_width !== undefined) { sets.push('is_full_width = ?'); params.push(data.is_full_width); }
     if (data.display_order !== undefined) { sets.push('display_order = ?'); params.push(data.display_order); }
+    if (data.tab_name !== undefined) { sets.push('tab_name = ?'); params.push(data.tab_name); }
+    if (data.group_name !== undefined) { sets.push('group_name = ?'); params.push(data.group_name); }
 
     if (sets.length === 0) return;
 

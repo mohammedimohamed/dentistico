@@ -41,6 +41,9 @@
         }
     });
 
+    let existingTabs = $derived([...new Set(items.map(d => d.tab_name).filter(Boolean))]);
+    let existingGroups = $derived([...new Set(items.map(d => d.group_name).filter(Boolean))]);
+
     const flipDurationMs = 200;
 
     function handleDndConsider(e: any) {
@@ -104,7 +107,9 @@
             is_required: false,
             is_auditable: false,
             icon: "FileText",
-            validation_regex: ""
+            validation_regex: "",
+            tab_name: "Général",
+            group_name: "Informations"
         };
         optionsList = [];
         isModalOpen = true;
@@ -302,6 +307,43 @@
                                 placeholder="Ex: Groupe Sanguin, Référence..."
                                 class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold text-lg"
                             />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Onglet (Tab)</label>
+                                <input 
+                                    type="text" 
+                                    name="tab_name" 
+                                    required 
+                                    list="tabs-list"
+                                    bind:value={editingDefinition.tab_name}
+                                    placeholder="Ex: Général, Médical..."
+                                    class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
+                                />
+                                <datalist id="tabs-list">
+                                    {#each existingTabs as tab}
+                                        <option value={tab}></option>
+                                    {/each}
+                                </datalist>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Groupe</label>
+                                <input 
+                                    type="text" 
+                                    name="group_name" 
+                                    required 
+                                    list="groups-list"
+                                    bind:value={editingDefinition.group_name}
+                                    placeholder="Ex: Informations, Antécédents..."
+                                    class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
+                                />
+                                <datalist id="groups-list">
+                                    {#each existingGroups as group}
+                                        <option value={group}></option>
+                                    {/each}
+                                </datalist>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-6">
