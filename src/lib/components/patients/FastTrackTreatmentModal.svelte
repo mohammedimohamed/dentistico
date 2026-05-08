@@ -34,7 +34,7 @@
 {#if isOpen}
     <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md" transition:fade>
         <div 
-            class="bg-white rounded-[32px] w-[95vw] max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl border border-slate-200 flex flex-col"
+            class="bg-white rounded-[32px] w-[95vw] max-w-7xl max-h-[90vh] overflow-hidden shadow-2xl border border-slate-200 flex flex-col"
             transition:scale={{ duration: 300, start: 0.95 }}
         >
             <!-- Header -->

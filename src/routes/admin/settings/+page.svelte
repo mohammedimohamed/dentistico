@@ -19,6 +19,11 @@
     let pendingMigrationChanges = $state<{label: string; from: string; to: string}[]>([]);
     let migrationSuccessMsg = $state<string | null>(null);
     let saveSuccessMsg = $state<string | null>(null);
+    let globalSaveSuccess = $state(false);
+    let scheduleSaveSuccess = $state(false);
+    let closuresSaveSuccess = $state(false);
+    let inventorySaveSuccess = $state(false);
+    let reasonsSaveSuccess = $state(false);
     let isEditingTreatmentType = $state(false);
     let editingTreatmentType = $state<any>(null);
 
@@ -137,12 +142,18 @@
     }
 
     async function saveWorkingDays() {
-        await fetch("/api/admin/working-days", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ workingDays }),
-        });
-        alert("Working days saved successfully!");
+        isSaving = true;
+        try {
+            await fetch("/api/admin/working-days", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ workingDays }),
+            });
+            scheduleSaveSuccess = true;
+            setTimeout(() => scheduleSaveSuccess = false, 4000);
+        } finally {
+            isSaving = false;
+        }
     }
 
     async function addClosure() {
@@ -158,6 +169,8 @@
         });
 
         newClosure = { closure_date: "", reason: "" };
+        closuresSaveSuccess = true;
+        setTimeout(() => closuresSaveSuccess = false, 4000);
         showClosureModal = false;
         await loadClinicSettings();
     }
@@ -419,11 +432,10 @@
                                     {/each}
                                 </select>
                             </div>
-
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                    for="work_start_time">Work Start Time</label
+                                    for="work_start_time">Heure de Début</label
                                 >
                                 <input
                                     id="work_start_time"
@@ -436,7 +448,7 @@
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                    for="work_end_time">Work End Time</label
+                                    for="work_end_time">Heure de Fin</label
                                 >
                                 <input
                                     id="work_end_time"
@@ -1640,12 +1652,26 @@
                         {/each}
                     </div>
 
-                    <div class="flex justify-end mt-8">
+                    <div class="p-8 border-t border-slate-100 flex flex-col items-end gap-3">
+                        {#if scheduleSaveSuccess}
+                            <div transition:fade class="text-green-600 text-xs font-bold uppercase tracking-widest flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                Jours de travail mis à jour
+                            </div>
+                        {/if}
                         <button
                             onclick={saveWorkingDays}
-                            class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
+                            disabled={isSaving}
+                            class="min-w-[200px] px-8 py-4 {scheduleSaveSuccess ? 'bg-green-600' : 'bg-slate-900 hover:bg-black'} text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
                         >
-                            Save Working Days
+                            {#if isSaving}
+                                <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            {:else if scheduleSaveSuccess}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                Enregistré
+                            {:else}
+                                Enregistrer les Jours de Travail
+                            {/if}
                         </button>
                     </div>
                 </div>
@@ -1749,6 +1775,8 @@
                         return async ({ update, result }) => {
                             if (result.type === "success") {
                                 await update({ reset: false });
+                                globalSaveSuccess = true;
+                                setTimeout(() => globalSaveSuccess = false, 4000);
                             } else {
                                 await update();
                             }
@@ -1917,15 +1945,26 @@
                         </div>
                     </div>
 
-                    <div class="flex justify-end pt-4">
+                    <div class="flex flex-col items-end gap-3 pt-4">
+                        {#if globalSaveSuccess}
+                            <div transition:fade class="text-green-600 text-xs font-bold uppercase tracking-widest flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                Paramètres enregistrés
+                            </div>
+                        {/if}
                         <button
                             type="submit"
                             disabled={isSaving}
-                            class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-50"
+                            class="min-w-[140px] px-8 py-4 {globalSaveSuccess ? 'bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            {isSaving
-                                ? $t("common.loading")
-                                : $t("admin.settings.saveButton")}
+                            {#if isSaving}
+                                <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            {:else if globalSaveSuccess}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                {$t("common.saved") || "Enregistré"}
+                            {:else}
+                                {$t("admin.settings.saveButton")}
+                            {/if}
                         </button>
                     </div>
                 </form>
@@ -1960,7 +1999,17 @@
                     <form
                         method="POST"
                         action="?/updateReasonRequirements"
-                        use:enhance
+                        use:enhance={() => {
+                            isSaving = true;
+                            return async ({ update, result }) => {
+                                if (result.type === "success") {
+                                    await update({ reset: false });
+                                    reasonsSaveSuccess = true;
+                                    setTimeout(() => reasonsSaveSuccess = false, 4000);
+                                }
+                                isSaving = false;
+                            };
+                        }}
                         class="flex gap-4 items-center"
                     >
                         <input
@@ -2008,9 +2057,17 @@
 
                         <button
                             type="submit"
-                            class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all active:scale-95 ml-2"
+                            disabled={isSaving}
+                            class="px-6 py-2 {reasonsSaveSuccess ? 'bg-green-600' : 'bg-slate-900'} text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all active:scale-95 ml-2 flex items-center gap-2"
                         >
-                            Apply
+                            {#if isSaving}
+                                <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            {:else if reasonsSaveSuccess}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                Appliqué
+                            {:else}
+                                Appliquer
+                            {/if}
                         </button>
                     </form>
                 </div>

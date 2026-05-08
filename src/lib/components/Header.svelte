@@ -49,7 +49,7 @@
 </script>
 
 <header
-    class="bg-white shadow-sm border-b border-gray-200 py-4 px-8 flex justify-between items-center shrink-0"
+    class="bg-white shadow-sm border-b border-gray-200 py-2 px-6 flex justify-between items-center shrink-0"
 >
     <h1 class="text-xl font-bold text-gray-900">
         {$t(title)}

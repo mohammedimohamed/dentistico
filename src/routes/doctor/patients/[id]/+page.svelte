@@ -157,14 +157,14 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
 <div class="min-h-screen bg-[#f8fafc] font-sans">
     <!-- Main Header -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
-        <div class="max-w-[1600px] mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-6">
+        <div class="max-w-[1600px] mx-auto px-6 py-2 flex flex-wrap items-center justify-between gap-4">
             <!-- Patient Profile -->
-            <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 text-2xl font-bold border border-indigo-100 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 text-xl font-bold border border-indigo-100 shadow-sm">
                     {data.patient.full_name.charAt(0)}
                 </div>
                 <div>
-                    <h1 class="text-2xl font-black text-slate-900 leading-tight">{data.patient.full_name}</h1>
+                    <h1 class="text-lg font-black text-slate-900 leading-tight">{data.patient.full_name}</h1>
                     <div class="flex items-center gap-3 mt-1 text-sm font-semibold text-slate-500">
                         <span class="flex items-center gap-1"><Baby size={14} class="text-indigo-400" /> {age} ans</span>
                         <span class="w-1 h-1 rounded-full bg-slate-300"></span>
@@ -174,51 +174,97 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
             </div>
 
             <!-- Crucial Alerts (High Visibility) -->
-            <div class="flex flex-1 max-w-2xl gap-3">
+            <div class="flex flex-1 max-w-xl gap-2">
                 {#if data.patient.allergies && data.patient.allergies !== 'None'}
-                    <div class="flex-1 bg-red-50 border-2 border-red-200 rounded-2xl p-3 flex items-center gap-3 animate-pulse shadow-sm">
-                        <AlertTriangle size={24} class="text-red-500" />
+                    <div class="flex-1 bg-red-50 border border-red-100 rounded-xl p-2 flex items-center gap-2 animate-pulse shadow-sm">
+                        <AlertTriangle size={18} class="text-red-500" />
                         <div>
-                            <p class="text-[10px] font-black uppercase tracking-wider text-red-500">Allergies</p>
-                            <p class="text-sm font-bold text-red-900 leading-tight">{data.patient.allergies}</p>
+                            <p class="text-[9px] font-black uppercase tracking-wider text-red-500">Allergies</p>
+                            <p class="text-xs font-bold text-red-900 leading-tight">{data.patient.allergies}</p>
                         </div>
                     </div>
                 {/if}
                 {#if data.patient.medical_conditions && data.patient.medical_conditions !== 'None'}
-                    <div class="flex-1 bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 flex items-center gap-3 shadow-sm">
-                        <Stethoscope size={24} class="text-amber-500" />
+                    <div class="flex-1 bg-amber-50 border border-amber-100 rounded-xl p-2 flex items-center gap-2 shadow-sm">
+                        <Stethoscope size={18} class="text-amber-500" />
                         <div>
-                            <p class="text-[10px] font-black uppercase tracking-wider text-amber-500">Notes Médicales</p>
-                            <p class="text-sm font-bold text-amber-900 leading-tight">{data.patient.medical_conditions}</p>
+                            <p class="text-[9px] font-black uppercase tracking-wider text-amber-500">Notes Médicales</p>
+                            <p class="text-xs font-bold text-amber-900 leading-tight">{data.patient.medical_conditions}</p>
                         </div>
                     </div>
                 {/if}
             </div>
 
             <!-- Financial Balance -->
-            <div class="bg-slate-900 rounded-2xl p-4 text-white flex items-center gap-8 shadow-xl shadow-slate-200">
-                <div class="text-center">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Dû</p>
-                    <p class="text-lg font-black">{formatCurrency(balance.total_billed)}</p>
+            <div class="bg-slate-900 rounded-xl p-2.5 text-white flex items-center gap-6 shadow-xl shadow-slate-200">
+                <div class="text-center px-1">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Dû</p>
+                    <p class="text-base font-black">{formatCurrency(balance.total_billed)}</p>
                 </div>
-                <div class="w-px h-8 bg-slate-700"></div>
-                <div class="text-center">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Payé</p>
-                    <p class="text-lg font-black text-emerald-400">{formatCurrency(balance.total_paid)}</p>
+                <div class="w-px h-6 bg-slate-700"></div>
+                <div class="text-center px-1">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Payé</p>
+                    <p class="text-base font-black text-emerald-400">{formatCurrency(balance.total_paid)}</p>
                 </div>
-                <div class="w-px h-8 bg-slate-700"></div>
-                <div class="text-center">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Solde</p>
-                    <p class="text-xl font-black {balance.balance_due > 0 ? 'text-rose-400' : 'text-emerald-400'}">
+                <div class="w-px h-6 bg-slate-700"></div>
+                <div class="text-center px-1">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Solde</p>
+                    <p class="text-lg font-black {balance.balance_due > 0 ? 'text-rose-400' : 'text-emerald-400'}">
                         {formatCurrency(balance.balance_due)}
                     </p>
                 </div>
+            </div>
+
+            <!-- Tab Switcher + Wide Mode Toggle (Moved into Header) -->
+            <div class="flex items-center justify-between gap-4 flex-wrap w-full border-t border-slate-100 pt-2 mt-1">
+                <div class="flex bg-slate-50 p-1 rounded-xl border border-slate-200 shadow-sm overflow-x-auto no-scrollbar">
+                    {#if data.config?.module_dental_chart !== 0}
+                        <button 
+                            onclick={() => activeTab = "odontogramme"}
+                            class="px-5 py-1.5 rounded-lg font-bold text-[11px] transition-all whitespace-nowrap {activeTab === 'odontogramme' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
+                        >
+                            Odontogramme
+                        </button>
+                    {/if}
+                    <button 
+                        onclick={() => activeTab = "historique"}
+                        class="px-5 py-1.5 rounded-lg font-bold text-[11px] transition-all whitespace-nowrap {activeTab === 'historique' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
+                    >
+                        Historique & Planning
+                    </button>
+                    <button 
+                        onclick={() => activeTab = "finances"}
+                        class="px-5 py-1.5 rounded-lg font-bold text-[11px] transition-all whitespace-nowrap {activeTab === 'finances' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
+                    >
+                        Finances
+                    </button>
+                    <button 
+                        onclick={() => activeTab = "admin"}
+                        class="px-5 py-1.5 rounded-lg font-bold text-[11px] transition-all whitespace-nowrap {activeTab === 'admin' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
+                    >
+                        Dossier Administratif
+                    </button>
+                </div>
+
+                <button 
+                    onclick={() => isSidebarOpen = !isSidebarOpen}
+                    class="hidden xl:flex items-center gap-2 bg-white border border-slate-200 px-4 py-1.5 rounded-lg font-bold text-[9px] text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+                    title={isSidebarOpen ? "Fermer le panneau latéral" : "Ouvrir le panneau latéral"}
+                >
+                    {#if isSidebarOpen}
+                        <PanelRightClose size={14} />
+                        WIDE CANVAS
+                    {:else}
+                        <PanelRightOpen size={14} />
+                        PANNEAU LATÉRAL
+                    {/if}
+                </button>
             </div>
         </div>
     </header>
 
     <div class="max-w-[1800px] mx-auto px-6 py-8">
-        <div class="flex flex-col xl:flex-row gap-8 items-start relative">
+        <div class="grid grid-cols-1 {isSidebarOpen ? 'xl:grid-cols-12' : 'xl:grid-cols-1'} gap-8 items-start relative">
             <!-- Mobile Toggle / Sub-header -->
             <div class="xl:hidden w-full flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-4">
                 <div class="flex items-center gap-3">
@@ -236,52 +282,8 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                 </button>
             </div>
             <!-- Main Content (Tabs) -->
-            <main class="flex-1 min-w-0 w-full transition-all duration-500 ease-in-out {isSidebarOpen ? 'xl:pr-0' : 'xl:pr-0'}">
-                <!-- Tab Switcher + Wide Mode Toggle -->
-                <div class="flex items-center justify-between mb-8 gap-4 flex-wrap">
-                    <div class="flex bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-x-auto no-scrollbar">
-                        {#if data.config?.module_dental_chart !== 0}
-                            <button 
-                                onclick={() => activeTab = "odontogramme"}
-                                class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'odontogramme' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
-                            >
-                                Odontogramme
-                            </button>
-                        {/if}
-                        <button 
-                            onclick={() => activeTab = "historique"}
-                            class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'historique' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
-                        >
-                            Historique & Planning
-                        </button>
-                        <button 
-                            onclick={() => activeTab = "finances"}
-                            class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'finances' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
-                        >
-                            Finances
-                        </button>
-                        <button 
-                            onclick={() => activeTab = "admin"}
-                            class="px-8 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap {activeTab === 'admin' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
-                        >
-                            Dossier Administratif
-                        </button>
-                    </div>
+            <main class="min-w-0 w-full transition-all duration-500 ease-in-out {isSidebarOpen ? 'xl:col-span-9' : 'xl:col-span-12'}">
 
-                    <button 
-                        onclick={() => isSidebarOpen = !isSidebarOpen}
-                        class="hidden xl:flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-2xl font-bold text-xs text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
-                        title={isSidebarOpen ? "Fermer le panneau latéral" : "Ouvrir le panneau latéral"}
-                    >
-                        {#if isSidebarOpen}
-                            <PanelRightClose size={18} />
-                            WIDE CANVAS
-                        {:else}
-                            <PanelRightOpen size={18} />
-                            PANNEAU LATÉRAL
-                        {/if}
-                    </button>
-                </div>
 
             <!-- Tab Content -->
             <div class="bg-white rounded-[40px] border border-slate-200 shadow-sm min-h-[600px] overflow-hidden">
@@ -796,7 +798,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
             <!-- Sidebar (Desktop Collapsible) -->
             {#if isSidebarOpen}
                 <aside 
-                    class="hidden xl:block w-64 shrink-0 sticky top-28 transition-all duration-500"
+                    class="hidden xl:block xl:col-span-3 shrink-0 sticky top-28 transition-all duration-500"
                     transition:fly={{ x: 50, duration: 400 }}
                 >
                     <PatientMetadataPanel 

@@ -1,842 +1,902 @@
 {
-  "C:\\source\\repos\\perso\\dentistico\\debug-fk.js": {
-    "mtime": 1777215198.2908692,
+  "D:\\source\\svelt\\dentistico\\debug-fk.js": {
+    "mtime": 1769178836.1444983,
     "hash": "57f07fe688063d5474958d3a02ac023a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\playwright.config.ts": {
-    "mtime": 1777215198.4910347,
+  "D:\\source\\svelt\\dentistico\\playwright.config.ts": {
+    "mtime": 1768421274.3540597,
     "hash": "39ea1310ebc2128048a64bdf06c1ed9a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\postcss.config.js": {
-    "mtime": 1776695512.7491963,
+  "D:\\source\\svelt\\dentistico\\postcss.config.js": {
+    "mtime": 1767465845.5259953,
     "hash": "b0197450f6657a0e29dfc069e083f364"
   },
-  "C:\\source\\repos\\perso\\dentistico\\replace_emojis.py": {
-    "mtime": 1777535695.7632587,
-    "hash": "ebc4e572d8ba1f832909675e0116fb35"
+  "D:\\source\\svelt\\dentistico\\replace_emojis.py": {
+    "mtime": 1778100052.1020777,
+    "hash": "a5772758f0e2aeade836921cb250b6e8"
   },
-  "C:\\source\\repos\\perso\\dentistico\\seed-enhanced.js": {
-    "mtime": 1777215198.492035,
+  "D:\\source\\svelt\\dentistico\\seed-enhanced.js": {
+    "mtime": 1769035497.289826,
     "hash": "fd8e9991f07c7583cec494ab94c4ea75"
   },
-  "C:\\source\\repos\\perso\\dentistico\\seed-heavy.js": {
-    "mtime": 1777215198.4930456,
+  "D:\\source\\svelt\\dentistico\\seed-heavy.js": {
+    "mtime": 1767808882.092947,
     "hash": "ef7bb92297d90ecbccefd0b07699cc09"
   },
-  "C:\\source\\repos\\perso\\dentistico\\simulate-bookings.js": {
-    "mtime": 1777215198.4940505,
+  "D:\\source\\svelt\\dentistico\\simulate-bookings.js": {
+    "mtime": 1769879639.1687758,
     "hash": "f2131fba417a71a1a25093286ace5198"
   },
-  "C:\\source\\repos\\perso\\dentistico\\start.js": {
-    "mtime": 1777215198.633119,
+  "D:\\source\\svelt\\dentistico\\start.js": {
+    "mtime": 1767465845.5818262,
     "hash": "fd572e7be77cad5b8ba6a8925881635e"
   },
-  "C:\\source\\repos\\perso\\dentistico\\stress-test.js": {
-    "mtime": 1777215199.0429788,
+  "D:\\source\\svelt\\dentistico\\stress-test.js": {
+    "mtime": 1767808882.155154,
     "hash": "689ceef5b5bf169a923b13a55433f4f8"
   },
-  "C:\\source\\repos\\perso\\dentistico\\svelte.config.js": {
-    "mtime": 1776695512.7898207,
+  "D:\\source\\svelt\\dentistico\\svelte.config.js": {
+    "mtime": 1767465845.6356487,
     "hash": "0b4dbf2886ad814319910c767cc03470"
   },
-  "C:\\source\\repos\\perso\\dentistico\\tailwind.config.js": {
-    "mtime": 1776695512.7908156,
+  "D:\\source\\svelt\\dentistico\\tailwind.config.js": {
+    "mtime": 1767465845.6361527,
     "hash": "90cdf9f985207be24d02c235b74280b6"
   },
-  "C:\\source\\repos\\perso\\dentistico\\vite.config.ts": {
-    "mtime": 1777215199.048979,
+  "D:\\source\\svelt\\dentistico\\vite.config.ts": {
+    "mtime": 1768573629.4696426,
     "hash": "bd7958b99e3d2b0d5cff9d131706dc52"
   },
-  "C:\\source\\repos\\perso\\dentistico\\scripts\\verify_i18n.js": {
-    "mtime": 1777215198.4910347,
+  "D:\\source\\svelt\\dentistico\\brain\\a6224654-dcb6-4283-815f-ab753777c246\\scratch\\check_balance.py": {
+    "mtime": 1778273224.286142,
+    "hash": "b614530164a87df4bfb3b5cb02992b00"
+  },
+  "D:\\source\\svelt\\dentistico\\brain\\a6224654-dcb6-4283-815f-ab753777c246\\scratch\\count_items.py": {
+    "mtime": 1778272991.026222,
+    "hash": "5e442bd39c4cb204bdfc4e58f5133c60"
+  },
+  "D:\\source\\svelt\\dentistico\\brain\\a6224654-dcb6-4283-815f-ab753777c246\\scratch\\find_unclosed.py": {
+    "mtime": 1778272753.693134,
+    "hash": "6696d78691a58887bbc7ce83b58d97ff"
+  },
+  "D:\\source\\svelt\\dentistico\\scratch\\check_schema.js": {
+    "mtime": 1778100052.1070764,
+    "hash": "d773bbfcc74a2b3a1228eb4f56c4bd78"
+  },
+  "D:\\source\\svelt\\dentistico\\scratch\\update_schema.js": {
+    "mtime": 1778100052.1070764,
+    "hash": "c0064288d6ccc8be8f301b3b7f45b17f"
+  },
+  "D:\\source\\svelt\\dentistico\\scratch\\verify_data.js": {
+    "mtime": 1778100052.1070764,
+    "hash": "3ceb3ad858e10ef84411c2201644f77e"
+  },
+  "D:\\source\\svelt\\dentistico\\scripts\\verify_i18n.js": {
+    "mtime": 1767732968.8542101,
     "hash": "fca7371def445b3e60ec937b0de4fff3"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\app.d.ts": {
-    "mtime": 1777215198.496035,
+  "D:\\source\\svelt\\dentistico\\src\\app.d.ts": {
+    "mtime": 1767965816.8827457,
     "hash": "ed1f059e8ce9aaa0618ec75891a96be1"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\hooks.server.ts": {
-    "mtime": 1777550157.5434425,
-    "hash": "660f0c3459bc89ce146771462c73f286"
+  "D:\\source\\svelt\\dentistico\\src\\hooks.server.ts": {
+    "mtime": 1778100052.1070764,
+    "hash": "b56abe7cd3dd49243e99ea08ba62293f"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\index.ts": {
-    "mtime": 1776695512.7531965,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\index.ts": {
+    "mtime": 1767465845.5403035,
     "hash": "96b4b418bf522ade417aa89604ea0a8f"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\types.ts": {
-    "mtime": 1777215198.5425632,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\types.ts": {
+    "mtime": 1767721259.7106287,
     "hash": "1b39a9c15d431e737dc38678cba87708"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\DentalChart.svelte": {
-    "mtime": 1777215198.4975486,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\DentalChart.svelte": {
+    "mtime": 1767468422.246238,
     "hash": "aa033a2722241c1e24b4e9f208b9b156"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\DicomViewer.svelte": {
-    "mtime": 1777215198.4985442,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\DicomViewer.svelte": {
+    "mtime": 1768573629.306027,
     "hash": "206b99df3531a656e96d6685287dfc66"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\FreeformDateTimePicker.svelte": {
-    "mtime": 1777215198.5005453,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\FreeformDateTimePicker.svelte": {
+    "mtime": 1767980103.603626,
     "hash": "fa4d086514209759d801a0b7fc454987"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\FullCalendar.svelte": {
-    "mtime": 1777215198.5015535,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\FullCalendar.svelte": {
+    "mtime": 1769858639.9023411,
     "hash": "044c3a1f09dbdbc62d371eb4b1080a68"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\Header.svelte": {
-    "mtime": 1777215198.5025544,
-    "hash": "582abdbc60a8e480f43f0bc559cb75d9"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\Header.svelte": {
+    "mtime": 1778279732.4304485,
+    "hash": "3e9597636e2468f239767ca4db308055"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\NotificationBell.svelte": {
-    "mtime": 1777215198.5035546,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\NotificationBell.svelte": {
+    "mtime": 1770149656.8776412,
     "hash": "7b3edcb9cb06b79f2e122bb704ef50f9"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\PortalShell.svelte": {
-    "mtime": 1777215198.5045443,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\PortalShell.svelte": {
+    "mtime": 1769029393.823458,
     "hash": "9fea4db1630fc6d1e13344f5710ce7f3"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\PrescriptionBuilder.svelte": {
-    "mtime": 1777215198.5055442,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\PrescriptionBuilder.svelte": {
+    "mtime": 1768235036.2753994,
     "hash": "de1807bd215c4809fb4ebfca2aa1315e"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\ReasonSelector.svelte": {
-    "mtime": 1777215198.506544,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\ReasonSelector.svelte": {
+    "mtime": 1769545088.4430802,
     "hash": "79a6b515761afa7b4e90e53cf3373bdf"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\Sidebar.svelte": {
-    "mtime": 1777555281.4653118,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\Sidebar.svelte": {
+    "mtime": 1778100052.1120765,
     "hash": "af37fdfe7eb0377e5c2b2780f807a9f8"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\SmartDateTimePicker.svelte": {
-    "mtime": 1777215198.509544,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\SmartDateTimePicker.svelte": {
+    "mtime": 1768217418.6368434,
     "hash": "33477c65b5a23c872f5a41afcda5ca60"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\Toast.svelte": {
-    "mtime": 1777215198.5105543,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\Toast.svelte": {
+    "mtime": 1770842134.1254942,
     "hash": "d7a3a79c425d38ca67efed7ddbe502f2"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\ToothSelector.svelte": {
-    "mtime": 1777215198.5115547,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\ToothSelector.svelte": {
+    "mtime": 1767465845.5336053,
     "hash": "e2794e5ec960435f3319f0fa56aaa021"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\admin\\DentalColorModal.svelte": {
-    "mtime": 1777363870.5089107,
-    "hash": "0e90baabeb771e02cb362ec340ed38cd"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\admin\\DentalColorModal.svelte": {
+    "mtime": 1778100052.1120765,
+    "hash": "ef550c22da12056bef011730c8d06e02"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\common\\ResponsiveShield.svelte": {
-    "mtime": 1777215198.5125446,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\common\\ResponsiveShield.svelte": {
+    "mtime": 1768937096.0012772,
     "hash": "46ac455ae78b3962ed540df8bffd42e2"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\common\\SlotPicker.svelte": {
-    "mtime": 1777558617.0311315,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\common\\SlotPicker.svelte": {
+    "mtime": 1778100052.1120765,
     "hash": "6f28b05a610cc06303244b9eb8930ddd"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\dental\\DentalChart.svelte": {
-    "mtime": 1777215198.5155444,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\dental\\DentalChart.svelte": {
+    "mtime": 1770842102.1649888,
     "hash": "6fba312e30577ec3b54cd4fe05a210e7"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\dental\\QuickTreatmentPicker.svelte": {
-    "mtime": 1777215198.5175445,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\dental\\QuickTreatmentPicker.svelte": {
+    "mtime": 1769200848.9063306,
     "hash": "e4dd9b111f94ea13800ef584e2ec1cb1"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\dental\\SurfaceSelector.svelte": {
-    "mtime": 1777215198.518553,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\dental\\SurfaceSelector.svelte": {
+    "mtime": 1768062271.8453035,
     "hash": "43777b298a83f48047478280152cdfeb"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\dental\\ToothSVG.svelte": {
-    "mtime": 1777215198.5195441,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\dental\\ToothSVG.svelte": {
+    "mtime": 1768641595.833753,
     "hash": "e55735905e7947f1d1addbefe02bbb3f"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\dental-v2\\CarteDentaireV2.svelte": {
-    "mtime": 1777556799.6775165,
-    "hash": "120c55e4360c66c6509f2d05c4ff28cd"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\dental-v2\\CarteDentaireV2.svelte": {
+    "mtime": 1778100052.1120765,
+    "hash": "b22e1ff907356f984dca0f81399ee02f"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\dental-v2\\ClinicalWorkstation.svelte": {
-    "mtime": 1777448119.891475,
-    "hash": "b2fec987c09d6c7f5bf6b50565ae54a1"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\dental-v2\\ClinicalWorkstation.svelte": {
+    "mtime": 1778100052.1120765,
+    "hash": "24f2f36c8e17761a8759937c3ed6872b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\dental-v2\\FullTreatmentForm.svelte": {
-    "mtime": 1777449091.066136,
-    "hash": "e0189610e79a19664313d960dbe2f15f"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\dental-v2\\FullTreatmentForm.svelte": {
+    "mtime": 1778280832.203597,
+    "hash": "1bb6ac4356e28ee145c1d834887d6966"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\dental-v2\\InteractiveToothV2.svelte": {
-    "mtime": 1777445703.6910028,
-    "hash": "87df85b2c63b08e0d8609870528af435"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\dental-v2\\InteractiveToothV2.svelte": {
+    "mtime": 1778100052.117076,
+    "hash": "2efddb1f499145b74ee13bfd6a03f6bc"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\dental-v2\\OdontogrammePro.svelte": {
-    "mtime": 1777556782.044922,
-    "hash": "95aa692266c156becbc678b2b6374a1e"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\dental-v2\\OdontogrammePro.svelte": {
+    "mtime": 1778274085.9969032,
+    "hash": "c742bf21f79546202f53aab1fa8f612e"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\dental-v2\\ToothEditPanelV2.svelte": {
-    "mtime": 1777385140.8768024,
-    "hash": "ed104bfea0f6e2e64fc7184a5c11c7f0"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\dental-v2\\ToothEditPanelV2.svelte": {
+    "mtime": 1778271672.9192364,
+    "hash": "cddb4245a5adc2e1fd62fc6ac096803b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\dental-v2\\TreatmentHistoryTable.svelte": {
-    "mtime": 1777368277.2953808,
-    "hash": "d2ecedb8aa4198301ad87453f1f5151d"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\dental-v2\\TreatmentHistoryTable.svelte": {
+    "mtime": 1778240411.4188473,
+    "hash": "f301fdacb7fb85f04bf3ce20b676031b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\doctor\\journey\\AppointmentStatusCard.svelte": {
-    "mtime": 1777215198.521545,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\doctor\\journey\\AppointmentStatusCard.svelte": {
+    "mtime": 1769545088.4480863,
     "hash": "a2758327162cd9e6712a136bd1e5e149"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\doctor\\journey\\PatientTypeCard.svelte": {
-    "mtime": 1777215198.5235438,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\doctor\\journey\\PatientTypeCard.svelte": {
+    "mtime": 1769545088.4480863,
     "hash": "d952316bd5234bdc4575bcd790ca0449"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\doctor\\journey\\PatientVolumeCard.svelte": {
-    "mtime": 1777215198.524544,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\doctor\\journey\\PatientVolumeCard.svelte": {
+    "mtime": 1769545088.4480863,
     "hash": "ffc7a3d6444f56c136f61a2ddb7f2073"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\doctor\\journey\\StatisticsPanel.svelte": {
-    "mtime": 1777215198.5265439,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\doctor\\journey\\StatisticsPanel.svelte": {
+    "mtime": 1769791961.3820834,
     "hash": "620b83a4552b3140bdaac6b22f32150b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\doctor\\journey\\TimeManagementCard.svelte": {
-    "mtime": 1777215198.527544,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\doctor\\journey\\TimeManagementCard.svelte": {
+    "mtime": 1769545088.4480863,
     "hash": "f2c80cb1c30d5046b5a9e712a4dfc188"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\doctor\\journey\\WaitingRoomList.svelte": {
-    "mtime": 1777215198.5285542,
-    "hash": "295b484fc7a0fe85e8a5d365b96cb7cf"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\doctor\\journey\\WaitingRoomList.svelte": {
+    "mtime": 1778235295.0407667,
+    "hash": "d7a49124562979ba3bfcaf6ae51742ef"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\patients\\AppointmentModal.svelte": {
-    "mtime": 1777561371.3514502,
-    "hash": "437e4d935b569fafb3aa663710d7ccde"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\patients\\AppointmentModal.svelte": {
+    "mtime": 1778280805.818789,
+    "hash": "e8f0ddc70a2629b2d064a5cf46096148"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\patients\\QuickPaymentModal.svelte": {
-    "mtime": 1777560590.8780828,
-    "hash": "5f30a6af2d0d6f26f0bbfcf9187bb178"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\patients\\DynamicFieldGenerator.svelte": {
+    "mtime": 1778100052.1220756,
+    "hash": "1767acf441807774d41bd601b75b5b48"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\components\\patients\\QuickViewModal.svelte": {
-    "mtime": 1777535758.2664132,
-    "hash": "ef5a4cfb076838e8a7f1865606011dcc"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\patients\\FastTrackTreatmentModal.svelte": {
+    "mtime": 1778280818.638837,
+    "hash": "5c6c77462ff9392c8ca3d6e0bcbca76e"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\config\\app.config.ts": {
-    "mtime": 1777215198.5305443,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\patients\\FieldHistoryModal.svelte": {
+    "mtime": 1778100052.1220756,
+    "hash": "47a10ae4eaeba428ef4f627ba224dba7"
+  },
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\patients\\PatientMetadataPanel.svelte": {
+    "mtime": 1778280850.2603607,
+    "hash": "c823c237bbf251a726b8fba4731bfdb1"
+  },
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\patients\\QuickPaymentModal.svelte": {
+    "mtime": 1778280811.789713,
+    "hash": "263124f523822cd2163cc4b5a4d753e0"
+  },
+  "D:\\source\\svelt\\dentistico\\src\\lib\\components\\patients\\QuickViewModal.svelte": {
+    "mtime": 1778100052.1220756,
+    "hash": "df8ae29551715fedc7adeaee771ba575"
+  },
+  "D:\\source\\svelt\\dentistico\\src\\lib\\config\\app.config.ts": {
+    "mtime": 1767465845.5353053,
     "hash": "e4b1af5cfa70dc11f7aadbe50bd0708a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\config\\navigation.ts": {
-    "mtime": 1777555296.2013638,
-    "hash": "b3f9d3ebc76294947aec2361cd54b18e"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\config\\navigation.ts": {
+    "mtime": 1778100052.1220756,
+    "hash": "3471c18a66a8375bb2067ecf7ec79e9d"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\dental\\tooth-data.ts": {
-    "mtime": 1777215198.531544,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\dental\\tooth-data.ts": {
+    "mtime": 1768035638.0020049,
     "hash": "69a55b911d3f01fd101bf5eca4642ca2"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\dental\\tooth-naming.ts": {
-    "mtime": 1777215198.532544,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\dental\\tooth-naming.ts": {
+    "mtime": 1768937096.0012772,
     "hash": "5a8d0aa3e7343b90f3976528c6f6cc0c"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\i18n\\index.ts": {
-    "mtime": 1777215198.536544,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\i18n\\index.ts": {
+    "mtime": 1768079214.5581918,
     "hash": "d4ad99ad2666b68891bd97ecb73a4ed9"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\server\\auth.ts": {
-    "mtime": 1777215198.537566,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\server\\auth.ts": {
+    "mtime": 1767951499.8916702,
     "hash": "b8531566bad3513722ede163485aa68a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\server\\check_schema.ts": {
-    "mtime": 1777298993.9546857,
-    "hash": "4d3795ded1dfa68b8ca3fb352b988426"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\server\\check_schema.ts": {
+    "mtime": 1778100052.1320763,
+    "hash": "9b0b30a16a514a9b99c22e6d49357a5a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\server\\clinic-settings.ts": {
-    "mtime": 1777531889.370695,
-    "hash": "f0c6e59a61cc60d5a4ddbedd0d311a6b"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\server\\clinic-settings.ts": {
+    "mtime": 1778277228.5866015,
+    "hash": "9fcf12cc9261dbf3715eb81d0d2e01ab"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\server\\db.ts": {
-    "mtime": 1777550143.4950576,
-    "hash": "24b1007d3f4e64d96cd723e545ebf0ce"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\server\\db.ts": {
+    "mtime": 1778277587.0305982,
+    "hash": "20ad44bab3a758a65c8db8d1dba4a0de"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\server\\dentalSync.ts": {
-    "mtime": 1777368458.6123192,
-    "hash": "a3f98be90e358831920c8018c1d6b7c8"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\server\\dentalSync.ts": {
+    "mtime": 1778100052.137076,
+    "hash": "2a620dc9c743d510978ce4d7b1ae580a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\server\\mockTemplateData.ts": {
-    "mtime": 1777215198.540572,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\server\\mockTemplateData.ts": {
+    "mtime": 1769808402.8724597,
     "hash": "5a1ecf98dcc6a6452a1266d105703f90"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\server\\notifications.ts": {
-    "mtime": 1777215198.541563,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\server\\notifications.ts": {
+    "mtime": 1769634097.3562424,
     "hash": "175521e4430a93ffcbce9bf5bdc20efd"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\server\\templateEngine.ts": {
-    "mtime": 1777215198.5425632,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\server\\templateEngine.ts": {
+    "mtime": 1769236011.6246362,
     "hash": "e8eb2c52a4e8dfd1b4403809bcf73c66"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\server\\test_cdt.ts": {
-    "mtime": 1777299087.9717948,
-    "hash": "5e065b742414f70bf50e16c906bd31f8"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\server\\test_cdt.ts": {
+    "mtime": 1778100052.137076,
+    "hash": "9576aae21ac842212f4e5988729ae8ea"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\server\\test_fk.ts": {
-    "mtime": 1777299061.9132886,
-    "hash": "e2c4c759e6b7f533e1d9ed15b40e57e1"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\server\\test_fk.ts": {
+    "mtime": 1778100052.137076,
+    "hash": "ef225b9ce43c45420e29a24562157030"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\server\\test_sync.ts": {
-    "mtime": 1777299026.740784,
-    "hash": "9617f80555ef5c5aa3ea580064493cd2"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\server\\test_sync.ts": {
+    "mtime": 1778100052.137076,
+    "hash": "602a5f9f387dddef6363b8733237730b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\stores\\config.svelte.ts": {
-    "mtime": 1777550050.5919101,
-    "hash": "d4de8513bb9f3528fa641fc4c86588b2"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\stores\\config.svelte.ts": {
+    "mtime": 1778100052.142074,
+    "hash": "acdd77e90e026e541dbd339f57fc735c"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\stores\\dentalSettings.svelte.ts": {
-    "mtime": 1777286793.7418816,
-    "hash": "be301e391ffed742972ed386ece262c6"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\stores\\dentalSettings.svelte.ts": {
+    "mtime": 1778100052.142074,
+    "hash": "9d2afb14504b652c806dd58869dbe17f"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\stores\\patients.svelte.ts": {
-    "mtime": 1777542032.0953631,
-    "hash": "0bfc31dd9e7e7ea894c5b7d3078566de"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\stores\\patients.svelte.ts": {
+    "mtime": 1778100052.142074,
+    "hash": "74bab6b26afd89a7d9f2f998b8dfdf1f"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\stores\\ui.svelte.ts": {
-    "mtime": 1777370147.9088516,
-    "hash": "eb69d97ebb640b8402ed1ad7ae2b6def"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\stores\\ui.svelte.ts": {
+    "mtime": 1778100052.142074,
+    "hash": "ca1abcfd22f45fbe2111572b0a622905"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\utils\\debounce.ts": {
-    "mtime": 1777215198.5435634,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\utils\\debounce.ts": {
+    "mtime": 1769637080.110014,
     "hash": "7543fe45a8c8c97b0fd78110cd089d1b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\utils\\export.ts": {
-    "mtime": 1777535805.4914956,
-    "hash": "7a01bbd77df3962177b1b3e9e1fbd6a7"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\utils\\export.ts": {
+    "mtime": 1778100052.142074,
+    "hash": "f218c7f42495a37cbdd584bcf3d184b0"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\utils\\logger.ts": {
-    "mtime": 1777215198.5435634,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\utils\\logger.ts": {
+    "mtime": 1769637004.5462718,
     "hash": "b8122b19fdde0571b235e68df542b4f7"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\utils\\toothLogicV2.ts": {
-    "mtime": 1777284151.7195272,
-    "hash": "92386d3744197c1137852a293e9210b0"
+  "D:\\source\\svelt\\dentistico\\src\\lib\\utils\\toothLogicV2.ts": {
+    "mtime": 1778100052.142074,
+    "hash": "fa4fdc01a2c2af5a1e5ebc1629de7760"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\+layout.server.ts": {
-    "mtime": 1777215198.5445635,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\+layout.server.ts": {
+    "mtime": 1768217418.646073,
     "hash": "471a1a1759926b55c03c00ab2ed67ca4"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\+layout.svelte": {
-    "mtime": 1777555933.692549,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\+layout.svelte": {
+    "mtime": 1778100052.142074,
     "hash": "e1cb8e6ca0815b8842bf3528c68402bb"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\+page.svelte": {
-    "mtime": 1777533881.6172385,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\+page.server.ts": {
+    "mtime": 1778277219.4654002,
+    "hash": "5ddeace0a773422ac7de99bd6bea45bc"
+  },
+  "D:\\source\\svelt\\dentistico\\src\\routes\\+page.svelte": {
+    "mtime": 1778100052.147074,
     "hash": "c17eef5c92de52a2c80f054ad10b251a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\+layout.server.ts": {
-    "mtime": 1777215198.5465732,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\+layout.server.ts": {
+    "mtime": 1767465845.5463078,
     "hash": "2e8b78ec0e74540606c3d65c84fa24c0"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\+layout.svelte": {
-    "mtime": 1777555323.8632853,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\+layout.svelte": {
+    "mtime": 1778100052.147074,
     "hash": "4ef12f0c2cc5639b648079eb5b90978c"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\+page.server.ts": {
-    "mtime": 1777215198.5475636,
-    "hash": "29f066b3a1b70b7e73aac6a7ad2b2f82"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\+page.server.ts": {
+    "mtime": 1778100052.147074,
+    "hash": "0cf0ca4c5ba74855fb87dd0cbff110cc"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\+page.svelte": {
-    "mtime": 1777215198.5485635,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\+page.svelte": {
+    "mtime": 1767974353.3620975,
     "hash": "16ed3fd5000259fb5f00cab739e9176b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\cdt-codes\\+page.svelte": {
-    "mtime": 1777215198.549564,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\cdt-codes\\+page.svelte": {
+    "mtime": 1768079402.3247216,
     "hash": "4ae1e90b21ef8057852e06751f0b2f7b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\settings\\+page.server.ts": {
-    "mtime": 1777367349.3815322,
-    "hash": "a32edc057d23a96143179e799d51ea75"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\settings\\+page.server.ts": {
+    "mtime": 1778277594.027853,
+    "hash": "d9650f655db12bff8ced2610f1700b7c"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\settings\\+page.svelte": {
-    "mtime": 1777555952.0597632,
-    "hash": "9bda6ea62ca05cd6bade2e810c3ec3c0"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\settings\\+page.svelte": {
+    "mtime": 1778278601.9465892,
+    "hash": "738238ac8ef5160f491f41406cdc9dd0"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\settings\\facilities\\+page.server.ts": {
-    "mtime": 1777215198.5535634,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\settings\\facilities\\+page.server.ts": {
+    "mtime": 1770752410.6586082,
     "hash": "b55304fa067d387be596ed0e29c377ec"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\settings\\facilities\\+page.svelte": {
-    "mtime": 1777550328.845432,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\settings\\facilities\\+page.svelte": {
+    "mtime": 1778100052.152074,
     "hash": "cf6591b970a852626def86c83dbdd15b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\spending\\+page.svelte": {
-    "mtime": 1777215198.555563,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\settings\\patients\\custom-fields\\+page.server.ts": {
+    "mtime": 1778100052.152074,
+    "hash": "b9767cfd5d7e5385c134f3fe7416ff5a"
+  },
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\settings\\patients\\custom-fields\\+page.svelte": {
+    "mtime": 1778102440.3732557,
+    "hash": "afe1ad92c7afe1a82915f0d09dbd6876"
+  },
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\spending\\+page.svelte": {
+    "mtime": 1767732624.8567514,
     "hash": "e337c8d2c22cf9c0353b38607795c648"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\spending\\categories\\+page.svelte": {
-    "mtime": 1777215198.556563,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\spending\\categories\\+page.svelte": {
+    "mtime": 1767732780.479525,
     "hash": "cb82a181e7118d7b69232ef6cd8dd031"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\templates\\+page.server.ts": {
-    "mtime": 1777215198.557563,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\templates\\+page.server.ts": {
+    "mtime": 1771572597.9432688,
     "hash": "513c1425fe5b9cc46721146b99f99ee8"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\templates\\+page.svelte": {
-    "mtime": 1777215198.558563,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\templates\\+page.svelte": {
+    "mtime": 1769808822.994211,
     "hash": "0af4b82aa55087d4308eb7feaa8f896a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\users\\+page.server.ts": {
-    "mtime": 1777215198.5595632,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\users\\+page.server.ts": {
+    "mtime": 1767951439.9383128,
     "hash": "24fee720ecfc657b763c477dfd6ce1ee"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\admin\\users\\+page.svelte": {
-    "mtime": 1777215198.5595632,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\admin\\users\\+page.svelte": {
+    "mtime": 1767951795.1373723,
     "hash": "a226aac6c6b4dffaca0a78ca4b52c606"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\buildings\\+server.ts": {
-    "mtime": 1777215198.5615628,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\buildings\\+server.ts": {
+    "mtime": 1770752509.5238917,
     "hash": "8c00a5eb1cc315a709374f4a4446fc8e"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\cdt-codes\\+server.ts": {
-    "mtime": 1777215198.562075,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\cdt-codes\\+server.ts": {
+    "mtime": 1768079214.7284672,
     "hash": "706a376704d0792ede8281a4260dcc62"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\cdt-codes\\[code]\\+server.ts": {
-    "mtime": 1777215198.563073,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\cdt-codes\\[code]\\+server.ts": {
+    "mtime": 1768079214.5688987,
     "hash": "3ac5661d611eea60f124da1b966bace8"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\clinic-settings\\+server.ts": {
-    "mtime": 1777533080.10773,
-    "hash": "fcfa418b572f1271fbe5e9bc62e25715"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\clinic-settings\\+server.ts": {
+    "mtime": 1778277190.507007,
+    "hash": "0850f28940b5d8bff720a60e16238415"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\closures\\+server.ts": {
-    "mtime": 1777215198.565073,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\closures\\+server.ts": {
+    "mtime": 1768217418.6507318,
     "hash": "4c525de8625dfea83ac57ec281d430a0"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\closures\\[id]\\+server.ts": {
-    "mtime": 1777215198.565073,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\closures\\[id]\\+server.ts": {
+    "mtime": 1768217418.6517308,
     "hash": "428aa8acb9a8686dbe3191a77c3e5be1"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\export\\+server.ts": {
-    "mtime": 1777215198.5660727,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\export\\+server.ts": {
+    "mtime": 1768241091.7199466,
     "hash": "1803769dc2a56c7e03b7ae9bf503da02"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\facilities\\+server.ts": {
-    "mtime": 1777215198.5660727,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\facilities\\+server.ts": {
+    "mtime": 1770752515.4403515,
     "hash": "08f02ce5200f1359e613ebeb01fb434a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\floors\\+server.ts": {
-    "mtime": 1777215198.5670729,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\floors\\+server.ts": {
+    "mtime": 1770752503.6780446,
     "hash": "4a008859cd18a67b098a236cd7a23ad5"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\rooms\\+server.ts": {
-    "mtime": 1777215198.5680728,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\rooms\\+server.ts": {
+    "mtime": 1770748818.0597658,
     "hash": "3142dcf205a4cbf572207b1430b137ae"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\templates\\preview\\+server.ts": {
-    "mtime": 1777215198.5680728,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\templates\\preview\\+server.ts": {
+    "mtime": 1769808412.137782,
     "hash": "920141d477665d9ef1d6de95f62f3ca9"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\admin\\working-days\\+server.ts": {
-    "mtime": 1777215198.5690727,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\admin\\working-days\\+server.ts": {
+    "mtime": 1768217418.65273,
     "hash": "40c4d8830a108513005984be57eef240"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\appointments\\+server.ts": {
-    "mtime": 1777215198.5690727,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\appointments\\+server.ts": {
+    "mtime": 1769380724.5338604,
     "hash": "db3effee1b80ac1c7b5ce6db3dc06a77"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\appointments\\call-patient\\+server.ts": {
-    "mtime": 1777215198.570073,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\appointments\\call-patient\\+server.ts": {
+    "mtime": 1769638538.9567757,
     "hash": "a9440882570c454dcdd8437549e48cb4"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\appointments\\check-in\\+server.ts": {
-    "mtime": 1777215198.5710728,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\appointments\\check-in\\+server.ts": {
+    "mtime": 1770065701.3357432,
     "hash": "876c414709391c25384075801139619b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\appointments\\complete\\+server.ts": {
-    "mtime": 1777215198.5710728,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\appointments\\complete\\+server.ts": {
+    "mtime": 1769545088.4637172,
     "hash": "503779aa28446bcd9ec22fb1b075d523"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\booking\\available-slots\\+server.ts": {
-    "mtime": 1777215198.5720727,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\booking\\available-slots\\+server.ts": {
+    "mtime": 1770153136.256931,
     "hash": "6df84db901a210a4ad333e4c8cd75f0e"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\booking\\check-date\\+server.ts": {
-    "mtime": 1777215198.5730767,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\booking\\check-date\\+server.ts": {
+    "mtime": 1768217418.6559157,
     "hash": "79e4e7de0dc2b7824470f0ea71a51616"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\booking\\unavailable-dates\\+server.ts": {
-    "mtime": 1777215198.5730767,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\booking\\unavailable-dates\\+server.ts": {
+    "mtime": 1768217418.6568742,
     "hash": "726b9069db5f6305f7bd3573991ed7aa"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\dental\\cdt-codes\\+server.ts": {
-    "mtime": 1777215198.5740728,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\dental\\cdt-codes\\+server.ts": {
+    "mtime": 1768937096.0169027,
     "hash": "536739e1c8b9b853fe8dc18449991c84"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\dental\\treatments\\+server.ts": {
-    "mtime": 1777448184.3512566,
-    "hash": "56f1e49a9e4d936fa23f52c0dc40d30d"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\dental\\treatments\\+server.ts": {
+    "mtime": 1778263369.823333,
+    "hash": "3dcea2d6aa54a8d139334c615153a8b7"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\dental\\treatments\\[id]\\+server.ts": {
-    "mtime": 1777298015.08679,
-    "hash": "dd745ed522a77be0500b5de846e5538e"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\dental\\treatments\\[id]\\+server.ts": {
+    "mtime": 1778263381.4310946,
+    "hash": "ecd13313f117d9ed17ff9859a5f5ae34"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\inventory\\export\\+server.ts": {
-    "mtime": 1777215198.5760727,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\fields\\history\\+server.ts": {
+    "mtime": 1778100052.162074,
+    "hash": "675c6ea211edd9ac1a29ba98c3d10334"
+  },
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\inventory\\export\\+server.ts": {
+    "mtime": 1770747803.5891278,
     "hash": "4d9dd16a4f9a001c4d208b29ffd6b155"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\invoices\\[id]\\+server.ts": {
-    "mtime": 1777215198.577073,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\invoices\\[id]\\+server.ts": {
+    "mtime": 1769166094.459077,
     "hash": "fd40eb447414b3bdffa7ad796e1ee398"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\lab-tracking\\+server.ts": {
-    "mtime": 1777217210.9453993,
-    "hash": "f4469fc89a3548bb6fe0070b9624b3ec"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\lab-tracking\\+server.ts": {
+    "mtime": 1778100052.162074,
+    "hash": "7fe70dfe23765e768870078fb5999c2d"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\lab-tracking\\[id]\\+server.ts": {
-    "mtime": 1777217220.070181,
-    "hash": "f6af56c6fa6f54ac0ef819cc05361035"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\lab-tracking\\[id]\\+server.ts": {
+    "mtime": 1778100052.162074,
+    "hash": "4a6d33b39c756ef99445e073a1834577"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\notifications\\+server.ts": {
-    "mtime": 1777215198.5780728,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\notifications\\+server.ts": {
+    "mtime": 1767729106.5481079,
     "hash": "00dafdf5a9a94ee4bea83f215b93b56f"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\notifications\\[id]\\read\\+server.ts": {
-    "mtime": 1777215198.5780728,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\notifications\\[id]\\read\\+server.ts": {
+    "mtime": 1767729114.085168,
     "hash": "653f412f25808ce3554058b483c120f3"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\patients\\search\\+server.ts": {
-    "mtime": 1777215198.5790734,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\patients\\search\\+server.ts": {
+    "mtime": 1770142614.6730776,
     "hash": "58b06ec84024e9eca74d559ff1a883b0"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\patients\\[id]\\dental\\annotations\\+server.ts": {
-    "mtime": 1777383627.436427,
-    "hash": "b7c571a4d2b09e6386ab8d16e8722ca3"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\patients\\[id]\\dental\\annotations\\+server.ts": {
+    "mtime": 1778100052.162074,
+    "hash": "bf8ace771bc84aa8e639a30828c4dfc2"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\prescriptions\\[id]\\+server.ts": {
-    "mtime": 1777215198.5800729,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\prescriptions\\[id]\\+server.ts": {
+    "mtime": 1769105512.3698208,
     "hash": "757ff3d527208004ad9adf3b7654c244"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\spending\\+server.ts": {
-    "mtime": 1777215198.5800729,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\spending\\+server.ts": {
+    "mtime": 1767731417.586145,
     "hash": "1dc622ed9d5f86526c52325ba069d55f"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\spending\\categories\\+server.ts": {
-    "mtime": 1777215198.5820727,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\spending\\categories\\+server.ts": {
+    "mtime": 1767731032.5953658,
     "hash": "93d3669750634a1cf352326dc3213d91"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\spending\\categories\\[id]\\+server.ts": {
-    "mtime": 1777215198.583073,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\spending\\categories\\[id]\\+server.ts": {
+    "mtime": 1767731044.1582613,
     "hash": "4c9572b56a351a0063f07c30ff65bd63"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\spending\\export\\+server.ts": {
-    "mtime": 1777215198.583073,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\spending\\export\\+server.ts": {
+    "mtime": 1767951632.7847934,
     "hash": "b51f21cb4ceed8b225e250cc91da9b86"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\spending\\summary\\+server.ts": {
-    "mtime": 1777215198.5840728,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\spending\\summary\\+server.ts": {
+    "mtime": 1767731423.77566,
     "hash": "26196cf90df2eb3e893e9da7b6f197fb"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\spending\\[id]\\+server.ts": {
-    "mtime": 1777215198.581073,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\spending\\[id]\\+server.ts": {
+    "mtime": 1767731421.651578,
     "hash": "e351e018323f162e8f016d24d94ebb2d"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\updates\\status\\+server.ts": {
-    "mtime": 1777215198.5850725,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\updates\\status\\+server.ts": {
+    "mtime": 1769639286.3776705,
     "hash": "819b7e19247087042e5477b1f6013086"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\api\\waiting-room\\[doctorId]\\+server.ts": {
-    "mtime": 1777215198.5860732,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\api\\waiting-room\\[doctorId]\\+server.ts": {
+    "mtime": 1770997028.797886,
     "hash": "f18b9885a39b2f7a53746ed226a5019e"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\assistant\\+layout.server.ts": {
-    "mtime": 1777215198.5860732,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\assistant\\+layout.server.ts": {
+    "mtime": 1771572559.5461066,
     "hash": "38f46aa37b65fddc3bf7b79387d2f903"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\assistant\\+layout.svelte": {
-    "mtime": 1777555318.4061687,
-    "hash": "6b899b16f69a1740b6a953f9ea2e9320"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\assistant\\+layout.svelte": {
+    "mtime": 1778271618.5420415,
+    "hash": "89f27cb02e5d68e4d885f94d1ef0e942"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\assistant\\dashboard\\+page.server.ts": {
-    "mtime": 1777215198.5880733,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\assistant\\dashboard\\+page.server.ts": {
+    "mtime": 1770997019.7900436,
     "hash": "f9a0958b826e501125eff7f9775caa6c"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\assistant\\dashboard\\+page.svelte": {
-    "mtime": 1777215198.5900774,
-    "hash": "d611789a5234588aaf9944772afa47fe"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\assistant\\dashboard\\+page.svelte": {
+    "mtime": 1778232515.08121,
+    "hash": "b4b3a21cf079b31f4d594d5ff2bcb658"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\assistant\\invoices\\+page.server.ts": {
-    "mtime": 1777215198.5930784,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\assistant\\invoices\\+page.server.ts": {
+    "mtime": 1771572545.6508217,
     "hash": "0dc3f8174936caa3a2b2aaa77e8ccf9a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\assistant\\invoices\\+page.svelte": {
-    "mtime": 1777215198.5940733,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\assistant\\invoices\\+page.svelte": {
+    "mtime": 1768576116.6760213,
     "hash": "4fa6b8d25c439d4c83c10b427e5beb54"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\assistant\\spending\\+page.server.ts": {
-    "mtime": 1777215198.5950816,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\assistant\\spending\\+page.server.ts": {
+    "mtime": 1771572603.5222094,
     "hash": "5f84dc64ffb53de52dcfe9447c28269c"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\assistant\\spending\\+page.svelte": {
-    "mtime": 1777215198.5960734,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\assistant\\spending\\+page.svelte": {
+    "mtime": 1768576122.9288447,
     "hash": "a6f732eeb9a5cc938974770e52e4e22d"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\book\\+page.server.ts": {
-    "mtime": 1777215198.597695,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\book\\+page.server.ts": {
+    "mtime": 1768217418.66123,
     "hash": "8351ebb3cc3f9fd2c740885e82f7d4ce"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\book\\+page.svelte": {
-    "mtime": 1777532031.250983,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\book\\+page.svelte": {
+    "mtime": 1778100052.1670728,
     "hash": "d766fa5346964984ab964f197be3d424"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\+layout.server.ts": {
-    "mtime": 1777215198.5995798,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\+layout.server.ts": {
+    "mtime": 1770752477.6539896,
     "hash": "8b34cb175bf3b711f434dbd1456ad236"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\+layout.svelte": {
-    "mtime": 1777555309.848349,
-    "hash": "870559f8950fd68268df8fe18c4bc0a6"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\+layout.svelte": {
+    "mtime": 1778271612.8027449,
+    "hash": "21a8ffc9814833d9012b4fe149065cd5"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\dashboard\\+page.server.ts": {
-    "mtime": 1777284690.328414,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\dashboard\\+page.server.ts": {
+    "mtime": 1778100052.1670728,
     "hash": "1dcfccdebe4da6e179a2d30071c0d4e9"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\dashboard\\+page.svelte": {
-    "mtime": 1777284697.3041947,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\dashboard\\+page.svelte": {
+    "mtime": 1778100052.1670728,
     "hash": "668759d23d1e3f847bd7e83589b70968"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\journey\\+page.server.ts": {
-    "mtime": 1777215198.6041121,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\journey\\+page.server.ts": {
+    "mtime": 1769795154.2979774,
     "hash": "eecb11c118e0bddfaf468f7006e86ada"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\journey\\+page.svelte": {
-    "mtime": 1777215198.6051047,
-    "hash": "fe8a5f79d71aa5ced492af172829aa72"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\journey\\+page.svelte": {
+    "mtime": 1778235284.8370423,
+    "hash": "6a09e7638960f41f2273a6fd6194a8ee"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\journey\\[id]\\+page.server.ts": {
-    "mtime": 1777215198.6061132,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\journey\\[id]\\+page.server.ts": {
+    "mtime": 1769807463.6789176,
     "hash": "6750db71af03e660dbbc5205b89297e9"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\journey\\[id]\\+page.svelte": {
-    "mtime": 1777215198.6081135,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\journey\\[id]\\+page.svelte": {
+    "mtime": 1778100052.177073,
     "hash": "0b8e28ce22b6f1fb7ff980116fed4516"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\patients\\+page.server.ts": {
-    "mtime": 1777535416.8235176,
-    "hash": "1b5e3b4e122e8aed705d159eb5a52b8a"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\patients\\+page.server.ts": {
+    "mtime": 1778100052.177073,
+    "hash": "dbcd35915c7a30e1bc91d00de0877b62"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\patients\\+page.svelte": {
-    "mtime": 1777542134.073106,
-    "hash": "607f595b2673639ebd074aacf95ef50c"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\patients\\+page.svelte": {
+    "mtime": 1778100052.177073,
+    "hash": "1972b723e66f45c00855be47f4935356"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\patients\\archived\\+page.server.ts": {
-    "mtime": 1777215198.6171186,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\patients\\archived\\+page.server.ts": {
+    "mtime": 1767465845.5714695,
     "hash": "a4bf278dc746931b909ed9e7b88aeed6"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\patients\\archived\\+page.svelte": {
-    "mtime": 1777215198.6171186,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\patients\\archived\\+page.svelte": {
+    "mtime": 1767465845.5714695,
     "hash": "7018b0ad011d20d084f69a5d16ba5deb"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\patients\\[id]\\+layout.svelte": {
-    "mtime": 1777370154.1531775,
-    "hash": "d202dd09d4f456704a134816ac9ea27a"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\patients\\[id]\\+layout.svelte": {
+    "mtime": 1778100052.177073,
+    "hash": "b8e2878aa972b1c418e9b94e3d58b2aa"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\patients\\[id]\\+page.server.ts": {
-    "mtime": 1777560583.7187476,
-    "hash": "2500881f5877f3680a7acd7ad0d3864f"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\patients\\[id]\\+page.server.ts": {
+    "mtime": 1778271823.804165,
+    "hash": "e034f0fd6276095849c08a6dfad132ef"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\patients\\[id]\\+page.svelte": {
-    "mtime": 1777560555.6244135,
-    "hash": "2f37740a01bb7b4b098bd90690321618"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\patients\\[id]\\+page.svelte": {
+    "mtime": 1778280798.8274682,
+    "hash": "29e1df428460b43e701bb6b320519181"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\patients\\[id]\\v2\\+page.server.ts": {
-    "mtime": 1777368467.9698637,
-    "hash": "9b7426c576a96083bb3914e58a84db25"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\patients\\[id]\\v2\\+page.server.ts": {
+    "mtime": 1778100052.182072,
+    "hash": "5b11aeeb898fefdef098344c3d4f9644"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\patients\\[id]\\v2\\+page.svelte": {
-    "mtime": 1777385154.996532,
-    "hash": "7020c051d1634307315b6e4c941fcdc6"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\patients\\[id]\\v2\\+page.svelte": {
+    "mtime": 1778100052.182072,
+    "hash": "4fb7b70453f76f118488673cc5d99a51"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\settings\\medications\\+page.server.ts": {
-    "mtime": 1777215198.6181185,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\settings\\medications\\+page.server.ts": {
+    "mtime": 1768573629.320985,
     "hash": "cd4a1a65977c9c0d65cfeeb286db3179"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\settings\\medications\\+page.svelte": {
-    "mtime": 1777215198.6191187,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\settings\\medications\\+page.svelte": {
+    "mtime": 1768573629.3224902,
     "hash": "7ba938bc1847bb4a61254d0c521db019"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\doctor\\settings\\medications\\download\\+server.ts": {
-    "mtime": 1777215198.6201193,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\doctor\\settings\\medications\\download\\+server.ts": {
+    "mtime": 1768573629.3224902,
     "hash": "9e623e89340acd2eae549d65acc37605"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\inventory\\+page.server.ts": {
-    "mtime": 1777215198.6211188,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\inventory\\+page.server.ts": {
+    "mtime": 1771572475.1654294,
     "hash": "b0feb32beabaf3baac1571635e941b42"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\inventory\\+page.svelte": {
-    "mtime": 1777215198.6221187,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\inventory\\+page.svelte": {
+    "mtime": 1770747803.5911248,
     "hash": "7f548874e82983d9c5e52ec8faf687bc"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\lab-tracking\\+layout.server.ts": {
-    "mtime": 1777217174.077922,
-    "hash": "e86d093f0616f356e5505f4c88ac5e07"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\lab-tracking\\+layout.server.ts": {
+    "mtime": 1778100052.182072,
+    "hash": "ce7a2e95fdcc7231b3803e7cb4aab8c6"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\lab-tracking\\+layout.svelte": {
-    "mtime": 1777217194.4714677,
-    "hash": "d24b054eb923c0fd20f1d1a59c686836"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\lab-tracking\\+layout.svelte": {
+    "mtime": 1778100052.182072,
+    "hash": "86062090ea5e36e15071fc9d294e1741"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\lab-tracking\\+page.svelte": {
-    "mtime": 1777217486.9600172,
-    "hash": "24e9e01edb51760eabbd73e99a141914"
+  "D:\\source\\svelt\\dentistico\\src\\routes\\lab-tracking\\+page.svelte": {
+    "mtime": 1778100052.1870718,
+    "hash": "0b2ca50e37e849bc6d867e3d4125c2f6"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\login\\+page.server.ts": {
-    "mtime": 1777215198.623119,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\login\\+page.server.ts": {
+    "mtime": 1767559215.6906154,
     "hash": "f7c19823fa48877b5a35ac788bd7911a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\login\\+page.svelte": {
-    "mtime": 1777215198.624119,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\login\\+page.svelte": {
+    "mtime": 1768218193.6485136,
     "hash": "2aded57751211614c44c90da3a0dff8e"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\logout\\+server.ts": {
-    "mtime": 1776695512.7701962,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\logout\\+server.ts": {
+    "mtime": 1767465845.5778298,
     "hash": "6acb3b66ff937928a394b22ca7842cf4"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\notifications\\+page.svelte": {
-    "mtime": 1777215198.6251194,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\notifications\\+page.svelte": {
+    "mtime": 1767733176.8022697,
     "hash": "c876c9c79fee587b95e4a0b499c0f50d"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\print\\+layout.svelte": {
-    "mtime": 1777215198.6261187,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\print\\+layout.svelte": {
+    "mtime": 1771268556.5712924,
     "hash": "0aa0102978f589347b7dcfdbf688a33a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\print\\invoice\\[id]\\+page.server.ts": {
-    "mtime": 1777215198.6271188,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\print\\invoice\\[id]\\+page.server.ts": {
+    "mtime": 1771268556.5712924,
     "hash": "3aa1740ce7df5fd14671108549ec45c4"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\print\\invoice\\[id]\\+page.svelte": {
-    "mtime": 1777215198.6281285,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\print\\invoice\\[id]\\+page.svelte": {
+    "mtime": 1771268556.5712924,
     "hash": "f24ca81a4d47662beaacda0764ec2f0b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\print\\prescription\\[id]\\+page.server.ts": {
-    "mtime": 1777215198.6301186,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\print\\prescription\\[id]\\+page.server.ts": {
+    "mtime": 1768233180.0655265,
     "hash": "b207336f2a9b0041da14ee24d4e6ba44"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\print\\prescription\\[id]\\+page.svelte": {
-    "mtime": 1777215198.6301186,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\print\\prescription\\[id]\\+page.svelte": {
+    "mtime": 1771268556.5712924,
     "hash": "bca9491ca8c3403e28fcbfd6cddedd0d"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\profile\\+page.server.ts": {
-    "mtime": 1777215198.631119,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\profile\\+page.server.ts": {
+    "mtime": 1767808882.1473255,
     "hash": "b591d0ada4b67c1cdc9140c8657b6a76"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\routes\\profile\\+page.svelte": {
-    "mtime": 1777550122.199477,
+  "D:\\source\\svelt\\dentistico\\src\\routes\\profile\\+page.svelte": {
+    "mtime": 1778100052.1870718,
     "hash": "3c6ca9728043382847cb7875844b6bd3"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\lib\\dwv\\decoders\\jpeg2000.worker.min.js": {
-    "mtime": 1777215198.634119,
+  "D:\\source\\svelt\\dentistico\\static\\lib\\dwv\\decoders\\jpeg2000.worker.min.js": {
+    "mtime": 1768573629.3261008,
     "hash": "ddc7d2bc3f4ee7fb188aae575db4666b"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\lib\\dwv\\decoders\\jpegbaseline.worker.min.js": {
-    "mtime": 1777215198.6371186,
+  "D:\\source\\svelt\\dentistico\\static\\lib\\dwv\\decoders\\jpegbaseline.worker.min.js": {
+    "mtime": 1768573629.328666,
     "hash": "9310983cd83a53c5b1e2172da963a875"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\lib\\dwv\\decoders\\jpegloss.worker.min.js": {
-    "mtime": 1777215198.6391187,
+  "D:\\source\\svelt\\dentistico\\static\\lib\\dwv\\decoders\\jpegloss.worker.min.js": {
+    "mtime": 1768573629.328666,
     "hash": "5d855fb0d2cabe44eea844ce7263d081"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\lib\\dwv\\decoders\\labeling.worker.min.js": {
-    "mtime": 1777215198.6411183,
+  "D:\\source\\svelt\\dentistico\\static\\lib\\dwv\\decoders\\labeling.worker.min.js": {
+    "mtime": 1768573629.335418,
     "hash": "81f1993accf7a43fb24f8aa79175156c"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\lib\\dwv\\decoders\\rle.worker.min.js": {
-    "mtime": 1777215198.6421185,
+  "D:\\source\\svelt\\dentistico\\static\\lib\\dwv\\decoders\\rle.worker.min.js": {
+    "mtime": 1768573629.3380923,
     "hash": "be2b7dcd61b6186899137b9e5b64a0f6"
   },
-  "C:\\source\\repos\\perso\\dentistico\\tests\\e2e\\appointment-booking.spec.ts": {
-    "mtime": 1777215199.046979,
+  "D:\\source\\svelt\\dentistico\\tests\\e2e\\appointment-booking.spec.ts": {
+    "mtime": 1768429365.6347885,
     "hash": "54e874141f5e3f31df256a692d0f2533"
   },
-  "C:\\source\\repos\\perso\\dentistico\\tests\\e2e\\patient-flow.spec.ts": {
-    "mtime": 1777215199.047979,
+  "D:\\source\\svelt\\dentistico\\tests\\e2e\\patient-flow.spec.ts": {
+    "mtime": 1768421260.6628363,
     "hash": "04f94babff30362505bb78bd911171ca"
   },
-  "C:\\source\\repos\\perso\\dentistico\\tests\\e2e\\print-verification.spec.ts": {
-    "mtime": 1777215199.048979,
+  "D:\\source\\svelt\\dentistico\\tests\\e2e\\print-verification.spec.ts": {
+    "mtime": 1768421506.2684474,
     "hash": "50a2b3e15504ac912d9c6e99261bfe09"
   },
-  "C:\\source\\repos\\perso\\dentistico\\APPOINTMENT_BOOKING_IMPLEMENTATION.md": {
-    "mtime": 1777215198.280869,
+  "D:\\source\\svelt\\dentistico\\APPOINTMENT_BOOKING_IMPLEMENTATION.md": {
+    "mtime": 1768426968.3611324,
     "hash": "c98970a10e66caaae52a85cce3932e2a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\APPOINTMENT_CONFLICT_PREVENTION.md": {
-    "mtime": 1777215198.280869,
+  "D:\\source\\svelt\\dentistico\\APPOINTMENT_CONFLICT_PREVENTION.md": {
+    "mtime": 1767472313.9416468,
     "hash": "cb38ae655d75bc1c1cbe95aba8949a54"
   },
-  "C:\\source\\repos\\perso\\dentistico\\E2E_TESTING.md": {
-    "mtime": 1777215198.2818694,
+  "D:\\source\\svelt\\dentistico\\E2E_TESTING.md": {
+    "mtime": 1768427178.5226808,
     "hash": "edf01b547ca1e99dc405accdb39f51e6"
   },
-  "C:\\source\\repos\\perso\\dentistico\\LANDING_PAGE_CONFIG.md": {
-    "mtime": 1776695512.746196,
+  "D:\\source\\svelt\\dentistico\\LANDING_PAGE_CONFIG.md": {
+    "mtime": 1767465845.5236495,
     "hash": "dc48dc87b42ea2d53092d5320439c7b9"
   },
-  "C:\\source\\repos\\perso\\dentistico\\PERFORMANCE_TESTING.md": {
-    "mtime": 1777215198.282869,
+  "D:\\source\\svelt\\dentistico\\PERFORMANCE_TESTING.md": {
+    "mtime": 1767808882.0804992,
     "hash": "fbad1d99a0e5a6dfb2f421aa858b0e15"
   },
-  "C:\\source\\repos\\perso\\dentistico\\README.md": {
-    "mtime": 1777215198.282869,
+  "D:\\source\\svelt\\dentistico\\README.md": {
+    "mtime": 1770410807.3273468,
     "hash": "f324a153f63991235d89725d217e4d58"
   },
-  "C:\\source\\repos\\perso\\dentistico\\SEEDING.md": {
-    "mtime": 1777215198.283869,
+  "D:\\source\\svelt\\dentistico\\SEEDING.md": {
+    "mtime": 1769035754.6069343,
     "hash": "8d381f1303485bbd1ee6865b98fe3aed"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\app.html": {
-    "mtime": 1777215198.496035,
+  "D:\\source\\svelt\\dentistico\\scratch\\note.txt": {
+    "mtime": 1778100052.1070764,
+    "hash": "f2bd3cc3ce49b73e3ac6b0ac2f3c4980"
+  },
+  "D:\\source\\svelt\\dentistico\\src\\app.html": {
+    "mtime": 1770747803.582851,
     "hash": "b04e0111ac3ce7b88aa6816c876df5e1"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\robots.txt": {
-    "mtime": 1776695512.7782009,
+  "D:\\source\\svelt\\dentistico\\static\\robots.txt": {
+    "mtime": 1767465845.6046367,
     "hash": "17fb6d5f32c1874fae9a6bad26f1fcff"
   },
-  "C:\\source\\repos\\perso\\dentistico\\tests\\e2e\\APPOINTMENT_BOOKING_TESTS.md": {
-    "mtime": 1777215199.045979,
+  "D:\\source\\svelt\\dentistico\\tests\\e2e\\APPOINTMENT_BOOKING_TESTS.md": {
+    "mtime": 1768427162.3393698,
     "hash": "2a28c4f8cd125ab83e1720e47c85e9bd"
   },
-  "C:\\source\\repos\\perso\\dentistico\\tests\\e2e\\BOOKING_IMPLEMENTATION_NOTES.md": {
-    "mtime": 1777215199.045979,
+  "D:\\source\\svelt\\dentistico\\tests\\e2e\\BOOKING_IMPLEMENTATION_NOTES.md": {
+    "mtime": 1768427333.605932,
     "hash": "79cf01ce359f4d85c848d2382323b064"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\uploads\\attachments\\patient_22_1769799336579_inventory_global_2026-01-03.pdf": {
-    "mtime": 1777215198.8859532,
+  "D:\\source\\svelt\\dentistico\\static\\uploads\\attachments\\patient_22_1769799336579_inventory_global_2026-01-03.pdf": {
+    "mtime": 1769799336.5827634,
     "hash": "7c894ca1e91edc6ad160bab9ef153fdd"
   },
-  "C:\\source\\repos\\perso\\dentistico\\src\\lib\\assets\\favicon.svg": {
-    "mtime": 1776695512.7512069,
+  "D:\\source\\svelt\\dentistico\\src\\lib\\assets\\favicon.svg": {
+    "mtime": 1767465845.5289893,
     "hash": "a0d1b540c1b9a2a920d5f6cae983118a"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\about-interior.png": {
-    "mtime": 1776695512.7741952,
+  "D:\\source\\svelt\\dentistico\\static\\about-interior.png": {
+    "mtime": 1767465845.5915687,
     "hash": "d4e008fef33eaa0cd29b10be7c56e681"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\classic_dental_clinic_hero_1777531673394.png": {
-    "mtime": 1777531673.3950818,
+  "D:\\source\\svelt\\dentistico\\static\\classic_dental_clinic_hero_1777531673394.png": {
+    "mtime": 1778100052.1970725,
     "hash": "508e283768a23699e44b95dd40e18840"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\hero.jpg": {
-    "mtime": 1776695512.7751958,
+  "D:\\source\\svelt\\dentistico\\static\\hero.jpg": {
+    "mtime": 1767465845.5915687,
     "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\hero.png": {
-    "mtime": 1776695512.7782009,
+  "D:\\source\\svelt\\dentistico\\static\\hero.png": {
+    "mtime": 1767465845.5915687,
     "hash": "3f82e28e2ce519a5ab7869f2dd2d30a0"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\service-cosmetic.png": {
-    "mtime": 1776695512.7831953,
+  "D:\\source\\svelt\\dentistico\\static\\service-cosmetic.png": {
+    "mtime": 1767465845.6166818,
     "hash": "c7e403434b1d5dd0a241b1fe070caae9"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\service-general.png": {
-    "mtime": 1776695512.7858155,
+  "D:\\source\\svelt\\dentistico\\static\\service-general.png": {
+    "mtime": 1767465845.626032,
     "hash": "1547deff5358bdff1cda2a07d1f0a3c8"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\service-ortho.png": {
-    "mtime": 1776695512.7898207,
+  "D:\\source\\svelt\\dentistico\\static\\service-ortho.png": {
+    "mtime": 1767465845.6345408,
     "hash": "2f9cae3511b38affeba6eedb49a07688"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\mixkit-clear-announce-tones-2861.wav": {
-    "mtime": 1777215198.647776,
+  "D:\\source\\svelt\\dentistico\\static\\mixkit-clear-announce-tones-2861.wav": {
+    "mtime": 1769790475.5050623,
     "hash": "65a2df7ab7e7c9f59bf0fa6a20ff2a11"
   },
-  "C:\\source\\repos\\perso\\dentistico\\static\\notification.mp3": {
-    "mtime": 1777215198.649623,
+  "D:\\source\\svelt\\dentistico\\static\\notification.mp3": {
+    "mtime": 1767808882.1534996,
     "hash": "7a8856d43ac3486ffa4ab66f45ed6923"
   }
 }

@@ -20,7 +20,7 @@
 
 <div class="space-y-6">
     <!-- Quick Actions -->
-    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+    <div class="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm">
         <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">Actions Rapides</h3>
         <div class="space-y-3">
             <button 
@@ -42,7 +42,7 @@
     </div>
 
     <!-- Secondary Info -->
-    <div class="bg-slate-100/50 rounded-3xl p-6 border border-slate-200/50">
+    <div class="bg-slate-100/50 rounded-3xl p-5 border border-slate-200/50">
         <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Infos Patient</h4>
         <div class="space-y-4">
             <div>
