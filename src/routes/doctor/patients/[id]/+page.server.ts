@@ -545,11 +545,73 @@ export const actions: Actions = {
         if (!id) return fail(400, { error: 'ID requis' });
 
         try {
-            updateAppointmentStatus(id, 'cancelled');
+            const dbModule = await import('$lib/server/db');
+            dbModule.updateAppointmentStatus(id, 'cancelled');
             return { success: true };
         } catch (e) {
             console.error(e);
             return fail(500, { error: 'Erreur lors de l\'annulation' });
+        }
+    },
+
+    rescheduleAppointment: async ({ request, locals }) => {
+        if (!locals.user || !['doctor', 'assistant', 'admin'].includes(locals.user.role)) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const appointmentId = parseInt(formData.get('id') as string);
+        const doctorId = parseInt(formData.get('doctor_id') as string);
+        const startTimeStr = formData.get('start_time') as string;
+        const duration = parseInt(formData.get('duration_minutes') as string);
+        const type = formData.get('appointment_type') as string;
+        const notes = formData.get('notes') as string;
+
+        if (!appointmentId || !doctorId || !startTimeStr || !duration) {
+            return fail(400, { error: 'Missing required fields' });
+        }
+
+        try {
+            const dbModule = await import('$lib/server/db');
+            const oldAppt = dbModule.getAppointmentById(appointmentId) as any;
+
+            if (!oldAppt) return fail(404, { error: 'Appointment not found' });
+
+            // Calculate end_time
+            const start = new Date(startTimeStr);
+            const end = new Date(start.getTime() + duration * 60000);
+            const tzOffset = end.getTimezoneOffset() * 60000;
+            const endTimeStr = new Date(end.getTime() - tzOffset).toISOString().slice(0, 19).replace('T', ' ');
+
+            // Update
+            dbModule.updateAppointment(appointmentId, {
+                doctor_id: doctorId,
+                start_time: startTimeStr,
+                end_time: endTimeStr,
+                duration_minutes: duration,
+                appointment_type: type,
+                notes: notes,
+                updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+            });
+
+            // AUDIT TRAIL: Log the reschedule
+            if (oldAppt.start_time !== startTimeStr) {
+                dbModule.addClinicalNote(
+                    oldAppt.patient_id,
+                    locals.user.id,
+                    appointmentId,
+                    `RDV déplacé: de ${oldAppt.start_time} à ${startTimeStr}. Note: ${notes || 'N/A'}`,
+                    'low'
+                );
+            }
+
+            return { success: true };
+        } catch (e: any) {
+            console.error(e);
+            if (e.message && e.message.includes('already has an appointment')) {
+                return fail(400, { error: 'Ce créneau est déjà occupé pour ce praticien.' });
+            }
+            return fail(500, { error: 'Erreur lors du déplacement du rendez-vous.' });
         }
     }
 };

@@ -11,26 +11,40 @@
         doctors: any[];
         onClose: () => void;
         onSubmitSuccess?: () => void;
+        reschedulingAppointment?: any;
     }
 
-    let { isOpen, patient, doctors, onClose, onSubmitSuccess }: Props = $props();
+    let { isOpen, patient, doctors, onClose, onSubmitSuccess, reschedulingAppointment }: Props = $props();
 
     let selectedDoctorId = $state("");
     let selectedDate = $state("");
     let selectedTime = $state("");
     let appointmentType = $state("consultation");
     let durationMinutes = $state("30");
+    let notes = $state("");
     let errorMessage = $state("");
     let isSubmitting = $state(false);
 
-    // Reset form when opening for a new appointment
+    // Reset form when opening for a new appointment or rescheduling
     $effect(() => {
         if (isOpen) {
-            selectedDoctorId = "";
-            selectedDate = "";
-            selectedTime = "";
-            appointmentType = "consultation";
-            durationMinutes = "30";
+            if (reschedulingAppointment) {
+                selectedDoctorId = String(reschedulingAppointment.doctor_id || "");
+                // Parse original start time to set initial date/time
+                const originalStart = new Date(reschedulingAppointment.start_time.replace(' ', 'T'));
+                selectedDate = originalStart.toISOString().split('T')[0];
+                selectedTime = reschedulingAppointment.start_time;
+                appointmentType = reschedulingAppointment.appointment_type || "consultation";
+                durationMinutes = String(reschedulingAppointment.duration_minutes || "30");
+                notes = reschedulingAppointment.notes || "";
+            } else {
+                selectedDoctorId = "";
+                selectedDate = "";
+                selectedTime = "";
+                appointmentType = "consultation";
+                durationMinutes = "30";
+                notes = "";
+            }
             errorMessage = "";
         }
     });
@@ -46,11 +60,13 @@
             <!-- Header -->
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
                 <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-100">
+                    <div class="w-10 h-10 rounded-xl {reschedulingAppointment ? 'bg-amber-500' : 'bg-indigo-600'} text-white flex items-center justify-center shadow-lg shadow-indigo-100">
                         <Calendar size={20} />
                     </div>
                     <div>
-                        <h3 class="text-lg font-black text-slate-900 leading-tight">Fixer un Rendez-vous</h3>
+                        <h3 class="text-lg font-black text-slate-900 leading-tight">
+                            {reschedulingAppointment ? 'Déplacer le Rendez-vous' : 'Fixer un Rendez-vous'}
+                        </h3>
                         <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Patient: {patient.full_name}</p>
                     </div>
                 </div>
@@ -64,7 +80,7 @@
 
             <form 
                 method="POST" 
-                action="?/createAppointment" 
+                action={reschedulingAppointment ? "?/rescheduleAppointment" : "?/createAppointment"} 
                 use:enhance={() => {
                     isSubmitting = true;
                     errorMessage = "";
@@ -83,6 +99,9 @@
             >
                 <input type="hidden" name="patient_id" value={patient.id} />
                 <input type="hidden" name="start_time" value={selectedTime} />
+                {#if reschedulingAppointment}
+                    <input type="hidden" name="id" value={reschedulingAppointment.id} />
+                {/if}
 
                 <!-- Left Column: Settings -->
                 <div class="col-span-12 md:col-span-3 p-8 border-r border-slate-100 bg-slate-50/30 flex flex-col overflow-y-auto">
@@ -90,6 +109,27 @@
                         <div class="p-4 mb-6 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl text-xs font-bold flex items-center gap-3">
                             <span class="text-lg">⚠️</span>
                             {errorMessage}
+                        </div>
+                    {/if}
+
+                    {#if reschedulingAppointment}
+                        <!-- UI GHOSTING: Original Appointment Details -->
+                        <div class="mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                            <h4 class="text-[10px] font-black uppercase text-amber-600 tracking-wider mb-2">Ancien Rendez-vous</h4>
+                            <div class="space-y-1 text-xs font-bold text-amber-900">
+                                <div class="flex items-center gap-2">
+                                    <Calendar size={12} />
+                                    {new Date(reschedulingAppointment.start_time.replace(' ', 'T')).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <Clock size={12} />
+                                    {new Date(reschedulingAppointment.start_time.replace(' ', 'T')).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                                <div class="flex items-center gap-2 text-[10px] text-amber-700 mt-2">
+                                    <User size={10} />
+                                    Dr. {reschedulingAppointment.doctor_name || 'Inconnu'}
+                                </div>
+                            </div>
                         </div>
                     {/if}
 
@@ -156,15 +196,15 @@
                             </div>
                         </div>
 
-                        <!-- Reminder Placeholder / Future Toggle -->
-                        <div class="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                                <Clock size={16} />
-                            </div>
-                            <div class="text-[10px] font-bold text-indigo-900 leading-tight">
-                                <p>Rappel automatique</p>
-                                <p class="text-indigo-400 mt-0.5">SMS envoyé 24h avant</p>
-                            </div>
+                        <!-- Notes -->
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Notes</label>
+                            <textarea 
+                                name="notes" 
+                                bind:value={notes}
+                                placeholder="Note particulière..."
+                                class="w-full bg-white border border-slate-200 p-3 rounded-2xl font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all outline-none shadow-sm min-h-[80px] text-sm"
+                            ></textarea>
                         </div>
                     </div>
 
@@ -172,13 +212,13 @@
                         <button 
                             type="submit" 
                             disabled={!selectedTime || isSubmitting}
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white p-4 rounded-2xl font-black text-base transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3"
+                            class="w-full {reschedulingAppointment ? 'bg-amber-500 hover:bg-amber-600' : 'bg-indigo-600 hover:bg-indigo-700'} disabled:bg-slate-200 disabled:text-slate-400 text-white p-4 rounded-2xl font-black text-base transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3"
                         >
                             {#if isSubmitting}
                                 <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                             {:else}
                                 <Calendar size={18} />
-                                Confirmer le RDV
+                                {reschedulingAppointment ? 'Mettre à jour le RDV' : 'Confirmer le RDV'}
                             {/if}
                         </button>
                     </div>

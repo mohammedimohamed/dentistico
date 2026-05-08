@@ -60,6 +60,7 @@ import { fly, fade, slide } from "svelte/transition";
     let isPaymentModalOpen = $state(false);
     let isPrescriptionModalOpen = $state(false);
     let isAppointmentModalOpen = $state(false);
+    let reschedulingAppointment = $state<any>(null);
     let saveSuccess = $state(false);
 
     import { untrack } from "svelte";
@@ -338,7 +339,13 @@ import { fly, fade, slide } from "svelte/transition";
                                                                 Annuler
                                                             </button>
                                                         </form>
-                                                        <button class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-all">
+                                                        <button 
+                                                            onclick={() => {
+                                                                reschedulingAppointment = rdv;
+                                                                isAppointmentModalOpen = true;
+                                                            }}
+                                                            class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-all"
+                                                        >
                                                             Déplacer
                                                         </button>
                                                     </div>
@@ -603,12 +610,20 @@ import { fly, fade, slide } from "svelte/transition";
     </div>
 {/if} -->
 
-<AppointmentModal 
-    isOpen={isAppointmentModalOpen}
-    patient={data.patient}
-    doctors={data.doctors}
-    onClose={() => isAppointmentModalOpen = false}
-/>
+    <AppointmentModal 
+        isOpen={isAppointmentModalOpen} 
+        patient={data.patient}
+        doctors={data.doctors}
+        reschedulingAppointment={reschedulingAppointment}
+        onClose={() => {
+            isAppointmentModalOpen = false;
+            reschedulingAppointment = null;
+        }}
+        onSubmitSuccess={() => {
+            saveSuccess = true;
+            setTimeout(() => saveSuccess = false, 3000);
+        }}
+    />
 
 <QuickPaymentModal 
     isOpen={isPaymentModalOpen}
