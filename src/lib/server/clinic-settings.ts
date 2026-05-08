@@ -13,6 +13,7 @@ export interface ClinicSettings {
     module_prescriptions: number;
     module_dental_chart: number;
     module_inventory: number;
+    module_front_page: number;
     primary_color: string;
     secondary_color: string;
     font_serif: string;

@@ -47,6 +47,8 @@ export async function PUT({ request, locals }) {
           timer_alert_2_beeps = ?,
           shift_start_mandatory = ?,
           shift_cash_tracking = ?,
+          require_room_selection = ?,
+          allow_assistant_payments = ?,
           allow_doctor_create_product = ?,
           allow_assistant_create_product = ?,
           allow_doctor_create_supplier = ?,
@@ -64,6 +66,11 @@ export async function PUT({ request, locals }) {
           secondary_color = ?,
           font_serif = ?,
           font_sans = ?,
+          financial_mode = ?,
+          treatment_mode = ?,
+          payment_mode = ?,
+          invoicing_enabled = ?,
+          module_front_page = ?,
           updated_at = datetime('now')
         WHERE id = 1
       `).run(
@@ -82,6 +89,8 @@ export async function PUT({ request, locals }) {
             data.timer_alert_2_beeps || 2,
             data.shift_start_mandatory ? 1 : 0,
             data.shift_cash_tracking ? 1 : 0,
+            data.require_room_selection ? 1 : 0,
+            data.allow_assistant_payments ? 1 : 0,
             data.allow_doctor_create_product ? 1 : 0,
             data.allow_assistant_create_product ? 1 : 0,
             data.allow_doctor_create_supplier ? 1 : 0,
@@ -98,7 +107,12 @@ export async function PUT({ request, locals }) {
             data.primary_color || '#002147',
             data.secondary_color || '#D4AF37',
             data.font_serif || 'Lora',
-            data.font_sans || 'Inter'
+            data.font_sans || 'Inter',
+            data.financial_mode || 'basic',
+            data.treatment_mode || 'ADVANCED',
+            data.payment_mode || 'ADVANCED',
+            data.invoicing_enabled ? 1 : 0,
+            data.module_front_page ? 1 : 0
         );
 
         return json({ success: true });

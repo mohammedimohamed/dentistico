@@ -18,6 +18,7 @@
     let pendingMigrationSubmit = $state<(() => void) | null>(null);
     let pendingMigrationChanges = $state<{label: string; from: string; to: string}[]>([]);
     let migrationSuccessMsg = $state<string | null>(null);
+    let saveSuccessMsg = $state<string | null>(null);
     let isEditingTreatmentType = $state(false);
     let editingTreatmentType = $state<any>(null);
 
@@ -33,19 +34,19 @@
         timer_alert_2_minutes: 30,
         timer_alert_2_beeps: 2,
         require_room_selection: 1,
-        module_billing: 1,
-        module_prescriptions: 1,
-        module_dental_chart: 1,
-        module_inventory: 1,
-        module_dashboard: 1,
-        module_patients: 1,
-        module_journey: 1,
-        module_custom: 0,
+        module_billing: true,
+        module_prescriptions: true,
+        module_dental_chart: true,
+        module_inventory: true,
+        module_dashboard: true,
+        module_patients: true,
+        module_journey: true,
+        module_custom: false,
         module_custom_roles: "doctor",
         financial_mode: "basic",
         treatment_mode: "ADVANCED",
         payment_mode: "ADVANCED",
-        invoicing_enabled: 1,
+        invoicing_enabled: true,
     });
 
     let workingDays = $state<any[]>([]);
@@ -69,69 +70,45 @@
     ];
     const intervalOptions = [15, 30, 45, 60];
 
+    function normalizeSettings(raw: any) {
+        if (!raw) return settings; // Keep existing settings if raw is null
+        
+        return {
+            ...settings, // Start with existing settings
+            ...raw,      // Override with new ones
+            shift_start_mandatory: raw.shift_start_mandatory === 1,
+            shift_cash_tracking: raw.shift_cash_tracking === 1,
+            allow_doctor_create_product: raw.allow_doctor_create_product === 1,
+            allow_assistant_create_product: raw.allow_assistant_create_product === 1,
+            allow_doctor_create_supplier: raw.allow_doctor_create_supplier === 1,
+            allow_assistant_create_supplier: raw.allow_assistant_create_supplier === 1,
+            require_room_selection: raw.require_room_selection === 1,
+            module_billing: raw.module_billing === 1,
+            module_prescriptions: raw.module_prescriptions === 1,
+            module_dental_chart: raw.module_dental_chart === 1,
+            module_inventory: raw.module_inventory === 1,
+            module_dashboard: raw.module_dashboard === 1,
+            module_patients: raw.module_patients === 1,
+            module_journey: raw.module_journey === 1,
+            module_custom: raw.module_custom === 1,
+            module_front_page: raw.module_front_page === 1,
+            invoicing_enabled: raw.invoicing_enabled === 1,
+            primary_color: raw.primary_color || settings.primary_color || "#002147",
+            secondary_color: raw.secondary_color || settings.secondary_color || "#D4AF37",
+            font_serif: raw.font_serif || settings.font_serif || "Lora",
+            font_sans: raw.font_sans || settings.font_sans || "Inter",
+            financial_mode: raw.financial_mode || settings.financial_mode || "basic",
+            treatment_mode: raw.treatment_mode || settings.treatment_mode || "ADVANCED",
+            payment_mode: raw.payment_mode || settings.payment_mode || "ADVANCED",
+        };
+    }
+
     async function loadClinicSettings() {
         loadingClinicSettings = true;
         const res = await fetch("/api/admin/clinic-settings");
         const resData = await res.json();
         if (resData.settings) {
-            settings = {
-                ...resData.settings,
-                shift_start_mandatory:
-                    resData.settings.shift_start_mandatory === 1,
-                shift_cash_tracking: resData.settings.shift_cash_tracking === 1,
-                allow_doctor_create_product:
-                    resData.settings.allow_doctor_create_product === 1,
-                allow_assistant_create_product:
-                    resData.settings.allow_assistant_create_product === 1,
-                allow_doctor_create_supplier:
-                    resData.settings.allow_doctor_create_supplier === 1,
-                allow_assistant_create_supplier:
-                    resData.settings.allow_assistant_create_supplier === 1,
-                require_room_selection:
-                    resData.settings.require_room_selection === 1,
-                module_billing:
-                    resData.settings.module_billing !== undefined
-                        ? resData.settings.module_billing
-                        : 1,
-                module_prescriptions:
-                    resData.settings.module_prescriptions !== undefined
-                        ? resData.settings.module_prescriptions
-                        : 1,
-                module_dental_chart:
-                    resData.settings.module_dental_chart !== undefined
-                        ? resData.settings.module_dental_chart
-                        : 1,
-                module_inventory:
-                    resData.settings.module_inventory !== undefined
-                        ? resData.settings.module_inventory
-                        : 1,
-                module_dashboard:
-                    resData.settings.module_dashboard !== undefined
-                        ? resData.settings.module_dashboard
-                        : 1,
-                module_patients:
-                    resData.settings.module_patients !== undefined
-                        ? resData.settings.module_patients
-                        : 1,
-                module_journey:
-                    resData.settings.module_journey !== undefined
-                        ? resData.settings.module_journey
-                        : 1,
-                module_custom:
-                    resData.settings.module_custom !== undefined
-                        ? resData.settings.module_custom
-                        : 0,
-                module_custom_roles:
-                    resData.settings.module_custom_roles || "doctor",
-                primary_color: resData.settings.primary_color || "#002147",
-                secondary_color: resData.settings.secondary_color || "#D4AF37",
-                font_serif: resData.settings.font_serif || "Lora",
-                font_sans: resData.settings.font_sans || "Inter",
-                financial_mode: resData.settings.financial_mode || "basic",
-                treatment_mode: resData.settings.treatment_mode || "ADVANCED",
-                payment_mode: resData.settings.payment_mode || "ADVANCED",
-                invoicing_enabled: resData.settings.invoicing_enabled === 1,
-            };
+            settings = normalizeSettings(resData.settings);
             workingDays = resData.workingDays;
             closures = resData.closures;
         }
@@ -744,6 +721,10 @@
                             // ── Detect if a financial mode migration is about to happen ──
                             const form = event.formElement;
                             const fd = new FormData(form);
+
+                            // Check if this was a manual confirmation from our dialog
+                            const isConfirmed = form.dataset.confirmed === 'true';
+
                             const newTreatment = fd.get('treatment_mode') as string;
                             const newPayment   = fd.get('payment_mode')   as string;
                             const newBilling   = fd.has('module_billing')  ? 'enabled' : 'disabled';
@@ -759,23 +740,41 @@
                             if (newBilling !== prevBilling)
                                 changes.push({ label: 'Module Financier', from: prevBilling, to: newBilling });
 
-                            if (changes.length > 0) {
+                            if (changes.length > 0 && !isConfirmed) {
                                 // Cancel the default submission and show guard dialog
                                 event.cancel();
                                 pendingMigrationChanges = changes;
-                                pendingMigrationSubmit = () => form.requestSubmit();
+                                pendingMigrationSubmit = () => {
+                                    form.dataset.confirmed = 'true';
+                                    form.requestSubmit();
+                                };
                                 showMigrationDialog = true;
                                 return;
                             }
 
+                            // Reset the confirmation flag for the next submit (if any)
+                            form.dataset.confirmed = 'false';
+                            isSaving = true;
+
                             return async ({ result, update }) => {
+                                isSaving = false;
                                 if (result.type === "success") {
                                     const r = result.data as any;
+                                    
+                                    // 1. Refresh data from server without resetting form inputs
+                                    await update({ reset: false });
+                                    
+                                    // 2. Sync local reactive state with the definitive server values
+                                    if (r?.settings) {
+                                        settings = normalizeSettings(r.settings);
+                                        saveSuccessMsg = "Configuration modulaire enregistrée avec succès !";
+                                        setTimeout(() => saveSuccessMsg = null, 4000);
+                                    }
+                                    
                                     if (r?.migration) {
                                         migrationSuccessMsg = `✅ Migration enregistrée. ${r.integrity?.transactionCount ?? 0} transaction(s) vérifiées — solde cohérent.`;
                                         setTimeout(() => migrationSuccessMsg = null, 8000);
                                     }
-                                    await update();
                                 }
                             };
                         }}
@@ -1203,14 +1202,69 @@
                                     </label>
                                 </div>
                             </div>
+
+                            <!-- Front Page Configuration -->
+                            <div
+                                class="p-6 rounded-2xl border {settings.module_front_page
+                                    ? 'bg-blue-50/30 border-blue-100'
+                                    : 'bg-gray-50 border-gray-100'} transition-all"
+                            >
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <h3 class="font-black text-gray-900">
+                                            Page d'accueil (Landing Page)
+                                        </h3>
+                                        <p
+                                            class="text-xs text-gray-500 leading-relaxed"
+                                        >
+                                            Si activé, la racine du site ('/') affichera la page de présentation. 
+                                            Si désactivé, elle redirigera directement vers la page de connexion.
+                                        </p>
+                                    </div>
+                                    <label
+                                        class="relative inline-flex items-center cursor-pointer"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            name="module_front_page"
+                                            bind:checked={settings.module_front_page}
+                                            class="sr-only peer"
+                                        />
+                                        <div
+                                            class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"
+                                        ></div>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
+
+                        {#if saveSuccessMsg}
+                            <div 
+                                transition:fly={{ y: 20, duration: 300 }}
+                                class="mt-6 p-4 bg-green-50 border border-green-200 rounded-2xl flex items-center gap-3 text-green-700"
+                            >
+                                <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+                                </div>
+                                <p class="text-sm font-bold uppercase tracking-wide">{saveSuccessMsg}</p>
+                            </div>
+                        {/if}
 
                         <div class="mt-6 flex justify-end">
                             <button
                                 type="submit"
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all"
+                                disabled={isSaving}
+                                class="min-w-[200px] {saveSuccessMsg ? 'bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white font-bold py-3 px-8 rounded-2xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                             >
-                                💾 Enregistrer les modules
+                                {#if isSaving}
+                                    <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    <span>Traitement...</span>
+                                {:else if saveSuccessMsg}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+                                    <span>Enregistré !</span>
+                                {:else}
+                                    <span>💾 Enregistrer les modules</span>
+                                {/if}
                             </button>
                         </div>
                     </form>

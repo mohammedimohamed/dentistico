@@ -182,6 +182,7 @@ export const actions = {
         const payment_mode = formData.get('payment_mode') as string || 'ADVANCED';
         const module_custom = formData.get('module_custom') === 'on' ? 1 : 0;
         const invoicing_enabled = (module_billing === 1 && (formData.get('invoicing_enabled') === 'on' || formData.get('invoicing_enabled') === 'true')) ? 1 : 0;
+        const module_front_page = formData.get('module_front_page') === 'on' ? 1 : 0;
 
         // Enforce dependency: Journey requires Odontogramme
         if (module_journey === 1) {
@@ -222,7 +223,8 @@ export const actions = {
                 financial_mode,
                 treatment_mode,
                 payment_mode,
-                invoicing_enabled
+                invoicing_enabled,
+                module_front_page
             });
 
             // ── 4. Run ledger integrity check post-write ──────────────────────
@@ -251,11 +253,21 @@ export const actions = {
             return {
                 success: true,
                 migration: isAnyMigration,
-                integrity: integrityResult
+                integrity: integrityResult,
+                settings: (getClinicSettings() as any)
             };
         } catch (e: any) {
             console.error('Failed to update modules:', e);
-            return fail(500, { message: e.message || 'Failed to update modules' });
+            // On failure, still try to return the current settings to avoid UI reset
+            try {
+                const { getClinicSettings } = await import('$lib/server/db');
+                return fail(500, { 
+                    message: e.message || 'Failed to update modules',
+                    settings: getClinicSettings()
+                });
+            } catch {
+                return fail(500, { message: e.message || 'Failed to update modules' });
+            }
         }
     }
 };

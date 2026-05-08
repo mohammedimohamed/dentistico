@@ -121,6 +121,10 @@ export function init_db() {
           font_sans TEXT DEFAULT 'Inter',
           dental_chart_mode TEXT DEFAULT 'v2',
           financial_mode TEXT DEFAULT 'basic' CHECK(financial_mode IN ('basic', 'advanced')),
+          treatment_mode TEXT DEFAULT 'ADVANCED',
+          payment_mode TEXT DEFAULT 'ADVANCED',
+          invoicing_enabled INTEGER DEFAULT 1,
+          module_front_page INTEGER DEFAULT 1,
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -1332,6 +1336,22 @@ export function init_db() {
             db.exec("ALTER TABLE clinic_settings ADD COLUMN financial_mode TEXT DEFAULT 'basic' CHECK(financial_mode IN ('basic', 'advanced'))");
             console.log('Added financial_mode column to clinic_settings');
         }
+        if (!colNames.includes('treatment_mode')) {
+            db.exec("ALTER TABLE clinic_settings ADD COLUMN treatment_mode TEXT DEFAULT 'ADVANCED'");
+            console.log('Added treatment_mode column to clinic_settings');
+        }
+        if (!colNames.includes('payment_mode')) {
+            db.exec("ALTER TABLE clinic_settings ADD COLUMN payment_mode TEXT DEFAULT 'ADVANCED'");
+            console.log('Added payment_mode column to clinic_settings');
+        }
+        if (!colNames.includes('invoicing_enabled')) {
+            db.exec("ALTER TABLE clinic_settings ADD COLUMN invoicing_enabled INTEGER DEFAULT 1");
+            console.log('Added invoicing_enabled column to clinic_settings');
+        }
+        if (!colNames.includes('module_front_page')) {
+            db.exec("ALTER TABLE clinic_settings ADD COLUMN module_front_page INTEGER DEFAULT 1");
+            console.log('Added module_front_page column to clinic_settings');
+        }
     } catch (e) {
         console.error('Migration for enhanced clinic settings failed:', e);
     }
@@ -1898,7 +1918,7 @@ function seed_db() {
         [p1Id.id, s1Id.id, 'BATCH-001', '2026-12-31', 12.50, 50, 50],
         [p3Id.id, s2Id.id, 'BATCH-002', '2025-05-15', 2.10, 40, 40]
     ];
-    const insertBatch = db.prepare('INSERT INTO inventory_batches (product_id, supplier_id, batch_number, expiration_date, unit_cost, initial_quantity, current_quantity) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertBatch = db.prepare('INSERT INTO inventory_batches (product_id, supplier_id, batch_number, expiry_date, cost_price, quantity_received, quantity_remaining) VALUES (?, ?, ?, ?, ?, ?, ?)');
     for (const b of batchesData) insertBatch.run(...b);
 
     console.log('✅ Inventory (Products & Batches) seeded');
@@ -2206,6 +2226,10 @@ export function getArchivedPatientsFull() {
 
 export function getPatientByIdFull(id: number) {
     return db.prepare('SELECT * FROM patients WHERE id = ?').get(id) as any;
+}
+
+export function getPatientByIdLimited(id: number) {
+    return db.prepare('SELECT id, full_name, phone, email, date_of_birth FROM patients WHERE id = ?').get(id) as any;
 }
 
 export function getFamilyMembers(patientId: number) {
@@ -4385,6 +4409,9 @@ addColumnIfNotExists('clinic_settings', 'financial_mode', "TEXT DEFAULT 'basic'"
 addColumnIfNotExists('clinic_settings', 'treatment_mode', "TEXT DEFAULT 'ADVANCED'");
 addColumnIfNotExists('clinic_settings', 'payment_mode', "TEXT DEFAULT 'ADVANCED'");
 addColumnIfNotExists('clinic_settings', 'invoicing_enabled', "INTEGER DEFAULT 1");
+addColumnIfNotExists('clinic_settings', 'module_front_page', "INTEGER DEFAULT 1");
+addColumnIfNotExists('clinic_settings', 'require_room_selection', "INTEGER DEFAULT 1");
+addColumnIfNotExists('clinic_settings', 'allow_assistant_payments', "INTEGER DEFAULT 0");
 addColumnIfNotExists('clinic_settings', 'address', 'TEXT');
 addColumnIfNotExists('clinic_settings', 'phone', 'TEXT');
 addColumnIfNotExists('clinic_settings', 'email', 'TEXT');
