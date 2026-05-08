@@ -796,7 +796,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
             <!-- Sidebar (Desktop Collapsible) -->
             {#if isSidebarOpen}
                 <aside 
-                    class="hidden xl:block w-80 shrink-0 sticky top-28 transition-all duration-500"
+                    class="hidden xl:block w-64 shrink-0 sticky top-28 transition-all duration-500"
                     transition:fly={{ x: 50, duration: 400 }}
                 >
                     <PatientMetadataPanel 

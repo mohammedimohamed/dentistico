@@ -34,7 +34,7 @@
 {#if isOpen}
     <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md" transition:fade>
         <div 
-            class="bg-white rounded-[32px] w-full max-w-xl overflow-hidden shadow-2xl border border-slate-200"
+            class="bg-white rounded-[32px] w-[95vw] max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl border border-slate-200 flex flex-col"
             transition:scale={{ duration: 300, start: 0.95 }}
         >
             <!-- Header -->
@@ -69,101 +69,111 @@
                         await update();
                     };
                 }} 
-                class="p-8 space-y-6"
+                class="flex flex-col flex-1 overflow-hidden"
             >
-                <input type="hidden" name="patient_id" value={patientId} />
+                <div class="p-8 space-y-6 overflow-y-auto flex-1">
+                    <input type="hidden" name="patient_id" value={patientId} />
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Left: Main Info -->
+                        <div class="space-y-6">
+                            <!-- Title -->
+                            <div class="space-y-2">
+                                <label for="title" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Acte / Titre</label>
+                                <input 
+                                    id="title" 
+                                    name="title" 
+                                    type="text"
+                                    placeholder="Ex: Consultation, Détartrage..."
+                                    bind:value={title}
+                                    required
+                                    class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-900 focus:bg-white focus:border-amber-500 transition-all outline-none"
+                                />
+                            </div>
 
-                <!-- Title -->
-                <div class="space-y-2">
-                    <label for="title" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Acte / Titre</label>
-                    <input 
-                        id="title" 
-                        name="title" 
-                        type="text"
-                        placeholder="Ex: Consultation, Détartrage..."
-                        bind:value={title}
-                        required
-                        class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-900 focus:bg-white focus:border-amber-500 transition-all outline-none"
-                    />
-                </div>
+                            <!-- Description -->
+                            <div class="space-y-2">
+                                <label for="description" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Description (Détails)</label>
+                                <textarea 
+                                    id="description" 
+                                    name="description" 
+                                    placeholder="Détails optionnels sur l'intervention..."
+                                    bind:value={description}
+                                    rows="4"
+                                    class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 focus:bg-white focus:border-amber-500 transition-all outline-none resize-none"
+                                ></textarea>
+                            </div>
+                        </div>
 
-                <!-- Description -->
-                <div class="space-y-2">
-                    <label for="description" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Description (Détails)</label>
-                    <textarea 
-                        id="description" 
-                        name="description" 
-                        placeholder="Détails optionnels sur l'intervention..."
-                        bind:value={description}
-                        rows="2"
-                        class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 focus:bg-white focus:border-amber-500 transition-all outline-none resize-none"
-                    ></textarea>
-                </div>
+                        <!-- Right: Financial & Status -->
+                        <div class="space-y-6">
+                            <div class="grid grid-cols-1 gap-6">
+                                <!-- Amount -->
+                                <div class="space-y-2">
+                                    <label for="amount" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Montant (DZD)</label>
+                                    <div class="relative group">
+                                        <input 
+                                            id="amount" 
+                                            name="amount" 
+                                            type="number" 
+                                            step="0.01" 
+                                            bind:value={amount}
+                                            required 
+                                            class="w-full bg-slate-50 border-2 border-slate-100 p-4 pr-12 rounded-2xl font-black text-3xl text-slate-900 focus:bg-white focus:border-amber-500 transition-all outline-none" 
+                                        />
+                                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl">DA</span>
+                                    </div>
+                                </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <!-- Amount -->
-                    <div class="space-y-2">
-                        <label for="amount" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Montant (DZD)</label>
-                        <div class="relative group">
-                            <input 
-                                id="amount" 
-                                name="amount" 
-                                type="number" 
-                                step="0.01" 
-                                bind:value={amount}
-                                required 
-                                class="w-full bg-slate-50 border-2 border-slate-100 p-4 pr-12 rounded-2xl font-black text-xl text-slate-900 focus:bg-white focus:border-amber-500 transition-all outline-none" 
-                            />
-                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">DA</span>
+                                <!-- Status -->
+                                <div class="space-y-2">
+                                    <label for="status" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">État de l'acte</label>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <button 
+                                            type="button"
+                                            onclick={() => status = 'planned'}
+                                            class="p-5 rounded-2xl border-2 transition-all font-black text-sm uppercase {status === 'planned' ? 'bg-indigo-50 border-indigo-600 text-indigo-700 shadow-sm' : 'bg-slate-50 border-slate-100 text-slate-400'}"
+                                        >
+                                            Planifié
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onclick={() => status = 'completed'}
+                                            class="p-5 rounded-2xl border-2 transition-all font-black text-sm uppercase {status === 'completed' ? 'bg-emerald-50 border-emerald-600 text-emerald-700 shadow-sm' : 'bg-slate-50 border-slate-100 text-slate-400'}"
+                                        >
+                                            Terminé
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="status" value={status} />
+                                </div>
+                            </div>
+
+                            <!-- Warning for Completed -->
+                            {#if status === 'completed'}
+                                <div class="p-6 rounded-2xl bg-emerald-50 border border-emerald-100 flex gap-4 text-emerald-700" in:fade>
+                                    <Info size={20} class="shrink-0 mt-0.5" />
+                                    <p class="text-xs font-bold leading-relaxed">
+                                        En marquant cet acte comme <span class="font-black underline uppercase">Terminé</span>, un débit de <span class="font-black underline">{formatCurrency(amount)}</span> sera automatiquement inscrit au Journal Financier du patient.
+                                    </p>
+                                </div>
+                            {/if}
                         </div>
                     </div>
 
-                    <!-- Status -->
-                    <div class="space-y-2">
-                        <label for="status" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">État de l'acte</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button 
-                                type="button"
-                                onclick={() => status = 'planned'}
-                                class="p-4 rounded-2xl border-2 transition-all font-bold text-xs uppercase {status === 'planned' ? 'bg-indigo-50 border-indigo-600 text-indigo-700 shadow-sm' : 'bg-slate-50 border-slate-100 text-slate-400'}"
-                            >
-                                Planifié
-                            </button>
-                            <button 
-                                type="button"
-                                onclick={() => status = 'completed'}
-                                class="p-4 rounded-2xl border-2 transition-all font-bold text-xs uppercase {status === 'completed' ? 'bg-emerald-50 border-emerald-600 text-emerald-700 shadow-sm' : 'bg-slate-50 border-slate-100 text-slate-400'}"
-                            >
-                                Terminé
-                            </button>
-                        </div>
-                        <input type="hidden" name="status" value={status} />
-                    </div>
+                    <!-- Submit Button -->
+                    <button 
+                        type="submit" 
+                        disabled={isSubmitting || !title || amount < 0}
+                        class="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white p-6 rounded-3xl font-black text-xl transition-all shadow-2xl flex items-center justify-center gap-4 group mt-4"
+                    >
+                        {#if isSubmitting}
+                            <div class="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        {:else}
+                            <Check size={24} class="group-hover:scale-110 transition-transform" />
+                            ENREGISTRER L'ACTE
+                        {/if}
+                    </button>
                 </div>
-
-                <!-- Warning for Completed -->
-                {#if status === 'completed'}
-                    <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex gap-3 text-emerald-700" in:fade>
-                        <Info size={18} class="shrink-0 mt-0.5" />
-                        <p class="text-[10px] font-bold leading-relaxed">
-                            En marquant cet acte comme <span class="font-black">TERMINÉ</span>, un débit de <span class="font-black underline">{formatCurrency(amount)}</span> sera automatiquement inscrit au Journal Financier (Ledger) du patient.
-                        </p>
-                    </div>
-                {/if}
-
-                <!-- Submit Button -->
-                <button 
-                    type="submit" 
-                    disabled={isSubmitting || !title || amount < 0}
-                    class="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white p-6 rounded-3xl font-black text-xl transition-all shadow-2xl flex items-center justify-center gap-4 group"
-                >
-                    {#if isSubmitting}
-                        <div class="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    {:else}
-                        <Check size={24} class="group-hover:scale-110 transition-transform" />
-                        ENREGISTRER L'ACTE
-                    {/if}
-                </button>
             </form>
         </div>
     </div>
