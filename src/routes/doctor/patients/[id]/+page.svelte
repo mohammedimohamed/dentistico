@@ -44,8 +44,8 @@ import { fly, fade, slide } from "svelte/transition";
 
     // Appointments grouping
     const now = new Date();
-    const futureAppointments = $derived(data.appointments.filter((a: any) => new Date(a.start_time) >= now && a.status !== 'cancelled'));
-    const pastAppointments = $derived(data.appointments.filter((a: any) => new Date(a.start_time) < now && a.status !== 'cancelled'));
+    const futureAppointments = $derived(data.appointments.filter((a: any) => new Date(a.start_time.replace(' ', 'T')) >= now && a.status !== 'cancelled'));
+    const pastAppointments = $derived(data.appointments.filter((a: any) => new Date(a.start_time.replace(' ', 'T')) < now && a.status !== 'cancelled'));
     const cancelledAppointments = $derived(data.appointments.filter((a: any) => a.status === 'cancelled'));
 
     // Filter treatments for History & Planning
@@ -319,13 +319,13 @@ import { fly, fade, slide } from "svelte/transition";
                                                 <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
                                                     <div class="flex gap-4">
                                                         <div class="flex flex-col items-center justify-center bg-slate-50 rounded-2xl p-3 min-w-[70px] border border-slate-100">
-                                                            <span class="text-[10px] font-black text-slate-400 uppercase">{new Date(rdv.start_time).toLocaleDateString('fr-FR', { month: 'short' })}</span>
-                                                            <span class="text-2xl font-black text-slate-900">{new Date(rdv.start_time).getDate()}</span>
+                                                            <span class="text-[10px] font-black text-slate-400 uppercase">{new Date(rdv.start_time.replace(' ', 'T')).toLocaleDateString('fr-FR', { month: 'short' })}</span>
+                                                            <span class="text-2xl font-black text-slate-900">{new Date(rdv.start_time.replace(' ', 'T')).getDate()}</span>
                                                         </div>
                                                         <div>
                                                             <div class="flex items-center gap-2 mb-1">
                                                                 <span class="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase">{rdv.appointment_type}</span>
-                                                                <span class="text-xs font-bold text-slate-400 flex items-center gap-1"><Clock size={12} /> {new Date(rdv.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                <span class="text-xs font-bold text-slate-400 flex items-center gap-1"><Clock size={12} /> {new Date(rdv.start_time.replace(' ', 'T')).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                                                             </div>
                                                             <h4 class="font-bold text-slate-900 text-lg">Dr. {rdv.doctor_name || 'Médecin'}</h4>
                                                             <p class="text-sm text-slate-500 font-medium mt-1">{rdv.notes || 'Aucune note particulière'}</p>
@@ -367,7 +367,7 @@ import { fly, fade, slide } from "svelte/transition";
                                             <div class="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
                                                 <div class="flex items-center gap-4">
                                                     <div class="text-center min-w-[50px]">
-                                                        <p class="text-[10px] font-black text-slate-400 uppercase">{new Date(rdv.start_time).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</p>
+                                                        <p class="text-[10px] font-black text-slate-400 uppercase">{new Date(rdv.start_time.replace(' ', 'T')).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</p>
                                                     </div>
                                                     <div>
                                                         <p class="text-sm font-bold text-slate-900">Dr. {rdv.doctor_name}</p>
@@ -393,7 +393,7 @@ import { fly, fade, slide } from "svelte/transition";
                                         {#each cancelledAppointments as rdv}
                                             <div class="flex items-center justify-between p-3 bg-slate-50/30 rounded-xl border border-slate-100 grayscale">
                                                 <div class="text-xs font-bold text-slate-500">
-                                                    {new Date(rdv.start_time).toLocaleDateString('fr-FR')} — Dr. {rdv.doctor_name}
+                                                    {new Date(rdv.start_time.replace(' ', 'T')).toLocaleDateString('fr-FR')} — Dr. {rdv.doctor_name}
                                                 </div>
                                                 <span class="text-[10px] font-black uppercase text-rose-500">Annulé</span>
                                             </div>

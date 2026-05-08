@@ -630,7 +630,7 @@
         today.setHours(0, 0, 0, 0);
 
         return appointments.filter((appt: any) => {
-            const apptDate = new Date(appt.start_time);
+            const apptDate = new Date(appt.start_time.includes('T') ? appt.start_time : appt.start_time.replace(' ', 'T'));
 
             const matchesTime = showPastAppointments || apptDate >= today;
 
@@ -697,7 +697,7 @@
         if (columnFilters.date) {
             const filterDate = columnFilters.date;
             result = result.filter((appt: any) => {
-                const apptDate = new Date(appt.start_time)
+            const apptDate = new Date(appt.start_time.includes('T') ? appt.start_time : appt.start_time.replace(' ', 'T'))
                     .toISOString()
                     .split("T")[0];
                 return apptDate === filterDate;
@@ -728,12 +728,12 @@
                         bVal = b.appointment_type || "";
                         break;
                     case "date":
-                        aVal = new Date(a.start_time).getTime();
-                        bVal = new Date(b.start_time).getTime();
+                        aVal = new Date(a.start_time.includes('T') ? a.start_time : a.start_time.replace(' ', 'T')).getTime();
+                        bVal = new Date(b.start_time.includes('T') ? b.start_time : b.start_time.replace(' ', 'T')).getTime();
                         break;
                     case "time":
-                        aVal = new Date(a.start_time).getTime();
-                        bVal = new Date(b.start_time).getTime();
+                        aVal = new Date(a.start_time.includes('T') ? a.start_time : a.start_time.replace(' ', 'T')).getTime();
+                        bVal = new Date(b.start_time.includes('T') ? b.start_time : b.start_time.replace(' ', 'T')).getTime();
                         break;
                     default:
                         return 0;
@@ -863,7 +863,7 @@
 
             // Get only future appointments (upcoming)
             const futureAppointments = patientAppointments.filter(
-                (appt: any) => new Date(appt.start_time) >= new Date(),
+                (appt: any) => new Date(appt.start_time.includes('T') ? appt.start_time : appt.start_time.replace(' ', 'T')) >= new Date(),
             );
 
             // Calculate age if date of birth is available
@@ -1170,7 +1170,7 @@
             selectedAppointment = appt;
             modalDoctorId = appt.doctor_id ? appt.doctor_id.toString() : "";
             if (appt.start_time) {
-                const dt = new Date(appt.start_time);
+                const dt = new Date(appt.start_time.includes('T') ? appt.start_time : appt.start_time.replace(' ', 'T'));
                 slotPickerDate = dt.toISOString().split("T")[0];
                 slotPickerTime = appt.start_time.includes("T")
                     ? appt.start_time
@@ -3055,14 +3055,14 @@
                             (a: any) =>
                                 (a.status === "waiting_room" ||
                                     a.waiting_room_status === "waiting") &&
-                                new Date(a.start_time).toDateString() ===
+                                new Date(a.start_time.replace(' ', 'T')).toDateString() ===
                                     new Date().toDateString(),
                         ).length} Patients
                     </span>
                 </div>
             </div>
             <div class="p-6">
-                {#if data.appointments.filter((a: any) => (a.status === "waiting_room" || a.waiting_room_status === "waiting") && new Date(a.start_time).toDateString() === new Date().toDateString()).length === 0}
+                {#if data.appointments.filter((a: any) => (a.status === "waiting_room" || a.waiting_room_status === "waiting") && new Date(a.start_time.replace(' ', 'T')).toDateString() === new Date().toDateString()).length === 0}
                     <div class="py-12 text-center">
                         <div class="text-6xl mb-4">🏥</div>
                         <h3 class="text-gray-500 italic">
@@ -3073,7 +3073,7 @@
                     <div
                         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
                     >
-                        {#each data.appointments.filter((a: any) => (a.status === "waiting_room" || a.waiting_room_status === "waiting") && new Date(a.start_time).toDateString() === new Date().toDateString()) as appt}
+                        {#each data.appointments.filter((a: any) => (a.status === "waiting_room" || a.waiting_room_status === "waiting") && new Date(a.start_time.replace(' ', 'T')).toDateString() === new Date().toDateString()) as appt}
                             <div
                                 class="p-4 border border-gray-100 rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all bg-white relative overflow-hidden"
                             >

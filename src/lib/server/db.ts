@@ -2377,7 +2377,7 @@ export function getPatientAppointments(patientId: number) {
     return db.prepare(`
         SELECT a.*, u.full_name as doctor_name 
         FROM appointments a
-        JOIN users u ON a.doctor_id = u.id
+        LEFT JOIN users u ON a.doctor_id = u.id
         WHERE a.patient_id = ?
         ORDER BY a.start_time DESC
             `).all(patientId);

@@ -310,7 +310,7 @@ export const actions: Actions = {
         }
 
         const appointments = getPatientAppointments(patientId);
-        const hasFutureAppointments = appointments.some((a: any) => new Date(a.start_time) > new Date());
+        const hasFutureAppointments = appointments.some((a: any) => new Date(a.start_time.replace(' ', 'T')) > new Date());
         if (hasFutureAppointments) {
             return fail(400, { error: 'Cannot archive patient with future appointments' });
         }

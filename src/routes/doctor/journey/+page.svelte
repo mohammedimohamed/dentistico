@@ -245,7 +245,7 @@
         if (appt.status === "cancelled" || appt.status === "no_show")
             return "inactive";
 
-        const start = new Date(appt.start_time).getTime();
+        const start = new Date(appt.start_time.replace(' ', 'T')).getTime();
         const nowMs = now.getTime();
         const duration = appt.duration_minutes || 30;
         const end = start + duration * 60000;
@@ -263,7 +263,7 @@
 
     function getDelayMinutes(appt: any) {
         if (!isToday) return 0;
-        const start = new Date(appt.start_time).getTime();
+        const start = new Date(appt.start_time.replace(' ', 'T')).getTime();
         const nowMs = now.getTime();
         if (nowMs > start) {
             return Math.floor((nowMs - start) / 60000);
@@ -283,7 +283,7 @@
                     appt.waiting_room_status === "waiting")
                     ? Math.floor(
                           (now.getTime() -
-                              new Date(appt.check_in_time).getTime()) /
+                              new Date(appt.check_in_time.replace(' ', 'T')).getTime()) /
                               60000,
                       )
                     : null;
@@ -401,7 +401,7 @@
                     >
                     <span class="time-label"
                         >{$t("doctor_journey.since")}
-                        {new Date(data.session.start_time).toLocaleTimeString(
+                        {new Date(data.session.start_time.replace(' ', 'T')).toLocaleTimeString(
                             [],
                             {
                                 hour: "2-digit",
@@ -555,7 +555,7 @@
                                         "completed"}
                                 >
                                     {new Date(
-                                        appt.start_time,
+                                        appt.start_time.replace(' ', 'T'),
                                     ).toLocaleTimeString([], {
                                         hour: "2-digit",
                                         minute: "2-digit",
@@ -643,7 +643,7 @@
                                             "doctor_journey.arrival_at",
                                         )}
                                         {new Date(
-                                            appt.check_in_time,
+                                            appt.check_in_time.replace(' ', 'T'),
                                         ).toLocaleTimeString([], {
                                             hour: "2-digit",
                                             minute: "2-digit",

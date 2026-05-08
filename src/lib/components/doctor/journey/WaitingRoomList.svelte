@@ -8,16 +8,16 @@
         // Sort by appointment time for display
         const sorted = [...waitingPatients].sort(
             (a, b) =>
-                new Date(a.start_time).getTime() -
-                new Date(b.start_time).getTime(),
+                new Date(a.start_time.replace(' ', 'T')).getTime() -
+                new Date(b.start_time.replace(' ', 'T')).getTime(),
         );
 
         // Get original check-in order positions
         const arrivalOrder = [...waitingPatients]
             .sort(
                 (a, b) =>
-                    new Date(a.check_in_time).getTime() -
-                    new Date(b.check_in_time).getTime(),
+                    new Date(a.check_in_time.replace(' ', 'T')).getTime() -
+                    new Date(b.check_in_time.replace(' ', 'T')).getTime(),
             )
             .map((p, idx) => ({ id: p.id, position: idx + 1 }));
 
@@ -38,7 +38,7 @@
 
     function getAppointmentTimingStatus(appointment: any) {
         const now = new Date();
-        const scheduledTime = new Date(appointment.start_time);
+        const scheduledTime = new Date(appointment.start_time.replace(' ', 'T'));
         const diffMinutes = Math.floor(
             (now.getTime() - scheduledTime.getTime()) / (1000 * 60),
         );
@@ -68,14 +68,14 @@
     }
 
     function formatTime(dateString: any) {
-        return new Date(dateString).toLocaleTimeString("fr-FR", {
+        return new Date(dateString.replace(' ', 'T')).toLocaleTimeString("fr-FR", {
             hour: "2-digit",
             minute: "2-digit",
         });
     }
 
     function calculateWaitTime(checkInTime: any) {
-        const diff = Date.now() - new Date(checkInTime).getTime();
+        const diff = Date.now() - new Date(checkInTime.replace(' ', 'T')).getTime();
         return Math.floor(diff / (1000 * 60)); // minutes
     }
 </script>
