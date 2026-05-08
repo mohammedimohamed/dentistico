@@ -38,6 +38,8 @@ import { fly, fade, slide } from "svelte/transition";
 import { invalidateAll } from "$app/navigation";
 import FullTreatmentForm from "$lib/components/dental-v2/FullTreatmentForm.svelte";
 import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatmentModal.svelte";
+import TimelineContainer from "$lib/components/patients/timeline/TimelineContainer.svelte";
+import { formatCurrency } from "$lib/utils/format";
 
 
     let { data }: { data: PageData } = $props();
@@ -53,29 +55,49 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
     const age = $derived(data.patient.date_of_birth ? calculateAge(data.patient.date_of_birth) : 0);
     const balance = $derived(data.balance);
 
-    // Appointments grouping
-    const now = new Date();
-    const futureAppointments = $derived(data.appointments.filter((a: any) => new Date(a.start_time.replace(' ', 'T')) >= now && a.status !== 'cancelled'));
-    const pastAppointments = $derived(data.appointments.filter((a: any) => new Date(a.start_time.replace(' ', 'T')) < now && a.status !== 'cancelled'));
-    const cancelledAppointments = $derived(data.appointments.filter((a: any) => a.status === 'cancelled'));
 
-    // Filter treatments for History & Planning
-    const pastTreatments = $derived(data.treatments.filter((t: any) => t.status === 'completed'));
-    const plannedTreatments = $derived(data.treatments.filter((t: any) => t.status === 'planned' || t.status === 'pending'));
+    const timelineEvents = $derived.by(() => {
+        const events: any[] = [];
+        
+        // Treatments
+        data.treatments.forEach(t => {
+            events.push({
+                ...t,
+                category: 'treatment',
+                date: t.treatment_date || t.created_at
+            });
+        });
+        
+        // Appointments
+        data.appointments.forEach(a => {
+            events.push({
+                ...a,
+                category: 'appointment',
+                date: a.start_time
+            });
+        });
+        
+        // Transactions
+        data.transactions.forEach(tx => {
+            events.push({
+                ...tx,
+                category: 'transaction',
+                date: tx.transaction_date
+            });
+        });
+        
+        // Clinical Notes
+        data.notes.forEach(n => {
+            events.push({
+                ...n,
+                category: 'note',
+                date: n.created_at
+            });
+        });
+        
+        return events.sort((a, b) => new Date(b.date.replace(' ', 'T')).getTime() - new Date(a.date.replace(' ', 'T')).getTime());
+    });
 
-    // Hybrid Continuity: detect Basic mode
-    const isBasicMode = $derived(
-        data.appConfig?.treatment_mode === 'BASIC' && data.appConfig?.payment_mode === 'BASIC'
-    );
-    // A catalog-linked treatment created before a Basic migration → read-only "Legacy" item
-    function isLegacyItem(tr: any): boolean {
-        return isBasicMode && tr.source === 'dental' && (tr.cdt_code != null || tr.tooth_number != null);
-    }
-
-    // Formatting currency
-    function formatCurrency(amount: number) {
-        return new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(amount).replace('DZD', 'DA');
-    }
 
     let isPaymentModalOpen = $state(false);
     let isPrescriptionModalOpen = $state(false);
@@ -349,300 +371,53 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                         />
                     </div>
                 {:else if activeTab === "historique"}
-                    <div class="p-8">
-                        <div class="grid grid-cols-1 xl:grid-cols-12 gap-12">
-                            <!-- Left Column: Appointments Timeline -->
-                            <div class="xl:col-span-7 space-y-12">
-                                <!-- Future Appointments -->
-                                <section>
-                                    <div class="flex items-center justify-between mb-6">
-                                        <h2 class="text-lg font-black text-slate-900 flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-sm">
-                                                <Calendar size={20} />
-                                            </div>
-                                            Rendez-vous à venir
-                                        </h2>
-                                        <span class="bg-indigo-50 text-indigo-600 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">{futureAppointments.length}</span>
-                                    </div>
-                                    <div class="space-y-4">
-                                        {#each futureAppointments as rdv}
-                                            <div class="bg-white border-2 border-slate-100 rounded-[32px] p-6 hover:border-indigo-100 transition-all shadow-sm group relative overflow-hidden">
-                                                <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
-                                                <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
-                                                    <div class="flex gap-4">
-                                                        <div class="flex flex-col items-center justify-center bg-slate-50 rounded-2xl p-3 min-w-[70px] border border-slate-100">
-                                                            <span class="text-[10px] font-black text-slate-400 uppercase">{new Date(rdv.start_time.replace(' ', 'T')).toLocaleDateString('fr-FR', { month: 'short' })}</span>
-                                                            <span class="text-2xl font-black text-slate-900">{new Date(rdv.start_time.replace(' ', 'T')).getDate()}</span>
-                                                        </div>
-                                                        <div>
-                                                            <div class="flex items-center gap-2 mb-1">
-                                                                <span class="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase">{rdv.appointment_type}</span>
-                                                                <span class="text-xs font-bold text-slate-400 flex items-center gap-1"><Clock size={12} /> {new Date(rdv.start_time.replace(' ', 'T')).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-                                                            </div>
-                                                            <h4 class="font-bold text-slate-900 text-lg">Dr. {rdv.doctor_name || 'Médecin'}</h4>
-                                                            <p class="text-sm text-slate-500 font-medium mt-1">{rdv.notes || 'Aucune note particulière'}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex gap-2 w-full sm:w-auto">
-                                                        <form method="POST" action="?/cancelAppointment" use:enhance>
-                                                            <input type="hidden" name="id" value={rdv.id} />
-                                                            <button type="submit" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 transition-all">
-                                                                Annuler
-                                                            </button>
-                                                        </form>
-                                                        <button 
-                                                            onclick={() => {
-                                                                reschedulingAppointment = rdv;
-                                                                isAppointmentModalOpen = true;
-                                                            }}
-                                                            class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-all"
-                                                        >
-                                                            Déplacer
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        {:else}
-                                            <div class="py-16 text-center bg-slate-50/50 rounded-[40px] border-2 border-dashed border-slate-200">
-                                                <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-200 mx-auto mb-4 border border-slate-100 shadow-sm">
-                                                    <Calendar size={32} />
-                                                </div>
-                                                <p class="text-slate-400 font-bold">Aucun rendez-vous planifié</p>
-                                                <button onclick={() => isAppointmentModalOpen = true} class="mt-4 text-indigo-600 font-black text-sm hover:underline">Fixer un rendez-vous</button>
-                                            </div>
-                                        {/each}
-                                    </div>
-                                </section>
-
-                                <!-- Past Appointments -->
-                                <section>
-                                    <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                        Rendez-vous Passés
-                                        <div class="h-px flex-1 bg-slate-100 ml-2"></div>
-                                    </h2>
-                                    <div class="space-y-3">
-                                        {#each pastAppointments as rdv}
-                                            <div class="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
-                                                <div class="flex items-center gap-4">
-                                                    <div class="text-center min-w-[50px]">
-                                                        <p class="text-[10px] font-black text-slate-400 uppercase">{new Date(rdv.start_time.replace(' ', 'T')).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p class="text-sm font-bold text-slate-900">Dr. {rdv.doctor_name}</p>
-                                                        <p class="text-[10px] font-bold text-slate-400 uppercase">{rdv.appointment_type}</p>
-                                                    </div>
-                                                </div>
-                                                <div class="flex items-center gap-3">
-                                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-600">Honoré</span>
-                                                </div>
-                                            </div>
-                                        {/each}
-                                    </div>
-                                </section>
-
-                                <!-- Cancelled Appointments -->
-                                {#if cancelledAppointments.length > 0}
-                                <section>
-                                    <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                        Annulés
-                                        <div class="h-px flex-1 bg-slate-100 ml-2"></div>
-                                    </h2>
-                                    <div class="space-y-2 opacity-60">
-                                        {#each cancelledAppointments as rdv}
-                                            <div class="flex items-center justify-between p-3 bg-slate-50/30 rounded-xl border border-slate-100 grayscale">
-                                                <div class="text-xs font-bold text-slate-500">
-                                                    {new Date(rdv.start_time.replace(' ', 'T')).toLocaleDateString('fr-FR')} — Dr. {rdv.doctor_name}
-                                                </div>
-                                                <span class="text-[10px] font-black uppercase text-rose-500">Annulé</span>
-                                            </div>
-                                        {/each}
-                                    </div>
-                                </section>
-                                {/if}
-                            </div>
-
-                            <!-- Right Column: Treatments -->
-                            <div class="xl:col-span-5 space-y-12">
-                                <!-- Planned RoadMap -->
-                                <section>
-                                    <div class="flex items-center justify-between mb-6">
-                                        <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
-                                            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
-                                                <Stethoscope size={20} />
-                                            </div>
-                                            Plan de Traitement
-                                        </h2>
-                                        <div class="flex items-center gap-3">
-                                            {#if data.appConfig?.treatment_mode === 'BASIC'}
-                                                <button 
-                                                    onclick={() => isFastTrackModalOpen = true}
-                                                    class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-lg shadow-indigo-100"
-                                                >
-                                                    <PlusIcon size={14} />
-                                                    AJOUTER UN ACTE
-                                                </button>
-                                            {/if}
-                                            <span class="bg-amber-50 text-amber-600 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">{plannedTreatments.length}</span>
-                                        </div>
-                                    </div>
-                                    <div class="space-y-4">
-                                        {#each plannedTreatments as tr}
-                                            <!-- svelte-ignore a11y_click_events_have_key_events -->
-                                            <!-- svelte-ignore a11y_no_static_element_interactions -->
-                                            <div class="bg-white border-2 {isLegacyItem(tr) ? 'border-slate-200 opacity-80' : 'border-slate-100'} rounded-3xl p-6 transition-all shadow-sm group {!isLegacyItem(tr) && !(tr.paid_amount > 0) && tr.source === 'dental' ? 'cursor-pointer hover:border-amber-100 hover:shadow-md' : 'hover:border-slate-200'}" onclick={(e) => { if (isLegacyItem(tr)) return; if ((tr.paid_amount || 0) > 0) return; if (!e.target?.closest?.('details')) openEditTreatment(tr); }}>
-                                                <div class="flex justify-between items-start">
-                                                    <div>
-                                                        <span class="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-600 text-[10px] font-black uppercase">Dent {tr.tooth_number} • {tr.treatment_type}</span>
-                                                        {#if isLegacyItem(tr)}
-                                                            <span class="ml-2 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-400 text-[9px] font-black uppercase tracking-widest border border-slate-200" title="Créé en mode Advanced — lecture seule">
-                                                                📦 Héritage
-                                                            </span>
-                                                        {/if}
-                                                        <h4 class="font-bold text-slate-900 mt-2 text-base leading-tight">{tr.description || 'Soin sans description'}</h4>
-                                                    </div>
-                                                    <div class="text-right flex flex-col items-end gap-2">
-                                                        <div class="flex items-center gap-2">
-                                                            {#if (tr.paid_amount || 0) > 0}
-                                                                <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">PAYÉ</span>
-                                                            {:else}
-                                                                <details class="relative group/menu">
-                                                                    <summary class="list-none cursor-pointer p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600">
-                                                                        <MoreVertical size={16} />
-                                                                    </summary>
-                                                                    
-                                                                    <div class="absolute right-0 top-full mt-1 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                                                                        <div class="px-4 py-2 border-b border-slate-50 mb-1">
-                                                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions de soin</p>
-                                                                        </div>
-
-                                                                        {#if tr.source === 'dental'}
-                                                                        <button onclick={() => openEditTreatment(tr)} class="w-full px-4 py-2.5 text-left text-xs font-bold text-indigo-600 hover:bg-indigo-50 flex items-center gap-2 transition-colors">
-                                                                            <Edit2 size={14} />
-                                                                            Modifier ce soin
-                                                                        </button>
-                                                                        {/if}
-
-                                                                        <form method="POST" action="?/softDeleteTreatment" use:enhance>
-                                                                            <input type="hidden" name="id" value={tr.id} />
-                                                                            <input type="hidden" name="source" value={tr.source} />
-                                                                            <input type="hidden" name="type" value="cancelled" />
-                                                                            <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-600 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors">
-                                                                                <Archive size={14} />
-                                                                                Annuler ce soin
-                                                                            </button>
-                                                                        </form>
-                                                                        
-                                                                        {#if data.user.role === 'admin' || data.user.role === 'doctor'}
-                                                                            <form method="POST" action="?/hardDeleteTreatment" use:enhance={() => {
-                                                                                if(!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce soin ? Cette action est irréversible.')) return;
-                                                                                return async ({ update }) => { await update(); };
-                                                                            }}>
-                                                                                <input type="hidden" name="id" value={tr.id} />
-                                                                                <input type="hidden" name="source" value={tr.source} />
-                                                                                <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors mt-1 border-t border-slate-50 pt-3">
-                                                                                    <Trash2 size={14} />
-                                                                                    Suppression définitive
-                                                                                </button>
-                                                                            </form>
-                                                                        {/if}
-                                                                    </div>
-                                                                </details>
-                                                            {/if}
-                                                        </div>
-                                                        <p class="font-black text-slate-900">{formatCurrency(tr.cost)}</p>
-                                                        <span class="text-[10px] font-bold text-slate-400">{tr.treatment_date}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        {:else}
-                                            <div class="py-12 text-center bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200">
-                                                <p class="text-slate-400 font-bold">Aucun soin planifié</p>
-                                            </div>
-                                        {/each}
-                                    </div>
-                                </section>
-
-                                <!-- Past Treatments -->
-                                <section>
-                                    <div class="flex items-center justify-between mb-6">
-                                        <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
-                                            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
-                                                <Check size={20} />
-                                            </div>
-                                            Actes Réalisés
-                                        </h2>
-                                        <span class="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">{pastTreatments.length}</span>
-                                    </div>
-                                    <div class="space-y-3">
-                                        {#each pastTreatments as tr}
-                                            <!-- svelte-ignore a11y_click_events_have_key_events -->
-                                            <!-- svelte-ignore a11y_no_static_element_interactions -->
-                                            <div class="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 transition-all group/item relative {!(tr.paid_amount > 0) && tr.source === 'dental' ? 'cursor-pointer hover:border-emerald-200 hover:bg-white hover:shadow-sm' : ''}" onclick={(e) => { if ((tr.paid_amount || 0) > 0) return; if (!e.target?.closest?.('details')) openEditTreatment(tr); }}>
-                                                <div class="flex justify-between items-center">
-                                                    <div>
-                                                        <p class="text-xs font-bold text-slate-900">{tr.description || tr.treatment_type}</p>
-                                                        <p class="text-[10px] font-bold text-slate-400">Dent {tr.tooth_number} • {tr.treatment_date}</p>
-                                                    </div>
-                                                    <div class="flex items-center gap-4">
-                                                        <p class="font-black text-slate-600 text-sm">{formatCurrency(tr.cost)}</p>
-                                                        
-                                                        <div class="flex items-center gap-2">
-                                                            {#if (tr.paid_amount || 0) > 0}
-                                                                <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">PAYÉ</span>
-                                                            {:else}
-                                                                <details class="relative group/menu">
-                                                                    <summary class="list-none cursor-pointer p-1.5 hover:bg-white rounded-lg transition-colors text-slate-300 hover:text-slate-600">
-                                                                        <MoreVertical size={14} />
-                                                                    </summary>
-                                                                    
-                                                                    <div class="absolute right-0 top-full mt-1 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-3 z-50">
-                                                                        <div class="px-4 py-2 border-b border-slate-50 mb-1">
-                                                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions de soin</p>
-                                                                        </div>
-
-                                                                        {#if tr.source === 'dental'}
-                                                                        <button onclick={() => openEditTreatment(tr)} class="w-full px-4 py-2.5 text-left text-xs font-bold text-indigo-600 hover:bg-indigo-50 flex items-center gap-2 transition-colors">
-                                                                            <Edit2 size={14} />
-                                                                            Modifier ce soin
-                                                                        </button>
-                                                                        {/if}
-
-                                                                        <form method="POST" action="?/softDeleteTreatment" use:enhance>
-                                                                            <input type="hidden" name="id" value={tr.id} />
-                                                                            <input type="hidden" name="source" value={tr.source} />
-                                                                            <input type="hidden" name="type" value="deleted" />
-                                                                            <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition-colors">
-                                                                                <Archive size={14} />
-                                                                                Archiver ce soin
-                                                                            </button>
-                                                                        </form>
-                                                                        
-                                                                        {#if data.user.role === 'admin' || data.user.role === 'doctor'}
-                                                                            <form method="POST" action="?/hardDeleteTreatment" use:enhance={() => {
-                                                                                if(!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce soin ?')) return;
-                                                                                return async ({ update }) => { await update(); };
-                                                                            }}>
-                                                                                <input type="hidden" name="id" value={tr.id} />
-                                                                                <input type="hidden" name="source" value={tr.source} />
-                                                                                <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors mt-1 border-t border-slate-50 pt-3">
-                                                                                    <Trash2 size={14} />
-                                                                                    Suppression définitive
-                                                                                </button>
-                                                                            </form>
-                                                                        {/if}
-                                                                    </div>
-                                                                </details>
-                                                            {/if}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        {/each}
-                                    </div>
-                                </section>
-                            </div>
-                        </div>
+                    <div class="p-10 w-full max-w-4xl mx-auto">
+                        <TimelineContainer 
+                            events={timelineEvents}
+                            user={data.user}
+                            appConfig={data.appConfig}
+                            onEditTreatment={openEditTreatment}
+                            onCancelTreatment={(tr) => {
+                                editingTreatment = tr;
+                                isTreatmentModalOpen = true;
+                            }}
+                            onDeleteTreatment={async (tr) => {
+                                if(!confirm('Êtes-vous sûr de vouloir supprimer ce soin ?')) return;
+                                const formData = new FormData();
+                                formData.append('id', tr.id);
+                                formData.append('source', tr.source);
+                                await fetch('?/hardDeleteTreatment', { method: 'POST', body: formData });
+                                await invalidateAll();
+                            }}
+                            onReverseTransaction={async (tx) => {
+                                if(!confirm('Êtes-vous sûr de vouloir annuler cette transaction ?')) return;
+                                const formData = new FormData();
+                                formData.append('source_type', tx.source_type);
+                                formData.append('source_id', tx.source_id);
+                                await fetch('?/reverseTransaction', { method: 'POST', body: formData });
+                                await invalidateAll();
+                            }}
+                            onDeleteNote={async (n) => {
+                                if(!confirm('Supprimer cette note ?')) return;
+                                const formData = new FormData();
+                                formData.append('id', n.id);
+                                await fetch('?/deleteNote', { method: 'POST', body: formData });
+                                await invalidateAll();
+                            }}
+                            onRescheduleAppointment={(a) => {
+                                reschedulingAppointment = a;
+                                isAppointmentModalOpen = true;
+                            }}
+                            onCancelAppointment={async (a) => {
+                                if(!confirm('Annuler ce RDV ?')) return;
+                                const formData = new FormData();
+                                formData.append('id', a.id);
+                                await fetch('?/cancelAppointment', { method: 'POST', body: formData });
+                                await invalidateAll();
+                            }}
+                        />
                     </div>
+
                 {:else if activeTab === "finances"}
                     <div class="p-8">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
