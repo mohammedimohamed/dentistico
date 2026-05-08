@@ -16,6 +16,8 @@
                 const allowedRoles = (configStore.raw?.module_custom_roles || 'doctor').split(',');
                 if (!allowedRoles.includes(data.user?.role)) return false;
             }
+            // Hide billing related if invoicing is disabled (optional, depending on if ledger is still "billing")
+            // For now, let's keep doctor nav as is unless there's a specific billing item.
             return true;
         }),
     );

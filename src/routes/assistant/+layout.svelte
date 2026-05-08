@@ -12,6 +12,9 @@
                 const allowedRoles = (configStore.raw?.module_custom_roles || 'doctor').split(',');
                 if (!allowedRoles.includes(data.user?.role)) return false;
             }
+            if (item.href === "/assistant/invoices" && data.config?.invoicing_enabled === 0) {
+                return false;
+            }
             return true;
         }),
     );

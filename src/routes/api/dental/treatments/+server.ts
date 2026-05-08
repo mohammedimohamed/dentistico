@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { db, getTreatmentsByPatient, checkDoctorConflict, createInvoice, markInvoiceAsPaid } from '$lib/server/db';
+import { db, getTreatmentsByPatient, checkDoctorConflict, createInvoice, markInvoiceAsPaid, recordDentalCharge } from '$lib/server/db';
 import { dentalSync } from '$lib/server/dentalSync';
 import { randomUUID } from 'crypto';
 
@@ -144,6 +144,9 @@ export async function POST({ request, locals }: { request: Request, locals: any 
                 UPDATE dental_treatments SET appointment_id = ? WHERE id = ?
             `).run(appointmentId, treatmentId);
       }
+
+      // Record charge in ledger if completed
+      recordDentalCharge(treatmentId, data, locals.user.id);
 
       // Sync back to V2 Anatomical Chart
       dentalSync.syncV1ToV2(

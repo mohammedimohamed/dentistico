@@ -9,10 +9,11 @@
         patient: any;
         invoices: any[];
         balance: any;
+        appConfig: any;
         onClose: () => void;
     }
 
-    let { isOpen, patient, invoices, balance, onClose }: Props = $props();
+    let { isOpen, patient, invoices, balance, appConfig, onClose }: Props = $props();
 
     let isSubmitting = $state(false);
     let selectedInvoiceId = $state("");
@@ -156,8 +157,8 @@
                         </div>
                     </div>
 
-                    <!-- Optional Invoice Link (only if unpaid invoices exist) -->
-                    {#if unpaidInvoices.length > 0}
+                    <!-- Optional Invoice Link (only if unpaid invoices exist and Advanced Payment Mode is ON) -->
+                    {#if appConfig?.payment_mode === 'ADVANCED' && unpaidInvoices.length > 0}
                         <div class="space-y-3">
                             <label for="invoice_id" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Lier à une facture (Optionnel)</label>
                             <div class="relative">

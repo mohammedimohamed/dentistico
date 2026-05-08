@@ -1,16 +1,23 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
+    import { fly, fade } from "svelte/transition";
     import { onMount } from "svelte";
     import type { ActionData, PageData } from "./$types";
     import { t } from "svelte-i18n";
     import DentalColorModal from "$lib/components/admin/DentalColorModal.svelte";
-    import { Puzzle, Building2 } from "lucide-svelte";
+    import { Puzzle, Building2, ShieldAlert } from "lucide-svelte";
 
     let { data, form }: { data: any; form: any } = $props();
 
     let isSaving = $state(false);
     let showDentalColorModal = $state(false);
     let isCreatingTreatmentType = $state(false);
+
+    // ── Cautious Migration Guard state ─────────────────────────────────────
+    let showMigrationDialog = $state(false);
+    let pendingMigrationSubmit = $state<(() => void) | null>(null);
+    let pendingMigrationChanges = $state<{label: string; from: string; to: string}[]>([]);
+    let migrationSuccessMsg = $state<string | null>(null);
     let isEditingTreatmentType = $state(false);
     let editingTreatmentType = $state<any>(null);
 
@@ -35,6 +42,10 @@
         module_journey: 1,
         module_custom: 0,
         module_custom_roles: "doctor",
+        financial_mode: "basic",
+        treatment_mode: "ADVANCED",
+        payment_mode: "ADVANCED",
+        invoicing_enabled: 1,
     });
 
     let workingDays = $state<any[]>([]);
@@ -116,6 +127,10 @@
                 secondary_color: resData.settings.secondary_color || "#D4AF37",
                 font_serif: resData.settings.font_serif || "Lora",
                 font_sans: resData.settings.font_sans || "Inter",
+                financial_mode: resData.settings.financial_mode || "basic",
+                treatment_mode: resData.settings.treatment_mode || "ADVANCED",
+                payment_mode: resData.settings.payment_mode || "ADVANCED",
+                invoicing_enabled: resData.settings.invoicing_enabled === 1,
             };
             workingDays = resData.workingDays;
             closures = resData.closures;
@@ -558,8 +573,10 @@
                         <div>
                             <label
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                for="clinic_address">Clinic Address</label
+                                for="clinic_address"
                             >
+                                Clinic Address
+                            </label>
                             <input
                                 id="clinic_address"
                                 type="text"
@@ -573,8 +590,10 @@
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                    for="phone_number">Phone Number</label
+                                    for="phone_number"
                                 >
+                                    Phone Number
+                                </label>
                                 <input
                                     id="phone_number"
                                     type="text"
@@ -586,8 +605,10 @@
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                    for="clinic_email">Clinic Email</label
+                                    for="clinic_email"
                                 >
+                                    Clinic Email
+                                </label>
                                 <input
                                     id="clinic_email"
                                     type="email"
@@ -601,8 +622,10 @@
                         <div>
                             <label
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                for="clinic_logo">Clinic Logo</label
+                                for="clinic_logo"
                             >
+                                Clinic Logo
+                            </label>
                             <div class="flex items-center gap-6">
                                 <div
                                     class="w-24 h-24 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-center overflow-hidden shrink-0"
@@ -717,16 +740,174 @@
                     <form
                         method="POST"
                         action="?/updateModules"
-                        use:enhance={() => {
+                        use:enhance={(event) => {
+                            // ── Detect if a financial mode migration is about to happen ──
+                            const form = event.formElement;
+                            const fd = new FormData(form);
+                            const newTreatment = fd.get('treatment_mode') as string;
+                            const newPayment   = fd.get('payment_mode')   as string;
+                            const newBilling   = fd.has('module_billing')  ? 'enabled' : 'disabled';
+                            const prevTreatment = settings.treatment_mode;
+                            const prevPayment   = settings.payment_mode;
+                            const prevBilling   = settings.module_billing ? 'enabled' : 'disabled';
+
+                            const changes: {label: string; from: string; to: string}[] = [];
+                            if (newTreatment !== prevTreatment)
+                                changes.push({ label: 'Mode de Saisie des Soins', from: prevTreatment, to: newTreatment });
+                            if (newPayment !== prevPayment)
+                                changes.push({ label: 'Mode de Règlement', from: prevPayment, to: newPayment });
+                            if (newBilling !== prevBilling)
+                                changes.push({ label: 'Module Financier', from: prevBilling, to: newBilling });
+
+                            if (changes.length > 0) {
+                                // Cancel the default submission and show guard dialog
+                                event.cancel();
+                                pendingMigrationChanges = changes;
+                                pendingMigrationSubmit = () => form.requestSubmit();
+                                showMigrationDialog = true;
+                                return;
+                            }
+
                             return async ({ result, update }) => {
                                 if (result.type === "success") {
-                                    alert("Modules mis à jour avec succès !");
+                                    const r = result.data as any;
+                                    if (r?.migration) {
+                                        migrationSuccessMsg = `✅ Migration enregistrée. ${r.integrity?.transactionCount ?? 0} transaction(s) vérifiées — solde cohérent.`;
+                                        setTimeout(() => migrationSuccessMsg = null, 8000);
+                                    }
                                     await update();
                                 }
                             };
                         }}
                     >
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Modular Architecture Pivot (NEW & UNIFIED) -->
+                            <div class="col-span-1 md:col-span-2 p-8 rounded-[32px] bg-white border-2 border-slate-100 shadow-sm space-y-8">
+                                <div class="flex items-center justify-between gap-4 mb-2">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-100">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-xl font-black text-gray-900 uppercase tracking-tight">Configuration Architecture Modulaire</h3>
+                                            <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">Contrôle des flux de travail et des niveaux de complexité</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Master Financial Toggle -->
+                                <div class="p-6 rounded-3xl border-2 {settings.module_billing ? 'bg-indigo-50/20 border-indigo-200' : 'bg-slate-50 border-slate-200'} transition-all">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-12 h-12 rounded-2xl bg-white border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-banknote"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                                            </div>
+                                            <div>
+                                                <h4 class="font-black text-slate-900 leading-tight">Module de Gestion Financière</h4>
+                                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Active le Ledger, les paiements et les dépenses</p>
+                                            </div>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer scale-110">
+                                            <input 
+                                                type="checkbox" 
+                                                name="module_billing"
+                                                bind:checked={settings.module_billing}
+                                                class="sr-only peer"
+                                            />
+                                            <div class="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
+                                        </label>
+                                    </div>
+
+                                    {#if settings.module_billing}
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 border-t border-indigo-100 pt-6" in:slide>
+                                            <!-- Treatment Mode -->
+                                            <div class="p-6 rounded-2xl border-2 {settings.treatment_mode === 'BASIC' ? 'bg-emerald-50/30 border-emerald-100' : 'bg-white border-slate-100'} transition-all shadow-sm">
+                                                <h4 class="font-black text-slate-900 mb-1 flex items-center gap-2 text-sm">
+                                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                                    Mode de Saisie des Soins
+                                                </h4>
+                                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Complexité de la saisie clinique</p>
+                                                
+                                                <div class="flex gap-2">
+                                                    <button 
+                                                        type="button"
+                                                        onclick={() => {
+                                                            settings.treatment_mode = 'BASIC';
+                                                            settings.payment_mode = 'BASIC';
+                                                        }}
+                                                        class="flex-1 px-4 py-3 rounded-xl border-2 transition-all text-center {settings.treatment_mode === 'BASIC' ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-200' : 'bg-white border-gray-100 text-gray-400 hover:border-emerald-200'}"
+                                                    >
+                                                        <div class="text-[10px] font-black uppercase">Fast-Track</div>
+                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">Saisie Libre</div>
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onclick={() => settings.treatment_mode = 'ADVANCED'}
+                                                        class="flex-1 px-4 py-3 rounded-xl border-2 transition-all text-center {settings.treatment_mode === 'ADVANCED' ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-white border-gray-100 text-gray-400 hover:border-indigo-200'}"
+                                                    >
+                                                        <div class="text-[10px] font-black uppercase">Standard</div>
+                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">Catalogue</div>
+                                                    </button>
+                                                </div>
+                                                <input type="hidden" name="treatment_mode" value={settings.treatment_mode} />
+                                            </div>
+
+                                            <!-- Payment Mode -->
+                                            <div class="p-6 rounded-2xl border-2 {settings.payment_mode === 'BASIC' ? 'bg-blue-50/30 border-blue-100' : 'bg-white border-slate-100'} transition-all shadow-sm">
+                                                <h4 class="font-black text-slate-900 mb-1 flex items-center gap-2 text-sm">
+                                                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                                    Mode de Règlement
+                                                </h4>
+                                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Liaison entre soins et paiements</p>
+                                                
+                                                <div class="flex gap-2">
+                                                    <button 
+                                                        type="button"
+                                                        onclick={() => settings.payment_mode = 'BASIC'}
+                                                        class="flex-1 px-4 py-3 rounded-xl border-2 transition-all text-center {settings.payment_mode === 'BASIC' ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white border-gray-100 text-gray-400 hover:border-blue-200'}"
+                                                    >
+                                                        <div class="text-[10px] font-black uppercase">Direct</div>
+                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">Basic Ledger</div>
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        disabled={settings.treatment_mode === 'BASIC'}
+                                                        onclick={() => settings.payment_mode = 'ADVANCED'}
+                                                        class="flex-1 px-4 py-3 rounded-xl border-2 transition-all text-center {settings.payment_mode === 'ADVANCED' ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-white border-gray-100 text-gray-400 hover:border-indigo-200'} disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    >
+                                                        <div class="text-[10px] font-black uppercase">Advanced</div>
+                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">Liaison Facture</div>
+                                                    </button>
+                                                </div>
+                                                <input type="hidden" name="payment_mode" value={settings.payment_mode} />
+                                            </div>
+                                        </div>
+
+                                        <!-- Independent Invoicing Toggle -->
+                                        <div class="p-6 rounded-2xl bg-amber-50/20 border-2 border-amber-100 flex items-center justify-between group hover:bg-amber-50/40 transition-all mt-6 shadow-sm" in:fade>
+                                            <div class="flex items-center gap-4">
+                                                <div class="w-12 h-12 rounded-2xl bg-white border-2 border-amber-200 flex items-center justify-center text-amber-600 shadow-sm">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                                                </div>
+                                                <div>
+                                                    <h4 class="font-black text-slate-900 leading-tight text-sm">Documents Officiels (Devis & Facturation)</h4>
+                                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Activer la génération de PDF légaux</p>
+                                                </div>
+                                            </div>
+                                            <label class="relative inline-flex items-center cursor-pointer scale-110">
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="invoicing_enabled"
+                                                    checked={settings.invoicing_enabled}
+                                                    onchange={(e) => settings.invoicing_enabled = e.currentTarget.checked}
+                                                    class="sr-only peer"
+                                                />
+                                                <div class="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-500"></div>
+                                            </label>
+                                        </div>
+                                    {/if}
+                                </div>
+                            </div>
                             <div
                                 class="p-6 rounded-2xl border {settings.module_dental_chart
                                     ? 'bg-indigo-50/30 border-indigo-100'
@@ -811,6 +992,7 @@
                                 </div>
                             </div>
 
+
                             <div
                                 class="p-6 rounded-2xl border {settings.module_prescriptions
                                     ? 'bg-indigo-50/30 border-indigo-100'
@@ -848,42 +1030,6 @@
                                 </div>
                             </div>
 
-                            <div
-                                class="p-6 rounded-2xl border {settings.module_billing
-                                    ? 'bg-indigo-50/30 border-indigo-100'
-                                    : 'bg-gray-50 border-gray-100'} transition-all"
-                            >
-                                <div
-                                    class="flex items-start justify-between gap-4"
-                                >
-                                    <div class="space-y-1">
-                                        <h3 class="font-black text-gray-900">
-                                            Module Billing (Facturation)
-                                        </h3>
-                                        <p
-                                            class="text-xs text-gray-500 leading-relaxed"
-                                        >
-                                            Activer ou désactiver paiements,
-                                            factures, dépenses.
-                                        </p>
-                                    </div>
-                                    <label
-                                        class="relative inline-flex items-center cursor-pointer"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            name="module_billing"
-                                            bind:checked={
-                                                settings.module_billing
-                                            }
-                                            class="sr-only peer"
-                                        />
-                                        <div
-                                            class="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"
-                                        ></div>
-                                    </label>
-                                </div>
-                            </div>
 
                             <div
                                 class="p-6 rounded-2xl border {settings.module_inventory
@@ -2045,3 +2191,84 @@
 <!-- Deprecated Treatment Type Modals removed -->
 
 <DentalColorModal bind:show={showDentalColorModal} colors={data.dentalColors} />
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     🛡️  CAUTIOUS MIGRATION GUARD — Confirmation Dialog
+     ══════════════════════════════════════════════════════════════════════════ -->
+{#if showMigrationDialog}
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/70 backdrop-blur-sm" in:fade>
+        <div class="bg-white w-full max-w-lg rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden" in:fly={{ y: 30, duration: 300 }}>
+            <!-- Header -->
+            <div class="bg-amber-50 border-b border-amber-100 p-8 flex items-start gap-5">
+                <div class="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0 shadow-sm">
+                    <ShieldAlert size={28} />
+                </div>
+                <div>
+                    <h3 class="text-xl font-black text-slate-900 leading-tight">Migration de Mode Détectée</h3>
+                    <p class="text-sm text-amber-700 font-semibold mt-1">
+                        Cette action modifie l'architecture financière de la clinique. Les données existantes ne seront <strong>jamais supprimées</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Change Summary -->
+            <div class="p-8 space-y-4">
+                <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Modifications détectées</p>
+                {#each pendingMigrationChanges as change}
+                    <div class="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div class="flex-1">
+                            <p class="text-xs font-black text-slate-500 uppercase tracking-widest">{change.label}</p>
+                            <div class="flex items-center gap-3 mt-1">
+                                <span class="px-2 py-0.5 rounded-lg bg-rose-50 text-rose-600 text-xs font-black border border-rose-100">{change.from}</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-slate-400"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                <span class="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-black border border-emerald-100">{change.to}</span>
+                            </div>
+                        </div>
+                    </div>
+                {/each}
+
+                <!-- Data Safety Notice -->
+                <div class="mt-6 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex items-start gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-500 flex-shrink-0 mt-0.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <p class="text-xs font-bold text-indigo-700 leading-relaxed">
+                        <strong>Principe de non-destruction :</strong> Les données avancées (factures, actes liés au catalogue) resteront en base. 
+                        Le changement de mode affecte uniquement <em>l'affichage</em> et <em>les boutons d'action</em>.
+                        Les anciens enregistrements seront marqués comme <strong>« Héritage »</strong> en lecture seule.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="px-8 pb-8 flex gap-3">
+                <button
+                    type="button"
+                    onclick={() => { showMigrationDialog = false; pendingMigrationSubmit = null; pendingMigrationChanges = []; }}
+                    class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-2xl transition-all active:scale-95 text-sm"
+                >
+                    Annuler
+                </button>
+                <button
+                    type="button"
+                    onclick={() => {
+                        showMigrationDialog = false;
+                        pendingMigrationSubmit?.();
+                        pendingMigrationSubmit = null;
+                        pendingMigrationChanges = [];
+                    }}
+                    class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl transition-all shadow-lg shadow-indigo-100 active:scale-95 text-sm flex items-center justify-center gap-2"
+                >
+                    <ShieldAlert size={16} />
+                    Confirmer la Migration
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
+
+<!-- ── Migration Success Toast ──────────────────────────────────────────────── -->
+{#if migrationSuccessMsg}
+    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[101] px-6 py-4 bg-emerald-600 text-white rounded-2xl shadow-2xl shadow-emerald-200 font-bold text-sm flex items-center gap-3" in:fly={{ y: 20, duration: 300 }} out:fade>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="flex-shrink-0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        {migrationSuccessMsg}
+    </div>
+{/if}

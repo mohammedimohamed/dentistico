@@ -32,7 +32,8 @@ import {
     createAppointment,
     updateAppointmentStatus,
     getCustomFieldDefinitions,
-    logCustomFieldChange
+    logCustomFieldChange,
+    createBasicTreatment
 } from '$lib/server/db';
 import fs from 'fs';
 import type { PageServerLoad, Actions } from './$types';
@@ -54,6 +55,7 @@ export const load: PageServerLoad = async ({ locals, params }: { locals: any, pa
 
     const treatments = getTreatmentsByPatient(patientId);
     const payments = getPaymentsByPatient(patientId);
+    const transactions = (await import('$lib/server/db')).getTransactionsByPatient(patientId);
     const balance = getPatientBalance(patientId);
     const appointments = getPatientAppointments(patientId);
     const medications = getAllMedications();
@@ -74,6 +76,7 @@ export const load: PageServerLoad = async ({ locals, params }: { locals: any, pa
         patient,
         treatments,
         payments,
+        transactions,
         balance,
         appointments,
         medications,
@@ -637,7 +640,7 @@ export const actions: Actions = {
                 return fail(400, { error: 'Impossible de supprimer un soin déjà payé.' });
             }
 
-            dbModule.softDeleteTreatment(source, id, type);
+            dbModule.softDeleteTreatment(source, id, type, locals.user.id);
 
             // Log history
             dbModule.addHistoryLog(parseInt(params.id), locals.user.id, {
@@ -692,6 +695,70 @@ export const actions: Actions = {
         } catch (e) {
             console.error(e);
             return fail(500, { error: 'Erreur lors de la suppression définitive' });
+        }
+    },
+
+
+    reverseTransaction: async ({ request, locals }) => {
+        if (!locals.user || locals.user.role !== 'doctor') {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        const formData = await request.formData();
+        const sourceType = formData.get('source_type') as string;
+        const sourceId = parseInt(formData.get('source_id') as string);
+
+        if (!sourceType || !sourceId) return fail(400, { error: 'Données invalides' });
+
+        try {
+            const { reverseTransaction } = await import('$lib/server/db');
+            reverseTransaction(sourceType, sourceId, locals.user.id);
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Erreur lors de l\'annulation' });
+        }
+    },
+
+    createBasicTreatment: async ({ request, params, locals }) => {
+        if (!locals.user) return fail(401, { error: 'Non authentifié' });
+        
+        const formData = await request.formData();
+        const patientId = parseInt(params.id);
+        const title = formData.get('title') as string;
+        const description = formData.get('description') as string;
+        const amount = parseFloat(formData.get('amount') as string);
+        const status = formData.get('status') as string;
+        
+        if (!title || isNaN(amount)) {
+            return fail(400, { error: 'Titre et montant requis' });
+        }
+
+        try {
+            const { createBasicTreatment, addHistoryLog } = await import('$lib/server/db');
+            
+            const treatmentId = createBasicTreatment({
+                patient_id: patientId,
+                title,
+                description,
+                amount,
+                status,
+                recorded_by: locals.user.id
+            });
+
+            addHistoryLog(patientId, locals.user.id, {
+                action: 'BASIC_TREATMENT_CREATED',
+                treatment_id: treatmentId,
+                title,
+                amount,
+                status,
+                timestamp: new Date().toISOString()
+            });
+
+            return { success: true };
+        } catch (e) {
+            console.error(e);
+            return fail(500, { error: 'Erreur lors de la création du soin' });
         }
     }
 };

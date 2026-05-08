@@ -13,9 +13,10 @@
         treatments: any[];
         providerId?: number;
         patientAge?: number;
+        treatmentMode?: string;
     }
 
-    let { patientId, annotations, treatments, providerId = 0, patientAge = 0 }: Props = $props();
+    let { patientId, annotations, treatments, providerId = 0, patientAge = 0, treatmentMode = 'ADVANCED' }: Props = $props();
  
     let selectedTeethFdis = $state<number[]>([]);
     let showEditPanel = $state(false);
@@ -162,6 +163,7 @@
             fdi={selectedFdi} 
             annotations={annotations[selectedFdi] || {}}
             toothTreatments={treatments.filter(t => parseInt(t.tooth_number) === selectedFdi)}
+            treatmentMode={treatmentMode}
             onSave={handleSaveAnnotation}
             onPlanTreatment={openPlanning}
             onDeleteBridge={handleDeleteBridge}
@@ -182,12 +184,14 @@
         />
     {/if}
 
-    <!-- Clinical Workstation: Zero-friction treatment entry -->
-    <div class="mt-8">
-        <ClinicalWorkstation
-            {patientId}
-            {providerId}
-            selectedFdi={selectedFdi}
-        />
-    </div>
+    <!-- Clinical Workstation: Zero-friction treatment entry (Hidden in Basic Mode) -->
+    {#if treatmentMode !== 'BASIC'}
+        <div class="mt-8">
+            <ClinicalWorkstation
+                {patientId}
+                {providerId}
+                selectedFdi={selectedFdi}
+            />
+        </div>
+    {/if}
 </div>

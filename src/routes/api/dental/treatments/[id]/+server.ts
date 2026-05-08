@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { db, getTreatmentById } from '$lib/server/db';
+import { db, getTreatmentById, recordDentalCharge, reverseTransaction } from '$lib/server/db';
 import { dentalSync } from '$lib/server/dentalSync';
 
 export const DELETE = async ({ params, locals }: { params: any, locals: any }) => {
@@ -12,7 +12,9 @@ export const DELETE = async ({ params, locals }: { params: any, locals: any }) =
         return json({ error: 'Impossible de supprimer un soin déjà payé.' }, { status: 400 });
     }
 
-    db.prepare('DELETE FROM dental_treatments WHERE id = ?').run(params.id);
+    // Use soft delete with ledger reversal
+    db.prepare('UPDATE dental_treatments SET status = "deleted", updated_at = datetime("now") WHERE id = ?').run(params.id);
+    reverseTransaction('dental_treatment', params.id, locals.user.id);
 
     return json({ success: true });
 };
@@ -25,10 +27,17 @@ export const PUT = async ({ params, request, locals }: { params: any, request: R
     const data = await request.json();
     
     // Fetch existing to check if paid and get patient_id for sync
-    const existing = getTreatmentById(params.id, 'dental');
+    const existing = getTreatmentById(params.id, 'dental') as any;
     
     if (existing && (existing.paid_amount || 0) > 0) {
         return json({ error: 'Impossible de modifier un soin déjà payé.' }, { status: 400 });
+    }
+
+    // Ledger Logic: Handle status changes
+    if (existing && existing.status !== 'completed' && data.status === 'completed') {
+        recordDentalCharge(params.id, data, locals.user.id);
+    } else if (existing && existing.status === 'completed' && data.status !== 'completed') {
+        reverseTransaction('dental_treatment', params.id, locals.user.id);
     }
 
     db.prepare(`
@@ -43,7 +52,8 @@ export const PUT = async ({ params, request, locals }: { params: any, request: R
             diagnosis = ?, 
             notes = ?, 
             color = ?,
-            is_custom = ?
+            is_custom = ?,
+            updated_at = datetime('now')
         WHERE id = ?
     `).run(
         data.tooth_number,

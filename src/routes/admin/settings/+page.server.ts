@@ -166,7 +166,7 @@ export const actions = {
         }
     },
 
-    updateModules: async ({ request }: { request: Request }) => {
+    updateModules: async ({ request, locals }: { request: Request; locals: any }) => {
         const formData = await request.formData();
 
         const module_billing = formData.get('module_billing') === 'on' ? 1 : 0;
@@ -176,19 +176,38 @@ export const actions = {
         const module_dashboard = formData.get('module_dashboard') === 'on' ? 1 : 0;
         const module_patients = formData.get('module_patients') === 'on' ? 1 : 0;
         let module_journey = formData.get('module_journey') === 'on' ? 1 : 0;
-        const module_custom = formData.get('module_custom') === 'on' ? 1 : 0;
         const dental_chart_mode = formData.get('dental_chart_mode') as string || 'v1';
-        
+        const financial_mode = formData.get('financial_mode') as string || 'basic';
+        const treatment_mode = formData.get('treatment_mode') as string || 'ADVANCED';
+        const payment_mode = formData.get('payment_mode') as string || 'ADVANCED';
+        const module_custom = formData.get('module_custom') === 'on' ? 1 : 0;
+        const invoicing_enabled = (module_billing === 1 && (formData.get('invoicing_enabled') === 'on' || formData.get('invoicing_enabled') === 'true')) ? 1 : 0;
+
         // Enforce dependency: Journey requires Odontogramme
         if (module_journey === 1) {
             module_dental_chart = 1;
-        }        
+        }
         // Handle array of roles for module_custom_roles
         const roles = formData.getAll('module_custom_roles[]');
         const module_custom_roles = roles.length > 0 ? roles.join(',') : 'doctor';
 
         try {
-            const { updateClinicSettings } = await import('$lib/server/db');
+            const { updateClinicSettings, getClinicSettings, validateLedgerIntegrity, logAuditEvent } = await import('$lib/server/db');
+
+            // ── 1. Read previous config (snapshot before write) ──────────────
+            const prevConfig = (getClinicSettings() as any) || {};
+            const prev_treatment_mode = prevConfig.treatment_mode ?? 'ADVANCED';
+            const prev_payment_mode   = prevConfig.payment_mode   ?? 'ADVANCED';
+            const prev_module_billing = prevConfig.module_billing  ?? 1;
+            const prev_invoicing      = prevConfig.invoicing_enabled ?? 1;
+
+            // ── 2. Detect mode migrations ─────────────────────────────────────
+            const isTreatmentMigration = prev_treatment_mode !== treatment_mode;
+            const isPaymentMigration   = prev_payment_mode   !== payment_mode;
+            const isBillingToggled     = prev_module_billing  !== module_billing;
+            const isAnyMigration       = isTreatmentMigration || isPaymentMigration || isBillingToggled;
+
+            // ── 3. Write new config (UPDATE only — never DROP/DELETE) ─────────
             updateClinicSettings({
                 module_billing,
                 module_prescriptions,
@@ -199,9 +218,41 @@ export const actions = {
                 module_journey,
                 module_custom,
                 module_custom_roles,
-                dental_chart_mode
+                dental_chart_mode,
+                financial_mode,
+                treatment_mode,
+                payment_mode,
+                invoicing_enabled
             });
-            return { success: true };
+
+            // ── 4. Run ledger integrity check post-write ──────────────────────
+            const integrityResult = validateLedgerIntegrity();
+
+            // ── 5. Write immutable audit entry if a migration occurred ────────
+            if (isAnyMigration) {
+                const actor = locals?.user;
+                logAuditEvent({
+                    event_type: 'MODE_MIGRATION',
+                    actor_id:   actor?.id   ?? null,
+                    actor_name: actor?.name ?? actor?.email ?? 'Administrateur',
+                    payload: {
+                        changes: {
+                            treatment_mode: isTreatmentMigration ? { from: prev_treatment_mode, to: treatment_mode } : undefined,
+                            payment_mode:   isPaymentMigration   ? { from: prev_payment_mode,   to: payment_mode   } : undefined,
+                            module_billing: isBillingToggled     ? { from: prev_module_billing,  to: module_billing } : undefined,
+                            invoicing_enabled: prev_invoicing !== invoicing_enabled ? { from: prev_invoicing, to: invoicing_enabled } : undefined,
+                        },
+                        note: 'Mode migration — financial history preserved. No data was deleted.'
+                    },
+                    integrity_check: integrityResult
+                });
+            }
+
+            return {
+                success: true,
+                migration: isAnyMigration,
+                integrity: integrityResult
+            };
         } catch (e: any) {
             console.error('Failed to update modules:', e);
             return fail(500, { message: e.message || 'Failed to update modules' });

@@ -14,9 +14,10 @@
         onDeleteBridge?: (bridgeId: string) => Promise<void>;
         onClose: () => void;
         toothTreatments?: any[];
+        treatmentMode?: string;
     }
 
-    let { fdi, annotations = {}, onSave, onPlanTreatment, onDeleteBridge, onClose, toothTreatments = [] }: Props = $props();
+    let { fdi, annotations = {}, onSave, onPlanTreatment, onDeleteBridge, onClose, toothTreatments = [], treatmentMode = 'ADVANCED' }: Props = $props();
 
     const dispatch = createEventDispatcher();
     const anatomy = $derived(getAnatomy(fdi));
@@ -338,13 +339,15 @@
                     {isSaving ? "Synchronisation..." : "Valider l'État Clinique"}
                 </button>
 
-                <button 
-                    onclick={() => onPlanTreatment?.(fdi, { zones: currentZones, globalStatus })}
-                    class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-5 px-8 rounded-3xl shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 transition-all active:scale-95"
-                >
-                    <CalendarPlus class="w-5 h-5" />
-                    Planifier un Soin
-                </button>
+                {#if treatmentMode === 'ADVANCED'}
+                    <button 
+                        onclick={() => onPlanTreatment?.(fdi, { zones: currentZones, notes })}
+                        class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-5 px-8 rounded-3xl shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 transition-all active:scale-95"
+                    >
+                        <CalendarPlus class="w-5 h-5" />
+                        Planifier un Soin
+                    </button>
+                {/if}
             </div>
         </div>
     </div>

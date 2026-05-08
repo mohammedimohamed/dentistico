@@ -29,11 +29,15 @@ import {
     MoreVertical,
     Archive,
     Trash2,
-    Edit2
+    Edit2,
+    RotateCcw,
+    Plus as PlusIcon,
+    FileText
 } from "lucide-svelte";
 import { fly, fade, slide } from "svelte/transition";
 import { invalidateAll } from "$app/navigation";
 import FullTreatmentForm from "$lib/components/dental-v2/FullTreatmentForm.svelte";
+import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatmentModal.svelte";
 
 
     let { data }: { data: PageData } = $props();
@@ -59,6 +63,15 @@ import FullTreatmentForm from "$lib/components/dental-v2/FullTreatmentForm.svelt
     const pastTreatments = $derived(data.treatments.filter((t: any) => t.status === 'completed'));
     const plannedTreatments = $derived(data.treatments.filter((t: any) => t.status === 'planned' || t.status === 'pending'));
 
+    // Hybrid Continuity: detect Basic mode
+    const isBasicMode = $derived(
+        data.appConfig?.treatment_mode === 'BASIC' && data.appConfig?.payment_mode === 'BASIC'
+    );
+    // A catalog-linked treatment created before a Basic migration → read-only "Legacy" item
+    function isLegacyItem(tr: any): boolean {
+        return isBasicMode && tr.source === 'dental' && (tr.cdt_code != null || tr.tooth_number != null);
+    }
+
     // Formatting currency
     function formatCurrency(amount: number) {
         return new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(amount).replace('DZD', 'DA');
@@ -68,6 +81,7 @@ import FullTreatmentForm from "$lib/components/dental-v2/FullTreatmentForm.svelt
     let isPrescriptionModalOpen = $state(false);
     let isAppointmentModalOpen = $state(false);
     let isTreatmentModalOpen = $state(false);
+    let isFastTrackModalOpen = $state(false);
     let editingTreatment = $state<any>(null);
     let reschedulingAppointment = $state<any>(null);
     let saveSuccess = $state(false);
@@ -329,6 +343,7 @@ import FullTreatmentForm from "$lib/components/dental-v2/FullTreatmentForm.svelt
                             annotations={data.annotations} 
                             treatments={data.treatments} 
                             patientAge={age}
+                            treatmentMode={data.appConfig?.treatment_mode}
                         />
                     </div>
                 {:else if activeTab === "historique"}
@@ -455,16 +470,32 @@ import FullTreatmentForm from "$lib/components/dental-v2/FullTreatmentForm.svelt
                                             </div>
                                             Plan de Traitement
                                         </h2>
-                                        <span class="bg-amber-50 text-amber-600 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">{plannedTreatments.length}</span>
+                                        <div class="flex items-center gap-3">
+                                            {#if data.appConfig?.treatment_mode === 'BASIC'}
+                                                <button 
+                                                    onclick={() => isFastTrackModalOpen = true}
+                                                    class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-lg shadow-indigo-100"
+                                                >
+                                                    <PlusIcon size={14} />
+                                                    AJOUTER UN ACTE
+                                                </button>
+                                            {/if}
+                                            <span class="bg-amber-50 text-amber-600 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">{plannedTreatments.length}</span>
+                                        </div>
                                     </div>
                                     <div class="space-y-4">
                                         {#each plannedTreatments as tr}
                                             <!-- svelte-ignore a11y_click_events_have_key_events -->
                                             <!-- svelte-ignore a11y_no_static_element_interactions -->
-                                            <div class="bg-white border-2 border-slate-100 rounded-3xl p-6 transition-all shadow-sm group {!(tr.paid_amount > 0) && tr.source === 'dental' ? 'cursor-pointer hover:border-amber-100 hover:shadow-md' : 'hover:border-slate-200'}" onclick={(e) => { if ((tr.paid_amount || 0) > 0) return; if (!e.target?.closest?.('details')) openEditTreatment(tr); }}>
+                                            <div class="bg-white border-2 {isLegacyItem(tr) ? 'border-slate-200 opacity-80' : 'border-slate-100'} rounded-3xl p-6 transition-all shadow-sm group {!isLegacyItem(tr) && !(tr.paid_amount > 0) && tr.source === 'dental' ? 'cursor-pointer hover:border-amber-100 hover:shadow-md' : 'hover:border-slate-200'}" onclick={(e) => { if (isLegacyItem(tr)) return; if ((tr.paid_amount || 0) > 0) return; if (!e.target?.closest?.('details')) openEditTreatment(tr); }}>
                                                 <div class="flex justify-between items-start">
                                                     <div>
                                                         <span class="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-600 text-[10px] font-black uppercase">Dent {tr.tooth_number} • {tr.treatment_type}</span>
+                                                        {#if isLegacyItem(tr)}
+                                                            <span class="ml-2 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-400 text-[9px] font-black uppercase tracking-widest border border-slate-200" title="Créé en mode Advanced — lecture seule">
+                                                                📦 Héritage
+                                                            </span>
+                                                        {/if}
                                                         <h4 class="font-bold text-slate-900 mt-2 text-base leading-tight">{tr.description || 'Soin sans description'}</h4>
                                                     </div>
                                                     <div class="text-right flex flex-col items-end gap-2">
@@ -612,11 +643,29 @@ import FullTreatmentForm from "$lib/components/dental-v2/FullTreatmentForm.svelt
                     </div>
                 {:else if activeTab === "finances"}
                     <div class="p-8">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                            <div class="bg-slate-50 p-6 rounded-[32px] border border-slate-100 shadow-sm">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Facturé</p>
+                                <p class="text-2xl font-black text-slate-900">{formatCurrency(data.balance?.total_billed || 0)}</p>
+                            </div>
+                            <div class="bg-emerald-50/50 p-6 rounded-[32px] border border-emerald-100 shadow-sm">
+                                <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Total Réglé</p>
+                                <p class="text-2xl font-black text-emerald-600">{formatCurrency(data.balance?.total_paid || 0)}</p>
+                            </div>
+                            <div class="bg-indigo-600 p-6 rounded-[32px] shadow-xl shadow-indigo-100">
+                                <p class="text-[10px] font-black text-indigo-100 uppercase tracking-widest mb-1">Reste à payer</p>
+                                <p class="text-2xl font-black text-white">{formatCurrency(data.balance?.balance_due || 0)}</p>
+                            </div>
+                        </div>
+
                         <div class="flex justify-between items-center mb-8">
-                            <h2 class="text-xl font-black text-slate-900">Historique des Paiements</h2>
-                            <button onclick={() => isPaymentModalOpen = true} class="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all">
-                                + Nouveau Paiement
-                            </button>
+                            <h2 class="text-xl font-black text-slate-900">Journal Financier (Ledger)</h2>
+                            <div class="flex gap-3">
+                                <button onclick={() => isPaymentModalOpen = true} class="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center gap-2 text-sm">
+                                    <PlusIcon size={18} />
+                                    ENCAISSER
+                                </button>
+                            </div>
                         </div>
 
                         <div class="overflow-x-auto rounded-3xl border border-slate-200">
@@ -624,31 +673,121 @@ import FullTreatmentForm from "$lib/components/dental-v2/FullTreatmentForm.svelt
                                 <thead class="bg-slate-50 border-b border-slate-200">
                                     <tr>
                                         <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Méthode</th>
-                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Note</th>
-                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Montant</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Type</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Désignation</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Débit</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Crédit</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-                                    {#each data.payments as payment}
+                                    {#each data.transactions as tx}
                                         <tr class="hover:bg-slate-50/50 transition-colors">
-                                            <td class="px-6 py-4 text-sm">{payment.payment_date}</td>
+                                            <td class="px-6 py-4 text-xs font-bold text-slate-500">
+                                                {new Date(tx.transaction_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            </td>
                                             <td class="px-6 py-4">
-                                                <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider">
-                                                    {payment.payment_method}
+                                                <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider 
+                                                    {tx.type === 'charge' ? 'bg-amber-50 text-amber-600' : 
+                                                     tx.type === 'payment' ? 'bg-emerald-50 text-emerald-600' : 
+                                                     'bg-rose-50 text-rose-600'}">
+                                                    {tx.type === 'charge' ? 'DÛ' : tx.type === 'payment' ? 'PAYÉ' : 'AJUST'}
                                                 </span>
                                             </td>
-                                            <td class="px-6 py-4 text-sm text-slate-500">{payment.notes || '—'}</td>
-                                            <td class="px-6 py-4 text-right font-black text-slate-900">{formatCurrency(payment.amount)}</td>
+                                            <td class="px-6 py-4 text-sm font-bold text-slate-900">
+                                                {tx.description}
+                                                {#if tx.source_type !== 'manual'}
+                                                    <span class="ml-2 px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 text-[8px] uppercase tracking-tighter">
+                                                        {tx.source_type} #{tx.source_id}
+                                                    </span>
+                                                {/if}
+                                            </td>
+                                            <td class="px-6 py-4 text-right font-black text-slate-400">
+                                                {tx.type === 'charge' || (tx.type === 'adjustment' && tx.amount > 0) ? formatCurrency(Math.abs(tx.amount)) : '—'}
+                                            </td>
+                                            <td class="px-6 py-4 text-right font-black {tx.amount < 0 ? 'text-rose-500' : 'text-emerald-600'}">
+                                                {tx.type === 'payment' || (tx.type === 'adjustment' && tx.amount < 0) ? formatCurrency(Math.abs(tx.amount)) : '—'}
+                                            </td>
+                                            <td class="px-6 py-4 text-center">
+                                                {#if tx.type !== 'adjustment' && !data.transactions.some(t => t.source_id === tx.source_id && t.source_type === tx.source_type && t.amount === -tx.amount)}
+                                                    <form method="POST" action="?/reverseTransaction" use:enhance>
+                                                        <input type="hidden" name="source_type" value={tx.source_type} />
+                                                        <input type="hidden" name="source_id" value={tx.source_id} />
+                                                        <button type="submit" class="p-2 hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded-lg transition-all" title="Annuler cette écriture">
+                                                            <RotateCcw size={14} />
+                                                        </button>
+                                                    </form>
+                                                {:else if tx.amount < 0 || data.transactions.some(t => t.source_id === tx.source_id && t.source_type === tx.source_type && t.amount === -tx.amount)}
+                                                    <span class="text-[9px] font-black text-slate-300 uppercase tracking-tighter">ANNULÉ</span>
+                                                {/if}
+                                            </td>
                                         </tr>
                                     {:else}
                                         <tr>
-                                            <td colspan="4" class="px-6 py-12 text-center text-slate-400 font-bold">Aucun paiement enregistré</td>
+                                            <td colspan="6" class="px-6 py-12 text-center text-slate-400 font-bold">Aucune transaction enregistrée</td>
                                         </tr>
                                     {/each}
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- Standalone Invoicing Module -->
+                        {#if data.appConfig?.invoicing_enabled}
+                            <div class="mt-16 space-y-8" in:fade>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
+                                            <FileText size={20} />
+                                        </div>
+                                        <div>
+                                            <h2 class="text-xl font-black text-slate-900">Facturation & Devis</h2>
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gestion avancée des documents financiers</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <button class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-all flex items-center gap-2">
+                                            <PlusIcon size={14} />
+                                            DEVIS (PROFORMA)
+                                        </button>
+                                        <button class="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shadow-slate-200">
+                                            <PlusIcon size={14} />
+                                            NOUVELLE FACTURE
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {#if data.invoices && data.invoices.length > 0}
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {#each data.invoices as inv}
+                                            <div class="bg-white border-2 border-slate-100 rounded-3xl p-6 hover:border-amber-200 transition-all shadow-sm group">
+                                                <div class="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <span class="px-2 py-1 rounded-lg {inv.status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'} text-[9px] font-black uppercase tracking-wider">
+                                                            {inv.status === 'paid' ? 'Payée' : 'En attente'}
+                                                        </span>
+                                                        <h4 class="font-bold text-slate-900 mt-2">#{inv.invoice_number}</h4>
+                                                    </div>
+                                                    <a href="/print/invoice/{inv.id}" target="_blank" class="p-2 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
+                                                        <FileText size={18} />
+                                                    </a>
+                                                </div>
+                                                <div class="flex justify-between items-end">
+                                                    <div>
+                                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Montant</p>
+                                                        <p class="text-lg font-black text-slate-900">{formatCurrency(inv.total_amount)}</p>
+                                                    </div>
+                                                    <p class="text-[10px] font-bold text-slate-400">{new Date(inv.invoice_date).toLocaleDateString('fr-FR')}</p>
+                                                </div>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                {:else}
+                                    <div class="py-12 text-center bg-slate-50/50 rounded-[32px] border-2 border-dashed border-slate-200">
+                                        <p class="text-slate-400 font-bold">Aucune facture générée pour ce patient</p>
+                                    </div>
+                                {/if}
+                            </div>
+                        {/if}
                     </div>
                 {/if}
             </div>
@@ -767,7 +906,14 @@ import FullTreatmentForm from "$lib/components/dental-v2/FullTreatmentForm.svelt
     patient={data.patient}
     invoices={data.invoices}
     balance={data.balance}
+    appConfig={data.appConfig}
     onClose={() => isPaymentModalOpen = false}
+/>
+
+<FastTrackTreatmentModal
+    isOpen={isFastTrackModalOpen}
+    patientId={data.patient.id}
+    onClose={() => isFastTrackModalOpen = false}
 />
 
 {#if isTreatmentModalOpen && editingTreatment}
