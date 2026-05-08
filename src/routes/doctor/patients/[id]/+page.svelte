@@ -415,6 +415,13 @@ import { formatCurrency } from "$lib/utils/format";
                                 await fetch('?/cancelAppointment', { method: 'POST', body: formData });
                                 await invalidateAll();
                             }}
+                            onAddTreatment={() => {
+                                if (data.appConfig?.treatment_mode === 'BASIC') {
+                                    isFastTrackModalOpen = true;
+                                } else {
+                                    isTreatmentModalOpen = true;
+                                }
+                            }}
                         />
                     </div>
 

@@ -4,7 +4,7 @@
     import PaymentEvent from "./renderers/PaymentEvent.svelte";
     import NoteEvent from "./renderers/NoteEvent.svelte";
     import AppointmentEvent from "./renderers/AppointmentEvent.svelte";
-    import { Filter, Calendar, Stethoscope, Banknote, MessageSquare } from "lucide-svelte";
+    import { Filter, Calendar, Stethoscope, Banknote, MessageSquare, Plus } from "lucide-svelte";
     import { fade } from "svelte/transition";
 
     let { 
@@ -17,7 +17,8 @@
         onReverseTransaction,
         onDeleteNote,
         onRescheduleAppointment,
-        onCancelAppointment
+        onCancelAppointment,
+        onAddTreatment
     } = $props();
 
     let activeFilter = $state("all");
@@ -70,8 +71,18 @@
             {/each}
         </div>
         
-        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 hidden md:block">
-            {filteredEvents.length} ÉVÉNEMENTS
+        <div class="flex items-center gap-4">
+            <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 hidden xl:block">
+                {filteredEvents.length} ÉVÉNEMENTS
+            </div>
+
+            <button 
+                onclick={onAddTreatment}
+                class="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+            >
+                <Plus size={16} />
+                <span class="hidden sm:inline">AJOUTER UN ACTE</span>
+            </button>
         </div>
     </div>
 
