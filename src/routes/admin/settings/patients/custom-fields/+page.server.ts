@@ -27,7 +27,7 @@ export const actions: Actions = {
 
         const formData = await request.formData();
         const name = formData.get('name') as string;
-        const field_type = formData.get('type') as 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file';
+        const field_type = formData.get('type') as 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file' | 'composite';
         const unit = formData.get('unit') as string;
         const min_range = formData.get('min_range') ? parseFloat(formData.get('min_range') as string) : null;
         const max_range = formData.get('max_range') ? parseFloat(formData.get('max_range') as string) : null;
@@ -41,6 +41,8 @@ export const actions: Actions = {
         const final_display_order = display_order_raw ? Number(display_order_raw) : 0;
         const tab_name = formData.get('tab_name') as string || 'Général';
         const group_name = formData.get('group_name') as string || 'Informations';
+        const alert_level = formData.get('alert_level') as string || 'none';
+        const composite_structure = formData.get('composite_structure') as string || '';
 
         if (!name || !field_type) {
             return fail(400, { error: 'Name and type are required' });
@@ -62,7 +64,9 @@ export const actions: Actions = {
                 is_full_width,
                 display_order: isNaN(final_display_order) ? 0 : final_display_order,
                 tab_name,
-                group_name
+                group_name,
+                alert_level,
+                composite_structure
             });
             return { success: true };
         } catch (error: any) {
@@ -87,7 +91,7 @@ export const actions: Actions = {
         const formData = await request.formData();
         const id = parseInt(formData.get('id') as string);
         const name = formData.get('name') as string;
-        const field_type = formData.get('type') as 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file';
+        const field_type = formData.get('type') as 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file' | 'composite';
         const unit = formData.get('unit') as string;
         const min_range = formData.get('min_range') ? parseFloat(formData.get('min_range') as string) : null;
         const max_range = formData.get('max_range') ? parseFloat(formData.get('max_range') as string) : null;
@@ -101,6 +105,8 @@ export const actions: Actions = {
         const final_display_order = display_order_raw ? Number(display_order_raw) : 0;
         const tab_name = formData.get('tab_name') as string;
         const group_name = formData.get('group_name') as string;
+        const alert_level = formData.get('alert_level') as string;
+        const composite_structure = formData.get('composite_structure') as string;
 
         if (!id || !name || !field_type) {
             return fail(400, { error: 'Invalid data' });
@@ -121,7 +127,9 @@ export const actions: Actions = {
                 is_full_width,
                 display_order: isNaN(final_display_order) ? 0 : final_display_order,
                 tab_name,
-                group_name
+                group_name,
+                alert_level,
+                composite_structure
             });
             return { success: true };
         } catch (error: any) {

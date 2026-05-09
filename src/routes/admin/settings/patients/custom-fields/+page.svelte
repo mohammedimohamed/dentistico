@@ -375,6 +375,7 @@
                                     <option value="select">Liste (Choix)</option>
                                     <option value="date">Date</option>
                                     <option value="file">Fichier</option>
+                                    <option value="composite">Composite (Multi-valeurs)</option>
                                 </select>
                             </div>
                             <div>
@@ -388,6 +389,20 @@
                                 />
                             </div>
                         </div>
+
+                        {#if editingDefinition.field_type === 'composite'}
+                            <div class="p-6 bg-amber-50 rounded-3xl border-2 border-amber-100 space-y-4" in:slide>
+                                <label class="block text-xs font-black text-amber-600 uppercase tracking-widest">Structure Composite (Séparé par des virgules)</label>
+                                <input 
+                                    type="text" 
+                                    name="composite_structure" 
+                                    bind:value={editingDefinition.composite_structure}
+                                    placeholder="Ex: Systolique, Diastolique"
+                                    class="w-full px-6 py-4 bg-white border-2 border-amber-200 rounded-2xl outline-none transition-all font-bold placeholder:text-amber-200 text-amber-900"
+                                />
+                                <p class="text-[9px] text-amber-500 font-bold uppercase tracking-tighter">Indiquez les sous-libellés pour générer plusieurs champs sur une seule ligne.</p>
+                            </div>
+                        {/if}
 
                         {#if editingDefinition.field_type === 'number' || editingDefinition.field_type === 'float'}
                             <div class="grid grid-cols-2 gap-6" in:slide>
@@ -424,6 +439,28 @@
                                 bind:value={editingDefinition.display_order}
                                 class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
                             />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Niveau d'Alerte Clinique</label>
+                            <input type="hidden" name="alert_level" value={editingDefinition.alert_level || 'none'} />
+                            <div class="grid grid-cols-4 gap-2">
+                                {#each ['none', 'info', 'warning', 'danger'] as level}
+                                    <button 
+                                        type="button"
+                                        onclick={() => editingDefinition.alert_level = level}
+                                        class="py-3 rounded-xl border-2 font-black text-[9px] uppercase transition-all
+                                            {editingDefinition.alert_level === level ? 
+                                                (level === 'none' ? 'bg-slate-100 border-slate-400 text-slate-700' : 
+                                                 level === 'info' ? 'bg-blue-50 border-blue-400 text-blue-700' : 
+                                                 level === 'warning' ? 'bg-amber-50 border-amber-400 text-amber-700' : 
+                                                 'bg-rose-50 border-rose-400 text-rose-700') 
+                                                : 'bg-white border-slate-100 text-slate-300 hover:border-slate-200'}"
+                                    >
+                                        {level}
+                                    </button>
+                                {/each}
+                            </div>
                         </div>
 
                         <div>

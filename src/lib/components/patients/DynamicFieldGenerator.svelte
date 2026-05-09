@@ -16,8 +16,12 @@
         FileSearch,
         Stethoscope,
         Dna,
-        FlaskConical
+        FlaskConical,
+        Bell,
+        AlertTriangle,
+        Info as InfoIcon
     } from 'lucide-svelte';
+    import AlertBanner from './AlertBanner.svelte';
 
     const iconMap: Record<string, any> = {
         FileText,
@@ -139,7 +143,26 @@
         }
     });
 
+    // Snippet for rendering a standard input (extracted to avoid duplication)
+    function handleCompositeChange(fieldName: string, subLabel: string, value: string) {
+        const current = values[fieldName] || {};
+        const updated = { ...current, [subLabel]: value };
+        handleChange(fieldName, updated);
+    }
 </script>
+
+{#snippet compositeInput(def, subLabel)}
+    <div class="flex-1 min-w-0">
+        <label class="block text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-1 ml-1">{subLabel}</label>
+        <input 
+            type="text"
+            value={values[def.name]?.[subLabel] || ''}
+            oninput={(e) => handleCompositeChange(def.name, subLabel, e.currentTarget.value)}
+            class="w-full px-4 py-3 bg-slate-50/50 border-2 border-slate-100 rounded-xl focus:border-indigo-500 focus:bg-white outline-none transition-all font-bold text-sm"
+            placeholder="..."
+        />
+    </div>
+{/snippet}
 
 <div class="space-y-10">
     <!-- Tab Switcher (Sub-tabs) -->
@@ -203,6 +226,13 @@
                                             </div>
                                         {/if}
 
+                                        {#if def.alert_level === 'info' && values[def.name]}
+                                            <div class="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-100">
+                                                <InfoIcon size={10} />
+                                                <span class="text-[8px] font-black uppercase">Note</span>
+                                            </div>
+                                        {/if}
+
                                         {#if def.is_auditable}
                                             <button 
                                                 type="button"
@@ -240,6 +270,13 @@
                                                     {def.unit}
                                                 </div>
                                             {/if}
+                                        </div>
+                                    {:else if def.field_type === 'composite'}
+                                        {@const subLabels = (def.composite_structure || '').split(',').map(s => s.trim()).filter(s => s)}
+                                        <div class="flex items-end gap-3 p-4 bg-slate-50/30 border-2 border-slate-100/50 rounded-[22px] shadow-inner">
+                                            {#each subLabels as label}
+                                                {@render compositeInput(def, label)}
+                                            {/each}
                                         </div>
                                     {:else if def.field_type === 'select'}
 
