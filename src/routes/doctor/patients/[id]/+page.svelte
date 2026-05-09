@@ -146,6 +146,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
 
     let isSidebarOpen = $state(true);
     let isMobileDrawerOpen = $state(false);
+    let isEditingCustomFields = $state(false);
 
     // Auto-collapse sidebar on smaller screens initially
     $effect(() => {
@@ -299,10 +300,30 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                     <div class="p-10 w-full">
                         <div class="flex items-center justify-between mb-10">
                             <div>
-                                <h2 class="text-2xl font-black text-slate-900">Champs Personnalisés</h2>
+                                <h2 class="text-2xl font-black text-slate-900">Fiche Médicale</h2>
                                 <p class="text-sm text-slate-500 font-medium">Informations cliniques et administratives spécifiques</p>
                             </div>
+                            <button 
+                                type="button"
+                                onclick={() => isEditingCustomFields = !isEditingCustomFields}
+                                class="px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all
+                                    {isEditingCustomFields ? 'bg-slate-100 text-slate-600' : 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:bg-indigo-700'}"
+                            >
+                                {isEditingCustomFields ? 'Annuler' : 'Modifier la fiche'}
+                            </button>
                         </div>
+
+                        {#if !isEditingCustomFields}
+                            <div class="space-y-6" in:fade>
+                                <DynamicFieldGenerator 
+                                    definitions={data.customFieldDefinitions}
+                                    values={customFieldsValues}
+                                    patientId={data.patient.id}
+                                    readonly={true}
+                                    onUpdate={() => {}}
+                                />
+                            </div>
+                        {:else}
 
                         <form 
                             method="POST" 
@@ -310,8 +331,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                             use:enhance={() => {
                                 return async ({ result }) => {
                                     if (result.type === 'success') {
-                                        // Patient updated successfully
-                                        // SvelteKit will invalidate data automatically
+                                        isEditingCustomFields = false;
                                         saveSuccess = true;
                                         setTimeout(() => saveSuccess = false, 3000);
                                     }
@@ -345,6 +365,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                 </button>
                             </div>
                         </form>
+                    {/if}
                     </div>
                 {:else if activeTab === "odontogramme" && data.config?.module_dental_chart !== 0}
                     <div class="p-10">
