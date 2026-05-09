@@ -113,6 +113,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
 
     import { untrack } from "svelte";
     import DynamicFieldGenerator from "$lib/components/patients/DynamicFieldGenerator.svelte";
+    import AlertBanner from "$lib/components/patients/AlertBanner.svelte";
     
     // Initialize directly from data to avoid initial empty state
     let customFieldsValues = $state<Record<string, any>>(
@@ -264,6 +265,13 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
     </header>
 
     <div class="max-w-[1800px] mx-auto px-6 py-8">
+        <!-- Global Clinical Alerts -->
+        <AlertBanner 
+            definitions={data.customFieldDefinitions} 
+            values={customFieldsValues} 
+            delayMs={2000}
+        />
+
         <div class="grid grid-cols-1 {isSidebarOpen ? 'xl:grid-cols-12' : 'xl:grid-cols-1'} gap-8 items-start relative">
             <!-- Mobile Toggle / Sub-header -->
             <div class="xl:hidden w-full flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-4">

@@ -252,7 +252,7 @@ export function init_db() {
         CREATE TABLE IF NOT EXISTS custom_field_definitions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            field_type TEXT CHECK(field_type IN ('text', 'number', 'float', 'tel', 'email', 'select', 'date', 'file')) NOT NULL,
+            field_type TEXT CHECK(field_type IN ('text', 'number', 'float', 'tel', 'email', 'select', 'date', 'file', 'composite')) NOT NULL,
             unit TEXT,
             min_range REAL,
             max_range REAL,
@@ -265,6 +265,8 @@ export function init_db() {
             display_order INTEGER DEFAULT 0,
             tab_name TEXT DEFAULT 'Général',
             group_name TEXT DEFAULT 'Informations',
+            alert_level TEXT DEFAULT 'none',
+            composite_structure TEXT, -- JSON array of sub-labels
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
     `);
@@ -318,6 +320,12 @@ export function init_db() {
         if (!info.some(col => col.name === 'max_range')) {
             db.exec('ALTER TABLE custom_field_definitions ADD COLUMN max_range REAL');
         }
+        if (!info.some(col => col.name === 'alert_level')) {
+            db.exec("ALTER TABLE custom_field_definitions ADD COLUMN alert_level TEXT DEFAULT 'none'");
+        }
+        if (!info.some(col => col.name === 'composite_structure')) {
+            db.exec("ALTER TABLE custom_field_definitions ADD COLUMN composite_structure TEXT");
+        }
 
         // Migration for CHECK constraint on field_type
         // SQLite doesn't allow changing constraints on existing columns easily. 
@@ -331,7 +339,7 @@ export function init_db() {
                     CREATE TABLE custom_field_definitions_new (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT NOT NULL,
-                        field_type TEXT CHECK(field_type IN ('text', 'number', 'float', 'tel', 'email', 'select', 'date', 'file')) NOT NULL,
+                        field_type TEXT CHECK(field_type IN ('text', 'number', 'float', 'tel', 'email', 'select', 'date', 'file', 'composite')) NOT NULL,
                         unit TEXT,
                         min_range REAL,
                         max_range REAL,
@@ -344,6 +352,8 @@ export function init_db() {
                         display_order INTEGER DEFAULT 0,
                         tab_name TEXT DEFAULT 'Général',
                         group_name TEXT DEFAULT 'Informations',
+                        alert_level TEXT DEFAULT 'none',
+                        composite_structure TEXT,
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP
                     )
                 `);
@@ -354,13 +364,13 @@ export function init_db() {
                         id, name, field_type, unit, min_range, max_range, 
                         options, validation_regex, icon, is_auditable, 
                         is_required, is_full_width, display_order, 
-                        tab_name, group_name, created_at
+                        tab_name, group_name, alert_level, composite_structure, created_at
                     )
                     SELECT 
                         id, name, field_type, unit, min_range, max_range, 
                         options, validation_regex, icon, is_auditable, 
                         is_required, is_full_width, display_order, 
-                        tab_name, group_name, created_at
+                        tab_name, group_name, alert_level, composite_structure, created_at
                     FROM custom_field_definitions
                 `);
                 
@@ -4557,7 +4567,7 @@ export function getCustomFieldDefinitions() {
 
 export function createCustomFieldDefinition(data: {
     name: string;
-    field_type: 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file';
+    field_type: 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file' | 'composite';
     unit?: string;
     min_range?: number;
     max_range?: number;
@@ -4570,10 +4580,12 @@ export function createCustomFieldDefinition(data: {
     display_order?: number;
     tab_name?: string;
     group_name?: string;
+    alert_level?: string;
+    composite_structure?: string;
 }) {
     const stmt = db.prepare(`
-        INSERT INTO custom_field_definitions (name, field_type, unit, min_range, max_range, options, validation_regex, icon, is_auditable, is_required, is_full_width, display_order, tab_name, group_name)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO custom_field_definitions (name, field_type, unit, min_range, max_range, options, validation_regex, icon, is_auditable, is_required, is_full_width, display_order, tab_name, group_name, alert_level, composite_structure)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = stmt.run(
         data.name,
@@ -4589,14 +4601,16 @@ export function createCustomFieldDefinition(data: {
         data.is_full_width ?? 0,
         data.display_order ?? 0,
         data.tab_name ?? 'Général',
-        data.group_name ?? 'Informations'
+        data.group_name ?? 'Informations',
+        data.alert_level ?? 'none',
+        data.composite_structure ?? null
     );
     return result.lastInsertRowid;
 }
 
 export function updateCustomFieldDefinition(id: number, data: {
     name?: string;
-    field_type?: 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file';
+    field_type?: 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file' | 'composite';
     unit?: string;
     min_range?: number;
     max_range?: number;
@@ -4609,6 +4623,8 @@ export function updateCustomFieldDefinition(id: number, data: {
     display_order?: number;
     tab_name?: string;
     group_name?: string;
+    alert_level?: string;
+    composite_structure?: string;
 }) {
     const sets = [];
     const params: any[] = [];
@@ -4626,6 +4642,8 @@ export function updateCustomFieldDefinition(id: number, data: {
     if (data.display_order !== undefined) { sets.push('display_order = ?'); params.push(data.display_order); }
     if (data.tab_name !== undefined) { sets.push('tab_name = ?'); params.push(data.tab_name); }
     if (data.group_name !== undefined) { sets.push('group_name = ?'); params.push(data.group_name); }
+    if (data.alert_level !== undefined) { sets.push('alert_level = ?'); params.push(data.alert_level); }
+    if (data.composite_structure !== undefined) { sets.push('composite_structure = ?'); params.push(data.composite_structure); }
 
     if (sets.length === 0) return;
 
