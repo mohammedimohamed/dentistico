@@ -27,7 +27,10 @@ export const actions: Actions = {
 
         const formData = await request.formData();
         const name = formData.get('name') as string;
-        const type = formData.get('type') as 'text' | 'number' | 'select' | 'file';
+        const field_type = formData.get('type') as 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file';
+        const unit = formData.get('unit') as string;
+        const min_range = formData.get('min_range') ? parseFloat(formData.get('min_range') as string) : null;
+        const max_range = formData.get('max_range') ? parseFloat(formData.get('max_range') as string) : null;
         const options = formData.get('options') as string;
         const validation_regex = formData.get('validation_regex') as string;
         const icon = formData.get('icon') as string || 'FileText';
@@ -39,15 +42,18 @@ export const actions: Actions = {
         const tab_name = formData.get('tab_name') as string || 'Général';
         const group_name = formData.get('group_name') as string || 'Informations';
 
-        if (!name || !type) {
+        if (!name || !field_type) {
             return fail(400, { error: 'Name and type are required' });
         }
 
         try {
-            console.log('Attempting to create custom field:', { name, type, final_display_order });
+            console.log('Attempting to create custom field:', { name, field_type, final_display_order });
             createCustomFieldDefinition({
                 name,
-                type,
+                field_type,
+                unit,
+                min_range,
+                max_range,
                 options: options || '',
                 validation_regex: validation_regex || '',
                 icon,
@@ -81,7 +87,10 @@ export const actions: Actions = {
         const formData = await request.formData();
         const id = parseInt(formData.get('id') as string);
         const name = formData.get('name') as string;
-        const type = formData.get('type') as 'text' | 'number' | 'select' | 'file';
+        const field_type = formData.get('type') as 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file';
+        const unit = formData.get('unit') as string;
+        const min_range = formData.get('min_range') ? parseFloat(formData.get('min_range') as string) : null;
+        const max_range = formData.get('max_range') ? parseFloat(formData.get('max_range') as string) : null;
         const options = formData.get('options') as string;
         const validation_regex = formData.get('validation_regex') as string;
         const icon = formData.get('icon') as string;
@@ -93,14 +102,17 @@ export const actions: Actions = {
         const tab_name = formData.get('tab_name') as string;
         const group_name = formData.get('group_name') as string;
 
-        if (!id || !name || !type) {
+        if (!id || !name || !field_type) {
             return fail(400, { error: 'Invalid data' });
         }
 
         try {
             updateCustomFieldDefinition(id, {
                 name,
-                type,
+                field_type,
+                unit,
+                min_range,
+                max_range,
                 options: options || '',
                 validation_regex: validation_regex || '',
                 icon,
