@@ -2,8 +2,9 @@
     import { fade, scale } from 'svelte/transition';
     import { X, Clock, User, Calendar, FileText, ChevronRight } from 'lucide-svelte';
     import { onMount } from 'svelte';
+    import { formatCompositeValue } from '$lib/utils/clinicalFormatter';
 
-    let { isOpen = false, onClose, patientId, fieldName } = $props();
+    let { isOpen = false, onClose, patientId, fieldName, definition } = $props();
     let history = $state<any[]>([]);
     let isLoading = $state(true);
 
@@ -28,14 +29,23 @@
     }
 
     function formatValue(val: any) {
-        if (!val) return '---';
+        if (!val) return { type: 'text', value: '---' };
+        
+        // Handle composite fields
+        if (definition?.field_type === 'composite') {
+            return { 
+                type: 'text', 
+                value: formatCompositeValue(definition.composite_structure, val, definition.unit) 
+            };
+        }
+
         try {
             const parsed = JSON.parse(val);
             if (typeof parsed === 'object' && parsed !== null && parsed.name && parsed.data) {
                 return { type: 'file', name: parsed.name, data: parsed.data };
             }
         } catch {
-            // Not JSON, return as string
+            // Not JSON
         }
         return { type: 'text', value: val };
     }

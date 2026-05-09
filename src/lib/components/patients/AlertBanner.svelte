@@ -1,6 +1,7 @@
 <script lang="ts">
     import { fade, slide, scale } from 'svelte/transition';
     import { AlertCircle, AlertTriangle, Info, Bell, X, Skull, HeartPulse } from 'lucide-svelte';
+    import { formatCompositeValue } from '$lib/utils/clinicalFormatter';
 
     interface Alert {
         name: string;
@@ -57,11 +58,12 @@
         }
     }
 
-    function formatValue(value: any) {
-        if (typeof value === 'object' && value !== null) {
-            return Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(' / ');
+    function formatValue(alert: Alert) {
+        const def = definitions.find(d => d.name === alert.name);
+        if (def && def.field_type === 'composite') {
+            return formatCompositeValue(def.composite_structure, alert.value, def.unit);
         }
-        return value;
+        return alert.value;
     }
 </script>
 
@@ -95,7 +97,7 @@
                         </div>
                         <div>
                             <p class="text-[9px] font-black uppercase text-rose-400 tracking-widest leading-none mb-1.5">{alert.name}</p>
-                            <p class="text-base font-black text-rose-900 leading-tight">{formatValue(alert.value)}</p>
+                            <p class="text-base font-black text-rose-900 leading-tight">{formatValue(alert)}</p>
                         </div>
                     </div>
                 {/each}
@@ -126,7 +128,7 @@
                 <div class="flex-1 min-w-0">
                     <p class="text-[10px] font-black uppercase tracking-widest opacity-60 leading-none mb-1.5">Alerte Clinique : {alert.name}</p>
                     <p class="text-sm font-bold truncate">
-                        {formatValue(alert.value)}
+                        {formatValue(alert)}
                     </p>
                 </div>
 

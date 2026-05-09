@@ -55,21 +55,25 @@
     }
 
     import FieldHistoryModal from './FieldHistoryModal.svelte';
+    import { formatCompositeValue, checkCompositeNorms } from '$lib/utils/clinicalFormatter';
 
     let { 
         definitions = [], 
         values = {}, 
         patientId = null,
+        readonly = false,
         onUpdate 
     }: { 
         definitions: Definition[], 
         values: Record<string, any>,
         patientId?: number | null,
+        readonly?: boolean,
         onUpdate: (values: Record<string, any>) => void
     } = $props();
 
     let historyModalOpen = $state(false);
     let historyFieldName = $state("");
+    let historyFieldDef = $derived(definitions.find(d => d.name === historyFieldName));
 
     function openHistory(name: string) {
         historyFieldName = name;
@@ -161,6 +165,35 @@
             class="w-full px-4 py-3 bg-slate-50/50 border-2 border-slate-100 rounded-xl focus:border-indigo-500 focus:bg-white outline-none transition-all font-bold text-sm"
             placeholder="..."
         />
+    </div>
+{/snippet}
+
+{#snippet formattedComposite(def)}
+    {@const val = values[def.name] || {}}
+    {@const subLabels = (def.composite_structure || '').split(',').map(s => s.trim()).filter(s => s)}
+    {@const isTension = subLabels.some(l => l.toLowerCase().includes('tension') || l.toLowerCase().includes('systolique'))}
+    
+    <div class="flex items-center gap-2 flex-wrap bg-slate-50/50 p-4 rounded-[22px] border-2 border-slate-100/50">
+        {#each subLabels as label, i}
+            {@const subVal = val[label]}
+            {@const status = checkCompositeNorms(label, subVal, def.min_range, def.max_range)}
+            
+            {#if i > 0}
+                <span class="text-slate-300 font-light mx-1">{isTension ? '/' : '|'}</span>
+            {/if}
+            
+            <div class="flex items-baseline gap-1.5">
+                {#if !isTension}
+                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{label}:</span>
+                {/if}
+                <span class="font-black text-base {status === 'WARNING' ? 'text-rose-600' : 'text-slate-900'}">
+                    {subVal || '—'}
+                </span>
+            </div>
+        {/each}
+        {#if def.unit}
+            <span class="text-[10px] font-bold text-slate-400 ml-1 uppercase">{def.unit}</span>
+        {/if}
     </div>
 {/snippet}
 
@@ -272,12 +305,16 @@
                                             {/if}
                                         </div>
                                     {:else if def.field_type === 'composite'}
-                                        {@const subLabels = (def.composite_structure || '').split(',').map(s => s.trim()).filter(s => s)}
-                                        <div class="flex items-end gap-3 p-4 bg-slate-50/30 border-2 border-slate-100/50 rounded-[22px] shadow-inner">
-                                            {#each subLabels as label}
-                                                {@render compositeInput(def, label)}
-                                            {/each}
-                                        </div>
+                                        {#if readonly}
+                                            {@render formattedComposite(def)}
+                                        {:else}
+                                            {@const subLabels = (def.composite_structure || '').split(',').map(s => s.trim()).filter(s => s)}
+                                            <div class="flex items-end gap-3 p-4 bg-slate-50/30 border-2 border-slate-100/50 rounded-[22px] shadow-inner">
+                                                {#each subLabels as label}
+                                                    {@render compositeInput(def, label)}
+                                                {/each}
+                                            </div>
+                                        {/if}
                                     {:else if def.field_type === 'select'}
 
                                         {@const options = JSON.parse(def.options || '[]')}
@@ -363,4 +400,5 @@
     onClose={() => historyModalOpen = false} 
     patientId={patientId} 
     fieldName={historyFieldName} 
+    definition={historyFieldDef}
 />
