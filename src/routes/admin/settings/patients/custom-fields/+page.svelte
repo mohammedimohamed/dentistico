@@ -21,7 +21,11 @@
         FileSearch,
         Stethoscope,
         Dna,
-        FlaskConical
+        FlaskConical,
+        Phone,
+        Mail,
+        Calendar,
+        Zap
     } from 'lucide-svelte';
 
     import { dndzone, SHADOW_ITEM_MARKER_PROPERTY_NAME } from 'svelte-dnd-action';
@@ -102,7 +106,10 @@
     function openCreate() {
         editingDefinition = {
             name: "",
-            type: "text",
+            field_type: "text",
+            unit: "",
+            min_range: null,
+            max_range: null,
             display_order: 0,
             is_required: false,
             is_auditable: false,
@@ -127,7 +134,11 @@
     const typeIcons = {
         text: Type,
         number: Hash,
+        float: Zap,
+        tel: Phone,
+        email: Mail,
         select: ListOrdered,
+        date: Calendar,
         file: FileText
     };
 
@@ -172,7 +183,7 @@
         onfinalize={handleDndFinalize}
     >
         {#each items as def (def.id)}
-            {@const Icon = typeIcons[def.type as keyof typeof typeIcons]}
+            {@const Icon = typeIcons[def.field_type as keyof typeof typeIcons]}
             <div 
                 class="bg-white border-2 border-slate-100 rounded-3xl p-6 flex items-center justify-between group hover:border-indigo-100 hover:shadow-xl hover:shadow-slate-100/50 transition-all mb-4"
                 in:fade
@@ -196,8 +207,9 @@
                             {/if}
                         </div>
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-                            Type: {def.type} 
-                            {#if def.type === 'select'}
+                            Type: {def.field_type} 
+                            {#if def.unit} • Unité: {def.unit}{/if}
+                            {#if def.field_type === 'select'}
                                 • {JSON.parse(def.options || '[]').length} options
                             {/if}
                         </p>
@@ -352,24 +364,66 @@
                                 <select 
                                     name="type" 
                                     required 
-                                    bind:value={editingDefinition.type}
+                                    bind:value={editingDefinition.field_type}
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     <option value="text">Texte</option>
-                                    <option value="number">Nombre</option>
+                                    <option value="number">Nombre (Entier)</option>
+                                    <option value="float">Nombre (Décimal)</option>
+                                    <option value="tel">Téléphone</option>
+                                    <option value="email">Email</option>
                                     <option value="select">Liste (Choix)</option>
+                                    <option value="date">Date</option>
                                     <option value="file">Fichier</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Ordre d'affichage</label>
+                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Unité (Optionnel)</label>
                                 <input 
-                                    type="number" 
-                                    name="display_order" 
-                                    bind:value={editingDefinition.display_order}
+                                    type="text" 
+                                    name="unit" 
+                                    bind:value={editingDefinition.unit}
+                                    placeholder="Ex: kg, mg/dl, mm/h..."
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
                                 />
                             </div>
+                        </div>
+
+                        {#if editingDefinition.field_type === 'number' || editingDefinition.field_type === 'float'}
+                            <div class="grid grid-cols-2 gap-6" in:slide>
+                                <div>
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Norme Min</label>
+                                    <input 
+                                        type="number" 
+                                        step="any"
+                                        name="min_range" 
+                                        bind:value={editingDefinition.min_range}
+                                        placeholder="Min..."
+                                        class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Norme Max</label>
+                                    <input 
+                                        type="number" 
+                                        step="any"
+                                        name="max_range" 
+                                        bind:value={editingDefinition.max_range}
+                                        placeholder="Max..."
+                                        class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
+                                    />
+                                </div>
+                            </div>
+                        {/if}
+
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Ordre d'affichage</label>
+                            <input 
+                                type="number" 
+                                name="display_order" 
+                                bind:value={editingDefinition.display_order}
+                                class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
+                            />
                         </div>
 
                         <div>
@@ -454,7 +508,7 @@
                             </div>
                         </div>
 
-                        {#if editingDefinition.type === 'text' || editingDefinition.type === 'number'}
+                        {#if ['text', 'number', 'float', 'tel', 'email'].includes(editingDefinition.field_type)}
                             <div in:slide>
                                 <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Validation Regex (Optionnel)</label>
                                 <input 
@@ -468,7 +522,7 @@
                             </div>
                         {/if}
 
-                        {#if editingDefinition.type === 'select'}
+                        {#if editingDefinition.field_type === 'select'}
                             <div in:slide>
                                 <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Options de la liste</label>
                                 <div class="space-y-3">

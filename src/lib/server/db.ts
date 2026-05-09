@@ -252,7 +252,10 @@ export function init_db() {
         CREATE TABLE IF NOT EXISTS custom_field_definitions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            type TEXT CHECK(type IN ('text', 'number', 'select', 'file')) NOT NULL,
+            field_type TEXT CHECK(field_type IN ('text', 'number', 'float', 'tel', 'email', 'select', 'date', 'file')) NOT NULL,
+            unit TEXT,
+            min_range REAL,
+            max_range REAL,
             options TEXT, -- JSON array for select type
             validation_regex TEXT, -- Optional regex for text fields
             icon TEXT DEFAULT 'FileText',
@@ -296,6 +299,76 @@ export function init_db() {
         }
         if (!info.some(col => col.name === 'group_name')) {
             db.exec("ALTER TABLE custom_field_definitions ADD COLUMN group_name TEXT DEFAULT 'Informations'");
+        }
+        
+        // Advanced Metadata Migrations
+        if (!info.some(col => col.name === 'field_type')) {
+            if (info.some(col => col.name === 'type')) {
+                db.exec('ALTER TABLE custom_field_definitions RENAME COLUMN type TO field_type');
+            } else {
+                db.exec('ALTER TABLE custom_field_definitions ADD COLUMN field_type TEXT DEFAULT "text"');
+            }
+        }
+        if (!info.some(col => col.name === 'unit')) {
+            db.exec('ALTER TABLE custom_field_definitions ADD COLUMN unit TEXT');
+        }
+        if (!info.some(col => col.name === 'min_range')) {
+            db.exec('ALTER TABLE custom_field_definitions ADD COLUMN min_range REAL');
+        }
+        if (!info.some(col => col.name === 'max_range')) {
+            db.exec('ALTER TABLE custom_field_definitions ADD COLUMN max_range REAL');
+        }
+
+        // Migration for CHECK constraint on field_type
+        // SQLite doesn't allow changing constraints on existing columns easily. 
+        // We check if 'float' is allowed by looking at the schema SQL.
+        const schema = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='custom_field_definitions'").get() as any;
+        if (schema && schema.sql && !schema.sql.includes("'float'")) {
+            console.log("Migrating custom_field_definitions to support new field types (CHECK constraint update)...");
+            db.transaction(() => {
+                db.exec("PRAGMA foreign_keys=OFF");
+                db.exec(`
+                    CREATE TABLE custom_field_definitions_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        field_type TEXT CHECK(field_type IN ('text', 'number', 'float', 'tel', 'email', 'select', 'date', 'file')) NOT NULL,
+                        unit TEXT,
+                        min_range REAL,
+                        max_range REAL,
+                        options TEXT,
+                        validation_regex TEXT,
+                        icon TEXT DEFAULT 'FileText',
+                        is_auditable INTEGER DEFAULT 0,
+                        is_required INTEGER DEFAULT 0,
+                        is_full_width INTEGER DEFAULT 0,
+                        display_order INTEGER DEFAULT 0,
+                        tab_name TEXT DEFAULT 'Général',
+                        group_name TEXT DEFAULT 'Informations',
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+                
+                // Copy data, mapping columns correctly
+                db.exec(`
+                    INSERT INTO custom_field_definitions_new (
+                        id, name, field_type, unit, min_range, max_range, 
+                        options, validation_regex, icon, is_auditable, 
+                        is_required, is_full_width, display_order, 
+                        tab_name, group_name, created_at
+                    )
+                    SELECT 
+                        id, name, field_type, unit, min_range, max_range, 
+                        options, validation_regex, icon, is_auditable, 
+                        is_required, is_full_width, display_order, 
+                        tab_name, group_name, created_at
+                    FROM custom_field_definitions
+                `);
+                
+                db.exec("DROP TABLE custom_field_definitions");
+                db.exec("ALTER TABLE custom_field_definitions_new RENAME TO custom_field_definitions");
+                db.exec("PRAGMA foreign_keys=ON");
+            })();
+            console.log("Migration successful.");
         }
     } catch (e) {
         console.error('Migration for custom_field_definitions failed:', e);
@@ -4484,7 +4557,10 @@ export function getCustomFieldDefinitions() {
 
 export function createCustomFieldDefinition(data: {
     name: string;
-    type: 'text' | 'number' | 'select' | 'file';
+    field_type: 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file';
+    unit?: string;
+    min_range?: number;
+    max_range?: number;
     options?: string;
     validation_regex?: string;
     icon?: string;
@@ -4496,12 +4572,15 @@ export function createCustomFieldDefinition(data: {
     group_name?: string;
 }) {
     const stmt = db.prepare(`
-        INSERT INTO custom_field_definitions (name, type, options, validation_regex, icon, is_auditable, is_required, is_full_width, display_order, tab_name, group_name)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO custom_field_definitions (name, field_type, unit, min_range, max_range, options, validation_regex, icon, is_auditable, is_required, is_full_width, display_order, tab_name, group_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = stmt.run(
         data.name,
-        data.type,
+        data.field_type,
+        data.unit ?? null,
+        data.min_range ?? null,
+        data.max_range ?? null,
         data.options ?? '',
         data.validation_regex ?? '',
         data.icon ?? 'FileText',
@@ -4517,7 +4596,10 @@ export function createCustomFieldDefinition(data: {
 
 export function updateCustomFieldDefinition(id: number, data: {
     name?: string;
-    type?: 'text' | 'number' | 'select' | 'file';
+    field_type?: 'text' | 'number' | 'float' | 'tel' | 'email' | 'select' | 'date' | 'file';
+    unit?: string;
+    min_range?: number;
+    max_range?: number;
     options?: string;
     validation_regex?: string;
     icon?: string;
@@ -4525,11 +4607,16 @@ export function updateCustomFieldDefinition(id: number, data: {
     is_required?: number;
     is_full_width?: number;
     display_order?: number;
+    tab_name?: string;
+    group_name?: string;
 }) {
     const sets = [];
     const params: any[] = [];
     if (data.name) { sets.push('name = ?'); params.push(data.name); }
-    if (data.type) { sets.push('type = ?'); params.push(data.type); }
+    if (data.field_type) { sets.push('field_type = ?'); params.push(data.field_type); }
+    if (data.unit !== undefined) { sets.push('unit = ?'); params.push(data.unit); }
+    if (data.min_range !== undefined) { sets.push('min_range = ?'); params.push(data.min_range); }
+    if (data.max_range !== undefined) { sets.push('max_range = ?'); params.push(data.max_range); }
     if (data.options !== undefined) { sets.push('options = ?'); params.push(data.options); }
     if (data.validation_regex !== undefined) { sets.push('validation_regex = ?'); params.push(data.validation_regex); }
     if (data.icon !== undefined) { sets.push('icon = ?'); params.push(data.icon); }
@@ -4570,6 +4657,15 @@ export function logCustomFieldChange(data: {
 export function deleteCustomFieldDefinition(id: number) {
     return db.prepare('DELETE FROM custom_field_definitions WHERE id = ?').run(id);
 }
+
+export function checkFieldNorm(value: any, min: number | null, max: number | null): 'GOOD' | 'WARNING' | 'NEUTRAL' {
+    if (min === null || max === null) return 'NEUTRAL';
+    const num = parseFloat(value);
+    if (isNaN(num)) return 'NEUTRAL';
+    if (num >= min && num <= max) return 'GOOD';
+    return 'WARNING';
+}
+
 export function getCustomFieldHistory(patientId, fieldName) { return db.prepare('SELECT * FROM custom_field_history WHERE patient_id = ? AND field_name = ? ORDER BY changed_at DESC').all(patientId, fieldName); }
 
 // ─────────────────────────────────────────────────────────────────────────────
