@@ -92,7 +92,7 @@
 </script>
 
 <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-6xl h-[85vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-200">
+    <div class="bg-white w-full max-w-[1400px] h-[85vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-200">
         
         <!-- LEFT SIDE: Visual Clinical Chart -->
         <div class="w-full md:w-5/12 bg-slate-50 flex items-center justify-center p-12 border-r border-slate-100 relative overflow-hidden">
