@@ -1165,7 +1165,7 @@ export function init_db() {
     +
         COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN(SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
     +
-        COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
+        COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN(SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)), 0)
                         as total_billed,
 
         COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as total_paid,
@@ -1175,7 +1175,7 @@ export function init_db() {
             +
             COALESCE((SELECT SUM(cost) FROM treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN(SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)), 0)
     +
-        COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed'), 0)
+        COALESCE((SELECT SUM(fee) FROM dental_treatments WHERE patient_id = p.id AND status = 'completed' AND id NOT IN(SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)), 0)
                         ) -
         COALESCE((SELECT SUM(amount) FROM payments WHERE patient_id = p.id), 0) as balance_due
                     FROM patients p;
@@ -2441,20 +2441,23 @@ export function searchPatientsByNameLimited(searchTerm: string) {
 
 export function getPatientBalance(patientId: number) {
     const result = db.prepare(`
-        SELECT 
-            SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as total_billed,
-            SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) as total_paid
-        FROM patient_transactions
+        SELECT total_billed, total_paid, balance_due 
+        FROM patient_balance 
         WHERE patient_id = ?
     `).get(patientId) as any;
 
-    const billed = (result?.total_billed || 0);
-    const paid = (result?.total_paid || 0);
+    if (!result) {
+        return {
+            total_billed: 0,
+            total_paid: 0,
+            balance_due: 0
+        };
+    }
 
     return {
-        total_billed: billed,
-        total_paid: paid,
-        balance_due: billed - paid
+        total_billed: result.total_billed,
+        total_paid: result.total_paid,
+        balance_due: result.balance_due
     };
 }
 
@@ -3023,8 +3026,45 @@ export function getTransactionsByPatient(patientId: number) {
         FROM patient_transactions t
         LEFT JOIN users u ON t.recorded_by = u.id
         WHERE t.patient_id = ?
-        ORDER BY t.transaction_date DESC, t.id DESC
-    `).all(patientId);
+        
+        UNION ALL
+        
+        SELECT
+            0 as id,
+            patient_id,
+            COALESCE(date_performed, created_at) as transaction_date,
+            'charge' as type,
+            fee as amount,
+            ('Soin Dentaire (Non Facturé): ' || treatment_type) as description,
+            'dental' as source_type,
+            id as source_id,
+            provider_id as recorded_by,
+            created_at,
+            (SELECT full_name FROM users WHERE id = provider_id) as recorded_by_name
+        FROM dental_treatments
+        WHERE patient_id = ? AND status = 'completed' AND fee > 0
+        AND id NOT IN(SELECT dental_treatment_id FROM invoice_items WHERE dental_treatment_id IS NOT NULL)
+        
+        UNION ALL
+        
+        SELECT
+            0 as id,
+            patient_id,
+            COALESCE(treatment_date, created_at) as transaction_date,
+            'charge' as type,
+            cost as amount,
+            ('Acte (Non Facturé): ' || treatment_type) as description,
+            'general' as source_type,
+            id as source_id,
+            doctor_id as recorded_by,
+            created_at,
+            (SELECT full_name FROM users WHERE id = doctor_id) as recorded_by_name
+        FROM treatments
+        WHERE patient_id = ? AND status = 'completed' AND cost > 0
+        AND id NOT IN(SELECT treatment_id FROM invoice_items WHERE treatment_id IS NOT NULL)
+
+        ORDER BY transaction_date DESC, id DESC
+    `).all(patientId, patientId, patientId);
 }
 
 export function getPendingPayments() {

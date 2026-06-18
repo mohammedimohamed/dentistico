@@ -2,8 +2,11 @@ import { page } from '$app/state';
 
 class SidebarState {
     #isCollapsed = $state(false);
+    #forceExpand = $state(false);
 
     get isCollapsed() {
+        if (this.#forceExpand) return false;
+
         // Default collapse logic based on path
         const autoCollapse = (
             (page.url.pathname.includes("/journey/") && !page.url.pathname.endsWith("/journey")) ||
@@ -13,15 +16,22 @@ class SidebarState {
     }
 
     set isCollapsed(value: boolean) {
-        this.#isCollapsed = value;
+        // If we want to open it (value === false) and it was auto-collapsed, we need to force expand
+        if (!value) {
+            this.#forceExpand = true;
+            this.#isCollapsed = false;
+        } else {
+            this.#forceExpand = false;
+            this.#isCollapsed = true;
+        }
     }
 
     toggle() {
-        this.#isCollapsed = !this.isCollapsed;
+        this.isCollapsed = !this.isCollapsed;
     }
 
     setCollapsed(value: boolean) {
-        this.#isCollapsed = value;
+        this.isCollapsed = value;
     }
 }
 
