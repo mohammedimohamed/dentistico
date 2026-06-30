@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { fade } from 'svelte/transition';
 
     let { stats } = $props<{ stats: { total: number, completed: number, remaining: number } }>();
@@ -17,8 +18,8 @@
             </svg>
         </div>
         <div class="title-group">
-            <h3>Volume Patients</h3>
-            <p>Aujourd'hui</p>
+            <h3>{$t('components.patient_volume_card.volume_patients')}</h3>
+            <p>{$t('components.patient_volume_card.aujourdhui')}</p>
         </div>
     </div>
 
@@ -38,11 +39,11 @@
 
         <div class="stats-info">
             <div class="info-item">
-                <span class="label">Restant</span>
+                <span class="label">{$t('components.patient_volume_card.restant')}</span>
                 <span class="value">{stats.remaining}</span>
             </div>
             <div class="info-item">
-                <span class="label">Complété</span>
+                <span class="label">{$t('components.patient_volume_card.compl_t')}</span>
                 <span class="value">{progress.toFixed(0)}%</span>
             </div>
         </div>

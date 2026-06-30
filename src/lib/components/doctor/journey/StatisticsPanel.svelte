@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import {
         CheckCircle,
         XCircle,
@@ -23,7 +24,7 @@
     <!-- TODAY'S FUNNEL -->
     <div class="stat-section">
         <h3 class="section-title">
-            Patients aujourd'hui ({dashboardStats.today.total})
+            {$t('components.statistics_panel.patients_aujourdhui')}{dashboardStats.today.total})
         </h3>
 
         <div class="stat-grid">
@@ -31,28 +32,28 @@
             <div class="stat-mini stat-primary">
                 <Users size={16} />
                 <span class="value">{dashboardStats.today.total}</span>
-                <span class="label">Total</span>
+                <span class="label">{$t('components.statistics_panel.total')}</span>
             </div>
 
             <!-- Treated -->
             <div class="stat-mini stat-success">
                 <span class="stat-icon-wrapper"><CheckCircle size={14} /></span>
                 <span class="value">{dashboardStats.today.treated}</span>
-                <span class="label">Traités</span>
+                <span class="label">{$t('components.statistics_panel.trait_s')}</span>
             </div>
 
             <!-- Remaining -->
             <div class="stat-mini stat-warning">
                 <span class="stat-icon-wrapper"><Clock size={14} /></span>
                 <span class="value">{dashboardStats.today.remaining}</span>
-                <span class="label">Restants</span>
+                <span class="label">{$t('components.statistics_panel.restants')}</span>
             </div>
 
             <!-- Canceled -->
             <div class="stat-mini stat-danger">
                 <span class="stat-icon-wrapper"><XCircle size={14} /></span>
                 <span class="value">{dashboardStats.today.canceled}</span>
-                <span class="label">Annulés</span>
+                <span class="label">{$t('components.appointment_status_card.annul_s')}</span>
             </div>
         </div>
 
@@ -70,7 +71,7 @@
 
     <!-- COMPOSITION -->
     <div class="stat-section">
-        <h3 class="section-title">Composition</h3>
+        <h3 class="section-title">{$t('components.statistics_panel.composition')}</h3>
         <div class="comp-list">
             <div class="comp-item">
                 <div class="icon-box bg-indigo-50 text-indigo-500">
@@ -79,7 +80,7 @@
                 <div class="details">
                     <span class="val">{dashboardStats.composition.planned}</span
                     >
-                    <span class="lbl">Rendez-vous prévus</span>
+                    <span class="lbl">{$t('components.statistics_panel.rendezvous_pr_vus')}</span>
                 </div>
             </div>
             <div class="comp-item">
@@ -89,7 +90,7 @@
                 <div class="details">
                     <span class="val">{dashboardStats.composition.walkIns}</span
                     >
-                    <span class="lbl">Sans rendez-vous</span>
+                    <span class="lbl">{$t('components.statistics_panel.sans_rendezvous')}</span>
                 </div>
             </div>
         </div>
@@ -97,7 +98,7 @@
 
     <!-- PIPELINE -->
     <div class="stat-section">
-        <h3 class="section-title">Prévisions Semaine</h3>
+        <h3 class="section-title">{$t('components.statistics_panel.pr_visions_semaine')}</h3>
         <div class="pipeline-minimal">
             <div class="pipeline-header">
                 <div class="icon-box bg-rose-50 text-rose-500">
@@ -105,18 +106,18 @@
                 </div>
                 <div class="pipeline-total-group">
                     <span class="total">{dashboardStats.pipeline.total}</span>
-                    <span class="desc">Réservations</span>
+                    <span class="desc">{$t('components.statistics_panel.r_servations')}</span>
                 </div>
             </div>
             <div class="pipeline-tags">
                 <div class="tag">
-                    Demain: <b>{dashboardStats.pipeline.tomorrow}</b>
+                    {$t('components.statistics_panel.demain')} <b>{dashboardStats.pipeline.tomorrow}</b>
                 </div>
                 <div class="tag">
-                    Après: <b>{dashboardStats.pipeline.dayAfter}</b>
+                    {$t('components.statistics_panel.apr_s')} <b>{dashboardStats.pipeline.dayAfter}</b>
                 </div>
                 <div class="tag">
-                    Reste: <b>{dashboardStats.pipeline.restOfWeek}</b>
+                    {$t('components.statistics_panel.reste')} <b>{dashboardStats.pipeline.restOfWeek}</b>
                 </div>
             </div>
         </div>

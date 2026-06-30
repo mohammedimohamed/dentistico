@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { getAnatomy, getFrenchName } from "$lib/utils/toothLogicV2";
     import { dentalColors } from "$lib/stores/dentalSettings.svelte";
     import InteractiveToothV2 from "./InteractiveToothV2.svelte";
@@ -101,7 +102,7 @@
             <div class="absolute top-8 left-8">
                 <span class="px-4 py-2 bg-white rounded-2xl shadow-sm border border-slate-200 text-slate-400 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
                     <div class="w-2 h-2 rounded-full bg-indigo-600"></div>
-                    Vue Anatomique
+                    {$t('components.tooth_edit_panel_v2.vue_anatomique')}
                 </span>
             </div>
             
@@ -117,7 +118,7 @@
 
             {#if selectedZone && globalStatus.toLowerCase() !== 'absent'}
                 <div class="absolute bottom-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-3 rounded-2xl text-xs font-black shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                    ZONE : <span class="text-indigo-400">{selectedZone}</span>
+                    {$t('components.tooth_edit_panel_v2.zone')} <span class="text-indigo-400">{selectedZone}</span>
                 </div>
             {/if}
         </div>
@@ -131,18 +132,18 @@
                         {fdi} <span class="text-xl font-bold text-slate-400 uppercase tracking-normal">{toothName}</span>
                     </h2>
                     <p class="text-slate-400 font-bold text-sm mt-2 flex items-center gap-2">
-                        <CheckCircle2 class="w-4 h-4 text-emerald-500" /> Dossier Clinique Informatisé
+                        <CheckCircle2 class="w-4 h-4 text-emerald-500" /> {$t('components.tooth_edit_panel_v2.dossier_clinique_informatis')}
                     </p>
                     {#if annotations.bridge_id}
                         <div class="mt-4 flex items-center gap-3">
                             <span class="px-3 py-1 bg-indigo-100 text-indigo-700 text-[10px] font-black rounded-lg border border-indigo-200 uppercase tracking-tighter">
-                                Fait partie d'un Bridge
+                                {$t('components.tooth_edit_panel_v2.fait_partie_dun_bridge')}
                             </span>
                             <button 
                                 onclick={handleDeleteBridge}
                                 class="text-[10px] font-black text-rose-600 hover:text-rose-700 hover:underline uppercase tracking-tighter"
                             >
-                                Supprimer le Bridge
+                                {$t('components.tooth_edit_panel_v2.supprimer_le_bridge')}
                             </button>
                         </div>
                     {/if}
@@ -163,8 +164,8 @@
                     >
                         <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-110 transition-transform">✓</div>
                         <div class="text-left">
-                            <p class="text-sm font-black text-emerald-900">Dent Saine</p>
-                            <p class="text-[10px] font-bold text-emerald-600 uppercase">État initial / RàS</p>
+                            <p class="text-sm font-black text-emerald-900">{$t('components.tooth_edit_panel_v2.dent_saine')}</p>
+                            <p class="text-[10px] font-bold text-emerald-600 uppercase">{$t('components.tooth_edit_panel_v2.tat_initial_r_s')}</p>
                         </div>
                     </button>
 
@@ -174,8 +175,8 @@
                     >
                         <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-rose-600 shadow-sm group-hover:scale-110 transition-transform">X</div>
                         <div class="text-left">
-                            <p class="text-sm font-black text-rose-900">Déjà Absente</p>
-                            <p class="text-[10px] font-bold text-rose-600 uppercase">Historique / Agénésie</p>
+                            <p class="text-sm font-black text-rose-900">{$t('components.tooth_edit_panel_v2.d_j_absente')}</p>
+                            <p class="text-[10px] font-bold text-rose-600 uppercase">{$t('components.tooth_edit_panel_v2.historique_ag_n_sie')}</p>
                         </div>
                     </button>
                 </div>
@@ -183,26 +184,26 @@
                 {#if annotations.bridge_id}
                     <div class="p-8 bg-indigo-50/50 border-2 border-indigo-100 rounded-[32px] flex items-center justify-between mb-6">
                         <div>
-                            <p class="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-1">Système Prothétique</p>
-                            <h3 class="text-lg font-black text-indigo-900">Bridge : <span class="text-indigo-600">{globalStatus}</span></h3>
+                            <p class="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-1">{$t('components.tooth_edit_panel_v2.syst_me_proth_tique')}</p>
+                            <h3 class="text-lg font-black text-indigo-900">{$t('components.tooth_edit_panel_v2.bridge')} <span class="text-indigo-600">{globalStatus}</span></h3>
                         </div>
                         <div class="text-right">
-                            <span class="px-3 py-1 bg-white text-indigo-600 text-[10px] font-black rounded-lg border border-indigo-200 uppercase">Actif</span>
+                            <span class="px-3 py-1 bg-white text-indigo-600 text-[10px] font-black rounded-lg border border-indigo-200 uppercase">{$t('components.tooth_edit_panel_v2.actif')}</span>
                         </div>
                     </div>
                 {/if}
 
                 {#if globalStatus.toLowerCase() === 'absent'}
                     <div class="bg-indigo-50 border-2 border-indigo-100 rounded-[32px] p-10 text-center">
-                        <h3 class="text-xl font-black text-indigo-900 mb-2">Dent Absente</h3>
-                        <p class="text-indigo-600 text-sm font-medium">Cette dent est marquée comme absente du schéma dentaire.</p>
+                        <h3 class="text-xl font-black text-indigo-900 mb-2">{$t('components.tooth_edit_panel_v2.dent_absente')}</h3>
+                        <p class="text-indigo-600 text-sm font-medium">{$t('components.tooth_edit_panel_v2.cette_dent_est_marqu')}</p>
                         <button onclick={() => globalStatus = 'Sain'} class="mt-6 text-xs font-black uppercase text-indigo-600 hover:underline">Restaurer l'anatomie</button>
                     </div>
                 {:else}
                     <!-- Zone Selection -->
                     <section>
                         <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                            <Info class="w-4 h-4" /> Sélection de la Surface à Traiter
+                            <Info class="w-4 h-4" /> {$t('components.tooth_edit_panel_v2.s_lection_de_la')}
                         </h3>
                         <div class="grid grid-cols-5 gap-4">
                             {#each anatomy.zones.crown as zone}
@@ -223,7 +224,7 @@
                                 class="text-[10px] font-black uppercase tracking-widest mb-4 transition-colors duration-300"
                                 style:color={(dentalColors as any)[currentZones[selectedZone!] || 'SAIN']}
                             >
-                                Statut de la face {selectedZone}
+                                {$t('components.tooth_edit_panel_v2.statut_de_la_face')} {selectedZone}
                             </p>
                             <div class="flex flex-wrap gap-2">
                                 {#each statuses as status}
@@ -246,10 +247,10 @@
 
                 <!-- Notes -->
                 <section>
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">Notes Cliniques & Observations</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">{$t('components.tooth_edit_panel_v2.notes_cliniques_observations')}</label>
                     <textarea 
                         bind:value={notes}
-                        placeholder="Détails supplémentaires..."
+                        placeholder={$t('components.tooth_edit_panel_v2.d_tails_suppl_mentaires')}
                         class="w-full h-32 bg-slate-50 border-2 border-slate-100 rounded-[32px] p-6 text-sm font-medium focus:ring-4 focus:ring-indigo-50 transition-all outline-none"
                     ></textarea>
                 </section>
@@ -258,7 +259,7 @@
                 {#if toothTreatments.length > 0}
                     <section>
                         <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                            <History class="w-4 h-4" /> Soins liés à cette dent
+                            <History class="w-4 h-4" /> {$t('components.tooth_edit_panel_v2.soins_li_s_cette')}
                         </h3>
                         <div class="space-y-3">
                             {#each toothTreatments as tr}
@@ -281,7 +282,7 @@
                                             
                                             <div class="flex items-center gap-2">
                                                 {#if (tr.paid_amount || 0) > 0}
-                                                    <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">PAYÉ</span>
+                                                    <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">{$t('components.tooth_edit_panel_v2.pay')}</span>
                                                 {:else}
                                                     <details class="relative group/menu">
                                                         <summary class="list-none cursor-pointer p-1.5 hover:bg-white rounded-lg transition-colors text-slate-300 hover:text-slate-600">
@@ -290,7 +291,7 @@
                                                         
                                                         <div class="absolute right-0 top-full mt-1 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-3 z-50">
                                                             <div class="px-4 py-2 border-b border-slate-50 mb-1">
-                                                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</p>
+                                                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{$t('common.actions')}</p>
                                                             </div>
 
                                                             <form method="POST" action="?/softDeleteTreatment" use:enhance>
@@ -312,7 +313,7 @@
                                                                 <input type="hidden" name="source" value={tr.source} />
                                                                 <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors mt-1 border-t border-slate-50 pt-3">
                                                                     <Trash2 size={14} />
-                                                                    Supprimer
+                                                                    {$t('components.tooth_edit_panel_v2.supprimer')}
                                                                 </button>
                                                             </form>
                                                         </div>
@@ -345,7 +346,7 @@
                         class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-5 px-8 rounded-3xl shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 transition-all active:scale-95"
                     >
                         <CalendarPlus class="w-5 h-5" />
-                        Planifier un Soin
+                        {$t('components.full_treatment_form.planifier_un_soin')}
                     </button>
                 {/if}
             </div>

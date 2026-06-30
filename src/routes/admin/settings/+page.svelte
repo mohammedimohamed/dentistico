@@ -252,7 +252,7 @@
                 <div
                     class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"
                 ></div>
-                <p class="mt-4 text-gray-500 font-bold">Loading settings...</p>
+                <p class="mt-4 text-gray-500 font-bold">{$t('admin.settings.loading_settings')}</p>
             </div>
         {:else}
             <!-- General Settings -->
@@ -263,7 +263,7 @@
                     <h2
                         class="text-xl font-bold text-gray-900 flex items-center gap-2"
                     >
-                        <span>🏥</span> Clinic Information Settings
+                        <span>🏥</span> {$t('admin.settings.clinic_information_settings')}
                     </h2>
                 </div>
                 <!-- Facility Manager Banner -->
@@ -278,12 +278,12 @@
                         </div>
                         <div>
                             <h3 class="font-black text-indigo-900 leading-none">
-                                Gestion des Locaux
+                                {$t('admin.settings.gestion_des_locaux')}
                             </h3>
                             <p
                                 class="text-xs text-indigo-600/70 mt-1 font-bold"
                             >
-                                Bâtiments, Étages et Salles
+                                {$t('admin.settings.b_timents_tages_et_salles')}
                             </p>
                         </div>
                     </div>
@@ -291,7 +291,7 @@
                         href="/admin/settings/facilities"
                         class="px-6 py-3 bg-white text-indigo-600 font-black rounded-xl border border-indigo-200 shadow-sm hover:bg-indigo-600 hover:text-white transition-all uppercase tracking-widest text-[10px]"
                     >
-                        Ouvrir le Manager
+                        {$t('admin.settings.ouvrir_le_manager')}
                     </a>
                 </div>
                 <!-- Dental Colors Banner -->
@@ -306,12 +306,12 @@
                         </div>
                         <div>
                             <h3 class="font-black text-slate-900 leading-none">
-                                Couleurs de l'Odontogramme
+                                {$t('admin.settings.couleurs_de_l_odontogramme')}
                             </h3>
                             <p
                                 class="text-xs text-slate-500 mt-1 font-bold"
                             >
-                                Personnalisation visuelle du schéma dentaire
+                                {$t('admin.settings.personnalisation_visuelle_du_s')}
                             </p>
                         </div>
                     </div>
@@ -319,11 +319,11 @@
                         onclick={() => (showDentalColorModal = true)}
                         class="px-6 py-3 bg-white text-slate-700 font-black rounded-xl border border-slate-200 shadow-sm hover:bg-slate-800 hover:text-white transition-all uppercase tracking-widest text-[10px]"
                     >
-                        Personnaliser les couleurs
+                        {$t('admin.settings.personnaliser_les_couleurs')}
                     </button>
                 </div>
 
-                <!-- Branding & Aesthetic (NEW) -->
+                <!-- {$t('admin.settings.branding_aesthetic')} (NEW) -->
                 <div class="px-8 py-6 bg-slate-50 border-b border-gray-100">
                     <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
                         <span>✨</span> Branding & Aesthetic
@@ -333,17 +333,17 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <!-- Colors -->
                         <div class="space-y-6">
-                            <h3 class="text-sm font-black uppercase tracking-widest text-gray-400">Brand Colors</h3>
+                            <h3 class="text-sm font-black uppercase tracking-widest text-gray-400">{$t('admin.settings.brand_colors')}</h3>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Primary Color</label>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">{$t('admin.settings.primary_color')}</label>
                                     <div class="flex gap-2">
                                         <input type="color" bind:value={settings.primary_color} class="h-12 w-12 rounded-xl border border-gray-200 cursor-pointer p-1 bg-white" />
                                         <input type="text" bind:value={settings.primary_color} class="flex-grow px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-mono" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Secondary Color</label>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">{$t('admin.settings.secondary_color')}</label>
                                     <div class="flex gap-2">
                                         <input type="color" bind:value={settings.secondary_color} class="h-12 w-12 rounded-xl border border-gray-200 cursor-pointer p-1 bg-white" />
                                         <input type="text" bind:value={settings.secondary_color} class="flex-grow px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-mono" />
@@ -352,28 +352,28 @@
                             </div>
                         </div>
 
-                        <!-- Typography -->
+                        <!-- {$t('admin.settings.typography')} -->
                         <div class="space-y-6">
                             <h3 class="text-sm font-black uppercase tracking-widest text-gray-400">Typography</h3>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Heading Font (Serif)</label>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">{$t('admin.settings.heading_font_serif')}</label>
                                     <select bind:value={settings.font_serif} class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold">
-                                        <option value="Lora">Lora (Classic)</option>
-                                        <option value="Playfair Display">Playfair Display</option>
-                                        <option value="Merriweather">Merriweather</option>
-                                        <option value="Cormorant Garamond">Cormorant Garamond</option>
-                                        <option value="Prata">Prata</option>
+                                        <option value="Lora">{$t('admin.settings.lora_classic')}</option>
+                                        <option value={$t('admin.settings.playfair_display')}>Playfair Display</option>
+                                        <option value={$t('admin.settings.merriweather')}>Merriweather</option>
+                                        <option value={$t('admin.settings.cormorant_garamond')}>Cormorant Garamond</option>
+                                        <option value={$t('admin.settings.prata')}>Prata</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Body Font (Sans)</label>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">{$t('admin.settings.body_font_sans')}</label>
                                     <select bind:value={settings.font_sans} class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold">
-                                        <option value="Inter">Inter (Modern)</option>
-                                        <option value="Montserrat">Montserrat</option>
-                                        <option value="Outfit">Outfit</option>
-                                        <option value="Poppins">Poppins</option>
-                                        <option value="Roboto">Roboto</option>
+                                        <option value="Inter">{$t('admin.settings.inter_modern')}</option>
+                                        <option value={$t('admin.settings.montserrat')}>Montserrat</option>
+                                        <option value={$t('admin.settings.outfit')}>Outfit</option>
+                                        <option value={$t('admin.settings.poppins')}>Poppins</option>
+                                        <option value={$t('admin.settings.roboto')}>Roboto</option>
                                     </select>
                                 </div>
                             </div>
@@ -383,16 +383,16 @@
                     <!-- Preview Box -->
                     <div class="mt-8 p-8 rounded-2xl border border-gray-100 bg-white shadow-inner flex flex-col items-center justify-center text-center space-y-4" 
                          style="--p-color: {settings.primary_color}; --s-color: {settings.secondary_color}; --f-serif: '{settings.font_serif}', serif; --f-sans: '{settings.font_sans}', sans-serif;">
-                        <span class="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-300 mb-2">Live Preview</span>
+                        <span class="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-300 mb-2">{$t('admin.settings.live_preview')}</span>
                         <h4 class="text-3xl font-bold" style="color: var(--p-color); font-family: var(--f-serif);">
-                            Premium <span style="color: var(--s-color); font-style: italic; font-weight: normal;">Dental Care</span>
+                            {$t('admin.settings.premium')} <span style="color: var(--s-color); font-style: italic; font-weight: normal;">{$t('admin.settings.dental_care')}</span>
                         </h4>
                         <p class="text-sm max-w-xs text-gray-500 font-light" style="font-family: var(--f-sans);">
-                            Experience the future of dentistry with our customized branding system.
+                            {$t('admin.settings.experience_the_future_of_denti')}
                         </p>
                         <button class="px-6 py-2 text-[10px] font-bold uppercase tracking-widest text-white rounded-sm transition-colors" 
                                 style="background-color: var(--p-color); font-family: var(--f-sans);">
-                            Book Appointment
+                            {$t('admin.settings.book_appointment')}
                         </button>
                     </div>
                 </div>
@@ -401,7 +401,7 @@
                         <div>
                             <label
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                for="clinic_name">Clinic Name</label
+                                for="clinic_name">{$t('admin.settings.clinic_name')}</label
                             >
                             <input
                                 id="clinic_name"
@@ -416,7 +416,7 @@
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
                                     for="booking_interval"
-                                    >Booking Interval</label
+                                    >{$t('admin.settings.booking_interval')}</label
                                 >
                                 <select
                                     id="booking_interval"
@@ -427,7 +427,7 @@
                                 >
                                     {#each intervalOptions as interval}
                                         <option value={interval}
-                                            >{interval} minutes</option
+                                            >{interval} {$t('admin.settings.minutes')}</option
                                         >
                                     {/each}
                                 </select>
@@ -435,7 +435,7 @@
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                    for="work_start_time">Heure de Début</label
+                                    for="work_start_time">{$t('admin.settings.heure_de_d_but')}</label
                                 >
                                 <input
                                     id="work_start_time"
@@ -448,7 +448,7 @@
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                                    for="work_end_time">Heure de Fin</label
+                                    for="work_end_time">{$t('admin.settings.heure_de_fin')}</label
                                 >
                                 <input
                                     id="work_end_time"
@@ -466,7 +466,7 @@
                             <h3
                                 class="text-sm font-bold text-indigo-900 uppercase tracking-widest mb-2"
                             >
-                                ⏱️ Timer Audio Alerts
+                                {$t('admin.settings.timer_audio_alerts')}
                             </h3>
                             <p
                                 class="text-xs text-indigo-900/60 font-medium mb-6 leading-relaxed max-w-2xl"
@@ -486,7 +486,7 @@
                                             class="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2"
                                             for="alert1_time"
                                         >
-                                            First Alert (Minutes)
+                                            {$t('admin.settings.first_alert_minutes')}
                                         </label>
                                         <input
                                             id="alert1_time"
@@ -503,7 +503,7 @@
                                             class="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2"
                                             for="alert1_beeps"
                                         >
-                                            Number of Beeps
+                                            {$t('admin.settings.number_of_beeps')}
                                         </label>
                                         <input
                                             id="alert1_beeps"
@@ -525,7 +525,7 @@
                                             class="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2"
                                             for="alert2_time"
                                         >
-                                            Second Alert (Minutes)
+                                            {$t('admin.settings.second_alert_minutes')}
                                         </label>
                                         <input
                                             id="alert2_time"
@@ -542,7 +542,7 @@
                                             class="block text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2"
                                             for="alert2_beeps"
                                         >
-                                            Number of Beeps
+                                            {$t('admin.settings.number_of_beeps')}
                                         </label>
                                         <input
                                             id="alert2_beeps"
@@ -564,13 +564,13 @@
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
                                 for="clinic_address"
                             >
-                                Clinic Address
+                                {$t('admin.settings.clinic_address')}
                             </label>
                             <input
                                 id="clinic_address"
                                 type="text"
                                 bind:value={settings.address}
-                                placeholder="123 Rue de la Santé, 75000 Paris"
+                                placeholder={$t('admin.settings.123_rue_de_la_sant_75000_paris')}
                                 class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
                             />
                         </div>
@@ -581,7 +581,7 @@
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
                                     for="phone_number"
                                 >
-                                    Phone Number
+                                    {$t('admin.settings.phone_number')}
                                 </label>
                                 <input
                                     id="phone_number"
@@ -596,13 +596,13 @@
                                     class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
                                     for="clinic_email"
                                 >
-                                    Clinic Email
+                                    {$t('admin.settings.clinic_email')}
                                 </label>
                                 <input
                                     id="clinic_email"
                                     type="email"
                                     bind:value={settings.email}
-                                    placeholder="contact@clinic.com"
+                                    placeholder={$t('admin.settings.contact_clinic_com')}
                                     class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
                                 />
                             </div>
@@ -613,7 +613,7 @@
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
                                 for="clinic_logo"
                             >
-                                Clinic Logo
+                                {$t('admin.settings.clinic_logo')}
                             </label>
                             <div class="flex items-center gap-6">
                                 <div
@@ -622,7 +622,7 @@
                                     {#if settings.logo_url}
                                         <img
                                             src={settings.logo_url}
-                                            alt="Clinic Logo"
+                                            alt={$t('admin.settings.clinic_logo')}
                                             class="w-full h-full object-contain"
                                         />
                                     {:else}
@@ -696,7 +696,7 @@
                                             (settings.logo_url = null)}
                                         class="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-100 transition-all"
                                     >
-                                        Remove
+                                        {$t('admin.settings.remove')}
                                     </button>
                                 {/if}
                             </div>
@@ -707,7 +707,7 @@
                                 onclick={saveClinicSettings}
                                 class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
                             >
-                                Save General Settings
+                                {$t('admin.settings.save_general_settings')}
                             </button>
                         </div>
                     </div>
@@ -722,7 +722,7 @@
                     <h2
                         class="text-xl font-bold text-gray-900 flex items-center gap-2"
                     >
-                        <Puzzle size={24} class="text-indigo-600" /> Modules Actifs
+                        <Puzzle size={24} class="text-indigo-600" /> {$t('admin.settings.modules_actifs')}
                     </h2>
                 </div>
                 <div class="p-8">
@@ -800,8 +800,8 @@
                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
                                         </div>
                                         <div>
-                                            <h3 class="text-xl font-black text-gray-900 uppercase tracking-tight">Configuration Architecture Modulaire</h3>
-                                            <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">Contrôle des flux de travail et des niveaux de complexité</p>
+                                            <h3 class="text-xl font-black text-gray-900 uppercase tracking-tight">{$t('admin.settings.configuration_architecture_mod')}</h3>
+                                            <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">{$t('admin.settings.contr_le_des_flux_de_travail_e')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -814,8 +814,8 @@
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-banknote"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
                                             </div>
                                             <div>
-                                                <h4 class="font-black text-slate-900 leading-tight">Module de Gestion Financière</h4>
-                                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Active le Ledger, les paiements et les dépenses</p>
+                                                <h4 class="font-black text-slate-900 leading-tight">{$t('admin.settings.module_de_gestion_financi_re')}</h4>
+                                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{$t('admin.settings.active_le_ledger_les_paiements')}</p>
                                             </div>
                                         </div>
                                         <label class="relative inline-flex items-center cursor-pointer scale-110">
@@ -835,9 +835,9 @@
                                             <div class="p-6 rounded-2xl border-2 {settings.treatment_mode === 'BASIC' ? 'bg-emerald-50/30 border-emerald-100' : 'bg-white border-slate-100'} transition-all shadow-sm">
                                                 <h4 class="font-black text-slate-900 mb-1 flex items-center gap-2 text-sm">
                                                     <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                                    Mode de Saisie des Soins
+                                                    {$t('admin.settings.mode_de_saisie_des_soins')}
                                                 </h4>
-                                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Complexité de la saisie clinique</p>
+                                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">{$t('admin.settings.complexit_de_la_saisie_cliniqu')}</p>
                                                 
                                                 <div class="flex gap-2">
                                                     <button 
@@ -848,16 +848,16 @@
                                                         }}
                                                         class="flex-1 px-4 py-3 rounded-xl border-2 transition-all text-center {settings.treatment_mode === 'BASIC' ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-200' : 'bg-white border-gray-100 text-gray-400 hover:border-emerald-200'}"
                                                     >
-                                                        <div class="text-[10px] font-black uppercase">Fast-Track</div>
-                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">Saisie Libre</div>
+                                                        <div class="text-[10px] font-black uppercase">{$t('admin.settings.fast_track')}</div>
+                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">{$t('admin.settings.saisie_libre')}</div>
                                                     </button>
                                                     <button 
                                                         type="button"
                                                         onclick={() => settings.treatment_mode = 'ADVANCED'}
                                                         class="flex-1 px-4 py-3 rounded-xl border-2 transition-all text-center {settings.treatment_mode === 'ADVANCED' ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-white border-gray-100 text-gray-400 hover:border-indigo-200'}"
                                                     >
-                                                        <div class="text-[10px] font-black uppercase">Standard</div>
-                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">Catalogue</div>
+                                                        <div class="text-[10px] font-black uppercase">{$t('admin.settings.standard')}</div>
+                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">{$t('admin.settings.catalogue')}</div>
                                                     </button>
                                                 </div>
                                                 <input type="hidden" name="treatment_mode" value={settings.treatment_mode} />
@@ -867,9 +867,9 @@
                                             <div class="p-6 rounded-2xl border-2 {settings.payment_mode === 'BASIC' ? 'bg-blue-50/30 border-blue-100' : 'bg-white border-slate-100'} transition-all shadow-sm">
                                                 <h4 class="font-black text-slate-900 mb-1 flex items-center gap-2 text-sm">
                                                     <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                                                    Mode de Règlement
+                                                    {$t('admin.settings.mode_de_r_glement')}
                                                 </h4>
-                                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Liaison entre soins et paiements</p>
+                                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">{$t('admin.settings.liaison_entre_soins_et_paiemen')}</p>
                                                 
                                                 <div class="flex gap-2">
                                                     <button 
@@ -877,8 +877,8 @@
                                                         onclick={() => settings.payment_mode = 'BASIC'}
                                                         class="flex-1 px-4 py-3 rounded-xl border-2 transition-all text-center {settings.payment_mode === 'BASIC' ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white border-gray-100 text-gray-400 hover:border-blue-200'}"
                                                     >
-                                                        <div class="text-[10px] font-black uppercase">Direct</div>
-                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">Basic Ledger</div>
+                                                        <div class="text-[10px] font-black uppercase">{$t('admin.settings.direct')}</div>
+                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">{$t('admin.settings.basic_ledger')}</div>
                                                     </button>
                                                     <button 
                                                         type="button"
@@ -886,8 +886,8 @@
                                                         onclick={() => settings.payment_mode = 'ADVANCED'}
                                                         class="flex-1 px-4 py-3 rounded-xl border-2 transition-all text-center {settings.payment_mode === 'ADVANCED' ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-white border-gray-100 text-gray-400 hover:border-indigo-200'} disabled:opacity-30 disabled:cursor-not-allowed"
                                                     >
-                                                        <div class="text-[10px] font-black uppercase">Advanced</div>
-                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">Liaison Facture</div>
+                                                        <div class="text-[10px] font-black uppercase">{$t('admin.settings.advanced')}</div>
+                                                        <div class="text-[8px] font-bold opacity-80 uppercase tracking-tighter">{$t('admin.settings.liaison_facture')}</div>
                                                     </button>
                                                 </div>
                                                 <input type="hidden" name="payment_mode" value={settings.payment_mode} />
@@ -901,8 +901,8 @@
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
                                                 </div>
                                                 <div>
-                                                    <h4 class="font-black text-slate-900 leading-tight text-sm">Documents Officiels (Devis & Facturation)</h4>
-                                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Activer la génération de PDF légaux</p>
+                                                    <h4 class="font-black text-slate-900 leading-tight text-sm">{$t('admin.settings.documents_officiels_devis_fact')}</h4>
+                                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{$t('admin.settings.activer_la_g_n_ration_de_pdf_l')}</p>
                                                 </div>
                                             </div>
                                             <label class="relative inline-flex items-center cursor-pointer scale-110">
@@ -929,26 +929,26 @@
                                 >
                                     <div class="space-y-1">
                                         <h3 class="font-black text-gray-900">
-                                            Module Odontogramme (Dental Chart)
+                                            {$t('admin.settings.module_odontogramme_dental_cha')}
                                         </h3>
                                         <p class="text-xs text-gray-500 leading-relaxed">
-                                            Activer ou désactiver l'outil de schéma dentaire. Requis pour le module Journey.
+                                            {$t('admin.settings.activer_ou_d_sactiver_l_outil')}
                                         </p>
                                         
                                         {#if settings.module_dental_chart}
                                             <div class="mt-4 p-4 bg-white rounded-xl border border-indigo-100 space-y-3">
-                                                <label class="block text-[10px] font-black text-indigo-400 uppercase tracking-widest">Version de l'Odontogramme</label>
+                                                <label class="block text-[10px] font-black text-indigo-400 uppercase tracking-widest">{$t('admin.settings.version_de_l_odontogramme')}</label>
                                                 <select 
                                                     name="dental_chart_mode"
                                                     bind:value={settings.dental_chart_mode}
                                                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                                 >
-                                                    <option value="v1">Classique (V1 uniquement)</option>
-                                                    <option value="v2">Anatomique (V2 uniquement)</option>
-                                                    <option value="both">Mixte (Proposer les deux)</option>
+                                                    <option value="v1">{$t('admin.settings.classique_v1_uniquement')}</option>
+                                                    <option value="v2">{$t('admin.settings.anatomique_v2_uniquement')}</option>
+                                                    <option value="both">{$t('admin.settings.mixte_proposer_les_deux')}</option>
                                                 </select>
                                                 <p class="text-[10px] text-slate-400 leading-tight">
-                                                    V1 est basé sur une grille schématique. V2 propose un rendu SVG anatomique avec racines et implants.
+                                                    {$t('admin.settings.v1_est_bas_sur_une_grille_sch')}
                                                 </p>
                                             </div>
                                         {/if}
@@ -979,10 +979,10 @@
                                 <div class="flex items-start justify-between gap-4">
                                     <div class="space-y-1">
                                         <h3 class="font-black text-gray-900">
-                                            Module Journey (/doctor/journey)
+                                            {$t('admin.settings.module_journey_doctor_journey')}
                                         </h3>
                                         <p class="text-xs text-gray-500 leading-relaxed">
-                                            Activer ou désactiver le Hub Clinique quotidien du docteur.
+                                            {$t('admin.settings.activer_ou_d_sactiver_le_hub_c')}
                                         </p>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
@@ -1014,7 +1014,7 @@
                                 >
                                     <div class="space-y-1">
                                         <h3 class="font-black text-gray-900">
-                                            Module Ordonnances
+                                            {$t('admin.settings.module_ordonnances')}
                                         </h3>
                                         <p
                                             class="text-xs text-gray-500 leading-relaxed"
@@ -1052,7 +1052,7 @@
                                 >
                                     <div class="space-y-1">
                                         <h3 class="font-black text-gray-900">
-                                            Module Inventaire
+                                            {$t('admin.settings.module_inventaire')}
                                         </h3>
                                         <p
                                             class="text-xs text-gray-500 leading-relaxed"
@@ -1089,12 +1089,12 @@
                                 >
                                     <div class="space-y-1">
                                         <h3 class="font-black text-gray-900">
-                                            Module Dashboard (Tableau de Bord)
+                                            {$t('admin.settings.module_dashboard_tableau_de_bo')}
                                         </h3>
                                         <p
                                             class="text-xs text-gray-500 leading-relaxed"
                                         >
-                                            Activer ou désactiver l'accès au tableau de bord.
+                                            {$t('admin.settings.activer_ou_d_sactiver_l_acc_s')}
                                         </p>
                                     </div>
                                     <label
@@ -1125,12 +1125,12 @@
                                 >
                                     <div class="space-y-1">
                                         <h3 class="font-black text-gray-900">
-                                            Module Patients (Dossiers)
+                                            {$t('admin.settings.module_patients_dossiers')}
                                         </h3>
                                         <p
                                             class="text-xs text-gray-500 leading-relaxed"
                                         >
-                                            Activer ou désactiver l'accès à la liste des patients.
+                                            {$t('admin.settings.activer_ou_d_sactiver_l_acc_s')}
                                         </p>
                                     </div>
                                     <label
@@ -1162,7 +1162,7 @@
                                     <div class="space-y-3 flex-grow">
                                         <div class="space-y-1">
                                             <h3 class="font-black text-gray-900">
-                                                Module Custom (Lab Tracking)
+                                                {$t('admin.settings.module_custom_lab_tracking')}
                                             </h3>
                                             <p
                                                 class="text-xs text-gray-500 leading-relaxed"
@@ -1173,7 +1173,7 @@
                                         </div>
                                         {#if settings.module_custom}
                                             <div class="pt-2">
-                                                <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Rôles Autorisés</label>
+                                                <label class="block text-xs font-bold text-gray-700 uppercase mb-2">{$t('admin.settings.r_les_autoris_s')}</label>
                                                 <div class="flex gap-4">
                                                     <label class="flex items-center gap-2">
                                                         <input type="checkbox" name="module_custom_roles[]" value="doctor" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" checked={settings.module_custom_roles?.includes('doctor')} onchange={(e) => {
@@ -1182,7 +1182,7 @@
                                                             else { roles = roles.filter(r => r !== 'doctor'); }
                                                             settings.module_custom_roles = roles.join(',');
                                                         }} />
-                                                        <span class="text-sm font-medium">Doctor</span>
+                                                        <span class="text-sm font-medium">{$t('admin.settings.doctor')}</span>
                                                     </label>
                                                     <label class="flex items-center gap-2">
                                                         <input type="checkbox" name="module_custom_roles[]" value="assistant" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" checked={settings.module_custom_roles?.includes('assistant')} onchange={(e) => {
@@ -1191,7 +1191,7 @@
                                                             else { roles = roles.filter(r => r !== 'assistant'); }
                                                             settings.module_custom_roles = roles.join(',');
                                                         }} />
-                                                        <span class="text-sm font-medium">Assistant</span>
+                                                        <span class="text-sm font-medium">{$t('admin.settings.assistant')}</span>
                                                     </label>
                                                 </div>
                                             </div>
@@ -1224,7 +1224,7 @@
                                 <div class="flex items-start justify-between gap-4">
                                     <div class="space-y-1">
                                         <h3 class="font-black text-gray-900">
-                                            Page d'accueil (Landing Page)
+                                            {$t('admin.settings.page_d_accueil_landing_page')}
                                         </h3>
                                         <p
                                             class="text-xs text-gray-500 leading-relaxed"
@@ -1270,12 +1270,12 @@
                             >
                                 {#if isSaving}
                                     <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    <span>Traitement...</span>
+                                    <span>{$t('admin.settings.traitement')}</span>
                                 {:else if saveSuccessMsg}
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
-                                    <span>Enregistré !</span>
+                                    <span>{$t('admin.settings.enregistr')}</span>
                                 {:else}
-                                    <span>💾 Enregistrer les modules</span>
+                                    <span>{$t('admin.settings.enregistrer_les_modules')}</span>
                                 {/if}
                             </button>
                         </div>
@@ -1291,7 +1291,7 @@
                     <h2
                         class="text-xl font-bold text-gray-900 flex items-center gap-2"
                     >
-                        <span>🕒</span> Work Shift & Cash Control
+                        <span>🕒</span> {$t('admin.settings.work_shift_cash_control')}
                     </h2>
                 </div>
                 <div class="p-8">
@@ -1305,7 +1305,7 @@
                             <div class="flex items-start justify-between gap-4">
                                 <div class="space-y-1">
                                     <h3 class="font-black text-gray-900">
-                                        Forcer l'ouverture de journée
+                                        {$t('admin.settings.forcer_l_ouverture_de_journ_e')}
                                     </h3>
                                     <p
                                         class="text-xs text-gray-500 leading-relaxed"
@@ -1342,7 +1342,7 @@
                             <div class="flex items-start justify-between gap-4">
                                 <div class="space-y-1">
                                     <h3 class="font-black text-gray-900">
-                                        Rendre le choix de la salle obligatoire
+                                        {$t('admin.settings.rendre_le_choix_de_la_salle_ob')}
                                     </h3>
                                     <p
                                         class="text-xs text-gray-500 leading-relaxed"
@@ -1378,7 +1378,7 @@
                             <div class="flex items-start justify-between gap-4">
                                 <div class="space-y-1">
                                     <h3 class="font-black text-gray-900">
-                                        Suivi du fond de caisse
+                                        {$t('admin.settings.suivi_du_fond_de_caisse')}
                                     </h3>
                                     <p
                                         class="text-xs text-gray-500 leading-relaxed"
@@ -1411,7 +1411,7 @@
                             onclick={saveClinicSettings}
                             class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
                         >
-                            Save Shift Settings
+                            {$t('admin.settings.save_shift_settings')}
                         </button>
                     </div>
                 </div>
@@ -1425,7 +1425,7 @@
                     <h2
                         class="text-xl font-bold text-gray-900 flex items-center gap-2"
                     >
-                        <span>📦</span> Inventory Permissions
+                        <span>📦</span> {$t('admin.settings.inventory_permissions')}
                     </h2>
                 </div>
                 <div class="p-8">
@@ -1437,7 +1437,7 @@
                             <h3
                                 class="flex items-center gap-2 text-sm font-black text-gray-900 uppercase tracking-widest border-b pb-4"
                             >
-                                <span>🏷️</span> Catalog Creation (Products)
+                                <span>🏷️</span> {$t('admin.settings.catalog_creation_products')}
                             </h3>
 
                             <div
@@ -1447,10 +1447,10 @@
                             >
                                 <div>
                                     <p class="font-bold text-gray-900 text-sm">
-                                        Doctors
+                                        {$t('admin.settings.doctors')}
                                     </p>
                                     <p class="text-[10px] text-gray-400">
-                                        Can add new product references
+                                        {$t('admin.settings.can_add_new_product_references')}
                                     </p>
                                 </div>
                                 <label
@@ -1476,10 +1476,10 @@
                             >
                                 <div>
                                     <p class="font-bold text-gray-900 text-sm">
-                                        Assistants
+                                        {$t('admin.settings.assistants')}
                                     </p>
                                     <p class="text-[10px] text-gray-400">
-                                        Can add new product references
+                                        {$t('admin.settings.can_add_new_product_references')}
                                     </p>
                                 </div>
                                 <label
@@ -1506,7 +1506,7 @@
                             <h3
                                 class="flex items-center gap-2 text-sm font-black text-gray-900 uppercase tracking-widest border-b pb-4"
                             >
-                                <span>🤝</span> Supplier Registry
+                                <span>🤝</span> {$t('admin.settings.supplier_registry')}
                             </h3>
 
                             <div
@@ -1516,10 +1516,10 @@
                             >
                                 <div>
                                     <p class="font-bold text-gray-900 text-sm">
-                                        Doctors
+                                        {$t('admin.settings.doctors')}
                                     </p>
                                     <p class="text-[10px] text-gray-400">
-                                        Can register new suppliers
+                                        {$t('admin.settings.can_register_new_suppliers')}
                                     </p>
                                 </div>
                                 <label
@@ -1545,10 +1545,10 @@
                             >
                                 <div>
                                     <p class="font-bold text-gray-900 text-sm">
-                                        Assistants
+                                        {$t('admin.settings.assistants')}
                                     </p>
                                     <p class="text-[10px] text-gray-400">
-                                        Can register new suppliers
+                                        {$t('admin.settings.can_register_new_suppliers')}
                                     </p>
                                 </div>
                                 <label
@@ -1574,7 +1574,7 @@
                             onclick={saveClinicSettings}
                             class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
                         >
-                            Save Inventory Permissions
+                            {$t('admin.settings.save_inventory_permissions')}
                         </button>
                     </div>
                 </div>
@@ -1588,7 +1588,7 @@
                     <h2
                         class="text-xl font-bold text-gray-900 flex items-center gap-2"
                     >
-                        <span>📅</span> Working Days Configuration
+                        <span>📅</span> {$t('admin.settings.working_days_configuration')}
                     </h2>
                 </div>
                 <div class="p-8">
@@ -1629,7 +1629,7 @@
                                             placeholder={settings.work_start_time}
                                             class="px-3 py-2 border-none focus:ring-0 text-sm font-mono font-bold bg-transparent"
                                         />
-                                        <span class="text-indigo-300">to</span>
+                                        <span class="text-indigo-300">{$t('admin.settings.to')}</span>
                                         <input
                                             type="time"
                                             bind:value={day.custom_end_time}
@@ -1639,13 +1639,13 @@
                                     </div>
                                     <span
                                         class="text-[10px] text-gray-400 font-bold uppercase tracking-wider hidden lg:block"
-                                        >Leave empty for defaults</span
+                                        >{$t('admin.settings.leave_empty_for_defaults')}</span
                                     >
                                 {:else}
                                     <span
                                         class="px-4 py-1.5 bg-red-100 text-red-600 rounded-lg text-xs font-bold uppercase tracking-widest"
                                     >
-                                        Closed
+                                        {$t('admin.settings.closed')}
                                     </span>
                                 {/if}
                             </div>
@@ -1656,7 +1656,7 @@
                         {#if scheduleSaveSuccess}
                             <div transition:fade class="text-green-600 text-xs font-bold uppercase tracking-widest flex items-center gap-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                                Jours de travail mis à jour
+                                {$t('admin.settings.jours_de_travail_mis_jour')}
                             </div>
                         {/if}
                         <button
@@ -1668,9 +1668,9 @@
                                 <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                             {:else if scheduleSaveSuccess}
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                                Enregistré
+                                {$t('admin.settings.enregistr')}
                             {:else}
-                                Enregistrer les Jours de Travail
+                                {$t('admin.settings.enregistrer_les_jours_de_trava')}
                             {/if}
                         </button>
                     </div>
@@ -1687,13 +1687,13 @@
                     <h2
                         class="text-xl font-bold text-gray-900 flex items-center gap-2"
                     >
-                        <span>🏖️</span> Clinic Closures & Holidays
+                        <span>🏖️</span> {$t('admin.settings.clinic_closures_holidays')}
                     </h2>
                     <button
                         onclick={() => (showClosureModal = true)}
                         class="px-5 py-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold rounded-xl transition-all flex items-center gap-2"
                     >
-                        <span>+</span> Add Closure
+                        <span>+</span> {$t('admin.settings.add_closure')}
                     </button>
                 </div>
                 <div class="p-8">
@@ -1702,7 +1702,7 @@
                             class="text-center py-12 bg-gray-50 rounded-3xl border border-dashed border-gray-200"
                         >
                             <p class="text-gray-400 font-medium">
-                                No closures scheduled
+                                {$t('admin.settings.no_closures_scheduled')}
                             </p>
                         </div>
                     {:else}
@@ -1731,7 +1731,7 @@
                                         onclick={() =>
                                             deleteClosure(closure.id)}
                                         class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                        title="Delete Closure"
+                                        title={$t('admin.settings.delete_closure')}
                                     >
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
@@ -1851,7 +1851,7 @@
                                     <div class="space-y-1">
                                         <span
                                             class="block font-bold text-slate-800"
-                                            >Availability First</span
+                                            >{$t('admin.settings.availability_first')}</span
                                         >
                                         <p
                                             class="text-xs text-slate-500 leading-relaxed"
@@ -1878,7 +1878,7 @@
                                     <div class="space-y-1">
                                         <span
                                             class="block font-bold text-slate-800"
-                                            >Doctor Specific</span
+                                            >{$t('admin.settings.doctor_specific')}</span
                                         >
                                         <p
                                             class="text-xs text-slate-500 leading-relaxed"
@@ -1898,7 +1898,7 @@
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
                                 for="new-payment-method"
                             >
-                                Accepted Payment Methods
+                                {$t('admin.settings.accepted_payment_methods')}
                             </label>
                             <div class="flex flex-wrap gap-2">
                                 {#each paymentMethods as method}
@@ -1922,7 +1922,7 @@
                                     id="new-payment-method"
                                     type="text"
                                     bind:value={newPaymentMethod}
-                                    placeholder="Add method (e.g. BTC)"
+                                    placeholder={$t('admin.settings.add_method_e_g_btc')}
                                     class="flex-grow px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-gray-900 font-medium"
                                     onkeydown={(e) =>
                                         e.key === "Enter" &&
@@ -1934,7 +1934,7 @@
                                     class="px-6 py-4 bg-indigo-100 text-indigo-600 font-bold rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
                                     onclick={addPaymentMethod}
                                 >
-                                    Add
+                                    {$t('admin.settings.add')}
                                 </button>
                             </div>
                             <input
@@ -1949,7 +1949,7 @@
                         {#if globalSaveSuccess}
                             <div transition:fade class="text-green-600 text-xs font-bold uppercase tracking-widest flex items-center gap-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                                Paramètres enregistrés
+                                {$t('admin.settings.param_tres_enregistr_s')}
                             </div>
                         {/if}
                         <button
@@ -1979,7 +1979,7 @@
                 <h2
                     class="text-xl font-bold text-gray-900 flex items-center gap-2"
                 >
-                    <span>🚫</span> Cancellation & Postponement Tracking
+                    <span>🚫</span> {$t('admin.settings.cancellation_postponement_trac')}
                 </h2>
             </div>
             <div class="p-8 space-y-8">
@@ -1989,7 +1989,7 @@
                 >
                     <div class="space-y-1">
                         <h3 class="font-bold text-slate-800">
-                            Reason Requirements
+                            {$t('admin.settings.reason_requirements')}
                         </h3>
                         <p class="text-xs text-slate-500">
                             Configure if doctors must provide a reason when
@@ -2035,7 +2035,7 @@
                             />
                             <span
                                 class="text-sm font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors"
-                                >Require for Postpone</span
+                                >{$t('admin.settings.require_for_postpone')}</span
                             >
                         </label>
 
@@ -2051,7 +2051,7 @@
                             />
                             <span
                                 class="text-sm font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors"
-                                >Require for Cancel</span
+                                >{$t('admin.settings.require_for_cancel')}</span
                             >
                         </label>
 
@@ -2064,9 +2064,9 @@
                                 <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                             {:else if reasonsSaveSuccess}
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                                Appliqué
+                                {$t('admin.settings.appliqu')}
                             {:else}
-                                Appliquer
+                                {$t('admin.settings.appliquer')}
                             {/if}
                         </button>
                     </form>
@@ -2079,7 +2079,7 @@
                         <h3
                             class="text-sm font-black text-slate-400 uppercase tracking-widest"
                         >
-                            Add New Reason
+                            {$t('admin.settings.add_new_reason')}
                         </h3>
                         <form
                             method="POST"
@@ -2095,19 +2095,19 @@
                             class="space-y-3"
                         >
                             <label for="newReasonText" class="sr-only"
-                                >Reason text</label
+                                >{$t('admin.settings.reason_text')}</label
                             >
                             <input
                                 id="newReasonText"
                                 type="text"
                                 name="reasonText"
                                 bind:value={newReasonText}
-                                placeholder="Reason text (e.g. Broken Equipment)"
+                                placeholder={$t('admin.settings.reason_text_e_g_broken_equipme')}
                                 class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm"
                             />
                             <div class="flex gap-2">
                                 <label for="newReasonType" class="sr-only"
-                                    >Reason type</label
+                                    >{$t('admin.settings.reason_type')}</label
                                 >
                                 <select
                                     id="newReasonType"
@@ -2115,17 +2115,17 @@
                                     bind:value={newReasonType}
                                     class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                                 >
-                                    <option value="cancel">Cancel only</option>
+                                    <option value="cancel">{$t('admin.settings.cancel_only')}</option>
                                     <option value="postpone"
-                                        >Postpone only</option
+                                        >{$t('admin.settings.postpone_only')}</option
                                     >
-                                    <option value="both">Both</option>
+                                    <option value="both">{$t('admin.settings.both')}</option>
                                 </select>
                                 <button
                                     type="submit"
                                     class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md text-sm"
                                 >
-                                    Add
+                                    {$t('admin.settings.add')}
                                 </button>
                             </div>
                         </form>
@@ -2136,7 +2136,7 @@
                         <h3
                             class="text-sm font-black text-slate-400 uppercase tracking-widest"
                         >
-                            Configured Reasons
+                            {$t('admin.settings.configured_reasons')}
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {#each data.cancellationReasons as any[] as reason}
@@ -2194,7 +2194,7 @@
                 <h2
                     class="text-xl font-bold text-gray-900 flex items-center gap-2"
                 >
-                    <span>💾</span> Data & Backup
+                    <span>💾</span> {$t('admin.settings.data_backup')}
                 </h2>
             </div>
             <div class="p-8">
@@ -2203,7 +2203,7 @@
                 >
                     <div>
                         <h3 class="text-lg font-bold text-gray-900">
-                            Export Clinic Data
+                            {$t('admin.settings.export_clinic_data')}
                         </h3>
                         <p class="text-sm text-gray-500 mt-1 max-w-lg">
                             Download a complete backup of your data, including
@@ -2228,7 +2228,7 @@
                                     d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                                 ></path></svg
                             >
-                            Download Full Backup
+                            {$t('admin.settings.download_full_backup')}
                         </button>
                     </form>
                 </div>
@@ -2249,14 +2249,14 @@
                 class="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3"
             >
                 <span class="p-3 bg-indigo-50 rounded-2xl text-xl">🏖️</span>
-                Add Clinic Closure
+                {$t('admin.settings.add_clinic_closure')}
             </h3>
 
             <div class="space-y-6">
                 <div>
                     <label
                         class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                        for="closure_date">Closure Date</label
+                        for="closure_date">{$t('admin.settings.closure_date')}</label
                     >
                     <input
                         id="closure_date"
@@ -2269,14 +2269,14 @@
                 <div>
                     <label
                         class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1"
-                        for="closure_reason">Reason</label
+                        for="closure_reason">{$t('admin.settings.reason')}</label
                     >
                     <input
                         id="closure_reason"
                         type="text"
                         bind:value={newClosure.reason}
                         class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all text-gray-900 font-medium"
-                        placeholder="e.g., Christmas, Staff Training"
+                        placeholder={$t('admin.settings.e_g_christmas_staff_training')}
                     />
                 </div>
             </div>
@@ -2286,13 +2286,13 @@
                     onclick={() => (showClosureModal = false)}
                     class="flex-1 py-4 bg-gray-50 hover:bg-gray-100 text-gray-500 font-bold rounded-2xl transition-all active:scale-95"
                 >
-                    Cancel
+                    {$t('admin.settings.cancel')}
                 </button>
                 <button
                     onclick={addClosure}
                     class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 active:scale-95"
                 >
-                    Add Closure
+                    {$t('admin.settings.add_closure')}
                 </button>
             </div>
         </div>
@@ -2315,16 +2315,16 @@
                     <ShieldAlert size={28} />
                 </div>
                 <div>
-                    <h3 class="text-xl font-black text-slate-900 leading-tight">Migration de Mode Détectée</h3>
+                    <h3 class="text-xl font-black text-slate-900 leading-tight">{$t('admin.settings.migration_de_mode_d_tect_e')}</h3>
                     <p class="text-sm text-amber-700 font-semibold mt-1">
-                        Cette action modifie l'architecture financière de la clinique. Les données existantes ne seront <strong>jamais supprimées</strong>.
+                        {$t('admin.settings.cette_action_modifie_l_archite')} <strong>{$t('admin.settings.jamais_supprim_es')}</strong>.
                     </p>
                 </div>
             </div>
 
             <!-- Change Summary -->
             <div class="p-8 space-y-4">
-                <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Modifications détectées</p>
+                <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{$t('admin.settings.modifications_d_tect_es')}</p>
                 {#each pendingMigrationChanges as change}
                     <div class="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                         <div class="flex-1">
@@ -2342,9 +2342,9 @@
                 <div class="mt-6 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex items-start gap-3">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-500 flex-shrink-0 mt-0.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     <p class="text-xs font-bold text-indigo-700 leading-relaxed">
-                        <strong>Principe de non-destruction :</strong> Les données avancées (factures, actes liés au catalogue) resteront en base. 
-                        Le changement de mode affecte uniquement <em>l'affichage</em> et <em>les boutons d'action</em>.
-                        Les anciens enregistrements seront marqués comme <strong>« Héritage »</strong> en lecture seule.
+                        <strong>{$t('admin.settings.principe_de_non_destruction')}</strong> Les données avancées (factures, actes liés au catalogue) resteront en base. 
+                        Le changement de mode affecte uniquement <em>{$t('admin.settings.l_affichage')}</em> et <em>{$t('admin.settings.les_boutons_d_action')}</em>.
+                        Les anciens enregistrements seront marqués comme <strong>{$t('admin.settings.h_ritage')}</strong> {$t('admin.settings.en_lecture_seule')}
                     </p>
                 </div>
             </div>
@@ -2356,7 +2356,7 @@
                     onclick={() => { showMigrationDialog = false; pendingMigrationSubmit = null; pendingMigrationChanges = []; }}
                     class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-2xl transition-all active:scale-95 text-sm"
                 >
-                    Annuler
+                    {$t('admin.settings.annuler')}
                 </button>
                 <button
                     type="button"
@@ -2369,7 +2369,7 @@
                     class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl transition-all shadow-lg shadow-indigo-100 active:scale-95 text-sm flex items-center justify-center gap-2"
                 >
                     <ShieldAlert size={16} />
-                    Confirmer la Migration
+                    {$t('admin.settings.confirmer_la_migration')}
                 </button>
             </div>
         </div>

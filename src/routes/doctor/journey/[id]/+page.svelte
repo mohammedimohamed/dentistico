@@ -1393,7 +1393,7 @@
                                 <p
                                     class="text-xs text-slate-400 font-medium uppercase tracking-wide"
                                 >
-                                    PNG, JPG, PDF, DICOM
+                                    {$t('doctor.patients.upload_formats')}
                                 </p>
                             </label>
                         </form>

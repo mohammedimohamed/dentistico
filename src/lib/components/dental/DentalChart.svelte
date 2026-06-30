@@ -668,7 +668,7 @@
                             <th
                                 scope="col"
                                 class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-32"
-                                >Date</th
+                                >{$t('common.date')}</th
                             >
                             <th
                                 scope="col"
@@ -678,27 +678,27 @@
                             <th
                                 scope="col"
                                 class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3"
-                                >Description</th
+                                >{$t('patient_details.description')}</th
                             >
                             <th
                                 scope="col"
                                 class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-48"
-                                >Diagnostic</th
+                                >{$t('admin.cdt_codes.categories.Diagnostic')}</th
                             >
                             <th
                                 scope="col"
                                 class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-48"
-                                >Note</th
+                                >{$t('components.dental_chart.note')}</th
                             >
                             <th
                                 scope="col"
                                 class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-32"
-                                >Status</th
+                                >{$t('common.status')}</th
                             >
                             <th
                                 scope="col"
                                 class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-32"
-                                >Amount</th
+                                >{$t('assistant.invoices.table.headers.amount')}</th
                             >
                             {#if !readOnly}
                                 <th scope="col" class="relative px-4 py-3"></th>
@@ -709,7 +709,7 @@
                         {#each treatments as treatment}
                             <tr
                                 class="hover:bg-blue-50/50 transition-colors cursor-pointer group relative"
-                                title="Cliquez pour modifier ce traitement"
+                                title={$t('components.dental_chart.cliquez_pour_modifier_ce')}
                                 onclick={() => editTreatment(treatment)}
                                 onkeydown={(e) => {
                                     if (e.key === "Enter" || e.key === " ") {
@@ -743,7 +743,7 @@
                                     {#if treatment.source === "general"}
                                         <span
                                             class="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-wider"
-                                            >Général</span
+                                            >{$t('components.dental_chart.g_n_ral')}</span
                                         >
                                     {:else}
                                         <div class="flex flex-col">
@@ -781,7 +781,7 @@
                                         <div
                                             class="text-xs text-gray-400 mt-0.5 font-mono"
                                         >
-                                            Surf: {treatment.surfaces}
+                                            {$t('components.dental_chart.surf')} {treatment.surfaces}
                                         </div>
                                     {/if}
                                 </td>
@@ -985,7 +985,7 @@
                             <h4
                                 class="text-xs font-bold text-blue-800 uppercase tracking-widest mb-2 flex items-center gap-2"
                             >
-                                <span>🕒</span> Historique de la dent #{selectedTooth}
+                                <span>🕒</span> {$t('components.dental_chart.historique_de_la_dent')}{selectedTooth}
                             </h4>
                             <div class="flex gap-2 overflow-x-auto pb-1">
                                 {#each getTreatmentsForTooth(selectedTooth) as t}
@@ -1088,7 +1088,7 @@
                                         bind:value={
                                             newTreatment.procedure_description
                                         }
-                                        placeholder="e.g., Couronne provisoire impression 3D"
+                                        placeholder={$t('components.dental_chart.eg_couronne_provisoire_impression')}
                                         class="w-full px-4 py-2 rounded-lg border-2 border-indigo-200 focus:border-indigo-500 focus:outline-none bg-white"
                                     />
                                 </div>
@@ -1145,7 +1145,7 @@
                                     for="honoraires-input"
                                     class="block text-[10px] font-bold text-blue-700 uppercase mb-1"
                                 >
-                                    Honoraires ({APP_CONFIG.currencySymbol})
+                                    {$t('components.dental_chart.honoraires')}{APP_CONFIG.currencySymbol})
                                 </label>
                                 <div class="flex items-center gap-2">
                                     <input
@@ -1176,7 +1176,7 @@
 
                     <!-- Status Selection -->
                     <div class="form-section">
-                        <span class="form-label">Statut</span>
+                        <span class="form-label">{$t('components.dental_chart.statut')}</span>
                         <div class="status-buttons">
                             <button
                                 type="button"
@@ -1190,7 +1190,7 @@
                                     class="status-dot"
                                     style="background: #3B82F6"
                                 ></span>
-                                Existant
+                                {$t('components.dental_chart.existant')}
                             </button>
                             <button
                                 type="button"
@@ -1204,7 +1204,7 @@
                                     class="status-dot"
                                     style="background: #10B981"
                                 ></span>
-                                Terminé
+                                {$t('components.dental_chart.termin')}
                             </button>
                             <button
                                 type="button"
@@ -1217,7 +1217,7 @@
                                     class="status-dot"
                                     style="background: #EF4444"
                                 ></span>
-                                Planifié
+                                {$t('components.dental_chart.planifi')}
                             </button>
                         </div>
                     </div>
@@ -1226,7 +1226,7 @@
                     {#if newTreatment.status === "completed"}
                         <div class="form-section">
                             <label for="date-performed" class="form-label"
-                                >Date de réalisation *</label
+                                >{$t('components.dental_chart.date_de_r_alisation')}</label
                             >
                             <input
                                 type="date"
@@ -1241,28 +1241,28 @@
                     <!-- Diagnosis -->
                     <div class="form-section">
                         <label for="diagnosis" class="form-label"
-                            >Diagnostic (Optionnel)</label
+                            >{$t('components.dental_chart.diagnostic_optionnel')}</label
                         >
                         <input
                             type="text"
                             id="diagnosis"
                             bind:value={newTreatment.diagnosis}
                             class="form-input"
-                            placeholder="ex: Carie atteignant la jonction DES"
+                            placeholder={$t('components.dental_chart.ex_carie_atteignant_la')}
                         />
                     </div>
 
                     <!-- Clinical Notes -->
                     <div class="form-section">
                         <label for="clinical-notes" class="form-label"
-                            >Notes cliniques</label
+                            >{$t('components.dental_chart.notes_cliniques')}</label
                         >
                         <textarea
                             id="clinical-notes"
                             bind:value={newTreatment.notes}
                             class="form-textarea"
                             rows="3"
-                            placeholder="Observations supplémentaires..."
+                            placeholder={$t('components.dental_chart.observations_suppl_mentaires')}
                         ></textarea>
                     </div>
                 </div>
@@ -1302,7 +1302,7 @@
                         (newTreatment.isCustom &&
                             !newTreatment.procedure_description)}
                 >
-                    💾 Enregistrer
+                    {$t('components.dental_chart.enregistrer')}
                 </button>
             </div>
         </div>

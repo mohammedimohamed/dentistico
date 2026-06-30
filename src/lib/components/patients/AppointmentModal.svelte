@@ -67,7 +67,7 @@
                         <h3 class="text-lg font-black text-slate-900 leading-tight">
                             {reschedulingAppointment ? 'Déplacer le Rendez-vous' : 'Fixer un Rendez-vous'}
                         </h3>
-                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Patient: {patient.full_name}</p>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{$t('components.appointment_modal.patient')} {patient.full_name}</p>
                     </div>
                 </div>
                 <button 
@@ -115,7 +115,7 @@
                     {#if reschedulingAppointment}
                         <!-- UI GHOSTING: Original Appointment Details -->
                         <div class="mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                            <h4 class="text-[10px] font-black uppercase text-amber-600 tracking-wider mb-2">Ancien Rendez-vous</h4>
+                            <h4 class="text-[10px] font-black uppercase text-amber-600 tracking-wider mb-2">{$t('components.appointment_modal.ancien_rendezvous')}</h4>
                             <div class="space-y-1 text-xs font-bold text-amber-900">
                                 <div class="flex items-center gap-2">
                                     <Calendar size={12} />
@@ -127,7 +127,7 @@
                                 </div>
                                 <div class="flex items-center gap-2 text-[10px] text-amber-700 mt-2">
                                     <User size={10} />
-                                    Dr. {reschedulingAppointment.doctor_name || 'Inconnu'}
+                                    {$t('assistant.dashboard.time.dr')} {reschedulingAppointment.doctor_name || 'Inconnu'}
                                 </div>
                             </div>
                         </div>
@@ -136,7 +136,7 @@
                     <div class="space-y-6">
                         <!-- Doctor Selection -->
                         <div class="space-y-2">
-                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Praticien</label>
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{$t('components.appointment_modal.praticien')}</label>
                             <div class="relative">
                                 <select 
                                     name="doctor_id" 
@@ -144,9 +144,9 @@
                                     bind:value={selectedDoctorId}
                                     class="w-full bg-white border border-slate-200 p-3.5 pl-11 rounded-2xl font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all outline-none appearance-none shadow-sm"
                                 >
-                                    <option value="" disabled>Sélectionner un médecin</option>
+                                    <option value="" disabled>{$t('components.appointment_modal.s_lectionner_un_m')}</option>
                                     {#each doctors as dr}
-                                        <option value={dr.id.toString()}>Dr. {dr.full_name}</option>
+                                        <option value={dr.id.toString()}>{$t('assistant.dashboard.time.dr')} {dr.full_name}</option>
                                     {/each}
                                 </select>
                                 <User size={18} class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -155,7 +155,7 @@
 
                         <!-- Type Selection -->
                         <div class="space-y-2">
-                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Type de Soin</label>
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{$t('components.appointment_modal.type_de_soin')}</label>
                             <div class="relative">
                                 <select 
                                     name="appointment_type" 
@@ -163,14 +163,14 @@
                                     bind:value={appointmentType}
                                     class="w-full bg-white border border-slate-200 p-3.5 pl-11 rounded-2xl font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all outline-none appearance-none shadow-sm"
                                 >
-                                    <option value="consultation">Consultation</option>
-                                    <option value="checkup">Contrôle</option>
-                                    <option value="cleaning">Détartrage</option>
-                                    <option value="emergency">Urgence</option>
-                                    <option value="extraction">Extraction</option>
-                                    <option value="filling">Obturation</option>
-                                    <option value="root_canal">Traitement de canal</option>
-                                    <option value="prosthesis">Prothèse</option>
+                                    <option value="consultation">{$t('patient_details.consultation')}</option>
+                                    <option value="checkup">{$t('components.appointment_modal.contr_le')}</option>
+                                    <option value="cleaning">{$t('components.appointment_modal.d_tartrage')}</option>
+                                    <option value="emergency">{$t('components.appointment_modal.urgence')}</option>
+                                    <option value="extraction">{$t('patient_details.extraction')}</option>
+                                    <option value="filling">{$t('components.appointment_modal.obturation')}</option>
+                                    <option value="root_canal">{$t('components.appointment_modal.traitement_de_canal')}</option>
+                                    <option value="prosthesis">{$t('components.appointment_modal.proth_se')}</option>
                                 </select>
                                 <Stethoscope size={18} class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                             </div>
@@ -178,31 +178,31 @@
 
                         <!-- Duration -->
                         <div class="space-y-2">
-                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Durée du soin</label>
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{$t('components.appointment_modal.dur_e_du_soin')}</label>
                             <div class="relative">
                                 <select 
                                     name="duration_minutes" 
                                     bind:value={durationMinutes}
                                     class="w-full bg-white border border-slate-200 p-3.5 pl-11 rounded-2xl font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all outline-none appearance-none shadow-sm"
                                 >
-                                    <option value="15">15 minutes</option>
-                                    <option value="30">30 minutes</option>
-                                    <option value="45">45 minutes</option>
-                                    <option value="60">1 heure</option>
-                                    <option value="90">1h 30m</option>
-                                    <option value="120">2 heures</option>
+                                    <option value="15">{$t('components.appointment_modal.15_minutes')}</option>
+                                    <option value="30">{$t('components.appointment_modal.30_minutes')}</option>
+                                    <option value="45">{$t('components.appointment_modal.45_minutes')}</option>
+                                    <option value="60">{$t('components.appointment_modal.1_heure')}</option>
+                                    <option value="90">{$t('components.appointment_modal.1h_30m')}</option>
+                                    <option value="120">{$t('components.appointment_modal.2_heures')}</option>
                                 </select>
                                 <Clock size={18} class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                             </div>
                         </div>
 
-                        <!-- Notes -->
+                        <!-- {$t('assistant.dashboard.appointment.fields.notes')} -->
                         <div class="space-y-2">
                             <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Notes</label>
                             <textarea 
                                 name="notes" 
                                 bind:value={notes}
-                                placeholder="Note particulière..."
+                                placeholder={$t('components.appointment_modal.note_particuli_re')}
                                 class="w-full bg-white border border-slate-200 p-3 rounded-2xl font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all outline-none shadow-sm min-h-[80px] text-sm"
                             ></textarea>
                         </div>
@@ -240,8 +240,8 @@
                             <div class="w-20 h-20 rounded-full bg-white border border-slate-100 flex items-center justify-center shadow-sm mb-6">
                                 <Calendar size={32} class="text-slate-300" />
                             </div>
-                            <h4 class="text-slate-900 font-black text-lg">Disponibilités</h4>
-                            <p class="text-slate-400 font-bold text-sm max-w-[240px] mt-2">Veuillez d'abord sélectionner un praticien à gauche</p>
+                            <h4 class="text-slate-900 font-black text-lg">{$t('components.appointment_modal.disponibilit_s')}</h4>
+                            <p class="text-slate-400 font-bold text-sm max-w-[240px] mt-2">{$t('components.appointment_modal.veuillez_dabord_s_lectionner')}</p>
                         </div>
                     {/if}
                 </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { onMount } from "svelte";
     import InteractiveToothV2 from "./InteractiveToothV2.svelte";
     import TreatmentHistoryTable from "./TreatmentHistoryTable.svelte";
@@ -79,7 +80,7 @@
         <div class="w-full flex items-center justify-between mb-4">
             <div class="flex items-center gap-3 px-6 py-3 bg-indigo-50/50 border border-indigo-100/50 rounded-2xl text-[11px] font-bold text-indigo-600">
                 <div class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">i</div>
-                <span>💡 Astuce : Maintenez <span class="px-1.5 py-0.5 bg-indigo-100 rounded text-indigo-700 mx-0.5 font-black">Ctrl</span> et cliquez sur plusieurs dents pour créer un bridge.</span>
+                <span>{$t('components.carte_dentaire_v2.astuce_maintenez')} <span class="px-1.5 py-0.5 bg-indigo-100 rounded text-indigo-700 mx-0.5 font-black">{$t('components.carte_dentaire_v2.ctrl')}</span> {$t('components.carte_dentaire_v2.et_cliquez_sur_plusieurs')}</span>
             </div>
 
             <div class="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100 shadow-inner">
@@ -103,7 +104,7 @@
             {#if dentitionMode !== "pediatric"}
                 <div class="arch-section animate-in fade-in zoom-in duration-300">
                     <div class="arch-header mb-2 flex justify-center">
-                        <span class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">Maxillaire Adulte</span>
+                        <span class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">{$t('components.carte_dentaire_v2.maxillaire_adulte')}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <div class="flex gap-1">
@@ -125,7 +126,7 @@
             {#if dentitionMode !== "adult"}
                 <div class="arch-section animate-in fade-in zoom-in duration-300">
                     <div class="arch-header mb-2 flex justify-center">
-                        <span class="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em]">Maxillaire Temporaire</span>
+                        <span class="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em]">{$t('components.carte_dentaire_v2.maxillaire_temporaire')}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <div class="flex gap-1 items-center">
@@ -163,7 +164,7 @@
                         </div>
                     </div>
                     <div class="arch-header mt-2 flex justify-center">
-                        <span class="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em]">Mandibule Temporaire</span>
+                        <span class="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em]">{$t('components.carte_dentaire_v2.mandibule_temporaire')}</span>
                     </div>
                 </div>
             {/if}
@@ -185,7 +186,7 @@
                         </div>
                     </div>
                     <div class="arch-header mt-2 flex justify-center">
-                        <span class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">Mandibule Adulte</span>
+                        <span class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">{$t('components.carte_dentaire_v2.mandibule_adulte')}</span>
                     </div>
                 </div>
             {/if}

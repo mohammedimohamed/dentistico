@@ -86,8 +86,8 @@
         <button
             onclick={toggleFullscreen}
             class="p-2 rounded-full hover:bg-gray-100 transition text-gray-600 hover:text-gray-900"
-            aria-label="Plein écran"
-            title="Plein écran"
+            aria-label={$t('components.header.plein_cran')}
+            title={$t('components.header.plein_cran')}
         >
             {#if isFullscreen}
                 <Minimize size={20} />

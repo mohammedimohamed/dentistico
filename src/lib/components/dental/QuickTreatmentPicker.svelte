@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { onMount } from "svelte";
     import { APP_CONFIG } from "$lib/config/app.config";
 
@@ -116,7 +117,7 @@
                 <input
                     type="text"
                     bind:value={searchTerm}
-                    placeholder="Rechercher par code ou nom..."
+                    placeholder={$t('components.quick_treatment_picker.rechercher_par_code_ou')}
                     class="search-input"
                     autofocus
                 />
@@ -188,7 +189,7 @@
         {#if loading}
             <div class="empty-state">
                 <span class="spinner">⏳</span>
-                <p>Chargement des actes...</p>
+                <p>{$t('components.quick_treatment_picker.chargement_des_actes')}</p>
             </div>
         {:else if error}
             <div class="empty-state error">
@@ -202,7 +203,7 @@
         {:else if filteredCodes.length === 0}
             <div class="empty-state">
                 <span class="icon">🔎</span>
-                <p>Aucun acte trouvé</p>
+                <p>{$t('components.quick_treatment_picker.aucun_acte_trouv')}</p>
             </div>
         {:else if viewMode === "card"}
             <!-- Card View -->
@@ -227,7 +228,7 @@
                         </div>
                         <p class="description">{code.description}</p>
                         {#if code.requires_surfaces}
-                            <span class="badge">Surfaces requises</span>
+                            <span class="badge">{$t('components.quick_treatment_picker.surfaces_requises')}</span>
                         {/if}
                     </button>
                 {/each}
@@ -238,10 +239,10 @@
                 <table class="code-table">
                     <thead>
                         <tr>
-                            <th class="w-24">Code</th>
-                            <th class="flex-1">Description</th>
-                            <th class="w-32 text-center">Surfaces</th>
-                            <th class="w-32 text-right">Honoraires</th>
+                            <th class="w-24">{$t('admin.cdt_codes.table.code')}</th>
+                            <th class="flex-1">{$t('patient_details.description')}</th>
+                            <th class="w-32 text-center">{$t('admin.cdt_codes.table.surfaces')}</th>
+                            <th class="w-32 text-right">{$t('components.quick_treatment_picker.honoraires')}</th>
                         </tr>
                     </thead>
                     <tbody>

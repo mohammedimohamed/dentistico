@@ -70,7 +70,7 @@
                         ? 'bg-[var(--primary-color)] text-white shadow-md'
                         : 'text-slate-500 hover:bg-slate-50'}"
                 >
-                    FR
+                    {$t('booking.fr')}
                 </button>
                 <button
                     onclick={() => setLanguage("ar")}
@@ -79,7 +79,7 @@
                         ? 'bg-[var(--primary-color)] text-white shadow-md'
                         : 'text-slate-500 hover:bg-slate-50'}"
                 >
-                    AR
+                    {$t('booking.ar')}
                 </button>
             </div>
         </div>
@@ -161,13 +161,13 @@
                         <h3
                             class="text-[var(--primary-color)] font-serif font-bold text-xl mb-4 flex items-center gap-2"
                         >
-                            <span>ℹ️</span> Informations de Réservation
+                            <span>ℹ️</span> {$t('booking.informations_de_r_servation')}
                         </h3>
                         <ul class="space-y-3 text-slate-600 font-light">
                             <li class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-[var(--secondary-color)]"
                                 ></span>
-                                Heures de travail:
+                                {$t('booking.heures_de_travail')}
                                 <span class="font-bold text-[var(--primary-color)]"
                                     >{data.config?.workHours ||
                                         "09:00 - 18:00"}</span
@@ -176,7 +176,7 @@
                             <li class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-[var(--secondary-color)]"
                                 ></span>
-                                Fermé les:
+                                {$t('booking.ferm_les')}
                                 <span class="font-bold text-[var(--primary-color)]">
                                     {#if data.workingDays}
                                         {data.workingDays
@@ -197,7 +197,7 @@
                                             })
                                             .join(", ")}
                                     {:else}
-                                        Samedi & Dimanche
+                                        {$t('booking.samedi_dimanche')}
                                     {/if}
                                 </span>
                             </li>
@@ -290,7 +290,7 @@
                                             id="email"
                                             required
                                             class="w-full px-6 py-4 rounded-sm border border-slate-100 bg-slate-50 text-lg font-medium focus:bg-white focus:ring-4 focus:ring-[var(--primary-color)]/5 focus:border-[var(--primary-color)] outline-none transition-all placeholder:text-slate-300"
-                                            placeholder="nom@exemple.com"
+                                            placeholder={$t('booking.nom_exemple_com')}
                                         />
                                     </div>
 
@@ -307,7 +307,7 @@
                                             id="phone"
                                             required
                                             class="w-full px-6 py-4 rounded-sm border border-slate-100 bg-slate-50 text-lg font-medium focus:bg-white focus:ring-4 focus:ring-[var(--primary-color)]/5 focus:border-[var(--primary-color)] outline-none transition-all placeholder:text-slate-300"
-                                            placeholder="06 XX XX XX XX"
+                                            placeholder={$t('booking.06_xx_xx_xx_xx')}
                                         />
                                     </div>
                                 </div>
@@ -327,7 +327,7 @@
                                             id="date_of_birth"
                                             required
                                             class="w-full px-6 py-4 rounded-sm border border-slate-100 bg-slate-50 text-lg font-medium focus:bg-white focus:ring-4 focus:ring-[var(--primary-color)]/5 focus:border-[var(--primary-color)] outline-none transition-all"
-                                            placeholder="JJ/MM/AAAA"
+                                            placeholder={$t('booking.jj_mm_aaaa')}
                                         />
                                     </div>
                                 {/if}
@@ -382,7 +382,7 @@
                                                 id="patient_dob"
                                                 required
                                                 class="w-full px-6 py-4 rounded-sm border border-slate-100 bg-slate-50 text-lg font-medium focus:bg-white focus:ring-4 focus:ring-[var(--primary-color)]/5 focus:border-[var(--primary-color)] outline-none transition-all"
-                                                placeholder="JJ/MM/AAAA"
+                                                placeholder={$t('booking.jj_mm_aaaa')}
                                             />
                                         </div>
 

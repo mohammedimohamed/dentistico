@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import type { Snippet } from "svelte";
     import { page } from "$app/state";
     import Sidebar from "./Sidebar.svelte";
@@ -70,11 +71,11 @@
                 >
                     <span>v{page.data.debug.version}</span>
                     <span class="w-1 h-1 rounded-full bg-gray-300"></span>
-                    <span>Load: {clientLoadTime}ms</span>
+                    <span>{$t('components.portal_shell.load')} {clientLoadTime}ms</span>
                     <span class="w-1 h-1 rounded-full bg-gray-300"></span>
-                    <span>DB: {page.data.debug.dbSize}KB</span>
+                    <span>{$t('components.portal_shell.db')} {page.data.debug.dbSize}KB</span>
                     <span class="w-1 h-1 rounded-full bg-gray-300"></span>
-                    <span>Mem: {page.data.debug.memory}MB</span>
+                    <span>{$t('components.portal_shell.mem')} {page.data.debug.memory}MB</span>
                 </footer>
             {/if}
         </main>

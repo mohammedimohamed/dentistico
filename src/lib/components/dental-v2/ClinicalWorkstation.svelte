@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { onMount } from "svelte";
     import { invalidateAll } from "$app/navigation";
     import { Search, Plus, CheckCircle2, Clock, AlertCircle, CreditCard, ChevronDown, ChevronUp, MessageSquare, Zap, X } from "lucide-svelte";
@@ -165,13 +166,13 @@
     <div class="ws-header">
         <div class="ws-title">
             <Zap size={16} />
-            <span>Station Clinique</span>
+            <span>{$t('components.clinical_workstation.station_clinique')}</span>
             {#if selectedFdi}
-                <span class="fdi-badge">Dent {selectedFdi}</span>
+                <span class="fdi-badge">{$t('components.clinical_workstation.dent')} {selectedFdi}</span>
             {/if}
         </div>
         {#if plan.length > 0}
-            <span class="plan-count">{plan.length} acte{plan.length > 1 ? "s" : ""} en cours</span>
+            <span class="plan-count">{plan.length} {$t('components.clinical_workstation.acte')}{plan.length > 1 ? "s" : ""} {$t('components.clinical_workstation.en_cours')}</span>
         {/if}
     </div>
 
@@ -180,12 +181,12 @@
 
         <!-- LEFT: Live Treatment Plan -->
         <div class="plan-column">
-            <h3 class="col-title">Plan de Traitement</h3>
+            <h3 class="col-title">{$t('components.clinical_workstation.plan_de_traitement')}</h3>
 
             {#if plan.length === 0}
                 <div class="plan-empty">
                     <Plus size={24} />
-                    <p>Sélectionnez un acte dans le catalogue →</p>
+                    <p>{$t('components.clinical_workstation.s_lectionnez_un_acte')}</p>
                 </div>
             {:else}
                 <div class="plan-list">
@@ -197,10 +198,10 @@
                                 <div class="act-info">
                                     <span class="act-desc">{item.description}</span>
                                     {#if item.fdi}
-                                        <span class="act-fdi">Dent {item.fdi}</span>
+                                        <span class="act-fdi">{$t('components.clinical_workstation.dent')} {item.fdi}</span>
                                     {/if}
                                 </div>
-                                <span class="act-fee">{item.fee.toLocaleString()} DZD</span>
+                                <span class="act-fee">{item.fee.toLocaleString()} {$t('components.clinical_workstation.dzd')}</span>
 
                                 <!-- Intent Toggle -->
                                 <button
@@ -232,7 +233,7 @@
                                     <input
                                         type="text"
                                         bind:value={item.note}
-                                        placeholder="Observation clinique..."
+                                        placeholder={$t('components.clinical_workstation.observation_clinique')}
                                         class="note-input"
                                     />
                                 </div>
@@ -244,7 +245,7 @@
                                     <label class="pay-toggle">
                                         <input type="checkbox" bind:checked={item.showPay}
                                             onchange={() => plan = [...plan]} />
-                                        <span>Encaisser maintenant</span>
+                                        <span>{$t('components.clinical_workstation.encaisser_maintenant')}</span>
                                     </label>
                                     {#if item.showPay}
                                         <div class="pay-row">
@@ -287,7 +288,7 @@
 
         <!-- RIGHT: Catalog -->
         <div class="catalog-column">
-            <h3 class="col-title">Catalogue d'Actes</h3>
+            <h3 class="col-title">{$t('components.clinical_workstation.catalogue_dactes')}</h3>
 
             <!-- Search -->
             <div class="search-wrap">
@@ -295,7 +296,7 @@
                 <input
                     type="text"
                     bind:value={searchTerm}
-                    placeholder="Rechercher un acte..."
+                    placeholder={$t('components.clinical_workstation.rechercher_un_acte')}
                     class="search-input"
                 />
                 {#if searchTerm}
@@ -304,7 +305,7 @@
             </div>
 
             {#if loading}
-                <div class="catalog-loading">Chargement...</div>
+                <div class="catalog-loading">{$t('components.clinical_workstation.chargement')}</div>
             {:else if searchTerm}
                 <!-- Search Results -->
                 <div class="search-results">
@@ -312,7 +313,7 @@
                         <button class="result-row" onclick={() => addToPlan(code)}>
                             <span class="code-badge" style="background:{code.color_code}20;color:{code.color_code};border-color:{code.color_code}40">{code.code}</span>
                             <span class="result-desc">{code.description}</span>
-                            <span class="result-fee">{code.default_fee.toLocaleString()} DZD</span>
+                            <span class="result-fee">{code.default_fee.toLocaleString()} {$t('components.clinical_workstation.dzd')}</span>
                         </button>
                     {/each}
                 </div>
@@ -323,7 +324,7 @@
                         <button class="fav-card" onclick={() => addToPlan(code)}>
                             <span class="fav-dot" style="background:{code.color_code}"></span>
                             <span class="fav-desc">{code.description}</span>
-                            <span class="fav-fee">{code.default_fee.toLocaleString()} DZD</span>
+                            <span class="fav-fee">{code.default_fee.toLocaleString()} {$t('components.clinical_workstation.dzd')}</span>
                         </button>
                     {/each}
                 </div>
@@ -331,9 +332,9 @@
                 <!-- Full Catalog toggle -->
                 <button class="voir-plus" onclick={() => showFullCatalog = !showFullCatalog}>
                     {#if showFullCatalog}
-                        <ChevronUp size={14} /> Réduire
+                        <ChevronUp size={14} /> {$t('components.clinical_workstation.r_duire')}
                     {:else}
-                        <ChevronDown size={14} /> Voir tous les actes ({codes.length})
+                        <ChevronDown size={14} /> {$t('components.clinical_workstation.voir_tous_les_actes')}{codes.length})
                     {/if}
                 </button>
 
@@ -343,7 +344,7 @@
                             <button class="result-row" onclick={() => addToPlan(code)}>
                                 <span class="code-badge" style="background:{code.color_code}20;color:{code.color_code};border-color:{code.color_code}40">{code.code}</span>
                                 <span class="result-desc">{code.description}</span>
-                                <span class="result-fee">{code.default_fee.toLocaleString()} DZD</span>
+                                <span class="result-fee">{code.default_fee.toLocaleString()} {$t('components.clinical_workstation.dzd')}</span>
                             </button>
                         {/each}
                     </div>

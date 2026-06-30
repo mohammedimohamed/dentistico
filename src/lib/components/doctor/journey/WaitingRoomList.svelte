@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { Clock, User, AlertTriangle } from "lucide-svelte";
 
     let { waitingPatients, onStartVisit } = $props();
@@ -82,15 +83,15 @@
 
 <div class="waiting-room-container">
     <div class="waiting-room-header">
-        <h3>🏥 Salle d'Attente ({waitingPatients.length})</h3>
+        <h3>{$t('components.waiting_room_list.salle_dattente')}{waitingPatients.length})</h3>
         <div class="legend">
             <div class="legend-item">
                 <span class="badge-demo appointment-badge">#</span>
-                Ordre RDV
+                {$t('components.waiting_room_list.ordre_rdv')}
             </div>
             <div class="legend-item">
-                <span class="text-white/70">(nème)</span>
-                Ordre d'arrivée
+                <span class="text-white/70">{$t('components.waiting_room_list.n_me')}</span>
+                {$t('components.waiting_room_list.ordre_darriv_e')}
             </div>
         </div>
     </div>
@@ -112,7 +113,7 @@
 
                     <!-- Arrival Information (Secondary) -->
                     <div class="arrival-info">
-                        Arrivée: {formatTime(patient.check_in_time)}
+                        {$t('components.waiting_room_list.arriv_e')} {formatTime(patient.check_in_time)}
                         <span class="arrival-position"
                             >({patient.arrivalPosition}{patient.arrivalPosition ===
                             1
@@ -125,7 +126,7 @@
                 <!-- APPOINTMENT TIMING -->
                 <div class="timing-section">
                     <div class="scheduled-time">
-                        🕐 RDV: {formatTime(patient.start_time)}
+                        {$t('components.waiting_room_list.rdv')} {formatTime(patient.start_time)}
                     </div>
 
                     <div class="timing-status status-{patient.timing.color}">
@@ -137,7 +138,7 @@
                 <!-- WAIT TIME -->
                 <div class="wait-time-section">
                     <Clock size={16} />
-                    Attente: {calculateWaitTime(patient.check_in_time)} min
+                    {$t('components.waiting_room_list.attente')} {calculateWaitTime(patient.check_in_time)} {$t('common.minutes_short')}
                 </div>
 
                 <!-- ACTIONS -->
@@ -154,7 +155,7 @@
         {#if waitingPatients.length === 0}
             <div class="empty-state">
                 <div class="empty-icon">🛋️</div>
-                <p>La salle d'attente est vide</p>
+                <p>{$t('components.waiting_room_list.la_salle_dattente_est')}</p>
             </div>
         {/if}
     </div>

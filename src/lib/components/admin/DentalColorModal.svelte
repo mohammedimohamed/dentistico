@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { enhance } from "$app/forms";
     import { dentalColors, updateDentalColors } from "$lib/stores/dentalSettings.svelte";
     import { Save, RefreshCcw, Palette, X } from "lucide-svelte";
@@ -42,8 +43,8 @@
                         <Palette class="w-6 h-6" />
                     </div>
                     <div>
-                        <h3 class="text-2xl font-black text-slate-900 leading-none">Couleurs de l'Odontogramme</h3>
-                        <p class="text-slate-500 font-medium text-sm mt-1">Personnalisez les couleurs globales du cabinet.</p>
+                        <h3 class="text-2xl font-black text-slate-900 leading-none">{$t('components.dental_color_modal.couleurs_de_lodontogramme')}</h3>
+                        <p class="text-slate-500 font-medium text-sm mt-1">{$t('components.dental_color_modal.personnalisez_les_couleurs_globales')}</p>
                     </div>
                 </div>
                 <button 
@@ -95,8 +96,8 @@
                     <div class="flex gap-4 items-start max-w-md">
                         <div class="text-amber-500 text-xl">⚠️</div>
                         <div>
-                            <p class="text-xs font-bold text-amber-900">Note Importante</p>
-                            <p class="text-[10px] text-amber-700 leading-relaxed font-medium">Ces couleurs affecteront l'affichage de tous les patients existants dans tout le cabinet.</p>
+                            <p class="text-xs font-bold text-amber-900">{$t('components.dental_color_modal.note_importante')}</p>
+                            <p class="text-[10px] text-amber-700 leading-relaxed font-medium">{$t('components.dental_color_modal.ces_couleurs_affecteront_laffichage')}</p>
                         </div>
                     </div>
 
@@ -114,9 +115,9 @@
                             class="flex-1 md:flex-none px-8 py-3 bg-indigo-600 text-white rounded-2xl text-sm font-black flex items-center justify-center gap-2 shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-50"
                         >
                             {#if isSaving}
-                                <RefreshCcw class="w-4 h-4 animate-spin" /> Enregistrement...
+                                <RefreshCcw class="w-4 h-4 animate-spin" /> {$t('components.dental_color_modal.enregistrement')}
                             {:else}
-                                <Save class="w-4 h-4" /> Sauvegarder
+                                <Save class="w-4 h-4" /> {$t('components.dental_color_modal.sauvegarder')}
                             {/if}
                         </button>
                     </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { fade } from "svelte/transition";
 
     let { stats, totalAppointments } = $props<{
@@ -62,15 +63,15 @@
             </svg>
         </div>
         <div class="title-group">
-            <h3>Gestion du Temps</h3>
-            <p>Calcul de la cadence</p>
+            <h3>{$t('components.time_management_card.gestion_du_temps')}</h3>
+            <p>{$t('components.time_management_card.calcul_de_la_cadence')}</p>
         </div>
     </div>
 
     <div class="card-body">
         <div class="pace-display" style="background: {currentStatus.bg}">
             <div class="pace-val" style="color: {currentStatus.color}">
-                ⏱️ {stats.recommendedTimePerVisit} min
+                ⏱️ {stats.recommendedTimePerVisit} {$t('common.minutes_short')}
             </div>
             <div class="pace-label" style="color: {currentStatus.color}">
                 {currentStatus.label}
@@ -80,19 +81,19 @@
 
         <div class="time-details">
             <div class="detail-row">
-                <span class="label">Disponibilité</span>
+                <span class="label">{$t('components.time_management_card.disponibilit')}</span>
                 <span class="value"
                     >{Math.floor(stats.availableMinutes / 60)}h {stats.availableMinutes %
                         60}m</span
                 >
             </div>
             <div class="detail-row">
-                <span class="label">Patients</span>
-                <span class="value">{totalAppointments} pers.</span>
+                <span class="label">{$t('common.patients')}</span>
+                <span class="value">{totalAppointments} {$t('components.time_management_card.pers')}</span>
             </div>
             <div class="detail-row">
-                <span class="label">Objectif Clinique</span>
-                <span class="value">{stats.avgConsultationSetting} min</span>
+                <span class="label">{$t('components.time_management_card.objectif_clinique')}</span>
+                <span class="value">{stats.avgConsultationSetting} {$t('common.minutes_short')}</span>
             </div>
         </div>
     </div>

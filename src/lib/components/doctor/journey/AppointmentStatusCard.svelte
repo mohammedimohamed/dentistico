@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { fade } from "svelte/transition";
 
     let { stats } = $props<{
@@ -38,8 +39,8 @@
             </svg>
         </div>
         <div class="title-group">
-            <h3>États RV</h3>
-            <p>Répartition quotidienne</p>
+            <h3>{$t('components.appointment_status_card.tats_rv')}</h3>
+            <p>{$t('components.appointment_status_card.r_partition_quotidienne')}</p>
         </div>
     </div>
 
@@ -66,22 +67,22 @@
         <div class="status-grid">
             <div class="status-item">
                 <div class="dot bg-emerald-500"></div>
-                <span class="label">Confirmés</span>
+                <span class="label">{$t('components.appointment_status_card.confirm_s')}</span>
                 <span class="count">{stats.confirmed}</span>
             </div>
             <div class="status-item">
                 <div class="dot bg-blue-500"></div>
-                <span class="label">En cours</span>
+                <span class="label">{$t('components.appointment_status_card.en_cours')}</span>
                 <span class="count">{stats.inProgress}</span>
             </div>
             <div class="status-item">
                 <div class="dot bg-amber-500"></div>
-                <span class="label">Planifiés</span>
+                <span class="label">{$t('components.appointment_status_card.planifi_s')}</span>
                 <span class="count">{stats.scheduled}</span>
             </div>
             <div class="status-item">
                 <div class="dot bg-slate-400"></div>
-                <span class="label">Annulés</span>
+                <span class="label">{$t('components.appointment_status_card.annul_s')}</span>
                 <span class="count">{stats.cancelled}</span>
             </div>
         </div>

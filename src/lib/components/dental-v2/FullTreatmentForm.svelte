@@ -78,7 +78,7 @@
                     {toothNumber}
                 </div>
                 <div>
-                    <h2 class="text-3xl font-black text-slate-900 tracking-tight">Planifier un Soin</h2>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight">{$t('components.full_treatment_form.planifier_un_soin')}</h2>
                     <p class="text-slate-500 font-bold flex items-center gap-2">
                         <ShieldCheck class="w-4 h-4 text-emerald-500" /> {getToothName(toothNumber)}
                     </p>
@@ -105,7 +105,7 @@
 
                 <section class="space-y-6">
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Statut de l'acte</label>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">{$t('components.full_treatment_form.statut_de_lacte')}</label>
                         <div class="grid grid-cols-3 gap-3">
                             {#each ['existing', 'completed', 'planned'] as s}
                                 <button 
@@ -120,7 +120,7 @@
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Honoraires (DZD)</label>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">{$t('components.full_treatment_form.honoraires_dzd')}</label>
                             <input 
                                 type="number" 
                                 bind:value={treatment.fee} 
@@ -128,7 +128,7 @@
                             />
                         </div>
                         <div>
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Date</label>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">{$t('common.date')}</label>
                             <input 
                                 type="date" 
                                 bind:value={treatment.date_performed} 
@@ -138,17 +138,17 @@
                     </div>
 
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Diagnostic</label>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">{$t('admin.cdt_codes.categories.Diagnostic')}</label>
                         <input 
                             type="text" 
                             bind:value={treatment.diagnosis} 
-                            placeholder="Ex: Pulpite irréversible"
+                            placeholder={$t('components.full_treatment_form.ex_pulpite_irr_versible')}
                             class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-bold text-slate-700 focus:border-indigo-500 outline-none transition-all"
                         />
                     </div>
 
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Notes</label>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">{$t('assistant.dashboard.appointment.fields.notes')}</label>
                         <textarea 
                             bind:value={treatment.notes} 
                             class="w-full h-24 bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-medium text-slate-700 focus:border-indigo-500 outline-none transition-all"

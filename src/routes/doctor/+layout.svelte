@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { page } from "$app/state";
     import type { Snippet } from "svelte";
     import PortalShell from "$lib/components/PortalShell.svelte";
@@ -66,10 +67,10 @@
                     <Building2 size={48} />
                 </div>
                 <h2 class="text-3xl font-black text-gray-900 mb-2">
-                    Ouverture de Cabinet
+                    {$t('doctor.layout.ouverture_cabinet')}
                 </h2>
                 <p class="text-gray-500 font-medium">
-                    Veuillez sélectionner votre salle pour commencer la journée.
+                    {$t('doctor.layout.select_room_desc')}
                 </p>
             </div>
 
@@ -82,7 +83,7 @@
                         <AlertTriangle size={48} />
                     </div>
                     <h3 class="text-xl font-black text-amber-900 mb-2">
-                        Aucune salle configurée
+                        {$t('doctor.layout.no_rooms_configured')}
                     </h3>
                     {#if data.user?.role === "admin"}
                         <p
@@ -141,7 +142,7 @@
                     <label
                         for="room-quick-select"
                         class="block text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-2 px-1"
-                        >Sélection rapide</label
+                        >{$t('doctor.layout.quick_selection')}</label
                     >
                     <div class="flex gap-2">
                         <select
@@ -150,7 +151,7 @@
                             class="flex-1 px-5 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-gray-700 transition-all cursor-pointer"
                             required
                         >
-                            <option value="">-- Choisir une salle --</option>
+                            <option value="">{$t('doctor.layout.select_room_prompt')}</option>
                             {#each Object.entries(data.groupedRooms || {}) as [groupName, rooms]}
                                 <optgroup label={groupName}>
                                     {#each rooms as room}
@@ -237,7 +238,7 @@
                                                         {#if room.occupied_by}
                                                             <span
                                                                 class="px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 text-[8px] font-black uppercase tracking-tighter"
-                                                                >Occupée</span
+                                                                >{$t('common.status.occupied')}</span
                                                             >
                                                         {/if}
                                                     </h4>
@@ -248,7 +249,7 @@
                                                         {#if room.occupied_by}
                                                             <span
                                                                 class="block text-red-400 normal-case font-bold tracking-normal"
-                                                                >Par {room.occupied_by}</span
+                                                                >{$t('common.by')} {room.occupied_by}</span
                                                             >
                                                         {/if}
                                                     </p>
@@ -294,7 +295,7 @@
                                 y2="12"
                             /></svg
                         >
-                        Se déconnecter
+                        {$t('common.logout')}
                     </button>
                 </form>
             </div>
@@ -332,7 +333,7 @@
                 <div class="flex flex-col text-start">
                     <span
                         class="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1"
-                        >Salle Actuelle</span
+                        >{$t('doctor.layout.current_room_header')}</span
                     >
                     <span class="text-sm font-bold text-gray-900 leading-none"
                         >{currentRoom.name}</span
@@ -341,7 +342,7 @@
                 <button
                     onclick={() => (isChangingRoom = true)}
                     class="ml-2 p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-400 hover:text-indigo-600"
-                    title="Changer de salle"
+                    title={$t('doctor.layout.change_room')}
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -378,10 +379,10 @@
             <div class="flex justify-between items-start mb-8">
                 <div>
                     <h3 class="text-2xl font-black text-gray-900">
-                        Changer de salle
+                        {$t('doctor.layout.change_room')}
                     </h3>
                     <p class="text-gray-500 text-sm mt-1">
-                        Sélectionnez votre nouvelle salle de consultation.
+                        {$t('doctor.layout.select_new_room_desc')}
                     </p>
                 </div>
                 <button
@@ -464,7 +465,7 @@
                                                     {#if room.occupied_by && room.occupied_by !== data.user.full_name}
                                                         <span
                                                             class="px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 text-[8px] font-black uppercase tracking-tighter"
-                                                            >Occupée</span
+                                                            >{$t('common.status.occupied')}</span
                                                         >
                                                     {/if}
                                                 </h5>
@@ -475,7 +476,7 @@
                                                     {#if room.occupied_by && room.occupied_by !== data.user.full_name}
                                                         <span
                                                             class="block text-red-400 normal-case font-bold tracking-normal"
-                                                            >Par {room.occupied_by}</span
+                                                            >{$t('common.by')} {room.occupied_by}</span
                                                         >
                                                     {/if}
                                                 </p>

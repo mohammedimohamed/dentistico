@@ -76,10 +76,10 @@
     >
         <div class="p-6 border-b border-slate-100">
             <h2 class="text-xl font-black text-indigo-900 tracking-tight">
-                Templates
+                {$t('admin.templates.templates')}
             </h2>
             <p class="text-xs text-slate-400 font-bold uppercase mt-1">
-                Print Engine
+                {$t('admin.templates.print_engine')}
             </p>
         </div>
         <div class="flex-1 overflow-y-auto p-4 space-y-2">
@@ -99,7 +99,7 @@
             <a
                 href="/admin/settings"
                 class="text-xs font-bold text-slate-400 hover:text-slate-600"
-                >← Back to Settings</a
+                >{$t('admin.templates.back_to_settings')}</a
             >
         </div>
     </aside>
@@ -111,7 +111,7 @@
             class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0"
         >
             <div class="flex items-center gap-2">
-                <span class="text-slate-400">Editing:</span>
+                <span class="text-slate-400">{$t('admin.templates.editing')}</span>
                 <h1 class="font-black text-slate-700 text-lg">
                     {selectedTemplateName}
                 </h1>
@@ -165,7 +165,7 @@
                         type="submit"
                         class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-lg shadow-indigo-200 transition-all flex items-center gap-2"
                     >
-                        <span>Save Changes</span>
+                        <span>{$t('admin.templates.save_changes')}</span>
                     </button>
                 </form>
             </div>
@@ -184,13 +184,13 @@
                     <div
                         class="bg-slate-800 px-4 py-2 text-xs font-bold text-slate-400 flex justify-between"
                     >
-                        <span>HTML (Handlebars)</span>
+                        <span>{$t('admin.templates.html_handlebars')}</span>
                     </div>
                     <textarea
                         bind:value={htmlContent}
                         on:input={handleInput}
                         class="flex-1 w-full bg-slate-900 text-slate-300 font-mono text-sm p-4 outline-none resize-none focus:bg-slate-800/50 transition-colors leading-relaxed"
-                        placeholder="<div>...</div>"
+                        placeholder={$t('admin.templates.div_div')}
                         spellcheck="false"
                     ></textarea>
                 </div>
@@ -200,7 +200,7 @@
                     <div
                         class="bg-slate-800 px-4 py-2 text-xs font-bold text-slate-400 border-t border-slate-700"
                     >
-                        <span>CSS Styles</span>
+                        <span>{$t('admin.templates.css_styles')}</span>
                     </div>
                     <textarea
                         bind:value={cssContent}
@@ -217,10 +217,10 @@
                 <div
                     class="bg-white border-b border-slate-200 px-4 py-2 text-xs font-bold text-slate-500 flex justify-between items-center"
                 >
-                    <span>Live Preview (Mock Data)</span>
+                    <span>{$t('admin.templates.live_preview_mock_data')}</span>
                     {#if isPreviewLoading}
                         <span class="text-indigo-500 animate-pulse"
-                            >Rendering...</span
+                            >{$t('admin.templates.rendering')}</span
                         >
                     {/if}
                 </div>
@@ -234,7 +234,7 @@
                     >
                         <iframe
                             srcdoc={previewHtml}
-                            title="Preview"
+                            title={$t('admin.templates.preview')}
                             class="w-full h-full absolute inset-0 border-none print-preview-frame"
                             style="width: 210mm; height: 297mm;"
                         ></iframe>

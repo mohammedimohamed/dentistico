@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import type { PageData } from "./$types";
     import CarteDentaireV2 from "$lib/components/dental-v2/CarteDentaireV2.svelte";
     import ToothEditPanelV2 from "$lib/components/dental-v2/ToothEditPanelV2.svelte";
@@ -33,7 +34,7 @@
     }
 
     async function handleDeleteBridge(bridgeId: string) {
-        if (!confirm("Voulez-vous vraiment supprimer ce bridge ? Les dents redeviendront individuelles.")) return;
+        if (!confirm($t('doctor.patients.confirm_delete_bridge'))) return;
         
         const teethToUpdate = Object.entries(allAnnotations)
             .filter(([_, data]: [any, any]) => data.bridge_id === bridgeId)
@@ -88,7 +89,7 @@
             }
         } catch (e) {
             console.error(e);
-            alert("Erreur de connexion");
+            alert($t('common.errors.connection_error'));
         }
     }
 
@@ -117,11 +118,11 @@
             </a>
             <div>
                 <h1 class="text-3xl font-black text-slate-900 tracking-tight">
-                    Dossier Clinique V2 <span class="text-slate-300 mx-2">/</span> <span class="text-indigo-600">{data.patient.full_name}</span>
+                    {$t('doctor.patients.clinical_record_v2')} <span class="text-slate-300 mx-2">/</span> <span class="text-indigo-600">{data.patient.full_name}</span>
                 </h1>
                 <div class="flex items-center gap-4 mt-1">
                     <span class="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                        <Activity class="w-3.5 h-3.5 text-indigo-400" /> Mode Anatomique Haute Précision
+                        <Activity class="w-3.5 h-3.5 text-indigo-400" /> {$t('doctor.patients.anatomical_mode')}
                     </span>
                 </div>
             </div>
@@ -137,7 +138,7 @@
                 </button>
             {/if}
             <button class="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2">
-                <Info class="w-4 h-4" /> Légendes
+                <Info class="w-4 h-4" /> {$t('common.legend')}
             </button>
         </div>
     </header>
@@ -154,16 +155,16 @@
         
         <div class="mt-12 grid grid-cols-3 gap-8">
             <div class="bg-indigo-600 rounded-[32px] p-8 text-white shadow-xl shadow-indigo-100">
-                <h3 class="font-black text-xl mb-2">Diagnostic Rapide</h3>
+                <h3 class="font-black text-xl mb-2">{$t('doctor.patients.quick_diagnosis')}</h3>
                 <p class="text-indigo-100 text-sm font-medium leading-relaxed">Sélectionnez une dent pour ouvrir le panneau d'examen détaillé et annoter chaque surface.</p>
             </div>
             <div class="bg-white rounded-[32px] p-8 border border-slate-200 shadow-sm">
-                <h3 class="font-black text-xl text-slate-900 mb-2">Suivi Endodontique</h3>
-                <p class="text-slate-500 text-sm font-medium leading-relaxed">Le nouveau moteur V2 supporte maintenant la gestion des canaux radiculaires (R1, R2, R3).</p>
+                <h3 class="font-black text-xl text-slate-900 mb-2">{$t('doctor.patients.endodontic_tracking')}</h3>
+                <p class="text-slate-500 text-sm font-medium leading-relaxed">{$t('doctor.patients.odontogram_v2_desc')}</p>
             </div>
             <div class="bg-white rounded-[32px] p-8 border border-slate-200 shadow-sm">
                 <h3 class="font-black text-xl text-slate-900 mb-2">Synchronisation</h3>
-                <p class="text-slate-500 text-sm font-medium leading-relaxed">Toutes les modifications sont enregistrées en temps réel dans le dossier médical du patient.</p>
+                <p class="text-slate-500 text-sm font-medium leading-relaxed">{$t('doctor.patients.realtime_save_desc')}</p>
             </div>
         </div>
     </main>

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { onMount, onDestroy, tick } from "svelte";
     import { App, AppOptions, ViewConfig } from "dwv";
 
@@ -163,7 +164,7 @@
     <!-- Header -->
     <div class="dicom-header">
         <div class="header-left">
-            <button onclick={onClose} class="close-btn" title="Close">
+            <button onclick={onClose} class="close-btn" title={$t('components.dicom_viewer.close')}>
                 <svg
                     class="w-6 h-6"
                     fill="none"
@@ -181,9 +182,9 @@
             <div class="header-info">
                 <h2 class="file-name">{fileName}</h2>
                 <div class="metadata-row">
-                    <span>DATE: {metadata.studyDate}</span>
-                    <span>MODALITY: {metadata.modality}</span>
-                    <span>PATIENT: {metadata.patientName}</span>
+                    <span>{$t('components.dicom_viewer.date')} {metadata.studyDate}</span>
+                    <span>{$t('components.dicom_viewer.modality')} {metadata.modality}</span>
+                    <span>{$t('components.dicom_viewer.patient')} {metadata.patientName}</span>
                 </div>
             </div>
         </div>
@@ -201,7 +202,7 @@
             >
                 🔍 Zoom/Pan
             </button>
-            <button onclick={resetView} class="tool-btn"> 🔄 Reset </button>
+            <button onclick={resetView} class="tool-btn"> {$t('components.dicom_viewer.reset')} </button>
         </div>
     </div>
 
@@ -210,21 +211,21 @@
         {#if loading}
             <div class="loading-overlay">
                 <div class="spinner"></div>
-                <p class="loading-text">Processing Medical Imaging...</p>
+                <p class="loading-text">{$t('components.dicom_viewer.processing_medical_imaging')}</p>
             </div>
         {/if}
 
         {#if error}
             <div class="error-panel">
                 <div class="error-icon">⚠️</div>
-                <h3 class="error-title">Error Loading Image</h3>
+                <h3 class="error-title">{$t('components.dicom_viewer.error_loading_image')}</h3>
                 <p class="error-message">{error}</p>
                 <div class="error-actions">
                     <a href={fileUrl} download class="download-btn">
-                        Download Raw File
+                        {$t('components.dicom_viewer.download_raw_file')}
                     </a>
                     <button onclick={onClose} class="cancel-btn">
-                        Cancel
+                        {$t('common.cancel')}
                     </button>
                 </div>
             </div>
@@ -243,9 +244,9 @@
     {#if !loading && !error}
         <div class="instructions">
             {#if currentTool === "WindowLevel"}
-                DRAG to adjust level (brightness) and window (contrast)
+                {$t('components.dicom_viewer.drag_to_adjust_level')}
             {:else if currentTool === "ZoomAndPan"}
-                DRAG to move • SCROLL to zoom
+                {$t('components.dicom_viewer.drag_to_move_scroll')}
             {/if}
         </div>
     {/if}

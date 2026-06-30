@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { onMount } from "svelte";
     import CarteDentaireV2 from "./CarteDentaireV2.svelte";
     import ToothEditPanelV2 from "./ToothEditPanelV2.svelte";
@@ -144,7 +145,7 @@
                 onclick={createBridge}
                 class="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-sm font-black flex items-center gap-2 shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
             >
-                <Activity class="w-4 h-4" /> Créer un Bridge ({selectedTeethFdis.length} dents)
+                <Activity class="w-4 h-4" /> {$t('components.odontogramme_pro.cr_er_un_bridge')}{selectedTeethFdis.length} {$t('components.odontogramme_pro.dents')}
             </button>
         </div>
     {/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     interface Props {
         selectedSurfaces: string[];
         onToggle: (surface: string) => void;
@@ -25,7 +26,7 @@
 </script>
 
 <div class="surface-selector">
-    <div class="surface-title">Select Surfaces (tap to toggle)</div>
+    <div class="surface-title">{$t('dental.select_surfaces')}</div>
 
     <div class="tooth-diagram">
         <!-- Interactive SVG tooth with clickable surfaces -->

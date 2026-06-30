@@ -140,7 +140,7 @@
                                 </form>
                             {:else}
                                 <span class="text-xs text-gray-400 italic"
-                                    >Global Access</span
+                                    >{$t('admin.users.global_access')}</span
                                 >
                             {/if}
                         </td>
@@ -236,7 +236,7 @@
                                 onclick={() => (isCreateModalOpen = false)}
                                 class="text-gray-400 hover:text-gray-500"
                             >
-                                <span class="sr-only">Close</span>
+                                <span class="sr-only">{$t('admin.users.close')}</span>
                                 <svg
                                     class="h-6 w-6"
                                     fill="none"

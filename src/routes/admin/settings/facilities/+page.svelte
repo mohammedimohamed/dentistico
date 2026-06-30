@@ -119,16 +119,16 @@
                     <a
                         href="/admin/settings"
                         class="hover:text-indigo-600 transition-colors"
-                        >Paramètres</a
+                        >{$t('admin.facilities.param_tres')}</a
                     >
                     <span>/</span>
-                    <span class="text-indigo-600">Gestion des locaux</span>
+                    <span class="text-indigo-600">{$t('admin.facilities.gestion_des_locaux')}</span>
                 </nav>
                 <h1 class="text-4xl font-black text-gray-900 tracking-tight">
-                    Facility Manager <span class="text-indigo-600">.</span>
+                    {$t('admin.facilities.facility_manager')} <span class="text-indigo-600">.</span>
                 </h1>
                 <p class="text-gray-500 font-medium mt-1">
-                    Gérez la structure hiérarchique de votre clinique.
+                    {$t('admin.facilities.g_rez_la_structure_hi_rarchiqu')}
                 </p>
             </div>
 
@@ -137,7 +137,7 @@
                     href="/admin/settings"
                     class="px-6 py-3 bg-white text-gray-700 font-bold rounded-2xl hover:bg-gray-50 transition-all border border-gray-200 shadow-sm active:scale-95"
                 >
-                    Retour
+                    {$t('admin.facilities.retour')}
                 </a>
             </div>
         </div>
@@ -154,7 +154,7 @@
                     <h2
                         class="text-lg font-black text-gray-900 flex items-center gap-2"
                     >
-                        <Building2 size={20} class="text-indigo-600" /> Bâtiments
+                        <Building2 size={20} class="text-indigo-600" /> {$t('admin.facilities.b_timents')}
                     </h2>
                 </div>
 
@@ -212,14 +212,14 @@
                                     ? 'text-indigo-100'
                                     : 'text-gray-400'}"
                             >
-                                {building.floors.length} Étage(s)
+                                {building.floors.length} {$t('admin.facilities.tage_s')}
                             </div>
                         </div>
                     {/each}
 
                     {#if hierarchy.length === 0}
                         <div class="text-center py-12 text-gray-400">
-                            <p class="text-sm font-medium">Aucun bâtiment</p>
+                            <p class="text-sm font-medium">{$t('admin.facilities.aucun_b_timent')}</p>
                         </div>
                     {/if}
                 </div>
@@ -232,7 +232,7 @@
                         }}
                         class="w-full py-4 bg-indigo-50 text-indigo-600 font-black rounded-2xl hover:bg-indigo-100 transition-all uppercase tracking-widest text-xs"
                     >
-                        + Ajouter Bâtiment
+                        {$t('admin.facilities.ajouter_b_timent')}
                     </button>
                 </div>
             </div>
@@ -249,7 +249,7 @@
                     <h2
                         class="text-lg font-black text-gray-900 flex items-center gap-2"
                     >
-                        <Layers size={20} class="text-indigo-600" /> Étages
+                        <Layers size={20} class="text-indigo-600" /> {$t('admin.facilities.tages')}
                     </h2>
                 </div>
 
@@ -306,8 +306,8 @@
                                         ? 'text-indigo-100'
                                         : 'text-gray-400'}"
                                 >
-                                    Level {floor.level_number} • {floor.rooms
-                                        .length} Salle(s)
+                                    {$t('admin.facilities.level')} {floor.level_number} • {floor.rooms
+                                        .length} {$t('admin.facilities.salle_s')}
                                 </div>
                             </div>
                         {/each}
@@ -315,7 +315,7 @@
                         {#if selectedBuilding.floors.length === 0}
                             <div class="text-center py-12 text-gray-400">
                                 <p class="text-sm font-medium">
-                                    Aucun étage défini
+                                    {$t('admin.facilities.aucun_tage_d_fini')}
                                 </p>
                             </div>
                         {/if}
@@ -325,7 +325,7 @@
                         >
                             <ArrowLeftCircle size={48} class="mb-4" />
                             <p class="font-bold text-gray-500">
-                                Sélectionnez un bâtiment
+                                {$t('admin.facilities.s_lectionnez_un_b_timent')}
                             </p>
                         </div>
                     {/if}
@@ -344,7 +344,7 @@
                         }}
                         class="w-full py-4 bg-indigo-50 text-indigo-600 font-black rounded-2xl hover:bg-indigo-100 transition-all uppercase tracking-widest text-xs"
                     >
-                        + Ajouter Étage
+                        {$t('admin.facilities.ajouter_tage')}
                     </button>
                 </div>
             </div>
@@ -361,7 +361,7 @@
                     <h2
                         class="text-lg font-black text-gray-900 flex items-center gap-2"
                     >
-                        <MapPin size={20} class="text-indigo-600" /> Salles
+                        <MapPin size={20} class="text-indigo-600" /> {$t('admin.facilities.salles')}
                     </h2>
                 </div>
 
@@ -426,7 +426,7 @@
                         {#if selectedFloor.rooms.length === 0}
                             <div class="text-center py-12 text-gray-400">
                                 <p class="text-sm font-medium">
-                                    Aucune salle définie
+                                    {$t('admin.facilities.aucune_salle_d_finie')}
                                 </p>
                             </div>
                         {/if}
@@ -436,7 +436,7 @@
                         >
                             <ArrowLeftCircle size={48} class="mb-4" />
                             <p class="font-bold text-gray-500">
-                                Sélectionnez un étage
+                                {$t('admin.facilities.s_lectionnez_un_tage')}
                             </p>
                         </div>
                     {/if}
@@ -457,7 +457,7 @@
                         }}
                         class="w-full py-4 bg-indigo-50 text-indigo-600 font-black rounded-2xl hover:bg-indigo-100 transition-all uppercase tracking-widest text-xs"
                     >
-                        + Ajouter Salle
+                        {$t('admin.facilities.ajouter_salle')}
                     </button>
                 </div>
             </div>
@@ -476,20 +476,20 @@
             transition:fly={{ y: 20 }}
         >
             <h3 class="text-2xl font-black text-gray-900 mb-6">
-                {buildingForm.id ? "Modifier" : "Ajouter"} Bâtiment
+                {buildingForm.id ? "Modifier" : "Ajouter"} {$t('admin.facilities.b_timent')}
             </h3>
             <div class="space-y-4">
                 <div>
                     <label
                         for="building-name"
                         class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2"
-                        >Nom du bâtiment</label
+                        >{$t('admin.facilities.nom_du_b_timent')}</label
                     >
                     <input
                         id="building-name"
                         type="text"
                         bind:value={buildingForm.name}
-                        placeholder="ex: Clinique Centrale"
+                        placeholder={$t('admin.facilities.ex_clinique_centrale')}
                         class="w-full px-5 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all"
                     />
                 </div>
@@ -497,13 +497,13 @@
                     <label
                         for="building-address"
                         class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2"
-                        >Adresse (Optionnel)</label
+                        >{$t('admin.facilities.adresse_optionnel')}</label
                     >
                     <input
                         id="building-address"
                         type="text"
                         bind:value={buildingForm.address}
-                        placeholder="Adresse..."
+                        placeholder={$t('admin.facilities.adresse')}
                         class="w-full px-5 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all"
                     />
                 </div>
@@ -512,12 +512,12 @@
                 <button
                     onclick={() => (showBuildingModal = false)}
                     class="flex-1 py-4 bg-gray-50 text-gray-500 font-bold rounded-2xl hover:bg-gray-100 transition-all"
-                    >Annuler</button
+                    >{$t('admin.facilities.annuler')}</button
                 >
                 <button
                     onclick={saveBuilding}
                     class="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
-                    >Enregistrer</button
+                    >{$t('admin.facilities.enregistrer')}</button
                 >
             </div>
         </div>
@@ -534,20 +534,20 @@
             transition:fly={{ y: 20 }}
         >
             <h3 class="text-2xl font-black text-gray-900 mb-6">
-                {floorForm.id ? "Modifier" : "Ajouter"} Étage
+                {floorForm.id ? "Modifier" : "Ajouter"} {$t('admin.facilities.tage')}
             </h3>
             <div class="space-y-4">
                 <div>
                     <label
                         for="floor-name"
                         class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2"
-                        >Nom de l'étage</label
+                        >{$t('admin.facilities.nom_de_l_tage')}</label
                     >
                     <input
                         id="floor-name"
                         type="text"
                         bind:value={floorForm.name}
-                        placeholder="ex: 1er Étage"
+                        placeholder={$t('admin.facilities.ex_1er_tage')}
                         class="w-full px-5 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all"
                     />
                 </div>
@@ -555,7 +555,7 @@
                     <label
                         for="floor-level"
                         class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2"
-                        >Niveau (ex: 0, 1, 2)</label
+                        >{$t('admin.facilities.niveau_ex_0_1_2')}</label
                     >
                     <input
                         id="floor-level"
@@ -569,12 +569,12 @@
                 <button
                     onclick={() => (showFloorModal = false)}
                     class="flex-1 py-4 bg-gray-50 text-gray-500 font-bold rounded-2xl hover:bg-gray-100 transition-all"
-                    >Annuler</button
+                    >{$t('admin.facilities.annuler')}</button
                 >
                 <button
                     onclick={saveFloor}
                     class="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
-                    >Enregistrer</button
+                    >{$t('admin.facilities.enregistrer')}</button
                 >
             </div>
         </div>
@@ -591,20 +591,20 @@
             transition:fly={{ y: 20 }}
         >
             <h3 class="text-2xl font-black text-gray-900 mb-6">
-                {roomForm.id ? "Modifier" : "Ajouter"} Salle
+                {roomForm.id ? "Modifier" : "Ajouter"} {$t('admin.facilities.salle')}
             </h3>
             <div class="space-y-4">
                 <div>
                     <label
                         for="room-name"
                         class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2"
-                        >Nom de la salle</label
+                        >{$t('admin.facilities.nom_de_la_salle')}</label
                     >
                     <input
                         id="room-name"
                         type="text"
                         bind:value={roomForm.name}
-                        placeholder="ex: Box 1"
+                        placeholder={$t('admin.facilities.ex_box_1')}
                         class="w-full px-5 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all"
                     />
                 </div>
@@ -613,24 +613,24 @@
                         <label
                             for="room-type"
                             class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2"
-                            >Type</label
+                            >{$t('admin.facilities.type')}</label
                         >
                         <select
                             id="room-type"
                             bind:value={roomForm.type}
                             class="w-full px-4 py-4 bg-gray-50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         >
-                            <option value="consultation">Consultation</option>
-                            <option value="surgery">Chirurgie</option>
-                            <option value="xray">Radio</option>
-                            <option value="waiting">Attente</option>
+                            <option value="consultation">{$t('admin.facilities.consultation')}</option>
+                            <option value="surgery">{$t('admin.facilities.chirurgie')}</option>
+                            <option value="xray">{$t('admin.facilities.radio')}</option>
+                            <option value="waiting">{$t('admin.facilities.attente')}</option>
                         </select>
                     </div>
                     <div>
                         <label
                             for="room-color"
                             class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2"
-                            >Couleur</label
+                            >{$t('admin.facilities.couleur')}</label
                         >
                         <input
                             id="room-color"
@@ -645,12 +645,12 @@
                 <button
                     onclick={() => (showRoomModal = false)}
                     class="flex-1 py-4 bg-gray-50 text-gray-500 font-bold rounded-2xl hover:bg-gray-100 transition-all"
-                    >Annuler</button
+                    >{$t('admin.facilities.annuler')}</button
                 >
                 <button
                     onclick={saveRoom}
                     class="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
-                    >Enregistrer</button
+                    >{$t('admin.facilities.enregistrer')}</button
                 >
             </div>
         </div>

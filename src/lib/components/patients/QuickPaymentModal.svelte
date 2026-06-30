@@ -59,7 +59,7 @@
                         <Banknote size={24} />
                     </div>
                     <div>
-                        <h3 class="text-xl font-black text-slate-900 leading-tight">Simple Pay</h3>
+                        <h3 class="text-xl font-black text-slate-900 leading-tight">{$t('components.quick_payment_modal.simple_pay')}</h3>
                         <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{patient.full_name}</p>
                     </div>
                 </div>
@@ -96,7 +96,7 @@
                         <div class="space-y-8">
                             <!-- Method Selection (Tiles) -->
                             <div class="space-y-3">
-                                <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Méthode de Paiement</label>
+                                <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{$t('components.quick_payment_modal.m_thode_de_paiement')}</label>
                                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     {#each PAYMENT_METHODS as method}
                                         <button 
@@ -117,7 +117,7 @@
 
                             <!-- Amount Input -->
                             <div class="space-y-3">
-                                <label for="amount" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Montant à Encaisser</label>
+                                <label for="amount" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{$t('components.quick_payment_modal.montant_encaisser')}</label>
                                 <div class="relative group">
                                     <input 
                                         id="amount" 
@@ -137,7 +137,7 @@
                                         class="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 transition-colors flex items-center gap-1.5 ml-1"
                                     >
                                         <Info size={12} />
-                                        Tout régler ({formatCurrency(balance.balance_due)})
+                                        {$t('components.quick_payment_modal.tout_r_gler')}{formatCurrency(balance.balance_due)})
                                     </button>
                                 {/if}
                             </div>
@@ -147,14 +147,14 @@
                         <div class="space-y-8">
                             <!-- Optional Note -->
                             <div class="space-y-3">
-                                <label for="notes" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Note (Optionnel)</label>
+                                <label for="notes" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{$t('components.quick_payment_modal.note_optionnel')}</label>
                                 <div class="relative">
                                     <textarea 
                                         id="notes" 
                                         name="notes" 
                                         bind:value={notes}
                                         rows="2"
-                                        placeholder="Ex: Paiement partiel, Avance..."
+                                        placeholder={$t('components.quick_payment_modal.ex_paiement_partiel_avance')}
                                         class="w-full bg-slate-50 border-2 border-slate-100 p-4 pl-12 rounded-2xl font-bold text-slate-700 focus:bg-white focus:border-emerald-600 transition-all outline-none resize-none"
                                     ></textarea>
                                     <div class="absolute left-4 top-4 text-slate-400">
@@ -166,7 +166,7 @@
                             <!-- Optional Invoice Link -->
                             {#if appConfig?.payment_mode === 'ADVANCED' && unpaidInvoices.length > 0}
                                 <div class="space-y-3">
-                                    <label for="invoice_id" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Lier à une facture (Optionnel)</label>
+                                    <label for="invoice_id" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{$t('components.quick_payment_modal.lier_une_facture_optionnel')}</label>
                                     <div class="relative">
                                         <select 
                                             id="invoice_id" 
@@ -174,7 +174,7 @@
                                             bind:value={selectedInvoiceId}
                                             class="w-full bg-slate-50 border-2 border-slate-100 p-4 pl-12 rounded-2xl font-bold text-slate-700 focus:bg-white focus:border-emerald-600 transition-all outline-none appearance-none"
                                         >
-                                            <option value="">Ne pas lier (Paiement direct)</option>
+                                            <option value="">{$t('components.quick_payment_modal.ne_pas_lier_paiement')}</option>
                                             {#each unpaidInvoices as inv}
                                                 <option value={inv.id.toString()}>#{inv.invoice_number} — {formatCurrency(inv.total_amount)}</option>
                                             {/each}
@@ -193,8 +193,8 @@
                                         <FileText size={20} />
                                     </div>
                                     <div>
-                                        <p class="text-sm font-black text-slate-900 leading-tight">Imprimer un reçu</p>
-                                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Automatique après validation</p>
+                                        <p class="text-sm font-black text-slate-900 leading-tight">{$t('components.quick_payment_modal.imprimer_un_re_u')}</p>
+                                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{$t('components.quick_payment_modal.automatique_apr_s_validation')}</p>
                                     </div>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
@@ -216,7 +216,7 @@
                             <div class="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
                         {:else}
                             <CheckCircle2 size={24} class="group-hover:scale-110 transition-transform" />
-                            Valider l'Encaissement
+                            {$t('components.quick_payment_modal.valider_lencaissement')}
                         {/if}
                     </button>
                 </div>

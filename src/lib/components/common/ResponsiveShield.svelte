@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { onMount } from "svelte";
     import { fade } from "svelte/transition";
 
@@ -21,7 +22,7 @@
     <div class="shield-overlay" transition:fade={{ duration: 200 }}>
         <div class="shield-content">
             <div class="shield-icon">🖥️</div>
-            <h1 class="shield-title">Optimisé pour Desktop</h1>
+            <h1 class="shield-title">{$t('components.responsive_shield.optimis_pour_desktop')}</h1>
             <p class="shield-message">
                 Dentistico est optimisé pour les écrans larges (Tablettes &
                 Laptops).

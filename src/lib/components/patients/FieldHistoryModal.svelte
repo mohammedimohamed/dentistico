@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { fade, scale } from 'svelte/transition';
     import { X, Clock, User, Calendar, FileText, ChevronRight } from 'lucide-svelte';
     import { onMount } from 'svelte';
@@ -79,8 +80,8 @@
                         <Clock size={24} />
                     </div>
                     <div>
-                        <h2 class="text-xl font-black text-slate-900">Historique : {fieldName}</h2>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Audit des modifications</p>
+                        <h2 class="text-xl font-black text-slate-900">{$t('components.field_history_modal.historique')} {fieldName}</h2>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{$t('components.field_history_modal.audit_des_modifications')}</p>
                     </div>
                 </div>
                 <button 
@@ -95,15 +96,15 @@
                 {#if isLoading}
                     <div class="flex flex-col items-center justify-center py-12 gap-4">
                         <div class="w-8 h-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Chargement de l'historique...</p>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">{$t('components.field_history_modal.chargement_de_lhistorique')}</p>
                     </div>
                 {:else if history.length === 0}
                     <div class="flex flex-col items-center justify-center py-12 text-center">
                         <div class="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-300 mb-4">
                             <Clock size={32} />
                         </div>
-                        <p class="text-sm font-bold text-slate-900">Aucune modification enregistrée</p>
-                        <p class="text-xs text-slate-400 mt-1">Les changements futurs seront trackés ici.</p>
+                        <p class="text-sm font-bold text-slate-900">{$t('components.field_history_modal.aucune_modification_enregistr_e')}</p>
+                        <p class="text-xs text-slate-400 mt-1">{$t('components.field_history_modal.les_changements_futurs_seront')}</p>
                     </div>
                 {:else}
                     <div class="space-y-6">
@@ -129,7 +130,7 @@
                                     
                                     <div class="grid grid-cols-2 gap-4">
                                         <div class="p-3 bg-slate-50 rounded-xl border border-slate-100/50">
-                                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Ancienne valeur</p>
+                                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{$t('components.field_history_modal.ancienne_valeur')}</p>
                                             {#if old.type === 'file'}
                                                 <a href={old.data} download={old.name} class="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:underline">
                                                     <FileText size={12} /> {old.name}
@@ -139,7 +140,7 @@
                                             {/if}
                                         </div>
                                         <div class="p-3 bg-indigo-50 rounded-xl border border-indigo-100/50">
-                                            <p class="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">Nouvelle valeur</p>
+                                            <p class="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">{$t('components.field_history_modal.nouvelle_valeur')}</p>
                                             {#if newV.type === 'file'}
                                                 <a href={newV.data} download={newV.name} class="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:underline">
                                                     <FileText size={12} /> {newV.name}

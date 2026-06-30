@@ -574,11 +574,11 @@
                 });
             } else {
                 const err = await response.json();
-                alert(`Check-in failed: ${err.error}`);
+                alert(`{$t('assistant.dashboard.appointment.checkin_failed')}`);
             }
         } catch (e: any) {
             logger.error("Check-in error:", e);
-            alert(`Error: ${e.message}`);
+            alert(`{$t('common.errors.message')}`);
         } finally {
             isSubmittingCheckIn = false;
         }
@@ -1250,7 +1250,7 @@
         });
 
         if (!response.ok) {
-            alert("Failed to reschedule appointment");
+            alert($t('assistant.dashboard.appointment.reschedule_failed'));
             info.revert();
         }
     }
@@ -1313,7 +1313,7 @@
                     <span class="text-5xl">☀️</span>
                 </div>
                 <h2 class="text-3xl font-black text-gray-900 mb-4">
-                    Prêt à commencer ?
+                    {$t('assistant.dashboard.shift.ready_prompt')}
                 </h2>
                 <p class="text-gray-600 mb-8 text-lg">
                     Veuillez ouvrir votre session de travail pour accéder aux
@@ -1324,7 +1324,7 @@
                     class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-2xl transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg flex items-center justify-center gap-3"
                 >
                     <span class="text-xl">🚀</span>
-                    Ouvrir ma journée
+                    {$t('assistant.dashboard.shift.open_my_day')}
                 </button>
             </div>
         </div>
@@ -1339,7 +1339,7 @@
                 <div class="flex flex-col pr-3 border-r border-indigo-50">
                     <span
                         class="text-[10px] uppercase font-bold text-indigo-300 tracking-wider"
-                        >Service en cours</span
+                        >{$t('assistant.dashboard.shift.service_ongoing')}</span
                     >
                     <span class="text-sm font-black font-mono text-indigo-600"
                         >{shiftDuration}</span
@@ -1363,7 +1363,7 @@
                 <button
                     onclick={() => (isEndShiftModalOpen = true)}
                     class="bg-rose-50 hover:bg-rose-100 text-rose-600 p-2 rounded-xl transition-all group active:scale-95"
-                    title="Clôturer la journée"
+                    title={$t('assistant.dashboard.shift.end_day')}
                 >
                     <span
                         class="text-lg group-hover:rotate-12 transition-transform inline-block"
@@ -1379,7 +1379,7 @@
                 <span class="text-lg group-hover:rotate-12 transition-transform"
                     >☀️</span
                 >
-                Ouvrir la journée
+                {$t('assistant.dashboard.shift.open_day')}
             </button>
         {/if}
     </div>
@@ -1404,7 +1404,7 @@
     <div class="mb-8 flex flex-wrap items-center gap-3">
         <span
             class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mr-2"
-            >Personnel en Direct :</span
+            >{$t('assistant.dashboard.shift.live_staff')}</span
         >
         {#each liveStaff as staff}
             <div
@@ -1497,7 +1497,7 @@
                             bind:value={statusFilter}
                             class="px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                         >
-                            <option value="">Tous les statuts</option>
+                            <option value="">{$t('doctor.patients.filters.all_statuses')}</option>
                             <option value="scheduled"
                                 >{$t(
                                     "assistant.dashboard.appointment.status.scheduled",
@@ -1553,7 +1553,7 @@
                             bind:value={selectedDoctorId}
                             class="px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
                         >
-                            <option value="">Tous les Docteurs</option>
+                            <option value="">{$t('assistant.dashboard.filters.all_doctors')}</option>
                             {#each data.doctors as dr}
                                 <option value={dr.id.toString()}
                                     >{dr.full_name}</option
@@ -3057,7 +3057,7 @@
                                     a.waiting_room_status === "waiting") &&
                                 new Date(a.start_time.replace(' ', 'T')).toDateString() ===
                                     new Date().toDateString(),
-                        ).length} Patients
+                        ).length} {$t('common.patients')}
                     </span>
                 </div>
             </div>
@@ -3127,7 +3127,7 @@
                                         class="flex items-center justify-between text-xs"
                                     >
                                         <span class="text-gray-400"
-                                            >Scheduled:</span
+                                            >{$t('assistant.dashboard.appointment.scheduled_at')}</span
                                         >
                                         <span class="font-bold text-indigo-600"
                                             >{new Date(
@@ -3142,7 +3142,7 @@
                                         class="flex items-center justify-between text-xs"
                                     >
                                         <span class="text-gray-400"
-                                            >Arrived:</span
+                                            >{$t('assistant.dashboard.appointment.arrived_at')}</span
                                         >
                                         <span class="font-bold text-green-600"
                                             >{new Date(
@@ -3169,7 +3169,7 @@
                                         onclick={() => openBookingModal(appt)}
                                         class="flex-1 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold hover:bg-indigo-600 hover:text-white transition-colors"
                                     >
-                                        👁️ View Details
+                                        {$t('common.view_details_icon')}
                                     </button>
                                 </div>
                             </div>
@@ -4101,7 +4101,7 @@
                                                     goto(
                                                         `/assistant/patients/${p.id}`,
                                                     );
-                                                }}>Détails</button
+                                                }}>{$t('common.details')}</button
                                             >
                                             <button
                                                 type="button"
@@ -4920,14 +4920,14 @@
                                         class="text-lg font-bold text-gray-900"
                                         id="confirm-modal-title"
                                     >
-                                        Confirm Status Change
+                                        {$t('assistant.dashboard.appointment.confirm_status_change')}
                                     </h3>
                                 </div>
                             </div>
                             <div class="mb-6">
                                 <p class="text-sm text-gray-600">
                                     {#if pendingAction.type === "bulk"}
-                                        Are you sure you want to {pendingAction.status ===
+                                        {$t('assistant.dashboard.appointment.confirm_bulk_message_prefix')} {pendingAction.status ===
                                         "confirmed"
                                             ? "confirm"
                                             : "cancel"}
@@ -4995,7 +4995,7 @@
                             >
                                 <span class="w-2 h-8 bg-blue-600 rounded-full"
                                 ></span>
-                                Patient Check-In
+                                {$t('assistant.dashboard.appointment.checkin')}
                             </h3>
 
                             <div class="space-y-4">
@@ -5033,7 +5033,7 @@
                                             <p
                                                 class="text-[10px] text-gray-400 uppercase font-bold"
                                             >
-                                                Arrival Time
+                                                {$t('assistant.dashboard.appointment.arrival_time')}
                                             </p>
                                             <p
                                                 class="text-sm font-bold text-green-600"
@@ -5053,11 +5053,11 @@
                                 <div class="space-y-2">
                                     <label
                                         class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1"
-                                        >Check-in Notes (Optional)</label
+                                        >{$t('assistant.dashboard.appointment.checkin_notes')}</label
                                     >
                                     <textarea
                                         bind:value={checkInNotes}
-                                        placeholder="e.g., Brought previous X-rays, needs referral..."
+                                        placeholder={$t('assistant.dashboard.appointment.notes_placeholder_example')}
                                         class="w-full rounded-xl border-gray-200 bg-gray-50 py-3 px-4 text-sm font-medium focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
                                     ></textarea>
                                 </div>
@@ -5112,12 +5112,12 @@
                                 🔔
                             </div>
                             <h3 class="text-2xl font-black text-gray-900 mb-2">
-                                Rendez-vous imminent
+                                {$t('assistant.dashboard.appointment.imminent')}
                             </h3>
                             <p
                                 class="text-gray-500 font-medium leading-relaxed"
                             >
-                                Le rendez-vous de <span
+                                {$t('assistant.dashboard.appointment.appointment_of')} <span
                                     class="text-indigo-600 font-black"
                                     >{imminentAppointment.patientName}</span
                                 > est pour maintenant. Le patient est-il présent
@@ -5144,7 +5144,7 @@
                                 onclick={() => (isImminentModalOpen = false)}
                                 class="w-full py-4 bg-white text-gray-400 font-black rounded-2xl hover:text-gray-600 transition-all uppercase text-[10px] tracking-widest"
                             >
-                                Pas encore / Non
+                                {$t('common.not_yet')}
                             </button>
                         </div>
                     </div>
@@ -5174,17 +5174,17 @@
             </div>
             <div class="space-y-1 text-xs">
                 <div class="flex items-center gap-2 text-gray-600">
-                    <span class="font-semibold w-12">Time:</span>
+                    <span class="font-semibold w-12">{$t('common.time_colon')}</span>
                     <span>{tooltip.time}</span>
                 </div>
                 <div class="flex items-center gap-2 text-gray-600">
-                    <span class="font-semibold w-12">Patient:</span>
+                    <span class="font-semibold w-12">{$t('common.patient_colon')}</span>
                     <span>{tooltip.patient}</span>
                 </div>
                 {#if tooltip.notes}
                     <div class="mt-2 pt-2 border-t border-gray-100">
                         <span class="font-semibold text-gray-500 block mb-0.5"
-                            >Notes:</span
+                            >{$t('common.notes_colon')}</span
                         >
                         <p class="text-gray-700 italic">{tooltip.notes}</p>
                     </div>
@@ -5243,7 +5243,7 @@
                                         <span
                                             class="w-2 h-8 bg-orange-500 rounded-full"
                                         ></span>
-                                        🚨 Urgence / Sans RDV
+                                        {$t('assistant.dashboard.appointment.emergency_no_appt_icon')}
                                     </h3>
                                     <button
                                         type="button"
@@ -5274,7 +5274,7 @@
                                             class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-bold focus:ring-2 focus:ring-orange-500 transition-all"
                                         >
                                             <option value=""
-                                                >Sélectionner un patient</option
+                                                >{$t('assistant.dashboard.placeholders.select_patient_prompt')}</option
                                             >
                                             {#each data.patients as p}
                                                 <option value={p.id}
@@ -5294,7 +5294,7 @@
                                     <div>
                                         <label
                                             class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5"
-                                            >Docteur à Assigné</label
+                                            >{$t('assistant.dashboard.appointment.doctor_assigned')}</label
                                         >
                                         <select
                                             name="doctor_id"
@@ -5302,7 +5302,7 @@
                                             class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-bold focus:ring-2 focus:ring-orange-500 transition-all"
                                         >
                                             <option value=""
-                                                >Sélectionner un docteur</option
+                                                >{$t('assistant.dashboard.placeholders.select_doctor_prompt')}</option
                                             >
                                             {#each data.doctors as dr}
                                                 <option value={dr.id}
@@ -5315,13 +5315,13 @@
                                     <div>
                                         <label
                                             class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5"
-                                            >Motif ou Note Rapide</label
+                                            >{$t('assistant.dashboard.appointment.quick_reason')}</label
                                         >
                                         <textarea
                                             name="reason"
                                             rows="2"
                                             class="w-full rounded-xl border-gray-100 bg-gray-50 py-3 text-sm font-medium focus:ring-2 focus:ring-orange-500 transition-all"
-                                            placeholder="Ex: Rage de dent, consultation urgente..."
+                                            placeholder={$t('assistant.dashboard.appointment.reason_placeholder')}
                                         ></textarea>
                                     </div>
                                 </div>
@@ -5363,7 +5363,7 @@
                     <span
                         class="bg-slate-800 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg shadow-xl whitespace-nowrap uppercase tracking-widest"
                     >
-                        Urgence / Sans RDV
+                        {$t('assistant.dashboard.appointment.type.emergency_no_appt')}
                     </span>
                     <button
                         type="button"
@@ -5385,7 +5385,7 @@
                     <span
                         class="bg-slate-800 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg shadow-xl whitespace-nowrap uppercase tracking-widest"
                     >
-                        Nouveau RDV
+                        {$t('assistant.dashboard.appointment.new_appt')}
                     </span>
                     <button
                         type="button"
@@ -5407,7 +5407,7 @@
                     <span
                         class="bg-slate-800 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg shadow-xl whitespace-nowrap uppercase tracking-widest"
                     >
-                        Nouveau Patient
+                        {$t('patients.new_patient')}
                     </span>
                     <button
                         type="button"
@@ -5464,10 +5464,10 @@
             >
                 <div class="bg-emerald-600 p-8 text-white">
                     <h3 class="text-2xl font-black mb-2">
-                        ☀️ Début de Service
+                        {$t('assistant.dashboard.shift.start_service_icon')}
                     </h3>
                     <p class="opacity-80">
-                        Initialisez votre caisse pour commencer la journée.
+                        {$t('assistant.dashboard.shift.initialize_cash')}
                     </p>
                 </div>
                 <form
@@ -5485,7 +5485,7 @@
                     <div class="mb-8">
                         <label
                             class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3"
-                            >Fond de caisse initial (MAD)</label
+                            >{$t('assistant.dashboard.shift.initial_cash_float')}</label
                         >
                         <div class="relative">
                             <span
@@ -5535,10 +5535,10 @@
             >
                 <div class="bg-rose-600 p-8 text-white">
                     <h3 class="text-2xl font-black mb-2">
-                        🌙 Clôture de Service
+                        {$t('assistant.dashboard.shift.end_service_icon')}
                     </h3>
                     <p class="opacity-80">
-                        Vérifiez vos comptes avant de terminer votre session.
+                        {$t('assistant.dashboard.shift.audit_warning')}
                     </p>
                 </div>
 
@@ -5566,7 +5566,7 @@
                         >
                             <span
                                 class="block text-[10px] uppercase font-bold text-gray-400 mb-1"
-                                >Fond initial</span
+                                >{$t('assistant.dashboard.shift.initial_float')}</span
                             >
                             <span class="text-lg font-black text-gray-700"
                                 >{formatCurrency(
@@ -5579,7 +5579,7 @@
                         >
                             <span
                                 class="block text-[10px] uppercase font-bold text-indigo-400 mb-1"
-                                >Total Encaissé</span
+                                >{$t('assistant.dashboard.shift.total_collected')}</span
                             >
                             <span class="text-lg font-black text-indigo-600"
                                 >+{formatCurrency(shiftPaymentsTotal)}</span
@@ -5593,11 +5593,11 @@
                         <div class="flex items-center justify-between mb-4">
                             <label
                                 class="block text-xs font-bold text-emerald-600 uppercase tracking-widest"
-                                >Calcul Théorique (Espèces)</label
+                                >{$t('assistant.dashboard.shift.theoretical_cash')}</label
                             >
                             <span
                                 class="bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold"
-                                >SMART CALC</span
+                                >{$t('assistant.dashboard.shift.smart_calc')}</span
                             >
                         </div>
                         <div class="text-3xl font-black text-emerald-700 mb-2">
@@ -5617,7 +5617,7 @@
                     <div class="mb-8">
                         <label
                             class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3"
-                            >Montant Réel en Caisse (Audit)</label
+                            >{$t('assistant.dashboard.shift.actual_cash')}</label
                         >
                         <div class="relative">
                             <span
@@ -5642,13 +5642,13 @@
                             onclick={() => (isEndShiftModalOpen = false)}
                             class="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-500 hover:bg-gray-50 transition-all"
                         >
-                            Continuer à travailler
+                            {$t('assistant.dashboard.shift.continue_working')}
                         </button>
                         <button
                             type="submit"
                             class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-rose-200 transition-all active:scale-95"
                         >
-                            Terminer le service
+                            {$t('assistant.dashboard.shift.end_service')}
                         </button>
                     </div>
                 </form>

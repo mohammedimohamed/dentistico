@@ -55,9 +55,9 @@
                     <div>
                         <h2 class="text-3xl font-black mb-1">{patient.full_name}</h2>
                         <div class="flex items-center gap-3 opacity-80 font-bold text-sm">
-                            <span>ID: #{patient.id.toString().padStart(4, '0')}</span>
+                            <span>{$t('components.quick_view_modal.id')}{patient.id.toString().padStart(4, '0')}</span>
                             <span class="w-1 h-1 bg-white rounded-full"></span>
-                            <span>{patient.age} ans</span>
+                            <span>{patient.age} {$t('components.quick_view_modal.ans')}</span>
                         </div>
                     </div>
                 </div>
@@ -68,14 +68,14 @@
                 <!-- Quick Stats -->
                 <div class="space-y-6">
                     <div>
-                        <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Dernière Visite</h4>
+                        <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">{$t('components.quick_view_modal.derni_re_visite')}</h4>
                         <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
                             <Calendar size={20} class="text-gray-400" />
                             <span class="font-bold text-gray-700">{patient.last_visit ? new Date(patient.last_visit).toLocaleDateString() : 'Aucune'}</span>
                         </div>
                     </div>
                     <div>
-                        <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Solde Actuel</h4>
+                        <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">{$t('components.quick_view_modal.solde_actuel')}</h4>
                         <div class="p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between {patient.net_balance < 0 ? 'bg-red-50 border-red-100 text-red-600' : 'bg-green-50 border-green-100 text-green-600'}">
                             <div class="flex items-center gap-3">
                                 {#if patient.net_balance < 0}
@@ -94,7 +94,7 @@
 
                 <!-- Recent Notes -->
                 <div class="space-y-4">
-                    <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">3 Dernières Notes Cliniques</h4>
+                    <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{$t('components.quick_view_modal.3_derni_res_notes')}</h4>
                     <div class="space-y-3">
                         {#each recentNotes as note}
                             <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
@@ -112,7 +112,7 @@
                     href="/doctor/patients/{patient.id}" 
                     class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm text-center hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100"
                 >
-                    OUVRIR DOSSIER COMPLET
+                    {$t('components.quick_view_modal.ouvrir_dossier_complet')}
                 </a>
                 <button 
                     onclick={() => patientStore.isQuickViewOpen = false}

@@ -261,7 +261,7 @@
     <!-- Recently Annotated (V2 Widget) -->
     {#if data.recentAnnotations && data.recentAnnotations.length > 0}
         <div class="mt-8">
-            <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-1">Dernières Annotations (V2)</h3>
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-1">{$t('doctor.dashboard.latest_annotations_v2')}</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 {#each data.recentAnnotations as patient}
                     <a href="/doctor/patients/{patient.id}/v2" class="group bg-white p-4 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-50 transition-all">
@@ -271,7 +271,7 @@
                             </div>
                             <div class="min-w-0">
                                 <p class="text-sm font-bold text-slate-900 truncate">{patient.full_name}</p>
-                                <p class="text-[10px] text-slate-400 font-medium">Modifié à {new Date(patient.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                <p class="text-[10px] text-slate-400 font-medium">{$t('common.modified_at')} {new Date(patient.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                             </div>
                         </div>
                     </a>
@@ -598,7 +598,7 @@
                                             {#if !selectedAppointment.patient_phone && selectedAppointment.secondary_phone}
                                                 <span
                                                     class="text-gray-400 ml-1 italic font-normal"
-                                                    >(Parent)</span
+                                                    >{$t('doctor.dashboard.parent_label')}</span
                                                 >
                                             {/if}
                                         </p>

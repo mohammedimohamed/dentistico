@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { enhance } from '$app/forms';
     import { fade, slide, scale } from 'svelte/transition';
     import { 
@@ -149,14 +150,14 @@
     <div class="flex justify-between items-end mb-12">
         <div>
             <nav class="flex items-center gap-2 text-xs font-black text-indigo-400 uppercase tracking-widest mb-4">
-                <a href="/admin" class="hover:text-indigo-600 transition-colors">Admin</a>
+                <a href="/admin" class="hover:text-indigo-600 transition-colors">{$t('admin.patients.custom_fields.admin')}</a>
                 <span class="text-slate-300">/</span>
-                <a href="/admin/settings" class="hover:text-indigo-600 transition-colors">Paramètres</a>
+                <a href="/admin/settings" class="hover:text-indigo-600 transition-colors">{$t('admin.patients.custom_fields.param_tres')}</a>
                 <span class="text-slate-300">/</span>
-                <span class="text-slate-900">Champs Personnalisés</span>
+                <span class="text-slate-900">{$t('admin.patients.custom_fields.champs_personnalis_s')}</span>
             </nav>
-            <h1 class="text-4xl font-black text-slate-900 tracking-tight">Champs Personnalisés</h1>
-            <p class="text-slate-500 font-medium mt-2">Définissez des informations supplémentaires à collecter pour chaque patient.</p>
+            <h1 class="text-4xl font-black text-slate-900 tracking-tight">{$t('admin.patients.custom_fields.champs_personnalis_s')}</h1>
+            <p class="text-slate-500 font-medium mt-2">{$t('admin.patients.custom_fields.d_finissez_des_informations_su')}</p>
         </div>
 
         <button 
@@ -164,7 +165,7 @@
             class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 transition-all flex items-center gap-3"
         >
             <Plus size={20} />
-            AJOUTER UN CHAMP
+            {$t('admin.patients.custom_fields.ajouter_un_champ')}
         </button>
     </div>
 
@@ -200,17 +201,17 @@
                         <div class="flex items-center gap-3">
                             <h3 class="font-black text-slate-900 text-lg">{def.name}</h3>
                             {#if def.is_required}
-                                <span class="px-2 py-0.5 rounded-lg bg-rose-50 text-rose-500 text-[10px] font-black uppercase">Requis</span>
+                                <span class="px-2 py-0.5 rounded-lg bg-rose-50 text-rose-500 text-[10px] font-black uppercase">{$t('admin.patients.custom_fields.requis')}</span>
                             {/if}
                             {#if def.is_full_width}
-                                <span class="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-500 text-[10px] font-black uppercase">Large</span>
+                                <span class="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-500 text-[10px] font-black uppercase">{$t('admin.patients.custom_fields.large')}</span>
                             {/if}
                         </div>
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-                            Type: {def.field_type} 
-                            {#if def.unit} • Unité: {def.unit}{/if}
+                            {$t('admin.patients.custom_fields.type')} {def.field_type} 
+                            {#if def.unit} {$t('admin.patients.custom_fields.unit')} {def.unit}{/if}
                             {#if def.field_type === 'select'}
-                                • {JSON.parse(def.options || '[]').length} options
+                                • {JSON.parse(def.options || '[]').length} {$t('admin.patients.custom_fields.options')}
                             {/if}
                         </p>
                     </div>
@@ -243,13 +244,13 @@
                 <div class="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-slate-200 mx-auto mb-6 shadow-sm">
                     <Settings2 size={40} />
                 </div>
-                <h3 class="text-xl font-black text-slate-400">Aucun champ défini</h3>
-                <p class="text-slate-400 font-medium mt-2">Commencez par ajouter votre premier champ personnalisé.</p>
+                <h3 class="text-xl font-black text-slate-400">{$t('admin.patients.custom_fields.aucun_champ_d_fini')}</h3>
+                <p class="text-slate-400 font-medium mt-2">{$t('admin.patients.custom_fields.commencez_par_ajouter_votre_pr')}</p>
                 <button 
                     onclick={openCreate}
                     class="mt-8 text-indigo-600 font-black text-sm hover:underline"
                 >
-                    Ajouter maintenant
+                    {$t('admin.patients.custom_fields.ajouter_maintenant')}
                 </button>
             </div>
         {/if}
@@ -310,27 +311,27 @@
                         {/if}
 
                         <div>
-                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Nom du champ</label>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.nom_du_champ')}</label>
                             <input 
                                 type="text" 
                                 name="name" 
                                 required 
                                 bind:value={editingDefinition.name}
-                                placeholder="Ex: Groupe Sanguin, Référence..."
+                                placeholder={$t('admin.patients.custom_fields.ex_groupe_sanguin_r_f_rence')}
                                 class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold text-lg"
                             />
                         </div>
 
                         <div class="grid grid-cols-2 gap-6">
                             <div>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Onglet (Tab)</label>
+                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.onglet_tab')}</label>
                                 <input 
                                     type="text" 
                                     name="tab_name" 
                                     required 
                                     list="tabs-list"
                                     bind:value={editingDefinition.tab_name}
-                                    placeholder="Ex: Général, Médical..."
+                                    placeholder={$t('admin.patients.custom_fields.ex_g_n_ral_m_dical')}
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
                                 />
                                 <datalist id="tabs-list">
@@ -340,14 +341,14 @@
                                 </datalist>
                             </div>
                             <div>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Groupe</label>
+                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.groupe')}</label>
                                 <input 
                                     type="text" 
                                     name="group_name" 
                                     required 
                                     list="groups-list"
                                     bind:value={editingDefinition.group_name}
-                                    placeholder="Ex: Informations, Antécédents..."
+                                    placeholder={$t('admin.patients.custom_fields.ex_informations_ant_c_dents')}
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
                                 />
                                 <datalist id="groups-list">
@@ -360,31 +361,31 @@
 
                         <div class="grid grid-cols-2 gap-6">
                             <div>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Type de donnée</label>
+                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.type_de_donn_e')}</label>
                                 <select 
                                     name="type" 
                                     required 
                                     bind:value={editingDefinition.field_type}
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold appearance-none cursor-pointer"
                                 >
-                                    <option value="text">Texte</option>
-                                    <option value="number">Nombre (Entier)</option>
-                                    <option value="float">Nombre (Décimal)</option>
-                                    <option value="tel">Téléphone</option>
-                                    <option value="email">Email</option>
-                                    <option value="select">Liste (Choix)</option>
-                                    <option value="date">Date</option>
-                                    <option value="file">Fichier</option>
-                                    <option value="composite">Composite (Multi-valeurs)</option>
+                                    <option value="text">{$t('admin.patients.custom_fields.texte')}</option>
+                                    <option value="number">{$t('admin.patients.custom_fields.nombre_entier')}</option>
+                                    <option value="float">{$t('admin.patients.custom_fields.nombre_d_cimal')}</option>
+                                    <option value="tel">{$t('admin.patients.custom_fields.t_l_phone')}</option>
+                                    <option value="email">{$t('admin.patients.custom_fields.email')}</option>
+                                    <option value="select">{$t('admin.patients.custom_fields.liste_choix')}</option>
+                                    <option value="date">{$t('admin.patients.custom_fields.date')}</option>
+                                    <option value="file">{$t('admin.patients.custom_fields.fichier')}</option>
+                                    <option value="composite">{$t('admin.patients.custom_fields.composite_multi_valeurs')}</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Unité (Optionnel)</label>
+                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.unit_optionnel')}</label>
                                 <input 
                                     type="text" 
                                     name="unit" 
                                     bind:value={editingDefinition.unit}
-                                    placeholder="Ex: kg, mg/dl, mm/h..."
+                                    placeholder={$t('admin.patients.custom_fields.ex_kg_mg_dl_mm_h')}
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
                                 />
                             </div>
@@ -392,39 +393,39 @@
 
                         {#if editingDefinition.field_type === 'composite'}
                             <div class="p-6 bg-amber-50 rounded-3xl border-2 border-amber-100 space-y-4" in:slide>
-                                <label class="block text-xs font-black text-amber-600 uppercase tracking-widest">Structure Composite (Séparé par des virgules)</label>
+                                <label class="block text-xs font-black text-amber-600 uppercase tracking-widest">{$t('admin.patients.custom_fields.structure_composite_s_par_par')}</label>
                                 <input 
                                     type="text" 
                                     name="composite_structure" 
                                     bind:value={editingDefinition.composite_structure}
-                                    placeholder="Ex: Systolique, Diastolique"
+                                    placeholder={$t('admin.patients.custom_fields.ex_systolique_diastolique')}
                                     class="w-full px-6 py-4 bg-white border-2 border-amber-200 rounded-2xl outline-none transition-all font-bold placeholder:text-amber-200 text-amber-900"
                                 />
-                                <p class="text-[9px] text-amber-500 font-bold uppercase tracking-tighter">Indiquez les sous-libellés pour générer plusieurs champs sur une seule ligne.</p>
+                                <p class="text-[9px] text-amber-500 font-bold uppercase tracking-tighter">{$t('admin.patients.custom_fields.indiquez_les_sous_libell_s_pou')}</p>
                             </div>
                         {/if}
 
                         {#if editingDefinition.field_type === 'number' || editingDefinition.field_type === 'float'}
                             <div class="grid grid-cols-2 gap-6" in:slide>
                                 <div>
-                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Norme Min</label>
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.norme_min')}</label>
                                     <input 
                                         type="number" 
                                         step="any"
                                         name="min_range" 
                                         bind:value={editingDefinition.min_range}
-                                        placeholder="Min..."
+                                        placeholder={$t('admin.patients.custom_fields.min')}
                                         class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
                                     />
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Norme Max</label>
+                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.norme_max')}</label>
                                     <input 
                                         type="number" 
                                         step="any"
                                         name="max_range" 
                                         bind:value={editingDefinition.max_range}
-                                        placeholder="Max..."
+                                        placeholder={$t('admin.patients.custom_fields.max')}
                                         class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-bold"
                                     />
                                 </div>
@@ -432,7 +433,7 @@
                         {/if}
 
                         <div>
-                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Ordre d'affichage</label>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.ordre_d_affichage')}</label>
                             <input 
                                 type="number" 
                                 name="display_order" 
@@ -442,7 +443,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Niveau d'Alerte Clinique</label>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.niveau_d_alerte_clinique')}</label>
                             <input type="hidden" name="alert_level" value={editingDefinition.alert_level || 'none'} />
                             <div class="grid grid-cols-4 gap-2">
                                 {#each ['none', 'info', 'warning', 'danger'] as level}
@@ -464,7 +465,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Icône Visuelle</label>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.ic_ne_visuelle')}</label>
                             <input type="hidden" name="icon" value={editingDefinition.icon} />
                             <div class="grid grid-cols-4 gap-3">
                                 {#each availableIcons as icon}
@@ -487,8 +488,8 @@
                                         <AlertCircle size={20} />
                                     </div>
                                     <div>
-                                        <p class="text-sm font-black text-slate-900">Champ obligatoire</p>
-                                        <p class="text-[10px] text-slate-400 font-medium">Bloquer l'enregistrement si vide</p>
+                                        <p class="text-sm font-black text-slate-900">{$t('admin.patients.custom_fields.champ_obligatoire')}</p>
+                                        <p class="text-[10px] text-slate-400 font-medium">{$t('admin.patients.custom_fields.bloquer_l_enregistrement_si_vi')}</p>
                                     </div>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
@@ -508,8 +509,8 @@
                                         <div class="w-5 h-3 border-2 border-blue-600 rounded-sm"></div>
                                     </div>
                                     <div>
-                                        <p class="text-sm font-black text-slate-900">Pleine largeur</p>
-                                        <p class="text-[10px] text-slate-400 font-medium">Prendre toute la largeur de la ligne</p>
+                                        <p class="text-sm font-black text-slate-900">{$t('admin.patients.custom_fields.pleine_largeur')}</p>
+                                        <p class="text-[10px] text-slate-400 font-medium">{$t('admin.patients.custom_fields.prendre_toute_la_largeur_de_la')}</p>
                                     </div>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
@@ -529,8 +530,8 @@
                                         <Clock size={20} />
                                     </div>
                                     <div>
-                                        <p class="text-sm font-black text-slate-900">Historique d'audit</p>
-                                        <p class="text-[10px] text-slate-400 font-medium">Suivre toutes les modifications historiques</p>
+                                        <p class="text-sm font-black text-slate-900">{$t('admin.patients.custom_fields.historique_d_audit')}</p>
+                                        <p class="text-[10px] text-slate-400 font-medium">{$t('admin.patients.custom_fields.suivre_toutes_les_modification')}</p>
                                     </div>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
@@ -547,27 +548,27 @@
 
                         {#if ['text', 'number', 'float', 'tel', 'email'].includes(editingDefinition.field_type)}
                             <div in:slide>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Validation Regex (Optionnel)</label>
+                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.validation_regex_optionnel')}</label>
                                 <input 
                                     type="text" 
                                     name="validation_regex" 
                                     bind:value={editingDefinition.validation_regex}
-                                    placeholder="Ex: ^[0-9]{10}$"
+                                    placeholder={$t('admin.patients.custom_fields.ex_0_9_10')}
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all font-mono text-sm"
                                 />
-                                <p class="text-[10px] text-slate-400 mt-2">Utilisez une expression régulière pour valider le contenu du champ.</p>
+                                <p class="text-[10px] text-slate-400 mt-2">{$t('admin.patients.custom_fields.utilisez_une_expression_r_guli')}</p>
                             </div>
                         {/if}
 
                         {#if editingDefinition.field_type === 'select'}
                             <div in:slide>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Options de la liste</label>
+                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{$t('admin.patients.custom_fields.options_de_la_liste')}</label>
                                 <div class="space-y-3">
                                     <div class="flex gap-2">
                                         <input 
                                             type="text" 
                                             bind:value={newOption}
-                                            placeholder="Ajouter une option..."
+                                            placeholder={$t('admin.patients.custom_fields.ajouter_une_option')}
                                             class="flex-1 px-4 py-2 bg-slate-50 rounded-xl border-none outline-none font-bold"
                                             onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
                                         />
@@ -583,7 +584,7 @@
                                         {#each optionsList as opt, i}
                                             <div class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm">
                                                 {opt}
-                                                <button type="button" onclick={() => removeOption(i)} class="text-slate-300 hover:text-rose-500 transition-colors">&times;</button>
+                                                <button type="button" onclick={() => removeOption(i)} class="text-slate-300 hover:text-rose-500 transition-colors">{$t('admin.patients.custom_fields.times')}</button>
                                             </div>
                                         {/each}
                                     </div>
@@ -600,14 +601,14 @@
                         class="flex-1 py-5 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
                     >
                         <Save size={20} />
-                        ENREGISTRER LE CHAMP
+                        {$t('admin.patients.custom_fields.enregistrer_le_champ')}
                     </button>
                     <button 
                         type="button" 
                         onclick={() => isModalOpen = false}
                         class="px-8 py-5 bg-white text-slate-500 rounded-2xl font-black text-sm border-2 border-slate-100 hover:bg-slate-50 transition-all"
                     >
-                        ANNULER
+                        {$t('admin.patients.custom_fields.annuler')}
                     </button>
                 </div>
             </form>

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { fade, slide } from 'svelte/transition';
     import { 
         Type, 
@@ -243,26 +244,26 @@
                                         {#if normStatus === 'GOOD'}
                                             <div class="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 animate-in fade-in zoom-in">
                                                 <CheckCircle2 size={10} />
-                                                <span class="text-[8px] font-black uppercase">Normal</span>
+                                                <span class="text-[8px] font-black uppercase">{$t('components.dynamic_field_generator.normal')}</span>
                                             </div>
                                         {:else if normStatus === 'WARNING'}
                                             <div class="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-50 text-rose-600 border border-rose-100 animate-bounce-subtle">
                                                 <AlertCircle size={10} />
-                                                <span class="text-[8px] font-black uppercase">Hors normes</span>
+                                                <span class="text-[8px] font-black uppercase">{$t('components.dynamic_field_generator.hors_normes')}</span>
                                             </div>
                                         {/if}
 
                                         {#if !isValid && values[def.name]}
                                             <div class="flex items-center gap-1 text-rose-500">
                                                 <AlertCircle size={12} />
-                                                <span class="text-[8px] font-bold uppercase tracking-tighter">Format invalide</span>
+                                                <span class="text-[8px] font-bold uppercase tracking-tighter">{$t('components.dynamic_field_generator.format_invalide')}</span>
                                             </div>
                                         {/if}
 
                                         {#if def.alert_level === 'info' && values[def.name]}
                                             <div class="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-100">
                                                 <InfoIcon size={10} />
-                                                <span class="text-[8px] font-black uppercase">Note</span>
+                                                <span class="text-[8px] font-black uppercase">{$t('components.dental_chart.note')}</span>
                                             </div>
                                         {/if}
 
@@ -325,7 +326,7 @@
                                                 required={def.is_required === 1}
                                                 class="w-full px-6 py-4 bg-slate-50/50 border-2 border-slate-100 focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50 rounded-[22px] outline-none transition-all font-bold text-base text-slate-900 appearance-none cursor-pointer shadow-sm"
                                             >
-                                                <option value="">-- Choisir --</option>
+                                                <option value="">{$t('components.dynamic_field_generator.choisir')}</option>
                                                 {#each options as opt}
                                                     <option value={opt}>{opt}</option>
                                                 {/each}
@@ -361,7 +362,7 @@
                                                 <label class="flex flex-col items-center justify-center w-full h-16 bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-[22px] cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all group">
                                                     <div class="flex items-center gap-3">
                                                         <Upload size={18} class="text-slate-400 group-hover:text-indigo-600" />
-                                                        <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-600">Joindre un document</span>
+                                                        <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest group-hover:text-indigo-600">{$t('components.dynamic_field_generator.joindre_un_document')}</span>
                                                     </div>
                                                     <input type="file" class="hidden" onchange={(e) => handleFileChange(def.name, e)} />
                                                 </label>

@@ -190,7 +190,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                     <div class="flex-1 bg-amber-50 border border-amber-100 rounded-xl p-2 flex items-center gap-2 shadow-sm">
                         <Stethoscope size={18} class="text-amber-500" />
                         <div>
-                            <p class="text-[9px] font-black uppercase tracking-wider text-amber-500">Notes Médicales</p>
+                            <p class="text-[9px] font-black uppercase tracking-wider text-amber-500">{$t('doctor.patients.medical_notes')}</p>
                             <p class="text-xs font-bold text-amber-900 leading-tight">{data.patient.medical_conditions}</p>
                         </div>
                     </div>
@@ -200,12 +200,12 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
             <!-- Financial Balance -->
             <div class="bg-slate-900 rounded-xl p-2.5 text-white flex items-center gap-6 shadow-xl shadow-slate-200">
                 <div class="text-center px-1">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Dû</p>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{$t('doctor.patients.total_due')}</p>
                     <p class="text-base font-black">{formatCurrency(balance.total_billed)}</p>
                 </div>
                 <div class="w-px h-6 bg-slate-700"></div>
                 <div class="text-center px-1">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Payé</p>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{$t('doctor.patients.total_paid')}</p>
                     <p class="text-base font-black text-emerald-400">{formatCurrency(balance.total_paid)}</p>
                 </div>
                 <div class="w-px h-6 bg-slate-700"></div>
@@ -232,7 +232,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                         onclick={() => activeTab = "historique"}
                         class="px-5 py-1.5 rounded-lg font-bold text-[11px] transition-all whitespace-nowrap {activeTab === 'historique' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
                     >
-                        Historique & Planning
+                        {$t('doctor.patients.history_planning')}
                     </button>
                     <button 
                         onclick={() => activeTab = "finances"}
@@ -244,7 +244,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                         onclick={() => activeTab = "admin"}
                         class="px-5 py-1.5 rounded-lg font-bold text-[11px] transition-all whitespace-nowrap {activeTab === 'admin' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-500 hover:text-slate-900'}"
                     >
-                        Fiche Personnalisée
+                        {$t('doctor.patients.custom_record')}
                     </button>
                 </div>
 
@@ -255,10 +255,10 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                 >
                     {#if isSidebarOpen}
                         <PanelRightClose size={14} />
-                        WIDE CANVAS
+                        {$t('doctor.patients.wide_canvas')}
                     {:else}
                         <PanelRightOpen size={14} />
-                        PANNEAU LATÉRAL
+                        {$t('doctor.patients.sidebar_uppercase')}
                     {/if}
                 </button>
             </div>
@@ -300,8 +300,8 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                     <div class="p-10 w-full">
                         <div class="flex items-center justify-between mb-10">
                             <div>
-                                <h2 class="text-2xl font-black text-slate-900">Fiche Médicale</h2>
-                                <p class="text-sm text-slate-500 font-medium">Informations cliniques et administratives spécifiques</p>
+                                <h2 class="text-2xl font-black text-slate-900">{$t('doctor.patients.medical_record')}</h2>
+                                <p class="text-sm text-slate-500 font-medium">{$t('doctor.patients.clinical_info_desc')}</p>
                             </div>
                             <button 
                                 type="button"
@@ -355,13 +355,13 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                     {#if saveSuccess}
                                         <div class="flex items-center gap-2 text-emerald-600 font-bold text-sm" in:fade>
                                             <Check size={18} />
-                                            Modifications enregistrées avec succès
+                                            {$t('common.success_messages.changes_saved')}
                                         </div>
                                     {/if}
                                 </div>
                                 <button type="submit" class="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2">
                                     <Check size={18} />
-                                    ENREGISTRER LES MODIFICATIONS
+                                    {$t('common.save_changes_uppercase')}
                                 </button>
                             </div>
                         </form>
@@ -389,7 +389,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                             <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-sm">
                                                 <Calendar size={20} />
                                             </div>
-                                            Rendez-vous à venir
+                                            {$t('doctor.patients.upcoming_appointments')}
                                         </h2>
                                         <span class="bg-indigo-50 text-indigo-600 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">{futureAppointments.length}</span>
                                     </div>
@@ -408,7 +408,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                                 <span class="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase">{rdv.appointment_type}</span>
                                                                 <span class="text-xs font-bold text-slate-400 flex items-center gap-1"><Clock size={12} /> {new Date(rdv.start_time.replace(' ', 'T')).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                                                             </div>
-                                                            <h4 class="font-bold text-slate-900 text-lg">Dr. {rdv.doctor_name || 'Médecin'}</h4>
+                                                            <h4 class="font-bold text-slate-900 text-lg">{$t('common.dr')} {rdv.doctor_name || 'Médecin'}</h4>
                                                             <p class="text-sm text-slate-500 font-medium mt-1">{rdv.notes || 'Aucune note particulière'}</p>
                                                         </div>
                                                     </div>
@@ -426,7 +426,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                             }}
                                                             class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-all"
                                                         >
-                                                            Déplacer
+                                                            {$t('common.move')}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -436,8 +436,8 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                 <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-200 mx-auto mb-4 border border-slate-100 shadow-sm">
                                                     <Calendar size={32} />
                                                 </div>
-                                                <p class="text-slate-400 font-bold">Aucun rendez-vous planifié</p>
-                                                <button onclick={() => isAppointmentModalOpen = true} class="mt-4 text-indigo-600 font-black text-sm hover:underline">Fixer un rendez-vous</button>
+                                                <p class="text-slate-400 font-bold">{$t('doctor.patients.no_appointments_scheduled')}</p>
+                                                <button onclick={() => isAppointmentModalOpen = true} class="mt-4 text-indigo-600 font-black text-sm hover:underline">{$t('doctor.patients.book_appointment')}</button>
                                             </div>
                                         {/each}
                                     </div>
@@ -446,7 +446,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                 <!-- Past Appointments -->
                                 <section>
                                     <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                        Rendez-vous Passés
+                                        {$t('doctor.patients.past_appointments')}
                                         <div class="h-px flex-1 bg-slate-100 ml-2"></div>
                                     </h2>
                                     <div class="space-y-3">
@@ -457,12 +457,12 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                         <p class="text-[10px] font-black text-slate-400 uppercase">{new Date(rdv.start_time.replace(' ', 'T')).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</p>
                                                     </div>
                                                     <div>
-                                                        <p class="text-sm font-bold text-slate-900">Dr. {rdv.doctor_name}</p>
+                                                        <p class="text-sm font-bold text-slate-900">{$t('common.dr')} {rdv.doctor_name}</p>
                                                         <p class="text-[10px] font-bold text-slate-400 uppercase">{rdv.appointment_type}</p>
                                                     </div>
                                                 </div>
                                                 <div class="flex items-center gap-3">
-                                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-600">Honoré</span>
+                                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-600">{$t('assistant.dashboard.appointment.status.honored')}</span>
                                                 </div>
                                             </div>
                                         {/each}
@@ -473,7 +473,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                 {#if cancelledAppointments.length > 0}
                                 <section>
                                     <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                        Annulés
+                                        {$t('common.status.cancelled_plural')}
                                         <div class="h-px flex-1 bg-slate-100 ml-2"></div>
                                     </h2>
                                     <div class="space-y-2 opacity-60">
@@ -482,7 +482,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                 <div class="text-xs font-bold text-slate-500">
                                                     {new Date(rdv.start_time.replace(' ', 'T')).toLocaleDateString('fr-FR')} — Dr. {rdv.doctor_name}
                                                 </div>
-                                                <span class="text-[10px] font-black uppercase text-rose-500">Annulé</span>
+                                                <span class="text-[10px] font-black uppercase text-rose-500">{$t('common.status.cancelled')}</span>
                                             </div>
                                         {/each}
                                     </div>
@@ -499,7 +499,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                             <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
                                                 <Stethoscope size={20} />
                                             </div>
-                                            Plan de Traitement
+                                            {$t('doctor.patients.treatment_plan')}
                                         </h2>
                                         <div class="flex items-center gap-3">
                                             {#if data.appConfig?.treatment_mode === 'BASIC'}
@@ -508,7 +508,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                     class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-lg shadow-indigo-100"
                                                 >
                                                     <PlusIcon size={14} />
-                                                    AJOUTER UN ACTE
+                                                    {$t('doctor.patients.add_act_button')}
                                                 </button>
                                             {/if}
                                             <span class="bg-amber-50 text-amber-600 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">{plannedTreatments.length}</span>
@@ -523,8 +523,8 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                     <div>
                                                         <span class="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-600 text-[10px] font-black uppercase">Dent {tr.tooth_number} • {tr.treatment_type}</span>
                                                         {#if isLegacyItem(tr)}
-                                                            <span class="ml-2 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-400 text-[9px] font-black uppercase tracking-widest border border-slate-200" title="Créé en mode Advanced — lecture seule">
-                                                                📦 Héritage
+                                                            <span class="ml-2 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-400 text-[9px] font-black uppercase tracking-widest border border-slate-200" title={$t('doctor.patients.advanced_read_only')}>
+                                                                {$t('doctor.patients.legacy_data')}
                                                             </span>
                                                         {/if}
                                                         <h4 class="font-bold text-slate-900 mt-2 text-base leading-tight">{tr.description || 'Soin sans description'}</h4>
@@ -532,7 +532,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                     <div class="text-right flex flex-col items-end gap-2">
                                                         <div class="flex items-center gap-2">
                                                             {#if (tr.paid_amount || 0) > 0}
-                                                                <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">PAYÉ</span>
+                                                                <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">{$t('common.status.paid_uppercase')}</span>
                                                             {:else}
                                                                 <details class="relative group/menu">
                                                                     <summary class="list-none cursor-pointer p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600">
@@ -541,13 +541,13 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                                     
                                                                     <div class="absolute right-0 top-full mt-1 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                                                         <div class="px-4 py-2 border-b border-slate-50 mb-1">
-                                                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions de soin</p>
+                                                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{$t('doctor.patients.treatment_actions')}</p>
                                                                         </div>
 
                                                                         {#if tr.source === 'dental'}
                                                                         <button onclick={() => openEditTreatment(tr)} class="w-full px-4 py-2.5 text-left text-xs font-bold text-indigo-600 hover:bg-indigo-50 flex items-center gap-2 transition-colors">
                                                                             <Edit2 size={14} />
-                                                                            Modifier ce soin
+                                                                            {$t('doctor.patients.edit_treatment')}
                                                                         </button>
                                                                         {/if}
 
@@ -557,20 +557,20 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                                             <input type="hidden" name="type" value="cancelled" />
                                                                             <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-600 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors">
                                                                                 <Archive size={14} />
-                                                                                Annuler ce soin
+                                                                                {$t('doctor.patients.cancel_treatment')}
                                                                             </button>
                                                                         </form>
                                                                         
                                                                         {#if data.user.role === 'admin' || data.user.role === 'doctor'}
                                                                             <form method="POST" action="?/hardDeleteTreatment" use:enhance={() => {
-                                                                                if(!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce soin ? Cette action est irréversible.')) return;
+                                                                                if(!confirm($t('doctor.patients.confirm_delete_treatment_irreversible'))) return;
                                                                                 return async ({ update }) => { await update(); };
                                                                             }}>
                                                                                 <input type="hidden" name="id" value={tr.id} />
                                                                                 <input type="hidden" name="source" value={tr.source} />
                                                                                 <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors mt-1 border-t border-slate-50 pt-3">
                                                                                     <Trash2 size={14} />
-                                                                                    Suppression définitive
+                                                                                    {$t('common.permanent_deletion')}
                                                                                 </button>
                                                                             </form>
                                                                         {/if}
@@ -585,7 +585,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                             </div>
                                         {:else}
                                             <div class="py-12 text-center bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200">
-                                                <p class="text-slate-400 font-bold">Aucun soin planifié</p>
+                                                <p class="text-slate-400 font-bold">{$t('doctor.patients.no_treatments_scheduled')}</p>
                                             </div>
                                         {/each}
                                     </div>
@@ -598,7 +598,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                             <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
                                                 <Check size={20} />
                                             </div>
-                                            Actes Réalisés
+                                            {$t('doctor.patients.acts_performed')}
                                         </h2>
                                         <span class="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">{pastTreatments.length}</span>
                                     </div>
@@ -617,7 +617,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                         
                                                         <div class="flex items-center gap-2">
                                                             {#if (tr.paid_amount || 0) > 0}
-                                                                <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">PAYÉ</span>
+                                                                <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">{$t('common.status.paid_uppercase')}</span>
                                                             {:else}
                                                                 <details class="relative group/menu">
                                                                     <summary class="list-none cursor-pointer p-1.5 hover:bg-white rounded-lg transition-colors text-slate-300 hover:text-slate-600">
@@ -626,13 +626,13 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                                     
                                                                     <div class="absolute right-0 top-full mt-1 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-3 z-50">
                                                                         <div class="px-4 py-2 border-b border-slate-50 mb-1">
-                                                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions de soin</p>
+                                                                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{$t('doctor.patients.treatment_actions')}</p>
                                                                         </div>
 
                                                                         {#if tr.source === 'dental'}
                                                                         <button onclick={() => openEditTreatment(tr)} class="w-full px-4 py-2.5 text-left text-xs font-bold text-indigo-600 hover:bg-indigo-50 flex items-center gap-2 transition-colors">
                                                                             <Edit2 size={14} />
-                                                                            Modifier ce soin
+                                                                            {$t('doctor.patients.edit_treatment')}
                                                                         </button>
                                                                         {/if}
 
@@ -642,20 +642,20 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                                             <input type="hidden" name="type" value="deleted" />
                                                                             <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 transition-colors">
                                                                                 <Archive size={14} />
-                                                                                Archiver ce soin
+                                                                                {$t('doctor.patients.archive_treatment')}
                                                                             </button>
                                                                         </form>
                                                                         
                                                                         {#if data.user.role === 'admin' || data.user.role === 'doctor'}
                                                                             <form method="POST" action="?/hardDeleteTreatment" use:enhance={() => {
-                                                                                if(!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce soin ?')) return;
+                                                                                if(!confirm($t('doctor.patients.confirm_delete_treatment'))) return;
                                                                                 return async ({ update }) => { await update(); };
                                                                             }}>
                                                                                 <input type="hidden" name="id" value={tr.id} />
                                                                                 <input type="hidden" name="source" value={tr.source} />
                                                                                 <button type="submit" class="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors mt-1 border-t border-slate-50 pt-3">
                                                                                     <Trash2 size={14} />
-                                                                                    Suppression définitive
+                                                                                    {$t('common.permanent_deletion')}
                                                                                 </button>
                                                                             </form>
                                                                         {/if}
@@ -676,21 +676,21 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                     <div class="p-8">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
                             <div class="bg-slate-50 p-6 rounded-[32px] border border-slate-100 shadow-sm">
-                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Facturé</p>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{$t('doctor.patients.total_billed')}</p>
                                 <p class="text-2xl font-black text-slate-900">{formatCurrency(data.balance?.total_billed || 0)}</p>
                             </div>
                             <div class="bg-emerald-50/50 p-6 rounded-[32px] border border-emerald-100 shadow-sm">
-                                <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Total Réglé</p>
+                                <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">{$t('doctor.patients.total_settled')}</p>
                                 <p class="text-2xl font-black text-emerald-600">{formatCurrency(data.balance?.total_paid || 0)}</p>
                             </div>
                             <div class="bg-indigo-600 p-6 rounded-[32px] shadow-xl shadow-indigo-100">
-                                <p class="text-[10px] font-black text-indigo-100 uppercase tracking-widest mb-1">Reste à payer</p>
+                                <p class="text-[10px] font-black text-indigo-100 uppercase tracking-widest mb-1">{$t('doctor.patients.remaining_to_pay')}</p>
                                 <p class="text-2xl font-black text-white">{formatCurrency(data.balance?.balance_due || 0)}</p>
                             </div>
                         </div>
 
                         <div class="flex justify-between items-center mb-8">
-                            <h2 class="text-xl font-black text-slate-900">Journal Financier (Ledger)</h2>
+                            <h2 class="text-xl font-black text-slate-900">{$t('doctor.patients.financial_ledger')}</h2>
                             <div class="flex gap-3">
                                 <button onclick={() => isPaymentModalOpen = true} class="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center gap-2 text-sm">
                                     <PlusIcon size={18} />
@@ -705,9 +705,9 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                     <tr>
                                         <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
                                         <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Type</th>
-                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Désignation</th>
-                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Débit</th>
-                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Crédit</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">{$t('common.designation')}</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">{$t('common.debit')}</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">{$t('common.credit')}</th>
                                         <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -744,18 +744,18 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                                     <form method="POST" action="?/reverseTransaction" use:enhance>
                                                         <input type="hidden" name="source_type" value={tx.source_type} />
                                                         <input type="hidden" name="source_id" value={tx.source_id} />
-                                                        <button type="submit" class="p-2 hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded-lg transition-all" title="Annuler cette écriture">
+                                                        <button type="submit" class="p-2 hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded-lg transition-all" title={$t('doctor.patients.cancel_entry')}>
                                                             <RotateCcw size={14} />
                                                         </button>
                                                     </form>
                                                 {:else if tx.amount < 0 || data.transactions.some(t => t.source_id === tx.source_id && t.source_type === tx.source_type && t.amount === -tx.amount)}
-                                                    <span class="text-[9px] font-black text-slate-300 uppercase tracking-tighter">ANNULÉ</span>
+                                                    <span class="text-[9px] font-black text-slate-300 uppercase tracking-tighter">{$t('common.status.cancelled_uppercase')}</span>
                                                 {/if}
                                             </td>
                                         </tr>
                                     {:else}
                                         <tr>
-                                            <td colspan="6" class="px-6 py-12 text-center text-slate-400 font-bold">Aucune transaction enregistrée</td>
+                                            <td colspan="6" class="px-6 py-12 text-center text-slate-400 font-bold">{$t('doctor.patients.no_transactions')}</td>
                                         </tr>
                                     {/each}
                                 </tbody>
@@ -771,18 +771,18 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                             <FileText size={20} />
                                         </div>
                                         <div>
-                                            <h2 class="text-xl font-black text-slate-900">Facturation & Devis</h2>
-                                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gestion avancée des documents financiers</p>
+                                            <h2 class="text-xl font-black text-slate-900">{$t('doctor.patients.billing_quotes')}</h2>
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{$t('doctor.patients.billing_desc')}</p>
                                         </div>
                                     </div>
                                     <div class="flex gap-3">
                                         <button class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-all flex items-center gap-2">
                                             <PlusIcon size={14} />
-                                            DEVIS (PROFORMA)
+                                            {$t('doctor.patients.proforma_invoice')}
                                         </button>
                                         <button class="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shadow-slate-200">
                                             <PlusIcon size={14} />
-                                            NOUVELLE FACTURE
+                                            {$t('doctor.patients.new_invoice_button')}
                                         </button>
                                     </div>
                                 </div>
@@ -814,7 +814,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
                                     </div>
                                 {:else}
                                     <div class="py-12 text-center bg-slate-50/50 rounded-[32px] border-2 border-dashed border-slate-200">
-                                        <p class="text-slate-400 font-bold">Aucune facture générée pour ce patient</p>
+                                        <p class="text-slate-400 font-bold">{$t('doctor.patients.no_invoices')}</p>
                                     </div>
                                 {/if}
                             </div>
@@ -857,7 +857,7 @@ import FastTrackTreatmentModal from "$lib/components/patients/FastTrackTreatment
             transition:fly={{ x: 320, duration: 300 }}
         >
             <div class="flex items-center justify-between mb-8">
-                <h3 class="text-xl font-black text-slate-900">Patient & Actions</h3>
+                <h3 class="text-xl font-black text-slate-900">{$t('doctor.patients.patient_actions')}</h3>
                 <button 
                     onclick={() => isMobileDrawerOpen = false}
                     class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-rose-500"

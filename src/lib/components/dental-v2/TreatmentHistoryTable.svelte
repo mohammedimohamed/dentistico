@@ -19,7 +19,7 @@
     <div class="flex items-center justify-between mb-6 px-1">
         <div>
             <h3 class="text-xl font-black text-slate-900">{$t("dental.treatment_history")}</h3>
-            <p class="text-sm font-medium text-slate-500">{treatments.length} actes enregistrés</p>
+            <p class="text-sm font-medium text-slate-500">{treatments.length} {$t('components.treatment_history_table.actes_enregistr_s')}</p>
         </div>
     </div>
 
@@ -33,12 +33,12 @@
             <table class="min-w-full divide-y divide-slate-100">
                 <thead class="bg-slate-50/50">
                     <tr>
-                        <th scope="col" class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                        <th scope="col" class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Dent / Zone</th>
-                        <th scope="col" class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Description de l'acte</th>
-                        <th scope="col" class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Diagnostic</th>
-                        <th scope="col" class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut</th>
-                        <th scope="col" class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Montant</th>
+                        <th scope="col" class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">{$t('common.date')}</th>
+                        <th scope="col" class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">{$t('components.treatment_history_table.dent_zone')}</th>
+                        <th scope="col" class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">{$t('components.treatment_history_table.description_de_lacte')}</th>
+                        <th scope="col" class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">{$t('admin.cdt_codes.categories.Diagnostic')}</th>
+                        <th scope="col" class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">{$t('components.dental_chart.statut')}</th>
+                        <th scope="col" class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">{$t('components.treatment_history_table.montant')}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-50">
@@ -59,14 +59,14 @@
                             <!-- Tooth / Context -->
                             <td class="px-6 py-5 whitespace-nowrap">
                                 {#if treatment.source === "general"}
-                                    <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider">Général</span>
+                                    <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider">{$t('components.dental_chart.g_n_ral')}</span>
                                 {:else}
                                     <div class="flex items-center gap-3">
                                         <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black border border-indigo-100 shadow-sm">
                                             {treatment.tooth_number}
                                         </div>
                                         <div class="flex flex-col">
-                                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Dent</span>
+                                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{$t('components.clinical_workstation.dent')}</span>
                                             <span class="text-xs font-bold text-slate-700">{getToothName(treatment.tooth_number)}</span>
                                         </div>
                                     </div>
@@ -84,7 +84,7 @@
                                             <span class="text-[10px] font-bold text-indigo-400 bg-indigo-50 px-1.5 py-0.5 rounded leading-none">{treatment.cdt_code}</span>
                                         {/if}
                                         {#if treatment.surfaces}
-                                            <span class="text-[10px] font-bold text-slate-400 font-mono">Surfaces: {treatment.surfaces}</span>
+                                            <span class="text-[10px] font-bold text-slate-400 font-mono">{$t('components.treatment_history_table.surfaces')} {treatment.surfaces}</span>
                                         {/if}
                                     </div>
                                 </div>
@@ -104,16 +104,16 @@
                                 {#if treatment.status === 'completed'}
                                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase">
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                        Terminé
+                                        {$t('components.dental_chart.termin')}
                                     </span>
                                 {:else if treatment.status === 'planned'}
                                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-[10px] font-black uppercase">
                                         <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                        Prévu
+                                        {$t('components.treatment_history_table.pr_vu')}
                                     </span>
                                 {:else}
                                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase">
-                                        Existant
+                                        {$t('components.dental_chart.existant')}
                                     </span>
                                 {/if}
                             </td>

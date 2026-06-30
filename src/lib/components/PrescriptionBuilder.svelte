@@ -217,9 +217,9 @@
                     bind:value={type}
                     class="block w-full border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium py-3 px-4 border"
                 >
-                    <option value="Standard">Standard</option>
-                    <option value="Chronic">Chronic</option>
-                    <option value="Urgent">Urgent</option>
+                    <option value={$t('components.prescription_builder.standard')}>Standard</option>
+                    <option value={$t('components.prescription_builder.chronic')}>Chronic</option>
+                    <option value={$t('components.prescription_builder.urgent')}>Urgent</option>
                 </select>
             </div>
             <div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { fade, slide, scale } from 'svelte/transition';
     import { AlertCircle, AlertTriangle, Info, Bell, X, Skull, HeartPulse } from 'lucide-svelte';
     import { formatCompositeValue } from '$lib/utils/clinicalFormatter';
@@ -84,8 +85,8 @@
                     <div class="w-20 h-20 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/30 animate-pulse">
                         <HeartPulse size={40} />
                     </div>
-                    <h2 class="text-3xl font-black uppercase tracking-tighter mb-2">Alerte Critique</h2>
-                    <p class="text-rose-100 font-bold uppercase text-[10px] tracking-[0.2em]">Données médicales vitales détectées</p>
+                    <h2 class="text-3xl font-black uppercase tracking-tighter mb-2">{$t('components.alert_banner.alerte_critique')}</h2>
+                    <p class="text-rose-100 font-bold uppercase text-[10px] tracking-[0.2em]">{$t('components.alert_banner.donn_es_m_dicales')}</p>
                 </div>
             </div>
 
@@ -126,7 +127,7 @@
                 </div>
                 
                 <div class="flex-1 min-w-0">
-                    <p class="text-[10px] font-black uppercase tracking-widest opacity-60 leading-none mb-1.5">Alerte Clinique : {alert.name}</p>
+                    <p class="text-[10px] font-black uppercase tracking-widest opacity-60 leading-none mb-1.5">{$t('components.alert_banner.alerte_clinique')} {alert.name}</p>
                     <p class="text-sm font-bold truncate">
                         {formatValue(alert)}
                     </p>
@@ -134,7 +135,7 @@
 
                 {#if alert.level === 'danger'}
                     <div class="px-3 py-1 rounded-full bg-rose-500 text-white text-[9px] font-black uppercase tracking-tighter shadow-lg shadow-rose-200">
-                        Critique
+                        {$t('components.alert_banner.critique')}
                     </div>
                 {/if}
             </div>

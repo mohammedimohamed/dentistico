@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { fade } from "svelte/transition";
 
     let { stats } = $props<{
@@ -25,8 +26,8 @@
             </svg>
         </div>
         <div class="title-group">
-            <h3>Analyse Profils</h3>
-            <p>Nouveaux vs Récurrents</p>
+            <h3>{$t('components.patient_type_card.analyse_profils')}</h3>
+            <p>{$t('components.patient_type_card.nouveaux_vs_r_currents')}</p>
         </div>
     </div>
 
@@ -34,15 +35,15 @@
         <div class="type-cards">
             <div class="type-mini-card new">
                 <div class="card-val">{stats.new}</div>
-                <div class="card-lab">Nouveaux</div>
+                <div class="card-lab">{$t('components.patient_type_card.nouveaux')}</div>
             </div>
             <div class="type-mini-card returning">
                 <div class="card-val">{stats.returning}</div>
-                <div class="card-lab">Anciens</div>
+                <div class="card-lab">{$t('components.patient_type_card.anciens')}</div>
             </div>
             <div class="type-mini-card planned">
                 <div class="card-val">{stats.planned}</div>
-                <div class="card-lab">Planifiés</div>
+                <div class="card-lab">{$t('components.appointment_status_card.planifi_s')}</div>
             </div>
         </div>
     </div>

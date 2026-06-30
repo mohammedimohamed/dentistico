@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { getAnatomy } from "$lib/utils/toothLogicV2";
     import { dentalColors } from "$lib/stores/dentalSettings.svelte";
     import { createEventDispatcher } from "svelte";
@@ -82,7 +83,7 @@
                         class="zone-path crown-zone"
                         onclick={(e) => handleZoneClick(name, e)}
                     >
-                        <title>{fdi} - Face {name}</title>
+                        <title>{fdi} {$t('components.interactive_tooth_v2.face')} {name}</title>
                     </path>
                 {/each}
             </g>
@@ -99,7 +100,7 @@
                         class="zone-path root-zone"
                         onclick={(e) => handleZoneClick('R1', e)}
                     >
-                        <title>{fdi} - Canal R1</title>
+                        <title>{fdi} {$t('components.interactive_tooth_v2.canal_r1')}</title>
                     </path>
                 {:else if anatomy.roots === 2}
                     <!-- Two Roots (Bifurcation) -->
@@ -111,7 +112,7 @@
                         class="zone-path root-zone"
                         onclick={(e) => handleZoneClick('R1', e)}
                     >
-                        <title>{fdi} - Canal R1</title>
+                        <title>{fdi} {$t('components.interactive_tooth_v2.canal_r1')}</title>
                     </path>
                     <path
                         d="M 25,42 Q 26,70 30,90 Q 32,93 34,90 Q 38,70 40,42 Z"
@@ -121,7 +122,7 @@
                         class="zone-path root-zone"
                         onclick={(e) => handleZoneClick('R2', e)}
                     >
-                        <title>{fdi} - Canal R2</title>
+                        <title>{fdi} {$t('components.interactive_tooth_v2.canal_r2')}</title>
                     </path>
                 {:else if anatomy.roots === 3}
                     <!-- Three Roots (Trifurcation - 2 side, 1 center/longer) -->
@@ -134,7 +135,7 @@
                         class="zone-path root-zone"
                         onclick={(e) => handleZoneClick('R3', e)}
                     >
-                        <title>{fdi} - Canal Palatin (R3)</title>
+                        <title>{fdi} {$t('components.interactive_tooth_v2.canal_palatin_r3')}</title>
                     </path>
                     <!-- Mesio-buccal -->
                     <path
@@ -145,7 +146,7 @@
                         class="zone-path root-zone"
                         onclick={(e) => handleZoneClick('R1', e)}
                     >
-                        <title>{fdi} - Canal Mésio-buccal (R1)</title>
+                        <title>{fdi} {$t('components.interactive_tooth_v2.canal_m_siobuccal_r1')}</title>
                     </path>
                     <!-- Disto-buccal -->
                     <path
@@ -156,7 +157,7 @@
                         class="zone-path root-zone"
                         onclick={(e) => handleZoneClick('R2', e)}
                     >
-                        <title>{fdi} - Canal Disto-buccal (R2)</title>
+                        <title>{fdi} {$t('components.interactive_tooth_v2.canal_distobuccal_r2')}</title>
                     </path>
                 {/if}
             </g>

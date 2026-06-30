@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { enhance } from "$app/forms";
     import { X, Check, Stethoscope, Info } from "lucide-svelte";
     import { fade, scale } from "svelte/transition";
@@ -44,8 +45,8 @@
                         <Stethoscope size={24} />
                     </div>
                     <div>
-                        <h3 class="text-xl font-black text-slate-900 leading-tight">Fast-Track Traitement</h3>
-                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Saisie Manuelle Rapide</p>
+                        <h3 class="text-xl font-black text-slate-900 leading-tight">{$t('components.fast_track_treatment_modal.fasttrack_traitement')}</h3>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{$t('components.fast_track_treatment_modal.saisie_manuelle_rapide')}</p>
                     </div>
                 </div>
                 <button 
@@ -79,12 +80,12 @@
                         <div class="space-y-6">
                             <!-- Title -->
                             <div class="space-y-2">
-                                <label for="title" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Acte / Titre</label>
+                                <label for="title" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{$t('components.fast_track_treatment_modal.acte_titre')}</label>
                                 <input 
                                     id="title" 
                                     name="title" 
                                     type="text"
-                                    placeholder="Ex: Consultation, Détartrage..."
+                                    placeholder={$t('components.fast_track_treatment_modal.ex_consultation_d_tartrage')}
                                     bind:value={title}
                                     required
                                     class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-900 focus:bg-white focus:border-amber-500 transition-all outline-none"
@@ -93,11 +94,11 @@
 
                             <!-- Description -->
                             <div class="space-y-2">
-                                <label for="description" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Description (Détails)</label>
+                                <label for="description" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{$t('components.fast_track_treatment_modal.description_d_tails')}</label>
                                 <textarea 
                                     id="description" 
                                     name="description" 
-                                    placeholder="Détails optionnels sur l'intervention..."
+                                    placeholder={$t('components.fast_track_treatment_modal.d_tails_optionnels_sur')}
                                     bind:value={description}
                                     rows="4"
                                     class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 focus:bg-white focus:border-amber-500 transition-all outline-none resize-none"
@@ -110,7 +111,7 @@
                             <div class="grid grid-cols-1 gap-6">
                                 <!-- Amount -->
                                 <div class="space-y-2">
-                                    <label for="amount" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Montant (DZD)</label>
+                                    <label for="amount" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{$t('components.fast_track_treatment_modal.montant_dzd')}</label>
                                     <div class="relative group">
                                         <input 
                                             id="amount" 
@@ -127,7 +128,7 @@
 
                                 <!-- Status -->
                                 <div class="space-y-2">
-                                    <label for="status" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">État de l'acte</label>
+                                    <label for="status" class="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{$t('components.fast_track_treatment_modal.tat_de_lacte')}</label>
                                     <div class="grid grid-cols-2 gap-3">
                                         <button 
                                             type="button"
@@ -153,7 +154,7 @@
                                 <div class="p-6 rounded-2xl bg-emerald-50 border border-emerald-100 flex gap-4 text-emerald-700" in:fade>
                                     <Info size={20} class="shrink-0 mt-0.5" />
                                     <p class="text-xs font-bold leading-relaxed">
-                                        En marquant cet acte comme <span class="font-black underline uppercase">Terminé</span>, un débit de <span class="font-black underline">{formatCurrency(amount)}</span> sera automatiquement inscrit au Journal Financier du patient.
+                                        {$t('components.fast_track_treatment_modal.en_marquant_cet_acte')} <span class="font-black underline uppercase">{$t('components.dental_chart.termin')}</span>{$t('components.fast_track_treatment_modal.un_d_bit_de')} <span class="font-black underline">{formatCurrency(amount)}</span> {$t('components.fast_track_treatment_modal.sera_automatiquement_inscrit_au')}
                                     </p>
                                 </div>
                             {/if}
@@ -170,7 +171,7 @@
                             <div class="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
                         {:else}
                             <Check size={24} class="group-hover:scale-110 transition-transform" />
-                            ENREGISTRER L'ACTE
+                            {$t('components.fast_track_treatment_modal.enregistrer_lacte')}
                         {/if}
                     </button>
                 </div>

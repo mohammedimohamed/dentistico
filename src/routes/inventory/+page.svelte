@@ -82,7 +82,7 @@
                     onclick={() => (isSupplierModalOpen = true)}
                     class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-bold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-all font-sans"
                 >
-                    + Supplier
+                    {$t('inventory.supplier')}
                 </button>
             {/if}
             {#if data.user.role === "admin" || (data.user.role === "doctor" && data.clinicSettings?.allow_doctor_create_product === 1) || (data.user.role === "assistant" && data.clinicSettings?.allow_assistant_create_product === 1)}
@@ -90,7 +90,7 @@
                     onclick={() => (isProductModalOpen = true)}
                     class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-all font-sans"
                 >
-                    + Product
+                    {$t('inventory.product')}
                 </button>
             {/if}
         </div>
@@ -111,7 +111,7 @@
                             <dt
                                 class="text-sm font-medium text-gray-500 truncate"
                             >
-                                Inventory Value
+                                {$t('inventory.inventory_value')}
                             </dt>
                             <dd class="text-lg font-bold text-gray-900">
                                 {data.kpis.totalValue.toLocaleString()} دج
@@ -133,7 +133,7 @@
                             <dt
                                 class="text-sm font-medium text-gray-500 truncate"
                             >
-                                Expiring Soon
+                                {$t('inventory.expiring_soon')}
                             </dt>
                             <dd class="text-lg font-bold text-orange-600">
                                 {data.kpis.expiringSoon}
@@ -155,7 +155,7 @@
                             <dt
                                 class="text-sm font-medium text-gray-500 truncate"
                             >
-                                Expired
+                                {$t('inventory.expired')}
                             </dt>
                             <dd class="text-lg font-bold text-red-600">
                                 {data.kpis.expired}
@@ -177,7 +177,7 @@
                             <dt
                                 class="text-sm font-medium text-gray-500 truncate"
                             >
-                                Low Stock
+                                {$t('inventory.low_stock')}
                             </dt>
                             <dd class="text-lg font-bold text-yellow-600">
                                 {data.kpis.lowStock}
@@ -196,7 +196,7 @@
                         type="text"
                         bind:value={filters.search}
                         oninput={applyFilters}
-                        placeholder="Search product, barcode or batch..."
+                        placeholder={$t('inventory.search_product_barcode_or_batc')}
                         class="w-full pl-10 pr-4 py-3 rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm h-12"
                     />
                     <span class="absolute left-3 top-3.5 text-gray-400">🔍</span
@@ -208,9 +208,9 @@
                     onchange={applyFilters}
                     class="rounded-xl border-gray-200 text-sm h-12"
                 >
-                    <option value="">All Statuses</option>
-                    <option value="low_stock">Low Stock</option>
-                    <option value="out_of_stock">Out of Stock</option>
+                    <option value="">{$t('inventory.all_statuses')}</option>
+                    <option value="low_stock">{$t('inventory.low_stock')}</option>
+                    <option value="out_of_stock">{$t('inventory.out_of_stock')}</option>
                 </select>
 
                 <select
@@ -218,7 +218,7 @@
                     onchange={applyFilters}
                     class="rounded-xl border-gray-200 text-sm h-12"
                 >
-                    <option value="">All Suppliers</option>
+                    <option value="">{$t('inventory.all_suppliers')}</option>
                     {#each data.suppliers as s}
                         <option value={s.id}>{s.name}</option>
                     {/each}
@@ -229,9 +229,9 @@
                     onchange={applyFilters}
                     class="rounded-xl border-gray-200 text-sm h-12"
                 >
-                    <option value="">Expiration Filter</option>
-                    <option value="soon">Expires Soon (&lt;30d)</option>
-                    <option value="expired">Already Expired</option>
+                    <option value="">{$t('inventory.expiration_filter')}</option>
+                    <option value="soon">{$t('inventory.expires_soon_lt_30d')}</option>
+                    <option value="expired">{$t('inventory.already_expired')}</option>
                 </select>
             </div>
         </div>
@@ -248,23 +248,23 @@
                         ></th>
                         <th
                             class="px-6 py-4 text-start text-xs font-bold text-gray-500 uppercase tracking-wider"
-                            >Product</th
+                            >{$t('inventory.product')}</th
                         >
                         <th
                             class="px-6 py-4 text-start text-xs font-bold text-gray-500 uppercase tracking-wider"
-                            >Category</th
+                            >{$t('inventory.category')}</th
                         >
                         <th
                             class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider"
-                            >Total Stock</th
+                            >{$t('inventory.total_stock')}</th
                         >
                         <th
                             class="px-6 py-4 text-start text-xs font-bold text-gray-500 uppercase tracking-wider"
-                            >Unit</th
+                            >{$t('inventory.unit')}</th
                         >
                         <th
                             class="px-4 py-4 text-end text-xs font-bold text-gray-500 uppercase tracking-wider"
-                            >Actions</th
+                            >{$t('inventory.actions')}</th
                         >
                     </tr>
                 </thead>
@@ -328,7 +328,7 @@
                                         isEntryModalOpen = true;
                                     }}
                                     class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-sm"
-                                    >+ Stock Entry</button
+                                    >{$t('inventory.stock_entry')}</button
                                 >
                                 <button
                                     onclick={() => {
@@ -337,7 +337,7 @@
                                     }}
                                     class="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-black transition-all shadow-sm"
                                     disabled={product.total_quantity === 0}
-                                    >- Real Usage</button
+                                    >{$t('inventory.real_usage')}</button
                                 >
                             </td>
                         </tr>
@@ -354,27 +354,27 @@
                                                 <tr>
                                                     <th
                                                         class="px-4 py-3 text-start text-[10px] font-bold text-gray-400 uppercase tracking-wider"
-                                                        >Batch #</th
+                                                        >{$t('inventory.batch')}</th
                                                     >
                                                     <th
                                                         class="px-4 py-3 text-start text-[10px] font-bold text-gray-400 uppercase tracking-wider"
-                                                        >Exp. Date</th
+                                                        >{$t('inventory.exp_date')}</th
                                                     >
                                                     <th
                                                         class="px-4 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider"
-                                                        >Current Qty</th
+                                                        >{$t('inventory.current_qty')}</th
                                                     >
                                                     <th
                                                         class="px-4 py-3 text-end text-[10px] font-bold text-gray-400 uppercase tracking-wider"
-                                                        >Unit Cost</th
+                                                        >{$t('inventory.unit_cost')}</th
                                                     >
                                                     <th
                                                         class="px-4 py-3 text-start text-[10px] font-bold text-gray-400 uppercase tracking-wider"
-                                                        >Supplier</th
+                                                        >{$t('inventory.supplier')}</th
                                                     >
                                                     <th
                                                         class="px-4 py-3 text-end text-[10px] font-bold text-gray-400 uppercase tracking-wider"
-                                                        >Actions</th
+                                                        >{$t('inventory.actions')}</th
                                                     >
                                                 </tr>
                                             </thead>
@@ -413,7 +413,7 @@
                                                                 {#if new Date(batch.expiration_date) < new Date()}
                                                                     <span
                                                                         class="ml-1 text-[8px] bg-red-100 text-red-600 px-1 rounded uppercase tracking-tighter"
-                                                                        >Expired</span
+                                                                        >{$t('inventory.expired')}</span
                                                                     >
                                                                 {/if}
                                                             </span>
@@ -443,7 +443,7 @@
                                                                         isEditBatchModalOpen = true;
                                                                     }}
                                                                     class="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-                                                                    title="Edit Metadata"
+                                                                    title={$t('inventory.edit_metadata')}
                                                                 >
                                                                     ✏️
                                                                 </button>
@@ -454,14 +454,14 @@
                                                                         isAdjustStockModalOpen = true;
                                                                     }}
                                                                     class="p-2 text-gray-400 hover:text-orange-600 transition-colors"
-                                                                    title="Adjust Quantity"
+                                                                    title={$t('inventory.adjust_quantity')}
                                                                 >
                                                                     📉
                                                                 </button>
                                                             {:else}
                                                                 <span
                                                                     class="text-[10px] text-gray-300 font-bold uppercase italic"
-                                                                    >Admin Only</span
+                                                                    >{$t('inventory.admin_only')}</span
                                                                 >
                                                             {/if}
                                                         </td>
@@ -488,7 +488,7 @@
                                 colspan="6"
                                 class="px-6 py-12 text-center text-gray-500 font-medium"
                             >
-                                No products found matching your filters.
+                                {$t('inventory.no_products_found_matching_you')}
                             </td>
                         </tr>
                     {/each}
@@ -523,7 +523,7 @@
                         class="bg-indigo-600 p-8 flex justify-between items-center text-white"
                     >
                         <div>
-                            <h3 class="text-2xl font-black">Catalog Entry</h3>
+                            <h3 class="text-2xl font-black">{$t('inventory.catalog_entry')}</h3>
                             <p class="text-indigo-100 text-sm mt-1">
                                 Add a new reference to your inventory product
                                 catalog.
@@ -540,20 +540,20 @@
                             <h4
                                 class="text-xs font-black text-indigo-600 uppercase tracking-widest"
                             >
-                                1. Identity
+                                {$t('inventory.1_identity')}
                             </h4>
                             <div>
                                 <label
                                     for="prod_name"
                                     class="block text-[10px] font-bold text-gray-400 uppercase mb-2"
-                                    >Full Product Name</label
+                                    >{$t('inventory.full_product_name')}</label
                                 >
                                 <input
                                     id="prod_name"
                                     type="text"
                                     name="name"
                                     required
-                                    placeholder="ex: Mask Type II R"
+                                    placeholder={$t('inventory.ex_mask_type_ii_r')}
                                     class="w-full h-14 text-lg rounded-2xl border-2 border-gray-100 px-4 focus:ring-indigo-500 focus:border-indigo-500 font-bold"
                                 />
                             </div>
@@ -561,13 +561,13 @@
                                 <label
                                     for="prod_barcode"
                                     class="block text-[10px] font-bold text-gray-400 uppercase mb-2"
-                                    >Barcode / SKU / Ref</label
+                                    >{$t('inventory.barcode_sku_ref')}</label
                                 >
                                 <input
                                     id="prod_barcode"
                                     type="text"
                                     name="barcode"
-                                    placeholder="Optional"
+                                    placeholder={$t('inventory.optional')}
                                     class="w-full h-14 text-lg rounded-2xl border-2 border-gray-100 px-4 font-mono"
                                 />
                             </div>
@@ -578,37 +578,37 @@
                             <h4
                                 class="text-xs font-black text-indigo-600 uppercase tracking-widest"
                             >
-                                2. Classification
+                                {$t('inventory.2_classification')}
                             </h4>
                             <div>
                                 <label
                                     for="prod_cat"
                                     class="block text-[10px] font-bold text-gray-400 uppercase mb-2"
-                                    >Department / Category</label
+                                    >{$t('inventory.department_category')}</label
                                 >
                                 <select
                                     id="prod_cat"
                                     name="category"
                                     class="w-full h-14 text-lg rounded-2xl border-2 border-gray-100 px-4 font-bold"
                                 >
-                                    <option>Consommables</option>
-                                    <option>Produits</option>
-                                    <option>Restaurations</option>
-                                    <option>Chirurgie</option>
-                                    <option>Autre</option>
+                                    <option>{$t('inventory.consommables')}</option>
+                                    <option>{$t('inventory.produits')}</option>
+                                    <option>{$t('inventory.restaurations')}</option>
+                                    <option>{$t('inventory.chirurgie')}</option>
+                                    <option>{$t('inventory.autre')}</option>
                                 </select>
                             </div>
                             <div>
                                 <label
                                     for="prod_unit"
                                     class="block text-[10px] font-bold text-gray-400 uppercase mb-2"
-                                    >Unit of Measure</label
+                                    >{$t('inventory.unit_of_measure')}</label
                                 >
                                 <input
                                     id="prod_unit"
                                     type="text"
                                     name="unit"
-                                    placeholder="ex: Box, Unit, ml..."
+                                    placeholder={$t('inventory.ex_box_unit_ml')}
                                     required
                                     class="w-full h-14 text-lg rounded-2xl border-2 border-gray-100 px-4 font-bold"
                                 />
@@ -620,7 +620,7 @@
                             <h4
                                 class="text-xs font-black text-indigo-600 uppercase tracking-widest"
                             >
-                                3. Guardrails
+                                {$t('inventory.3_guardrails')}
                             </h4>
                             <div
                                 class="bg-red-50 p-6 rounded-3xl border-2 border-red-100"
@@ -628,7 +628,7 @@
                                 <label
                                     for="prod_min_threshold"
                                     class="block text-[10px] font-bold text-red-500 uppercase mb-2"
-                                    >Min Threshold Alert</label
+                                    >{$t('inventory.min_threshold_alert')}</label
                                 >
                                 <input
                                     id="prod_min_threshold"
@@ -654,12 +654,12 @@
                             type="button"
                             onclick={() => (isProductModalOpen = false)}
                             class="px-8 py-3 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors uppercase"
-                            >Cancel</button
+                            >{$t('inventory.cancel')}</button
                         >
                         <button
                             type="submit"
                             class="px-12 py-3 bg-indigo-600 text-white text-sm font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 uppercase tracking-widest"
-                            >Register Product</button
+                            >{$t('inventory.register_product')}</button
                         >
                     </div>
                 </form>
@@ -700,7 +700,7 @@
                             <h3
                                 class="text-2xl font-black uppercase tracking-tighter"
                             >
-                                Inventory Inbound (New Batch)
+                                {$t('inventory.inventory_inbound_new_batch')}
                             </h3>
                             <div class="flex items-center gap-3 mt-1">
                                 <span
@@ -723,20 +723,20 @@
                             <h4
                                 class="text-xs font-black text-emerald-600 uppercase tracking-widest border-b pb-2"
                             >
-                                1. Traceability
+                                {$t('inventory.1_traceability')}
                             </h4>
                             <div>
                                 <label
                                     for="batch_num"
                                     class="block text-[10px] font-black text-gray-400 uppercase mb-2"
-                                    >Batch / Lot Number</label
+                                    >{$t('inventory.batch_lot_number')}</label
                                 >
                                 <input
                                     id="batch_num"
                                     type="text"
                                     name="batch_number"
                                     required
-                                    placeholder="ex: LOT-2024-X"
+                                    placeholder={$t('inventory.ex_lot_2024_x')}
                                     class="w-full h-16 text-xl rounded-2xl border-2 border-gray-100 px-4 focus:ring-emerald-500 focus:border-emerald-500 font-black uppercase"
                                 />
                             </div>
@@ -744,7 +744,7 @@
                                 <label
                                     for="batch_exp"
                                     class="block text-[10px] font-black text-gray-400 uppercase mb-2"
-                                    >Expiration Date (Safety)</label
+                                    >{$t('inventory.expiration_date_safety')}</label
                                 >
                                 <input
                                     id="batch_exp"
@@ -758,14 +758,14 @@
                                 <label
                                     for="batch_supp"
                                     class="block text-[10px] font-black text-gray-400 uppercase mb-2"
-                                    >Trusted Supplier</label
+                                    >{$t('inventory.trusted_supplier')}</label
                                 >
                                 <select
                                     id="batch_supp"
                                     name="supplier_id"
                                     class="w-full h-16 text-lg rounded-2xl border-2 border-gray-100 px-4 font-bold"
                                 >
-                                    <option value="">Internal / Unknown</option>
+                                    <option value="">{$t('inventory.internal_unknown')}</option>
                                     {#each data.suppliers as s}
                                         <option value={s.id}>{s.name}</option>
                                     {/each}
@@ -778,7 +778,7 @@
                             <h4
                                 class="text-xs font-black text-emerald-600 uppercase tracking-widest border-b pb-2"
                             >
-                                2. Received Volume
+                                {$t('inventory.2_received_volume')}
                             </h4>
                             <div
                                 class="bg-emerald-50 p-8 rounded-[2.5rem] border-2 border-emerald-100"
@@ -786,7 +786,7 @@
                                 <label
                                     for="batch_qty"
                                     class="block text-[10px] font-black text-emerald-600 uppercase mb-4 text-center"
-                                    >Entry Quantity ({selectedProduct.unit})</label
+                                    >{$t('inventory.entry_quantity')}{selectedProduct.unit})</label
                                 >
                                 <div class="relative">
                                     <input
@@ -803,7 +803,7 @@
                                 <p
                                     class="text-[10px] text-emerald-400 mt-4 text-center font-bold"
                                 >
-                                    Verify total volume before confirmation.
+                                    {$t('inventory.verify_total_volume_before_con')}
                                 </p>
                             </div>
                         </div>
@@ -813,13 +813,13 @@
                             <h4
                                 class="text-xs font-black text-emerald-600 uppercase tracking-widest border-b pb-2"
                             >
-                                3. Financial Audit
+                                {$t('inventory.3_financial_audit')}
                             </h4>
                             <div>
                                 <label
                                     for="batch_cost"
                                     class="block text-[10px] font-black text-gray-400 uppercase mb-2"
-                                    >Unit Purchase Cost (PMP)</label
+                                    >{$t('inventory.unit_purchase_cost_pmp')}</label
                                 >
                                 <div class="relative">
                                     <input
@@ -842,13 +842,13 @@
                                 <label
                                     for="batch_reason"
                                     class="block text-[10px] font-black text-gray-400 uppercase mb-2"
-                                    >Invoice / Purchase order #</label
+                                    >{$t('inventory.invoice_purchase_order')}</label
                                 >
                                 <input
                                     id="batch_reason"
                                     type="text"
                                     name="reason"
-                                    placeholder="ex: INV-2024-100"
+                                    placeholder={$t('inventory.ex_inv_2024_100')}
                                     class="w-full h-16 text-lg rounded-2xl border-2 border-gray-100 px-4"
                                 />
                             </div>
@@ -860,10 +860,10 @@
                                 >
                                     <span
                                         class="text-[10px] font-bold uppercase"
-                                        >Estimated Total</span
+                                        >{$t('inventory.estimated_total')}</span
                                     >
                                     <span class="text-sm font-black underline"
-                                        >Calculated at submit</span
+                                        >{$t('inventory.calculated_at_submit')}</span
                                     >
                                 </div>
                             </div>
@@ -875,12 +875,12 @@
                             type="button"
                             onclick={() => (isEntryModalOpen = false)}
                             class="px-8 py-4 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors uppercase"
-                            >Cancel</button
+                            >{$t('inventory.cancel')}</button
                         >
                         <button
                             type="submit"
                             class="px-16 py-4 bg-emerald-600 text-white text-lg font-black rounded-2xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 uppercase tracking-widest"
-                            >Commit to Stock</button
+                            >{$t('inventory.commit_to_stock')}</button
                         >
                     </div>
                 </form>
@@ -918,10 +918,10 @@
                         <h3
                             class="text-2xl font-black uppercase tracking-tighter"
                         >
-                            Correct Metadata
+                            {$t('inventory.correct_metadata')}
                         </h3>
                         <p class="text-indigo-100 text-sm mt-1">
-                            Batch ID: {selectedBatch.id} • Corrections are logged
+                            {$t('inventory.batch_id')} {selectedBatch.id} • Corrections are logged
                             for audit.
                         </p>
                         <span class="absolute top-8 right-8 text-4xl opacity-50"
@@ -940,7 +940,7 @@
                             <label
                                 for="edit_batch_num"
                                 class="block text-[10px] font-black text-gray-400 uppercase mb-2"
-                                >Batch Number</label
+                                >{$t('inventory.batch_number')}</label
                             >
                             <input
                                 id="edit_batch_num"
@@ -955,7 +955,7 @@
                             <label
                                 for="edit_batch_exp"
                                 class="block text-[10px] font-black text-gray-400 uppercase mb-2"
-                                >Expiration Date</label
+                                >{$t('inventory.expiration_date')}</label
                             >
                             <input
                                 id="edit_batch_exp"
@@ -970,7 +970,7 @@
                             <label
                                 for="edit_batch_cost"
                                 class="block text-[10px] font-black text-gray-400 uppercase mb-2"
-                                >Correct Unit Cost</label
+                                >{$t('inventory.correct_unit_cost')}</label
                             >
                             <input
                                 id="edit_batch_cost"
@@ -986,7 +986,7 @@
                             <label
                                 for="edit_batch_supp"
                                 class="block text-[10px] font-black text-gray-400 uppercase mb-2"
-                                >Correct Supplier</label
+                                >{$t('inventory.correct_supplier')}</label
                             >
                             <select
                                 id="edit_batch_supp"
@@ -994,7 +994,7 @@
                                 value={selectedBatch.supplier_id}
                                 class="w-full h-14 text-lg rounded-2xl border-2 border-gray-100 px-4 font-bold"
                             >
-                                <option value="">Internal / Unknown</option>
+                                <option value="">{$t('inventory.internal_unknown')}</option>
                                 {#each data.suppliers as s}
                                     <option value={s.id}>{s.name}</option>
                                 {/each}
@@ -1007,12 +1007,12 @@
                             type="button"
                             onclick={() => (isEditBatchModalOpen = false)}
                             class="px-6 py-3 text-sm font-bold text-gray-500 uppercase"
-                            >Discard</button
+                            >{$t('inventory.discard')}</button
                         >
                         <button
                             type="submit"
                             class="px-10 py-3 bg-indigo-600 text-white text-sm font-black rounded-xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 uppercase uppercase tracking-widest"
-                            >Update Metadata</button
+                            >{$t('inventory.update_metadata')}</button
                         >
                     </div>
                 </form>
@@ -1053,10 +1053,10 @@
                             <h3
                                 class="text-2xl font-black uppercase tracking-tighter"
                             >
-                                Inventory Adjustment
+                                {$t('inventory.inventory_adjustment')}
                             </h3>
                             <p class="text-orange-100 text-sm mt-1">
-                                Batch: {selectedBatch.batch_number} • Current: {selectedBatch.current_quantity}
+                                {$t('inventory.batch')} {selectedBatch.batch_number} {$t('inventory.current')} {selectedBatch.current_quantity}
                             </p>
                         </div>
                         <span class="text-4xl">📉</span>
@@ -1069,7 +1069,7 @@
                             <label
                                 for="adj_delta"
                                 class="block text-[10px] font-black text-orange-600 uppercase mb-4"
-                                >Quantity Change (+ or -)</label
+                                >{$t('inventory.quantity_change_or')}</label
                             >
                             <input
                                 id="adj_delta"
@@ -1092,7 +1092,7 @@
                             <label
                                 for="adj_reason"
                                 class="block text-[10px] font-black text-gray-400 uppercase mb-2"
-                                >Formal Reason for Adjustment</label
+                                >{$t('inventory.formal_reason_for_adjustment')}</label
                             >
                             <select
                                 id="adj_reason"
@@ -1101,12 +1101,12 @@
                                 class="w-full h-14 text-lg rounded-2xl border-2 border-gray-100 px-4 font-bold"
                             >
                                 <option
-                                    >Correction d'Inventaire (Miscount)</option
+                                    >{$t('inventory.correction_d_inventaire_miscou')}</option
                                 >
-                                <option>Casse / Dommage</option>
-                                <option>Périmé (Expiré)</option>
-                                <option>Retour Fournisseur</option>
-                                <option>Autre</option>
+                                <option>{$t('inventory.casse_dommage')}</option>
+                                <option>{$t('inventory.p_rim_expir')}</option>
+                                <option>{$t('inventory.retour_fournisseur')}</option>
+                                <option>{$t('inventory.autre')}</option>
                             </select>
                         </div>
                     </div>
@@ -1116,12 +1116,12 @@
                             type="button"
                             onclick={() => (isAdjustStockModalOpen = false)}
                             class="px-6 py-3 text-sm font-bold text-gray-500 uppercase"
-                            >Discard</button
+                            >{$t('inventory.discard')}</button
                         >
                         <button
                             type="submit"
                             class="px-10 py-3 bg-orange-600 text-white text-sm font-black rounded-xl hover:bg-orange-700 shadow-xl shadow-orange-100 uppercase tracking-widest"
-                            >Apply Adjustment</button
+                            >{$t('inventory.apply_adjustment')}</button
                         >
                     </div>
                 </form>
@@ -1161,7 +1161,7 @@
                             <h3
                                 class="text-2xl font-black uppercase tracking-tighter"
                             >
-                                Fast Stock Usage
+                                {$t('inventory.fast_stock_usage')}
                             </h3>
                             <p class="text-gray-400 text-lg font-bold">
                                 {selectedProduct.name}
@@ -1176,7 +1176,7 @@
                             <label
                                 for="usage_qty"
                                 class="block text-[10px] font-black text-gray-400 uppercase mb-4 text-center"
-                                >Quantity to Deduct ({selectedProduct.unit})</label
+                                >{$t('inventory.quantity_to_deduct')}{selectedProduct.unit})</label
                             >
                             <div class="relative">
                                 <input
@@ -1201,17 +1201,17 @@
                             <label
                                 for="usage_reason"
                                 class="block text-xs font-bold text-gray-500 uppercase mb-1"
-                                >Usage Reason</label
+                                >{$t('inventory.usage_reason')}</label
                             >
                             <select
                                 id="usage_reason"
                                 name="reason"
                                 class="w-full h-14 text-lg rounded-2xl border-2 border-gray-100 px-4 font-bold"
                             >
-                                <option>Patient Treatment</option>
-                                <option>Clinic Daily Operation</option>
-                                <option>Waste / Expired disposal</option>
-                                <option>Other</option>
+                                <option>{$t('inventory.patient_treatment')}</option>
+                                <option>{$t('inventory.clinic_daily_operation')}</option>
+                                <option>{$t('inventory.waste_expired_disposal')}</option>
+                                <option>{$t('inventory.other')}</option>
                             </select>
                         </div>
                     </div>
@@ -1220,12 +1220,12 @@
                             type="button"
                             onclick={() => (isUsageModalOpen = false)}
                             class="px-8 py-3 text-sm font-bold text-gray-500 uppercase"
-                            >Cancel</button
+                            >{$t('inventory.cancel')}</button
                         >
                         <button
                             type="submit"
                             class="px-12 py-3 bg-gray-900 text-white text-sm font-black rounded-xl hover:bg-black uppercase tracking-widest"
-                            >Confirm Usage</button
+                            >{$t('inventory.confirm_usage')}</button
                         >
                     </div>
                 </form>
@@ -1257,7 +1257,7 @@
                         <h3
                             class="text-xl font-black uppercase tracking-widest"
                         >
-                            New Trusted Partner
+                            {$t('inventory.new_trusted_partner')}
                         </h3>
                     </div>
                     <div class="p-8 space-y-6 text-start">
@@ -1265,7 +1265,7 @@
                             <label
                                 for="supp_name"
                                 class="block text-[10px] font-bold text-gray-400 uppercase mb-2"
-                                >Company Name</label
+                                >{$t('inventory.company_name')}</label
                             >
                             <input
                                 id="supp_name"
@@ -1279,7 +1279,7 @@
                             <label
                                 for="supp_phone"
                                 class="block text-[10px] font-bold text-gray-400 uppercase mb-2"
-                                >Contact Phone</label
+                                >{$t('inventory.contact_phone')}</label
                             >
                             <input
                                 id="supp_phone"
@@ -1292,7 +1292,7 @@
                             <label
                                 for="supp_tax"
                                 class="block text-[10px] font-bold text-gray-400 uppercase mb-2"
-                                >Tax ID / RC / IF</label
+                                >{$t('inventory.tax_id_rc_if')}</label
                             >
                             <input
                                 id="supp_tax"
@@ -1307,12 +1307,12 @@
                             type="button"
                             onclick={() => (isSupplierModalOpen = false)}
                             class="px-6 py-3 text-sm font-bold text-gray-500 uppercase"
-                            >Cancel</button
+                            >{$t('inventory.cancel')}</button
                         >
                         <button
                             type="submit"
                             class="px-10 py-3 bg-gray-800 text-white text-sm font-black rounded-xl hover:bg-black shadow-xl shadow-gray-100 uppercase tracking-widest"
-                            >Save Partner</button
+                            >{$t('inventory.save_partner')}</button
                         >
                     </div>
                 </form>

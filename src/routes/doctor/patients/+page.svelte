@@ -212,7 +212,7 @@
                 <input
                     type="text"
                     bind:value={patientStore.filters.search}
-                    placeholder="Rechercher par nom, téléphone, ville ou ID..."
+                    placeholder={$t('doctor.patients.search_placeholder_advanced')}
                     class="w-full pl-16 pr-6 py-5 bg-white border-2 border-gray-100 rounded-[2rem] shadow-sm focus:ring-4 focus:ring-indigo-50/50 focus:border-indigo-500 outline-none transition-all text-lg font-medium placeholder:text-gray-400"
                 />
             </div>
@@ -223,7 +223,7 @@
                     class="flex items-center gap-3 px-8 py-5 rounded-[2rem] font-bold transition-all border-2 {patientStore.isFilterPanelOpen ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-gray-100 text-gray-700 hover:border-gray-200 shadow-sm'}"
                 >
                     <span><Filter size={20} /></span>
-                    Filtres Avancés
+                    {$t('common.filters_advanced')}
                     {#if Object.values(patientStore.filters).some((f) => (Array.isArray(f) ? f[0] !== 0 || (f[1] !== 100 && f[1] !== "") : f !== "" && f !== "all"))}
                         <span class="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
                     {/if}
@@ -232,7 +232,7 @@
                 <div class="relative">
                     <button
                         class="p-5 bg-white border-2 border-gray-100 rounded-[2rem] text-gray-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm"
-                        title="Paramètres des colonnes"
+                        title={$t('doctor.patients.column_settings')}
                         onclick={() => {
                             const menu = document.getElementById('column-menu');
                             menu?.classList.toggle('hidden');
@@ -242,7 +242,7 @@
                     </button>
                     <!-- Column Picker Dropdown -->
                     <div id="column-menu" class="hidden absolute right-0 mt-4 w-64 bg-white rounded-3xl shadow-2xl border border-gray-100 p-4 z-30">
-                        <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 px-2">Colonnes Affichées</h4>
+                        <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 px-2">{$t('doctor.patients.columns_displayed')}</h4>
                         <div class="space-y-1">
                             {#each patientStore.columns as col}
                                 <button
@@ -271,14 +271,14 @@
                         <input
                             type="number"
                             bind:value={patientStore.filters.ageRange[0]}
-                            placeholder="Min"
+                            placeholder={$t('common.min')}
                             class="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-lg"
                         />
                         <span class="text-gray-300 font-black">to</span>
                         <input
                             type="number"
                             bind:value={patientStore.filters.ageRange[1]}
-                            placeholder="Max"
+                            placeholder={$t('common.max')}
                             class="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-lg"
                         />
                     </div>
@@ -305,15 +305,15 @@
 
                 <!-- Balance -->
                 <div class="space-y-5">
-                    <label class="text-[11px] font-black text-gray-400 uppercase tracking-widest">État Financier</label>
+                    <label class="text-[11px] font-black text-gray-400 uppercase tracking-widest">{$t('doctor.patients.financial_status')}</label>
                     <div class="relative">
                         <select
                             bind:value={patientStore.filters.balanceStatus}
                             class="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-lg appearance-none cursor-pointer"
                         >
-                            <option value="all">Tous les soldes</option>
-                            <option value="debtor">Débiteurs (Dettes)</option>
-                            <option value="creditor">Créditeurs (Avance)</option>
+                            <option value="all">{$t('doctor.patients.filters.all_balances')}</option>
+                            <option value="debtor">{$t('doctor.patients.debtors')}</option>
+                            <option value="creditor">{$t('doctor.patients.creditors')}</option>
                         </select>
                         <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
                     </div>
@@ -327,9 +327,9 @@
                             bind:value={patientStore.filters.rdvStatus}
                             class="w-full px-6 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-lg appearance-none cursor-pointer"
                         >
-                            <option value="all">Tous les statuts</option>
-                            <option value="has_rdv">Avec RDV</option>
-                            <option value="no_rdv">Sans RDV</option>
+                            <option value="all">{$t('doctor.patients.filters.all_statuses')}</option>
+                            <option value="has_rdv">{$t('doctor.patients.with_appointment')}</option>
+                            <option value="no_rdv">{$t('doctor.patients.without_appointment')}</option>
                         </select>
                         <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
                     </div>
@@ -343,7 +343,7 @@
                             class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-100 transition-all flex items-center justify-center gap-2"
                         >
                             <span><Save size={18} /></span>
-                            SAUVEGARDER PRESET
+                            {$t('doctor.patients.save_preset_button')}
                         </button>
                         <button
                             onclick={() => patientStore.resetFilters()}
@@ -377,11 +377,11 @@
         {#if patients.length === 0}
             <div class="text-center py-32 bg-white rounded-[3rem] border-4 border-dashed border-gray-50 shadow-sm">
                 <div class="mb-6 flex justify-center"><Wind size={48} class="text-gray-300 mx-auto" /></div>
-                <p class="text-gray-400 text-xl font-bold mb-6">Aucun patient trouvé correspondant à vos critères</p>
+                <p class="text-gray-400 text-xl font-bold mb-6">{$t('doctor.patients.no_matching_criteria')}</p>
                 <button
                     onclick={() => patientStore.resetFilters()}
                     class="text-indigo-600 hover:text-indigo-800 font-black uppercase tracking-widest text-sm underline underline-offset-8"
-                >Réinitialiser les filtres</button>
+                >{$t('common.reset_filters')}</button>
             </div>
         {:else if patientStore.viewMode === "grid"}
             <!-- Enhanced Card Grid -->
@@ -394,7 +394,7 @@
                                     <User size={24} />
                                 </div>
                                 <div class="flex flex-col items-end gap-2">
-                                    <span class="px-3 py-1 rounded-full text-[10px] font-black bg-white shadow-sm text-gray-400 uppercase tracking-widest">ID: #{patient.id.toString().padStart(4, '0')}</span>
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-black bg-white shadow-sm text-gray-400 uppercase tracking-widest">{$t('common.id_hash')}{patient.id.toString().padStart(4, '0')}</span>
                                     {#if patient.net_balance !== 0}
                                         <span class="px-3 py-1 rounded-full text-[10px] font-black {patient.net_balance < 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'} uppercase tracking-widest">
                                             {patient.net_balance < 0 ? 'Dette' : 'Crédit'}
@@ -406,7 +406,7 @@
                             <h3 class="text-xl font-black text-gray-900 group-hover:text-indigo-600 transition-colors mb-2 line-clamp-1">{patient.full_name}</h3>
                             
                             <div class="flex flex-wrap gap-2 mb-6">
-                                <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-black rounded-lg uppercase">{patient.age ?? calculateAge(patient.date_of_birth)} ANS</span>
+                                <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-black rounded-lg uppercase">{patient.age ?? calculateAge(patient.date_of_birth)} {$t('common.years_uppercase')}</span>
                                 <span class="px-3 py-1 bg-gray-100 text-gray-600 text-[10px] font-black rounded-lg uppercase">{patient.city || "Alger"}</span>
                             </div>
 
@@ -429,7 +429,7 @@
                                 <a
                                     href="/doctor/patients/{patient.id}"
                                     class="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 hover:bg-indigo-700"
-                                >DOSSIER →</a>
+                                >{$t('doctor.patients.view_record_arrow')}</a>
                             </div>
                         </div>
                     </div>
@@ -531,14 +531,14 @@
                 <div class="flex items-center gap-4 text-sm font-bold text-gray-500 w-full sm:w-auto justify-between sm:justify-start">
                     <p>
                         {#if currentLimit === -1}
-                            Affichage de <span class="text-indigo-600">{totalPatients}</span> patients
+                            {$t('common.pagination.showing_prefix')} <span class="text-indigo-600">{totalPatients}</span> patients
                         {:else}
                             Affichage de <span class="text-indigo-600">{(currentPage - 1) * currentLimit + 1}</span> à <span class="text-indigo-600">{Math.min(currentPage * currentLimit, totalPatients)}</span> sur <span class="text-indigo-600">{totalPatients}</span> patients
                         {/if}
                     </p>
                     
                     <div class="flex items-center gap-2 border-l-2 border-gray-100 pl-4 ml-2">
-                        <label for="pageSize" class="text-xs uppercase tracking-widest font-black text-gray-400">Afficher par page:</label>
+                        <label for="pageSize" class="text-xs uppercase tracking-widest font-black text-gray-400">{$t('common.pagination.per_page')}</label>
                         <select 
                             id="pageSize"
                             bind:value={patientStore.pageSize}
@@ -578,11 +578,11 @@
     <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-md" onclick={() => isPresetModalOpen = false}></div>
         <div class="relative bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 class="text-2xl font-black text-gray-900 mb-6">Sauvegarder les filtres</h3>
+            <h3 class="text-2xl font-black text-gray-900 mb-6">{$t('doctor.patients.save_filters')}</h3>
             <div class="space-y-6">
                 <div>
-                    <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Nom du Preset</label>
-                    <input type="text" bind:value={newPresetName} placeholder="Ex: Patients Débiteurs - Alger" class="w-full px-6 py-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 font-bold" />
+                    <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">{$t('doctor.patients.preset_name')}</label>
+                    <input type="text" bind:value={newPresetName} placeholder={$t('doctor.patients.preset_placeholder')} class="w-full px-6 py-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 font-bold" />
                 </div>
                 <div class="flex gap-4">
                     <button onclick={saveCurrentPreset} class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm hover:bg-indigo-700 transition-all">SAUVEGARDER</button>
@@ -612,25 +612,25 @@
                 }}>
                     <div class="px-10 pt-10 pb-8 max-h-[85vh] overflow-y-auto custom-scrollbar">
                         <div class="flex justify-between items-center mb-10">
-                            <h3 class="text-3xl font-black text-gray-900">Nouveau Patient</h3>
+                            <h3 class="text-3xl font-black text-gray-900">{$t('patients.new_patient')}</h3>
                             <button type="button" onclick={() => isCreateModalOpen = false} class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all">✕</button>
                         </div>
                         <div class="space-y-10">
                             <div class="space-y-6">
-                                <h4 class="text-xs font-black text-indigo-300 uppercase tracking-[0.3em]">Informations Personnelles</h4>
+                                <h4 class="text-xs font-black text-indigo-300 uppercase tracking-[0.3em]">{$t('common.personal_info')}</h4>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div class="md:col-span-2">
-                                        <label class="block text-sm font-bold text-gray-700 mb-2">Nom Complet *</label>
+                                        <label class="block text-sm font-bold text-gray-700 mb-2">{$t('common.full_name_required')}</label>
                                         <input type="text" name="full_name" required class="w-full px-6 py-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 font-bold" />
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-2">Date de Naissance *</label>
+                                        <label class="block text-sm font-bold text-gray-700 mb-2">{$t('common.date_of_birth_required')}</label>
                                         <input type="date" name="date_of_birth" required class="w-full px-6 py-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 font-bold" />
                                     </div>
                                     <div>
                                         <label class="block text-sm font-bold text-gray-700 mb-2">Sexe</label>
                                         <select name="gender" class="w-full px-6 py-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 font-bold appearance-none">
-                                            <option value="">Non spécifié</option>
+                                            <option value="">{$t('common.unspecified')}</option>
                                             <option value="Male">Homme</option>
                                             <option value="Female">Femme</option>
                                         </select>
@@ -641,7 +641,7 @@
                                 <h4 class="text-xs font-black text-indigo-300 uppercase tracking-[0.3em]">Contact</h4>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-2">Téléphone</label>
+                                        <label class="block text-sm font-bold text-gray-700 mb-2">{$t('common.phone')}</label>
                                         <input type="tel" name="phone" class="w-full px-6 py-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 font-bold" />
                                     </div>
                                     <div>
@@ -653,7 +653,7 @@
 
                             {#if data.customFieldDefinitions && data.customFieldDefinitions.length > 0}
                                 <div class="space-y-6">
-                                    <h4 class="text-xs font-black text-indigo-300 uppercase tracking-[0.3em]">Champs Personnalisés</h4>
+                                    <h4 class="text-xs font-black text-indigo-300 uppercase tracking-[0.3em]">{$t('doctor.patients.custom_fields')}</h4>
                                     <input type="hidden" name="custom_fields" value={JSON.stringify(customFieldsValues)} />
                                     <DynamicFieldGenerator 
                                         definitions={data.customFieldDefinitions} 
@@ -665,7 +665,7 @@
                         </div>
                     </div>
                     <div class="px-10 py-8 bg-gray-50/50 flex gap-4 border-t border-gray-100">
-                        <button type="submit" class="flex-1 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-sm shadow-xl hover:bg-indigo-700 transition-all">CRÉER PATIENT</button>
+                        <button type="submit" class="flex-1 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-sm shadow-xl hover:bg-indigo-700 transition-all">{$t('doctor.patients.create_patient_button')}</button>
                         <button type="button" onclick={() => isCreateModalOpen = false} class="px-10 py-5 bg-white text-gray-500 rounded-[1.5rem] font-black text-sm border-2 border-gray-100 hover:bg-gray-50 transition-all">ANNULER</button>
                     </div>
                 </form>
